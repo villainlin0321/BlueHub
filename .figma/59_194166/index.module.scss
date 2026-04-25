@@ -1,0 +1,435 @@
+* {
+  box-sizing: border-box;
+}
+
+.frame16 {
+  position: relative;
+  background: #f3f4f5;
+  width: 375px;
+  height: 812px;
+  overflow: hidden;
+
+  .bG1 {
+    display: flex;
+    position: absolute;
+    top: 1px;
+    left: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: 54px;
+    padding-bottom: 1px;
+    width: 375px;
+    height: 812px;
+    background-image: url(../image/moe2gci9-72r779j.svg);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    .frame2 {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      justify-content: space-between;
+      margin-right: 20px;
+      margin-left: 307px;
+      border-radius: 17px;
+      background: #ffffff;
+      padding-right: 5px;
+      min-width: 48px;
+      height: 24px;
+      overflow: hidden;
+
+      .frame {
+        display: flex;
+        align-items: center;
+        border-radius: 17px;
+        background: #1890ff;
+        padding: 4px 6px;
+
+        .text {
+          line-height: 17px;
+          letter-spacing: 0;
+          color: #ffffff;
+          font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+        }
+      }
+
+      .en {
+        line-height: 17px;
+        letter-spacing: 0;
+        color: #262626;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+      }
+    }
+
+    .text2 {
+      margin: 50px 0px 0px 32px;
+      line-height: 36px;
+      letter-spacing: 0;
+      color: #262626;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    .autoWrapper {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      justify-content: space-between;
+      margin-top: 41px;
+      padding-right: 241px;
+      padding-left: 32px;
+
+      .text3 {
+        line-height: 20px;
+        letter-spacing: 0;
+        color: #186cff;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .text4 {
+        line-height: 20px;
+        letter-spacing: 0;
+        color: #8c8c8c;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 14px;
+      }
+    }
+
+    .frame3 {
+      margin-top: 4px;
+      margin-left: 33px;
+      background: #186cff;
+      width: 40px;
+      height: 2px;
+    }
+
+    .frame6 {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      align-self: stretch;
+      margin: 32px 32px 0px;
+      overflow: hidden;
+
+      .autoWrapper2 {
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+        padding-right: 143px;
+        padding-left: 3px;
+
+        .a86 {
+          line-height: 20px;
+          letter-spacing: 0;
+          color: #262626;
+          font-family: "SF UI  Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 16px;
+        }
+
+        .instance {
+          position: relative;
+          margin-left: 6px;
+          width: 16px;
+          height: 16px;
+
+          .frame4 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 16px;
+            height: 16px;
+            rotate: -180deg;
+          }
+
+          .slice {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+          }
+        }
+
+        .text5 {
+          margin: 0px 0px 0px 16px;
+          line-height: 20px;
+          letter-spacing: 0;
+          color: #bfbfbf;
+          font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 16px;
+        }
+      }
+
+      .frame5 {
+        margin-top: 12px;
+        background: #d8d8d8;
+        width: 311px;
+        height: 1px;
+      }
+    }
+
+    .autoWrapper3 {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-right: 32px;
+      padding-left: 33px;
+
+      .text6 {
+        line-height: 20px;
+        letter-spacing: 0;
+        color: #bfbfbf;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 16px;
+      }
+
+      .text7 {
+        line-height: 20px;
+        letter-spacing: 0;
+        color: #186cff;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 14px;
+      }
+    }
+
+    .frame7 {
+      margin-top: 12px;
+      margin-left: 32px;
+      background: #d8d8d8;
+      width: 311px;
+      height: 1px;
+    }
+
+    .frame8 {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      margin: 48px 32px 0px;
+      border-radius: 8px;
+      background-color: #096dd9;
+      padding: 11px 139px 11px 140px;
+      overflow: hidden;
+      background-image: linear-gradient(#ffffff99, #ffffff99);
+
+      .text8 {
+        line-height: 22px;
+        letter-spacing: 0;
+        color: #ffffff;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 16px;
+      }
+    }
+
+    .frame10 {
+      display: flex;
+      align-items: center;
+      margin-top: 20px;
+      margin-left: 33px;
+      width: 311px;
+      overflow: hidden;
+
+      .frame9 {
+        display: flex;
+        align-items: center;
+        margin-left: -1px;
+        padding-top: 1px;
+        padding-left: 1px;
+
+        .instance2 {
+          position: relative;
+          width: 18px;
+          height: 18px;
+
+          .checkboxUnselected {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            border: 2px solid #bfbfbf;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+          }
+
+          .slice2 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 18px;
+            height: 18px;
+          }
+        }
+      }
+
+      .text11 {
+        margin: 0px 0px 0px 9px;
+        width: 285px;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: #000000;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 12px;
+
+        .text9 {
+          line-height: 22px;
+          letter-spacing: 0;
+          color: #171a1d;
+          font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 12px;
+        }
+
+        .text10 {
+          line-height: 22px;
+          letter-spacing: 0;
+          color: #186cff;
+          font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 12px;
+        }
+      }
+    }
+
+    .autoWrapper4 {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      justify-content: space-between;
+      margin-top: 212px;
+      padding-right: 108px;
+      padding-left: 108px;
+
+      .frame11 {
+        display: flex;
+        align-items: center;
+        border-style: solid;
+        border-radius: 50%;
+        border-color: #bfbfbf;
+        background: #ffffff;
+        padding: 11px;
+        overflow: hidden;
+
+        .logo {
+          width: 18px;
+          height: 18px;
+          overflow: hidden;
+        }
+      }
+
+      .frame13 {
+        display: flex;
+        align-items: flex-start;
+        border: 1px solid #bfbfbf;
+        border-radius: 50%;
+        background: #ffffff;
+        padding: 8px 11px 10px;
+
+        .frame12 {
+          width: 17px;
+          height: 21px;
+        }
+      }
+
+      .frame15 {
+        display: flex;
+        align-items: center;
+        border: 1px solid #bfbfbf;
+        border-radius: 50%;
+        background: #ffffff;
+        padding: 9px 6px 9px 8px;
+
+        .frame14 {
+          width: 24px;
+          height: 21px;
+        }
+      }
+    }
+
+    .barsHomeIndicatorIPh {
+      display: flex;
+      align-items: flex-start;
+      align-self: stretch;
+      margin-top: 40px;
+      padding: 21px 120px 8px 121px;
+
+      .homeIndicator {
+        border-radius: 100px;
+        background: #000000;
+        width: 134px;
+        height: 5px;
+      }
+    }
+  }
+
+  .iPhoneXStatusBarsSta {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    align-items: flex-start;
+    padding: 13px 15px 10px 21px;
+    width: 375px;
+    height: 44px;
+    overflow: hidden;
+
+    .timeStyle {
+      display: flex;
+      align-items: flex-start;
+      padding-top: 3px;
+      padding-bottom: 1px;
+
+      .aTime3 {
+        width: 54px;
+        text-align: center;
+        color: #000000;
+        font-family: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+
+        .aTime {
+          letter-spacing: -0.28px;
+          color: #000000;
+          font-family: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .aTime2 {
+          letter-spacing: 0;
+          color: #000000;
+          font-family: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .cellularConnection {
+      margin-top: 5px;
+      margin-left: 219px;
+      width: 17px;
+      height: 11px;
+    }
+
+    .wifi {
+      margin-top: 4px;
+      margin-left: 5px;
+      width: 15px;
+      height: 11px;
+    }
+
+    .battery {
+      margin-top: 4px;
+      margin-left: 5px;
+      width: 24px;
+      height: 11px;
+    }
+  }
+}
