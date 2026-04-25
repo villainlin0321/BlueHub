@@ -11,7 +11,7 @@ final appConfigProvider = Provider<AppConfig>((ref) {
 });
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
-  return TokenStore();
+  return TokenStore.inMemory();
 });
 
 final dioProvider = Provider<Dio>((ref) {
@@ -24,4 +24,3 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   final dio = ref.watch(dioProvider);
   return ApiClient(dio);
 });
-

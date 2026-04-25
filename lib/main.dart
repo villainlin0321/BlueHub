@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/app/app.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const ProviderScope(child: App()));
+import 'shared/auth/token_store.dart';
+import 'shared/network/providers.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  final tokenStore = TokenStore.sharedPreferences(prefs);
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        tokenStoreProvider.overrideWithValue(tokenStore),
+      ],
+      child: const App(),
+    ),
+  );
 }
