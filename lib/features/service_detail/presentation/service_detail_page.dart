@@ -74,34 +74,47 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
 
   int _selectedPackageIndex = 0;
   bool _isFavorited = false;
+  bool _showCollapsedTitle = false;
 
   @override
   Widget build(BuildContext context) {
+    final collapseThreshold =
+        _expandedAppBarHeight -
+        (kToolbarHeight + MediaQuery.paddingOf(context).top) -
+        12;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       bottomNavigationBar: const _BottomActionBar(
         consultIconAsset: _consultIconAsset,
       ),
-      body: CustomScrollView(
-        slivers: <Widget>[
-          SliverAppBar(
-            pinned: true,
-            stretch: true,
-            expandedHeight: _expandedAppBarHeight,
-            backgroundColor: AppColors.surface,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            titleSpacing: 16,
-            title: LayoutBuilder(
-              builder: (context, constraints) {
-                final collapsed = _isCollapsed(
-                  constraints.biggest.height,
-                  MediaQuery.paddingOf(context).top,
-                );
-                return AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  opacity: collapsed ? 1 : 0,
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          final shouldShowTitle =
+              notification.metrics.pixels >= collapseThreshold;
+          if (shouldShowTitle != _showCollapsedTitle) {
+            setState(() => _showCollapsedTitle = shouldShowTitle);
+          }
+          return false;
+        },
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverAppBar(
+              pinned: true,
+              stretch: true,
+              expandedHeight: _expandedAppBarHeight,
+              backgroundColor: AppColors.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              titleSpacing: 70,
+              // centerTitle: false,
+              title: AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                opacity: _showCollapsedTitle ? 1 : 0,
+                child: SizedBox(
+                  height: 46,
+                  // alignment: Alignment.topLeft,
                   child: Text(
                     '服务详情',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -109,87 +122,87 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                );
-              },
-            ),
-            flexibleSpace: LayoutBuilder(
-              builder: (context, constraints) {
-                final topPadding = MediaQuery.paddingOf(context).top;
-                final collapsed = _isCollapsed(
-                  constraints.biggest.height,
-                  topPadding,
-                );
-                final progress = _collapseProgress(
-                  constraints.biggest.height,
-                  topPadding,
-                );
-
-                return _SliverHeroAppBar(
-                  assetPath: _heroAsset,
-                  backAsset: _backAsset,
-                  favoriteAsset: _favoriteAsset,
-                  shareAsset: _shareAsset,
-                  collapsed: collapsed,
-                  progress: progress,
-                  isFavorited: _isFavorited,
-                  onBackTap: () {
-                    if (Navigator.of(context).canPop()) {
-                      context.pop();
-                    }
-                  },
-                  onFavoriteTap: () {
-                    setState(() => _isFavorited = !_isFavorited);
-                  },
-                  onShareTap: () {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('分享功能开发中')));
-                  },
-                );
-              },
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: _SummaryPanel(
-              package: _packages[_selectedPackageIndex],
-              verifiedBadgeAsset: _verifiedBadgeAsset,
-            ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _PinnedTopTabBarDelegate(
-              child: _TopTabBar(tabs: _topTabs),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                children: List<Widget>.generate(_packages.length, (index) {
-                  final data = _packages[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == _packages.length - 1 ? 0 : 12,
-                    ),
-                    child: _PackageOptionCard(
-                      data: data,
-                      selected: index == _selectedPackageIndex,
-                      onTap: () =>
-                          setState(() => _selectedPackageIndex = index),
-                    ),
+                ),
+              ),
+              flexibleSpace: LayoutBuilder(
+                builder: (context, constraints) {
+                  final topPadding = MediaQuery.paddingOf(context).top;
+                  final collapsed = _isCollapsed(
+                    constraints.biggest.height,
+                    topPadding,
                   );
-                }),
+                  final progress = _collapseProgress(
+                    constraints.biggest.height,
+                    topPadding,
+                  );
+
+                  return _SliverHeroAppBar(
+                    assetPath: _heroAsset,
+                    backAsset: _backAsset,
+                    favoriteAsset: _favoriteAsset,
+                    shareAsset: _shareAsset,
+                    collapsed: collapsed,
+                    progress: progress,
+                    isFavorited: _isFavorited,
+                    onBackTap: () {
+                      if (Navigator.of(context).canPop()) {
+                        context.pop();
+                      }
+                    },
+                    onFavoriteTap: () {
+                      setState(() => _isFavorited = !_isFavorited);
+                    },
+                    onShareTap: () {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('分享功能开发中')));
+                    },
+                  );
+                },
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _MaterialsSection(materials: _materials),
+            SliverToBoxAdapter(
+              child: _SummaryPanel(
+                package: _packages[_selectedPackageIndex],
+                verifiedBadgeAsset: _verifiedBadgeAsset,
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
-        ],
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedTopTabBarDelegate(
+                child: _TopTabBar(tabs: _topTabs),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  children: List<Widget>.generate(_packages.length, (index) {
+                    final data = _packages[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == _packages.length - 1 ? 0 : 12,
+                      ),
+                      child: _PackageOptionCard(
+                        data: data,
+                        selected: index == _selectedPackageIndex,
+                        onTap: () =>
+                            setState(() => _selectedPackageIndex = index),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _MaterialsSection(materials: _materials),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ],
+        ),
       ),
     );
   }
@@ -420,42 +433,77 @@ class _TopTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: List<Widget>.generate(tabs.length, (index) {
-          final isActive = index == 0;
-          return Expanded(
-            child: SizedBox(
-              height: 48,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text(
-                    tabs[index],
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: isActive
-                          ? const Color(0xFF262626)
-                          : AppColors.textSecondary,
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 24,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF096DD9)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
+      child: SizedBox(
+        height: 48,
+        width: double.infinity,
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              left: 16,
+              top: 12,
+              child: Text(
+                tabs[0],
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF262626),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
               ),
             ),
-          );
-        }),
+            Positioned(
+              left: 22,
+              top: 40,
+              child: Container(
+                width: 20,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF096DD9),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 84,
+              top: 12,
+              child: Text(
+                '评价',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF262626),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 118,
+              top: 15,
+              child: Text(
+                '234',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFF8C8C8C),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 10,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 152,
+              top: 12,
+              child: Text(
+                tabs[2],
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF262626),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
