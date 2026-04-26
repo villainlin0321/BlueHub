@@ -7,6 +7,7 @@ class RoutePaths {
   static const me = '/me';
   static const serviceDetail = '/service-detail';
   static const myOrders = '/me/orders';
+  static const orderDetail = '/order/detail';
 
   static const loginPhone = '/login/phone';
   static const selectRole = '/auth/select-role';
