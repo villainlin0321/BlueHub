@@ -21,9 +21,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     // initialLocation: RoutePaths.home,
     // initialLocation: RoutePaths.loginPhone,
     // initialLocation: RoutePaths.selectRole,
-    // initialLocation: RoutePaths.orderDetail,
+    initialLocation: RoutePaths.orderDetail,
     // initialLocation: RoutePaths.serviceDetail,
-    initialLocation: RoutePaths.myOrders,
+    // initialLocation: RoutePaths.myOrders,
     routes: <RouteBase>[
       GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
       GoRoute(
