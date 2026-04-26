@@ -7,5 +7,5 @@ class RoutePaths {
   static const me = '/me';
 
   static const loginPhone = '/login/phone';
+  static const selectRole = '/auth/select-role';
 }
-

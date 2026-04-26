@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/login_phone_page.dart';
+import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
@@ -22,6 +23,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.loginPhone,
         builder: (context, state) => const LoginPhonePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.selectRole,
+        builder: (context, state) => const SelectRolePage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShellPage(
