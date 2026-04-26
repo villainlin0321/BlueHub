@@ -8,6 +8,8 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
+import '../../features/service_detail/presentation/service_detail_page.dart';
+import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
 import '../app.dart';
@@ -16,12 +18,13 @@ import 'route_paths.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     // initialLocation: RoutePaths.home,
-    initialLocation: RoutePaths.orderDetail,
+    // initialLocation: RoutePaths.myOrders,
+    // initialLocation: RoutePaths.loginPhone,
+    // initialLocation: RoutePaths.selectRole,
+    // initialLocation: RoutePaths.orderDetail,
+    initialLocation: RoutePaths.serviceDetail,
     routes: <RouteBase>[
-      GoRoute(
-        path: RoutePaths.root,
-        redirect: (_, __) => RoutePaths.home,
-      ),
+      GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
       GoRoute(
         path: RoutePaths.loginPhone,
         builder: (context, state) => const LoginPhonePage(),
@@ -33,6 +36,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.orderDetail,
         builder: (context, state) => const OrderDetailPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceDetail,
+        builder: (context, state) => const ServiceDetailPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myOrders,
+        builder: (context, state) => const MyOrdersPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShellPage(
