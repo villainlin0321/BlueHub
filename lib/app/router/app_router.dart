@@ -7,6 +7,8 @@ import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
+import '../../features/me/presentation/my_resume_editor_page.dart';
+import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
@@ -18,12 +20,12 @@ import 'route_paths.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    // initialLocation: RoutePaths.home,
+    initialLocation: RoutePaths.home,
+    // initialLocation: RoutePaths.myOrders,
     // initialLocation: RoutePaths.loginPhone,
     // initialLocation: RoutePaths.selectRole,
-    initialLocation: RoutePaths.orderDetail,
+    // initialLocation: RoutePaths.orderDetail,
     // initialLocation: RoutePaths.serviceDetail,
-    // initialLocation: RoutePaths.myOrders,
     routes: <RouteBase>[
       GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
       GoRoute(
@@ -49,6 +51,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myOrders,
         builder: (context, state) => const MyOrdersPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myResume,
+        builder: (context, state) => const MyResumePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myResumeEditor,
+        builder: (context, state) {
+          final ResumeEditorArgs? args = state.extra as ResumeEditorArgs?;
+          return MyResumeEditorPage(
+            args: args ?? const ResumeEditorArgs.create(),
+          );
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShellPage(

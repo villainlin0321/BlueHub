@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 
@@ -20,27 +22,29 @@ class MePage extends StatelessWidget {
                 Text(
                   '我的',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.chat_bubble_outline, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            _ProfileCard(
-              name: '程先生',
-              phone: '132****3456',
-              onTap: () {},
-            ),
+            _ProfileCard(name: '程先生', phone: '132****3456', onTap: () {}),
             const SizedBox(height: 12),
             _MenuCard(
               items: const <_MenuItem>[
@@ -50,9 +54,14 @@ class MePage extends StatelessWidget {
                 _MenuItem(icon: Icons.support_agent_outlined, label: '客服中心'),
               ],
               onItemTap: (label) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$label（占位）')),
-                );
+                // “简历管理”接真实页面，其余菜单仍保留占位提示。
+                if (label == '简历管理') {
+                  context.push(RoutePaths.myResume);
+                  return;
+                }
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$label（占位）')));
               },
             ),
           ],
@@ -99,21 +108,26 @@ class _ProfileCard extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w800,
                               ),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.brand.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '已实名',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
                                   color: AppColors.brand,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -125,8 +139,8 @@ class _ProfileCard extends StatelessWidget {
                     Text(
                       phone,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -163,17 +177,17 @@ class _StatItem extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -182,10 +196,7 @@ class _StatItem extends StatelessWidget {
 }
 
 class _MenuCard extends StatelessWidget {
-  const _MenuCard({
-    required this.items,
-    required this.onItemTap,
-  });
+  const _MenuCard({required this.items, required this.onItemTap});
 
   final List<_MenuItem> items;
   final ValueChanged<String> onItemTap;
@@ -217,12 +228,15 @@ class _MenuCard extends StatelessWidget {
                     child: Text(
                       it.label,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textTertiary,
+                  ),
                 ],
               ),
             ),
@@ -239,4 +253,3 @@ class _MenuItem {
   final IconData icon;
   final String label;
 }
-
