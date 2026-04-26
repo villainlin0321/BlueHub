@@ -32,8 +32,8 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       packageType: '基础套餐',
       orderNo: 'CLSKJ98793120238',
       actions: <_OrderAction>[
-        _OrderAction.outline('联系商家'),
-        _OrderAction.filled('上传材料'),
+        _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
+        _OrderAction.filled(_OrderActionType.uploadMaterials, '上传材料'),
       ],
     ),
     _OrderItem(
@@ -47,8 +47,8 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       packageType: '基础套餐',
       orderNo: 'CLSKJ98793120239',
       actions: <_OrderAction>[
-        _OrderAction.outline('联系商家'),
-        _OrderAction.filled('去支付'),
+        _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
+        _OrderAction.filled(_OrderActionType.goPay, '去支付'),
       ],
     ),
     _OrderItem(
@@ -64,8 +64,8 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       progressLabel: '当前进度',
       progressValue: '资料审核中',
       actions: <_OrderAction>[
-        _OrderAction.outline('立即沟通'),
-        _OrderAction.filled('查看进度'),
+        _OrderAction.outline(_OrderActionType.contactMerchant, '立即沟通'),
+        _OrderAction.filled(_OrderActionType.viewProgress, '查看进度'),
       ],
     ),
     _OrderItem(
@@ -79,8 +79,8 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       packageType: '标准套餐',
       orderNo: 'CLSKJ98793120241',
       actions: <_OrderAction>[
-        _OrderAction.outline('立即沟通'),
-        _OrderAction.filled('补充材料'),
+        _OrderAction.outline(_OrderActionType.contactMerchant, '立即沟通'),
+        _OrderAction.filled(_OrderActionType.supplementMaterials, '补充材料'),
       ],
     ),
     _OrderItem(
@@ -92,13 +92,31 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       packageType: 'VIP套餐',
       orderNo: 'CLSKJ98793120242',
       actions: <_OrderAction>[
-        _OrderAction.outline('联系商家'),
-        _OrderAction.filled('查看详情'),
+        _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
+        _OrderAction.filled(_OrderActionType.goReview, '去评价'),
       ],
     ),
   ];
 
   _OrderFilter _selectedFilter = _OrderFilter.all;
+
+  void _handleActionTap(_OrderAction action) {
+    switch (action.type) {
+      case _OrderActionType.goReview:
+        context.push(RoutePaths.orderReview);
+        return;
+      case _OrderActionType.contactMerchant:
+      case _OrderActionType.uploadMaterials:
+      case _OrderActionType.goPay:
+      case _OrderActionType.viewProgress:
+      case _OrderActionType.supplementMaterials:
+      case _OrderActionType.viewDetail:
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
+        return;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +171,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               itemCount: visibleOrders.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return _OrderCard(order: visibleOrders[index]);
+                return _OrderCard(
+                  order: visibleOrders[index],
+                  onActionTap: _handleActionTap,
+                );
               },
             ),
           ),
@@ -178,6 +199,16 @@ enum _OrderFilter {
 enum _OrderTagStyle {
   urgent,
   blue,
+}
+
+enum _OrderActionType {
+  contactMerchant,
+  uploadMaterials,
+  goPay,
+  viewProgress,
+  supplementMaterials,
+  goReview,
+  viewDetail,
 }
 
 class _OrderItem {
@@ -214,16 +245,18 @@ class _OrderItem {
 
 class _OrderAction {
   const _OrderAction._({
+    required this.type,
     required this.label,
     required this.filled,
   });
 
-  const _OrderAction.outline(String label)
-      : this._(label: label, filled: false);
+  const _OrderAction.outline(_OrderActionType type, String label)
+      : this._(type: type, label: label, filled: false);
 
-  const _OrderAction.filled(String label)
-      : this._(label: label, filled: true);
+  const _OrderAction.filled(_OrderActionType type, String label)
+      : this._(type: type, label: label, filled: true);
 
+  final _OrderActionType type;
   final String label;
   final bool filled;
 }
@@ -289,14 +322,23 @@ class _OrderStatusTabs extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order});
+  const _OrderCard({
+    required this.order,
+    required this.onActionTap,
+  });
 
   final _OrderItem order;
+  final ValueChanged<_OrderAction> onActionTap;
 
   @override
   Widget build(BuildContext context) {
     final actionButtons = order.actions
-        .map((action) => _OrderActionButton(action: action))
+        .map(
+          (action) => _OrderActionButton(
+            action: action,
+            onPressed: () => onActionTap(action),
+          ),
+        )
         .toList();
 
     return SizedBox(
@@ -518,13 +560,17 @@ class _OrderTag extends StatelessWidget {
 }
 
 class _OrderActionButton extends StatelessWidget {
-  const _OrderActionButton({required this.action});
+  const _OrderActionButton({
+    required this.action,
+    required this.onPressed,
+  });
 
   final _OrderAction action;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final isPayAction = action.label == '去支付';
+    final isPayAction = action.type == _OrderActionType.goPay;
     final backgroundColor =
         action.filled
             ? (isPayAction ? const Color(0xFFFE5815) : const Color(0xFF096DD9))
@@ -546,7 +592,7 @@ class _OrderActionButton extends StatelessWidget {
           border: Border.all(color: borderColor, width: 0.5),
         ),
         child: TextButton(
-          onPressed: () {},
+          onPressed: onPressed,
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             foregroundColor: foregroundColor,
