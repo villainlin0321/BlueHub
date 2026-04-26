@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../presentation/widgets/auth_language_switch.dart';
 import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -15,6 +16,7 @@ class SelectRolePage extends StatefulWidget {
 
 class _SelectRolePageState extends State<SelectRolePage> {
   String? _selectedRoleId;
+  bool _isChineseSelected = true;
 
   void _handleBack() {
     if (context.canPop()) {
@@ -37,40 +39,48 @@ class _SelectRolePageState extends State<SelectRolePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          onPressed: _handleBack,
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        title: Text(
+          '选择角色',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.pagePadding),
+            child: AuthLanguageSwitch(
+              isChineseSelected: _isChineseSelected,
+              onChanged: (isChineseSelected) {
+                setState(() => _isChineseSelected = isChineseSelected);
+              },
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadding),
           child: Column(
             children: <Widget>[
-              const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  _TopActionButton(
-                    onTap: _handleBack,
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  const _LanguageChip(),
-                ],
-              ),
-              const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        '选择角色',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
                       Text(
                         '不同角色将看到不同的首页与功能。后续可在 “我的” 中切换不同角色',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -184,93 +194,9 @@ class _RoleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? AppColors.brand : Colors.transparent,
-                  border: Border.all(color: borderColor, width: 1.5),
-                ),
-                child: selected
-                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                    : null,
-              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TopActionButton extends StatelessWidget {
-  const _TopActionButton({required this.child, this.onTap});
-
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(17),
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Center(child: child),
-      ),
-    );
-  }
-}
-
-class _LanguageChip extends StatelessWidget {
-  const _LanguageChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            width: 18,
-            height: 18,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.chipBackground,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Text(
-              '中',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            'En',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
       ),
     );
   }
