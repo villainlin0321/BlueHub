@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/app_colors.dart';
-import '../../../shared/ui/app_spacing.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import 'service_detail_merchant_tab.dart';
+import 'service_detail_package_tab.dart';
+import 'service_detail_review_tab.dart';
 
 class ServiceDetailPage extends StatefulWidget {
   const ServiceDetailPage({super.key});
@@ -25,24 +27,22 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
   static const _consultIconAsset =
       'assets/images/service_detail_consult_icon.svg';
 
-  static const _topTabs = <String>['套餐', '评价 234', '商家'];
-
-  static const _packages = <_PackageData>[
-    _PackageData(
+  static const _packages = <ServicePackageData>[
+    ServicePackageData(
       title: '基础套餐',
       price: '¥15,000',
       description:
           '套餐描述文字内容，套餐描述文字内容套餐描述文字内容套餐描述文字内容套，餐描述文字内容餐描述文字内容餐描述文字内容餐描述文字内容',
       tags: <String>['审核材料', '表格填写'],
     ),
-    _PackageData(
+    ServicePackageData(
       title: '标准套餐',
       price: '¥25,000',
       description:
           '套餐描述文字内容，套餐描述文字内容套餐描述文字内容套餐描述文字内容套，餐描述文字内容餐描述文字内容餐描述文字内容餐描述文字内容',
       tags: <String>['翻译服务', '面签辅导', '面签陪同'],
     ),
-    _PackageData(
+    ServicePackageData(
       title: '尊享套餐',
       price: '¥36,000',
       description:
@@ -51,20 +51,20 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
     ),
   ];
 
-  static const _materials = <_MaterialData>[
-    _MaterialData(
+  static const _materials = <ServiceMaterialData>[
+    ServiceMaterialData(
       title: '护照原件及复印件',
       subtitle: '有效期需超过预计逗留期至少3个月一行展示',
       status: '必填',
       required: true,
     ),
-    _MaterialData(
+    ServiceMaterialData(
       title: '厨师资格证公证件',
       subtitle: '需经过双认证，带德文翻译',
       status: '必填',
       required: true,
     ),
-    _MaterialData(
+    ServiceMaterialData(
       title: '德语语言证明 (A2)',
       subtitle: '如果有可加速获签',
       status: '选填',
@@ -83,125 +83,116 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
         (kToolbarHeight + MediaQuery.paddingOf(context).top) -
         12;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      bottomNavigationBar: const _BottomActionBar(
-        consultIconAsset: _consultIconAsset,
-      ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          final shouldShowTitle =
-              notification.metrics.pixels >= collapseThreshold;
-          if (shouldShowTitle != _showCollapsedTitle) {
-            setState(() => _showCollapsedTitle = shouldShowTitle);
-          }
-          return false;
-        },
-        child: CustomScrollView(
-          slivers: <Widget>[
-            SliverAppBar(
-              pinned: true,
-              stretch: true,
-              expandedHeight: _expandedAppBarHeight,
-              backgroundColor: AppColors.surface,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              automaticallyImplyLeading: false,
-              titleSpacing: 70,
-              // centerTitle: false,
-              title: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: _showCollapsedTitle ? 1 : 0,
-                child: SizedBox(
-                  height: 46,
-                  // alignment: Alignment.topLeft,
-                  child: Text(
-                    '服务详情',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFF262626),
-                      fontWeight: FontWeight.w700,
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        bottomNavigationBar: _BottomActionBar(
+          consultIconAsset: _consultIconAsset,
+        ),
+        body: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.depth != 0) {
+              return false;
+            }
+            final shouldShowTitle =
+                notification.metrics.pixels >= collapseThreshold;
+            if (shouldShowTitle != _showCollapsedTitle) {
+              setState(() => _showCollapsedTitle = shouldShowTitle);
+            }
+            return false;
+          },
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return <Widget>[
+                SliverAppBar(
+                  pinned: true,
+                  stretch: true,
+                  expandedHeight: _expandedAppBarHeight,
+                  backgroundColor: AppColors.surface,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  titleSpacing: 70,
+                  title: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: _showCollapsedTitle ? 1 : 0,
+                    child: Text(
+                      '服务详情',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: const Color(0xFF262626),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-              ),
-              flexibleSpace: LayoutBuilder(
-                builder: (context, constraints) {
-                  final topPadding = MediaQuery.paddingOf(context).top;
-                  final collapsed = _isCollapsed(
-                    constraints.biggest.height,
-                    topPadding,
-                  );
-                  final progress = _collapseProgress(
-                    constraints.biggest.height,
-                    topPadding,
-                  );
+                  flexibleSpace: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final topPadding = MediaQuery.paddingOf(context).top;
+                      final collapsed = _isCollapsed(
+                        constraints.biggest.height,
+                        topPadding,
+                      );
+                      final progress = _collapseProgress(
+                        constraints.biggest.height,
+                        topPadding,
+                      );
 
-                  return _SliverHeroAppBar(
-                    assetPath: _heroAsset,
-                    backAsset: _backAsset,
-                    favoriteAsset: _favoriteAsset,
-                    shareAsset: _shareAsset,
-                    collapsed: collapsed,
-                    progress: progress,
-                    isFavorited: _isFavorited,
-                    onBackTap: () {
-                      if (Navigator.of(context).canPop()) {
-                        context.pop();
-                      }
+                      return _SliverHeroAppBar(
+                        assetPath: _heroAsset,
+                        backAsset: _backAsset,
+                        favoriteAsset: _favoriteAsset,
+                        shareAsset: _shareAsset,
+                        collapsed: collapsed,
+                        progress: progress,
+                        isFavorited: _isFavorited,
+                        onBackTap: () {
+                          if (Navigator.of(context).canPop()) {
+                            context.pop();
+                          }
+                        },
+                        onFavoriteTap: () {
+                          setState(() => _isFavorited = !_isFavorited);
+                        },
+                        onShareTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('分享功能开发中')),
+                          );
+                        },
+                      );
                     },
-                    onFavoriteTap: () {
-                      setState(() => _isFavorited = !_isFavorited);
-                    },
-                    onShareTap: () {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('分享功能开发中')));
-                    },
-                  );
-                },
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _SummaryPanel(
-                package: _packages[_selectedPackageIndex],
-                verifiedBadgeAsset: _verifiedBadgeAsset,
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _PinnedTopTabBarDelegate(
-                child: _TopTabBar(tabs: _topTabs),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Column(
-                  children: List<Widget>.generate(_packages.length, (index) {
-                    final data = _packages[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == _packages.length - 1 ? 0 : 12,
-                      ),
-                      child: _PackageOptionCard(
-                        data: data,
-                        selected: index == _selectedPackageIndex,
-                        onTap: () =>
-                            setState(() => _selectedPackageIndex = index),
-                      ),
-                    );
-                  }),
+                  ),
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: _SummaryPanel(
+                    package: _packages[_selectedPackageIndex],
+                    verifiedBadgeAsset: _verifiedBadgeAsset,
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: const _PinnedTopTabBarDelegate(
+                    child: _ServiceDetailTabBar(),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              children: <Widget>[
+                ServiceDetailPackageTab(
+                  packages: _packages,
+                  selectedPackageIndex: _selectedPackageIndex,
+                  onPackageSelected: (index) {
+                    setState(() => _selectedPackageIndex = index);
+                  },
+                  materials: _materials,
+                ),
+                const ServiceDetailReviewTab(),
+                const ServiceDetailMerchantTab(
+                  verifiedBadgeAsset: _verifiedBadgeAsset,
+                ),
+              ],
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _MaterialsSection(materials: _materials),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 120)),
-          ],
+          ),
         ),
       ),
     );
@@ -215,11 +206,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
   double _collapseProgress(double currentHeight, double topPadding) {
     final minExtent = kToolbarHeight + topPadding;
     final delta = (_expandedAppBarHeight - minExtent).clamp(1, double.infinity);
-    final progress = ((_expandedAppBarHeight - currentHeight) / delta).clamp(
-      0.0,
-      1.0,
-    );
-    return progress;
+    return ((_expandedAppBarHeight - currentHeight) / delta).clamp(0.0, 1.0);
   }
 }
 
@@ -268,7 +255,7 @@ class _SliverHeroAppBar extends StatelessWidget {
         Align(
           alignment: Alignment.bottomCenter,
           child: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -347,14 +334,14 @@ class _SummaryPanel extends StatelessWidget {
     required this.verifiedBadgeAsset,
   });
 
-  final _PackageData package;
+  final ServicePackageData package;
   final String verifiedBadgeAsset;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-      decoration: BoxDecoration(color: AppColors.surface),
+      decoration: const BoxDecoration(color: AppColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -424,87 +411,154 @@ class _SummaryPanel extends StatelessWidget {
   }
 }
 
-class _TopTabBar extends StatelessWidget {
-  const _TopTabBar({required this.tabs});
-
-  final List<String> tabs;
+class _ServiceDetailTabBar extends StatelessWidget {
+  const _ServiceDetailTabBar();
 
   @override
   Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
     return Container(
       color: AppColors.surface,
-      child: SizedBox(
-        height: 48,
-        width: double.infinity,
-        child: Stack(
-          children: <Widget>[
-            Positioned(
-              left: 16,
-              top: 12,
-              child: Text(
-                tabs[0],
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 22,
-              top: 40,
-              child: Container(
-                width: 20,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF096DD9),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 84,
-              top: 12,
-              child: Text(
-                '评价',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 118,
-              top: 15,
-              child: Text(
-                '234',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 10,
-                  height: 1.2,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 152,
-              top: 12,
-              child: Text(
-                tabs[2],
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      child: TabBar(
+        controller: controller,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        labelPadding: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        indicatorPadding: EdgeInsets.zero,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        dividerColor: Colors.transparent,
+        indicator: const _FixedWidthUnderlineIndicator(
+          width: 20,
+          bottomOffset: 2,
+          borderSide: BorderSide(color: Color(0xFF096DD9), width: 2),
         ),
+        tabs: const <Widget>[
+          _ServiceDetailTab(
+            label: '套餐',
+            selectedWeight: FontWeight.w500,
+            horizontalPadding: EdgeInsets.only(left: 16, right: 16),
+          ),
+          _ServiceDetailTab(
+            label: '评价',
+            count: '234',
+            horizontalPadding: EdgeInsets.only(left: 16, right: 16),
+          ),
+          _ServiceDetailTab(label: '商家'),
+        ],
       ),
+    );
+  }
+}
+
+class _ServiceDetailTab extends StatelessWidget {
+  const _ServiceDetailTab({
+    required this.label,
+    this.count,
+    this.selectedWeight = FontWeight.w500,
+    this.horizontalPadding = EdgeInsets.zero,
+  });
+
+  final String label;
+  final String? count;
+  final FontWeight selectedWeight;
+  final EdgeInsets horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        final tabIndex = <String>['套餐', '评价', '商家'].indexOf(label);
+        final selected = controller.index == tabIndex;
+        final labelStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: const Color(0xFF262626),
+          fontSize: 16,
+          height: 1.2,
+          fontWeight: selected ? selectedWeight : FontWeight.w400,
+        );
+
+        return Tab(
+          height: 48,
+          child: Padding(
+            padding: horizontalPadding,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(label, style: labelStyle),
+                if (count != null) ...<Widget>[
+                  const SizedBox(width: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      count!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: const Color(0xFF8C8C8C),
+                        fontSize: 10,
+                        height: 1.2,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FixedWidthUnderlineIndicator extends Decoration {
+  const _FixedWidthUnderlineIndicator({
+    required this.width,
+    this.bottomOffset = 0,
+    required this.borderSide,
+  });
+
+  final double width;
+  final double bottomOffset;
+  final BorderSide borderSide;
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+    return _FixedWidthUnderlinePainter(
+      width: width,
+      bottomOffset: bottomOffset,
+      borderSide: borderSide,
+    );
+  }
+}
+
+class _FixedWidthUnderlinePainter extends BoxPainter {
+  const _FixedWidthUnderlinePainter({
+    required this.width,
+    required this.bottomOffset,
+    required this.borderSide,
+  });
+
+  final double width;
+  final double bottomOffset;
+  final BorderSide borderSide;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    final size = configuration.size;
+    if (size == null) {
+      return;
+    }
+    final paint = borderSide.toPaint();
+    final y = offset.dy + size.height - borderSide.width - bottomOffset;
+    final x = offset.dx + (size.width - width) / 2;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, width, borderSide.width),
+        const Radius.circular(2),
+      ),
+      paint,
     );
   }
 }
@@ -549,240 +603,33 @@ class _PinnedTopTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-class _PackageOptionCard extends StatelessWidget {
-  const _PackageOptionCard({
-    required this.data,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _PackageData data;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFF5F8FF) : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected
-                  ? const Color(0xFF096DD9)
-                  : const Color(0xFFD9D9D9),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-                    color: selected
-                        ? const Color(0xFF096DD9)
-                        : const Color(0xFFB8C2D8),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      data.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF262626),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    data.price,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFFFE5815),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: data.tags
-                    .map((tag) => _PackageTag(label: tag))
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      data.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF595959),
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF8C8C8C),
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MaterialsSection extends StatelessWidget {
-  const _MaterialsSection({required this.materials});
-
-  final List<_MaterialData> materials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  '所需材料',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF096DD9),
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('查看样例'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...List<Widget>.generate(materials.length, (index) {
-            final material = materials[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index == materials.length - 1 ? 0 : 12,
-              ),
-              child: _MaterialCard(material: material),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _MaterialCard extends StatelessWidget {
-  const _MaterialCard({required this.material});
-
-  final _MaterialData material;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: Color(0xFF8FA0C9),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  material.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  material.subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF8C8C8C),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              _MaterialStatusTag(
-                label: material.status,
-                required: material.required,
-              ),
-              const SizedBox(height: 10),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF8C8C8C),
-                size: 18,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({required this.consultIconAsset});
+
+  final String consultIconAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        switch (controller.index) {
+          case 1:
+            return const SizedBox.shrink();
+          case 2:
+            return const _MerchantBottomActionBar();
+          case 0:
+          default:
+            return _PackageBottomActionBar(consultIconAsset: consultIconAsset);
+        }
+      },
+    );
+  }
+}
+
+class _PackageBottomActionBar extends StatelessWidget {
+  const _PackageBottomActionBar({required this.consultIconAsset});
 
   final String consultIconAsset;
 
@@ -864,6 +711,71 @@ class _BottomActionBar extends StatelessWidget {
   }
 }
 
+class _MerchantBottomActionBar extends StatelessWidget {
+  const _MerchantBottomActionBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final secondaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: const Color(0xFF171A1D),
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      height: 22 / 16,
+    );
+    final primaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: Colors.white,
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      height: 22 / 16,
+    );
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5)),
+        ),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              flex: 169,
+              child: OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  side: const BorderSide(color: Color(0xFFD9D9D9)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+                child: Text('举报商家', style: secondaryStyle),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 170,
+              child: FilledButton(
+                onPressed: () {},
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  backgroundColor: const Color(0xFF096DD9),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('联系商家', style: primaryStyle),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TopCircleAction extends StatelessWidget {
   const _TopCircleAction({
     required this.assetPath,
@@ -929,86 +841,4 @@ class _SummaryTag extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PackageTag extends StatelessWidget {
-  const _PackageTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFA3AFD4)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF546D96),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _MaterialStatusTag extends StatelessWidget {
-  const _MaterialStatusTag({required this.label, required this.required});
-
-  final String label;
-  final bool required;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = required ? const Color(0xFFFF0B03) : const Color(0xFF546D96);
-    final borderColor = required
-        ? const Color(0xFFFF6661)
-        : const Color(0xFFA3AFD4);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: borderColor),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _PackageData {
-  const _PackageData({
-    required this.title,
-    required this.price,
-    required this.description,
-    required this.tags,
-  });
-
-  final String title;
-  final String price;
-  final String description;
-  final List<String> tags;
-}
-
-class _MaterialData {
-  const _MaterialData({
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.required,
-  });
-
-  final String title;
-  final String subtitle;
-  final String status;
-  final bool required;
 }
