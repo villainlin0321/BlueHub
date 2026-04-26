@@ -5,6 +5,7 @@ class RoutePaths {
   static const jobs = '/jobs';
   static const ai = '/ai';
   static const me = '/me';
+  static const orderDetail = '/order/detail';
 
   static const loginPhone = '/login/phone';
   static const selectRole = '/auth/select-role';
