@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import 'service_detail_bottom_sheets.dart';
 import 'service_detail_merchant_tab.dart';
 import 'service_detail_package_tab.dart';
 import 'service_detail_review_tab.dart';
@@ -19,6 +20,7 @@ class ServiceDetailPage extends StatefulWidget {
 
 class _ServiceDetailPageState extends State<ServiceDetailPage> {
   static const _expandedAppBarHeight = 292.0;
+  static const _serviceTitle = '德国厨师专属工作签证';
   static const _heroAsset = 'assets/images/service_detail_top_background.png';
   static const _backAsset = 'assets/images/service_detail_back.svg';
   static const _favoriteAsset = 'assets/images/service_detail_favorite.svg';
@@ -90,6 +92,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
         backgroundColor: Colors.white,
         bottomNavigationBar: _BottomActionBar(
           consultIconAsset: _consultIconAsset,
+          onApplyTap: _showApplyBottomSheet,
         ),
         body: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
@@ -167,6 +170,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
                   child: _SummaryPanel(
                     package: _packages[_selectedPackageIndex],
                     verifiedBadgeAsset: _verifiedBadgeAsset,
+                    serviceTitle: _serviceTitle,
                   ),
                 ),
                 SliverPersistentHeader(
@@ -208,6 +212,14 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
     final minExtent = kToolbarHeight + topPadding;
     final delta = (_expandedAppBarHeight - minExtent).clamp(1, double.infinity);
     return ((_expandedAppBarHeight - currentHeight) / delta).clamp(0.0, 1.0);
+  }
+
+  void _showApplyBottomSheet() {
+    ServiceDetailApplyBottomSheet.show(
+      context: context,
+      serviceTitle: _serviceTitle,
+      package: _packages[_selectedPackageIndex],
+    );
   }
 }
 
@@ -333,10 +345,12 @@ class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
     required this.package,
     required this.verifiedBadgeAsset,
+    required this.serviceTitle,
   });
 
   final ServicePackageData package;
   final String verifiedBadgeAsset;
+  final String serviceTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +365,7 @@ class _SummaryPanel extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '德国厨师专属工作签证',
+                  serviceTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: const Color(0xFF262626),
                     fontWeight: FontWeight.w800,
@@ -605,9 +619,13 @@ class _PinnedTopTabBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class _BottomActionBar extends StatelessWidget {
-  const _BottomActionBar({required this.consultIconAsset});
+  const _BottomActionBar({
+    required this.consultIconAsset,
+    required this.onApplyTap,
+  });
 
   final String consultIconAsset;
+  final VoidCallback onApplyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +640,10 @@ class _BottomActionBar extends StatelessWidget {
             return const _MerchantBottomActionBar();
           case 0:
           default:
-            return _PackageBottomActionBar(consultIconAsset: consultIconAsset);
+            return _PackageBottomActionBar(
+              consultIconAsset: consultIconAsset,
+              onApplyTap: onApplyTap,
+            );
         }
       },
     );
@@ -630,9 +651,13 @@ class _BottomActionBar extends StatelessWidget {
 }
 
 class _PackageBottomActionBar extends StatelessWidget {
-  const _PackageBottomActionBar({required this.consultIconAsset});
+  const _PackageBottomActionBar({
+    required this.consultIconAsset,
+    required this.onApplyTap,
+  });
 
   final String consultIconAsset;
+  final VoidCallback onApplyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -688,7 +713,7 @@ class _PackageBottomActionBar extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: FilledButton(
-                onPressed: () {},
+                onPressed: onApplyTap,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
                   backgroundColor: const Color(0xFF096DD9),
