@@ -8,6 +8,7 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
+import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
@@ -23,12 +24,12 @@ import 'route_paths.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    // initialLocation: RoutePaths.home,
+    initialLocation: RoutePaths.home,
     // initialLocation: RoutePaths.myOrders,
     // initialLocation: RoutePaths.loginPhone,
     // initialLocation: RoutePaths.selectRole,
     // initialLocation: RoutePaths.orderDetail,
-    initialLocation: RoutePaths.serviceDetail,
+    // initialLocation: RoutePaths.serviceDetail,
     routes: <RouteBase>[
       GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
       GoRoute(
@@ -66,6 +67,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myOrders,
         builder: (context, state) => const MyOrdersPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myFavorites,
+        builder: (context, state) => const MyFavoritesPage(),
       ),
       GoRoute(
         path: RoutePaths.myResume,

@@ -12,6 +12,7 @@ class RoutePaths {
   static const serviceDetailReport = '/service-detail/report';
   static const serviceDetailPaymentResult = '/service-detail/payment-result';
   static const myOrders = '/me/orders';
+  static const myFavorites = '/me/favorites';
   static const orderDetail = '/order/detail';
   static const orderReview = '/order/review';
 

@@ -54,9 +54,13 @@ class MePage extends StatelessWidget {
                 _MenuItem(icon: Icons.support_agent_outlined, label: '客服中心'),
               ],
               onItemTap: (label) {
-                // “简历管理”接真实页面，其余菜单仍保留占位提示。
+                // 已接入“简历管理”和“我的收藏”，其余菜单仍保留占位提示。
                 if (label == '简历管理') {
                   context.push(RoutePaths.myResume);
+                  return;
+                }
+                if (label == '我的收藏') {
+                  context.push(RoutePaths.myFavorites);
                   return;
                 }
                 ScaffoldMessenger.of(
