@@ -8,6 +8,7 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
+import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
@@ -75,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myResume,
         builder: (context, state) => const MyResumePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myApplications,
+        builder: (context, state) => const MyApplicationsPage(),
       ),
       GoRoute(
         path: RoutePaths.myResumeEditor,

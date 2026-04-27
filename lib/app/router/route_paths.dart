@@ -8,6 +8,7 @@ class RoutePaths {
   static const me = '/me';
   static const myResume = '/me/resume';
   static const myResumeEditor = '/me/resume/editor';
+  static const myApplications = '/me/applications';
   static const serviceDetail = '/service-detail';
   static const serviceDetailReport = '/service-detail/report';
   static const serviceDetailPaymentResult = '/service-detail/payment-result';

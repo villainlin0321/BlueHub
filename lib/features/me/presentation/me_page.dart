@@ -154,11 +154,15 @@ class _ProfileCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Row(
-            children: const <Widget>[
-              _StatItem(value: '3', label: '我的订单'),
-              _StatItem(value: '85%', label: '我的简历'),
-              _StatItem(value: '3', label: '我的应聘'),
-              _StatItem(value: '24', label: '我的收藏'),
+            children: <Widget>[
+              const _StatItem(value: '3', label: '我的订单'),
+              const _StatItem(value: '85%', label: '我的简历'),
+              _StatItem(
+                value: '3',
+                label: '我的应聘',
+                onTap: () => context.push(RoutePaths.myApplications),
+              ),
+              const _StatItem(value: '24', label: '我的收藏'),
             ],
           ),
         ],
@@ -168,32 +172,44 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _StatItem extends StatelessWidget {
-  const _StatItem({required this.value, required this.label});
+  const _StatItem({
+    required this.value,
+    required this.label,
+    this.onTap,
+  });
 
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        children: <Widget>[
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            children: <Widget>[
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
