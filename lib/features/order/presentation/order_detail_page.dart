@@ -361,7 +361,6 @@ class _OrderProgressStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 86,
-      color: AppColors.surface,
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -899,7 +898,7 @@ class _UploadFileCardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      constraints: const BoxConstraints(minHeight: 56),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.background,
