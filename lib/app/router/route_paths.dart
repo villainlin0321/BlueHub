@@ -10,6 +10,7 @@ class RoutePaths {
   static const myResumeEditor = '/me/resume/editor';
   static const serviceDetail = '/service-detail';
   static const serviceDetailReport = '/service-detail/report';
+  static const serviceDetailPaymentResult = '/service-detail/payment-result';
   static const myOrders = '/me/orders';
   static const orderDetail = '/order/detail';
   static const orderReview = '/order/review';

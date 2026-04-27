@@ -12,6 +12,7 @@ import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
+import '../../features/service_detail/presentation/service_detail_payment_result_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
 import '../../features/service_detail/presentation/service_detail_report_page.dart';
 import '../../features/me/presentation/my_orders_page.dart';
@@ -57,6 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.serviceDetailReport,
         builder: (context, state) => const ServiceDetailReportPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceDetailPaymentResult,
+        builder: (context, state) => const ServiceDetailPaymentResultPage(),
       ),
       GoRoute(
         path: RoutePaths.myOrders,

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'service_detail_package_tab.dart';
 
@@ -35,6 +37,7 @@ class ServiceDetailConfirmPaymentBottomSheet {
   static Future<void> show({
     required BuildContext context,
     required String amountText,
+    required BuildContext parentContext,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -42,7 +45,10 @@ class ServiceDetailConfirmPaymentBottomSheet {
       useSafeArea: false,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return _ConfirmPaymentBottomSheetContent(amountText: amountText);
+        return _ConfirmPaymentBottomSheetContent(
+          amountText: amountText,
+          parentContext: parentContext,
+        );
       },
     );
   }
@@ -229,15 +235,20 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
       ServiceDetailConfirmPaymentBottomSheet.show(
         context: widget.parentContext,
         amountText: amountText,
+        parentContext: widget.parentContext,
       );
     });
   }
 }
 
 class _ConfirmPaymentBottomSheetContent extends StatefulWidget {
-  const _ConfirmPaymentBottomSheetContent({required this.amountText});
+  const _ConfirmPaymentBottomSheetContent({
+    required this.amountText,
+    required this.parentContext,
+  });
 
   final String amountText;
+  final BuildContext parentContext;
 
   @override
   State<_ConfirmPaymentBottomSheetContent> createState() =>
@@ -357,7 +368,7 @@ class _ConfirmPaymentBottomSheetContentState
             ),
           ),
           child: FilledButton(
-            onPressed: () {},
+            onPressed: _handlePayNow,
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
               backgroundColor: const Color(0xFF096DD9),
@@ -380,6 +391,13 @@ class _ConfirmPaymentBottomSheetContentState
         ),
       ],
     );
+  }
+
+  void _handlePayNow() {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.parentContext.push(RoutePaths.serviceDetailPaymentResult);
+    });
   }
 }
 
