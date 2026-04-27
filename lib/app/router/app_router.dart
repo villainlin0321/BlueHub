@@ -5,6 +5,7 @@ import '../../features/auth/presentation/login_phone_page.dart';
 import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
@@ -36,6 +37,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.selectRole,
         builder: (context, state) => const SelectRolePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.jobDetail,
+        builder: (context, state) => const JobDetailPage(),
       ),
       GoRoute(
         path: RoutePaths.orderDetail,

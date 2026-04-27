@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 import '../../../shared/widgets/app_search_bar.dart';
@@ -20,9 +22,9 @@ class JobsPage extends StatelessWidget {
             Text(
               '欧洲招聘',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 12),
             const AppSearchBar(hintText: '搜索签证服务/欧洲岗位'),
@@ -37,10 +39,11 @@ class JobsPage extends StatelessWidget {
               company: '柏林老四川餐厅',
               location: '德国·柏林',
               onApply: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('一键投递（占位）')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('一键投递（占位）')));
               },
+              onTap: () => context.push(RoutePaths.jobDetail),
             ),
             const SizedBox(height: 12),
             _JobCard(
@@ -135,9 +138,9 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: textColor,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             if (icon == null) ...<Widget>[
               const SizedBox(width: 6),
@@ -159,6 +162,7 @@ class _JobCard extends StatelessWidget {
     required this.company,
     required this.location,
     required this.onApply,
+    this.onTap,
   });
 
   final String title;
@@ -168,100 +172,117 @@ class _JobCard extends StatelessWidget {
   final String company;
   final String location;
   final VoidCallback onApply;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
-                ),
-              ),
-              Text(
-                salary,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    ),
+                  ),
+                  Text(
+                    salary,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w800,
                     ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: tags.map((t) => TagChip(label: t)).toList(),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: highlights
-                .map((t) => TagChip(
-                      label: t,
-                      backgroundColor: AppColors.chipBackground,
-                      textColor: t == '急招' ? AppColors.danger : AppColors.textSecondary,
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              const Icon(Icons.apartment, size: 18, color: AppColors.brand),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  company,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tags.map((t) => TagChip(label: t)).toList(),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: highlights
+                    .map(
+                      (t) => TagChip(
+                        label: t,
+                        backgroundColor: AppColors.chipBackground,
+                        textColor: t == '急招'
+                            ? AppColors.danger
+                            : AppColors.textSecondary,
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  const Icon(Icons.apartment, size: 18, color: AppColors.brand),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      company,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w700,
                       ),
-                ),
-              ),
-              SizedBox(
-                height: 34,
-                child: FilledButton(
-                  onPressed: onApply,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brand,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    ),
                   ),
-                  child: const Text('一键投递'),
-                ),
+                  SizedBox(
+                    height: 34,
+                    child: FilledButton(
+                      onPressed: onApply,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: const Text('一键投递'),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: <Widget>[
-              const Icon(Icons.place, size: 18, color: AppColors.textTertiary),
-              const SizedBox(width: 6),
-              Text(
-                location,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              const SizedBox(height: 8),
+              Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.place,
+                    size: 18,
+                    color: AppColors.textTertiary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    location,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
-

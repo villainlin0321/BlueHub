@@ -3,6 +3,7 @@ class RoutePaths {
   static const home = '/home';
   static const visa = '/visa';
   static const jobs = '/jobs';
+  static const jobDetail = '/jobs/detail';
   static const ai = '/ai';
   static const me = '/me';
   static const myResume = '/me/resume';
