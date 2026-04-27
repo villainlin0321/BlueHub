@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'widgets/auth_language_switch.dart';
 
 /// 手机号登录页（按 Figma 截图还原，先用本地校验与跳转占位）。
@@ -65,127 +66,129 @@ class _LoginPhonePageState extends State<LoginPhonePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(32, 10, 32, 18),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 28,
-                ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: AuthLanguageSwitch(
-                          isChineseSelected: _isChineseSelected,
-                          onChanged: (isChineseSelected) {
-                            setState(() {
-                              _isChineseSelected = isChineseSelected;
-                            });
+      body: TapBlankToDismissKeyboard(
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(32, 10, 32, 18),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 28,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: AuthLanguageSwitch(
+                            isChineseSelected: _isChineseSelected,
+                            onChanged: (isChineseSelected) {
+                              setState(() {
+                                _isChineseSelected = isChineseSelected;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 50),
+                        Text(
+                          '注册/登录',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: const Color(0xFF262626),
+                                fontSize: 26,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 41),
+                        _LoginModeTabs(
+                          isPhoneLogin: _isPhoneLogin,
+                          onChanged: (isPhoneLogin) {
+                            setState(() => _isPhoneLogin = isPhoneLogin);
                           },
                         ),
-                      ),
-                      const SizedBox(height: 50),
-                      Text(
-                        '注册/登录',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: const Color(0xFF262626),
-                              fontSize: 26,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: 41),
-                      _LoginModeTabs(
-                        isPhoneLogin: _isPhoneLogin,
-                        onChanged: (isPhoneLogin) {
-                          setState(() => _isPhoneLogin = isPhoneLogin);
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                      if (_isPhoneLogin)
-                        _PhoneInputRow(
-                          regionCode: _selectedRegion.code,
-                          controller: _phoneController,
-                          onRegionTap: _showRegionPicker,
+                        const SizedBox(height: 32),
+                        if (_isPhoneLogin)
+                          _PhoneInputRow(
+                            regionCode: _selectedRegion.code,
+                            controller: _phoneController,
+                            onRegionTap: _showRegionPicker,
+                            onChanged: (_) => setState(() {}),
+                          )
+                        else
+                          _TextInputRow(
+                            hintText: '请输入邮箱',
+                            keyboardType: TextInputType.emailAddress,
+                            controller: _emailController,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        const SizedBox(height: 25),
+                        _CodeInputRow(
+                          hintText: _isPhoneLogin ? '请输入验证码' : '请输入邮箱验证码',
+                          controller: _codeController,
                           onChanged: (_) => setState(() {}),
-                        )
-                      else
-                        _TextInputRow(
-                          hintText: '请输入邮箱',
-                          keyboardType: TextInputType.emailAddress,
-                          controller: _emailController,
-                          onChanged: (_) => setState(() {}),
+                          onGetCode: () {
+                            final message = _isPhoneLogin
+                                ? '已发送短信验证码（占位）'
+                                : '已发送邮箱验证码（占位）';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(message)),
+                            );
+                          },
                         ),
-                      const SizedBox(height: 25),
-                      _CodeInputRow(
-                        hintText: _isPhoneLogin ? '请输入验证码' : '请输入邮箱验证码',
-                        controller: _codeController,
-                        onChanged: (_) => setState(() {}),
-                        onGetCode: () {
-                          final message = _isPhoneLogin
-                              ? '已发送短信验证码（占位）'
-                              : '已发送邮箱验证码（占位）';
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(message)),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 48),
-                      _LoginButton(
-                        label: '登录',
-                        enabled: _canLogin,
-                        onPressed: () {
-                          // 当前阶段只跑通页面流，登录成功后直接进入主 Tab。
-                          context.go(RoutePaths.home);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      InkWell(
-                        onTap: () => setState(() => _agreed = !_agreed),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            _AgreementCheckbox(
-                              value: _agreed,
-                              onChanged: (value) {
-                                setState(() => _agreed = value);
-                              },
-                            ),
-                            const SizedBox(width: 9),
-                            Expanded(
-                              child: RichText(
-                                text: TextSpan(
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        height: 22 / 12,
-                                        color: const Color(0xFF171A1D),
-                                        fontSize: 12,
+                        const SizedBox(height: 48),
+                        _LoginButton(
+                          label: '登录',
+                          enabled: _canLogin,
+                          onPressed: () {
+                            // 当前阶段只跑通页面流，登录成功后直接进入主 Tab。
+                            context.go(RoutePaths.home);
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        InkWell(
+                          onTap: () => setState(() => _agreed = !_agreed),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              _AgreementCheckbox(
+                                value: _agreed,
+                                onChanged: (value) {
+                                  setState(() => _agreed = value);
+                                },
+                              ),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          height: 22 / 12,
+                                          color: const Color(0xFF171A1D),
+                                          fontSize: 12,
+                                        ),
+                                    children: const <InlineSpan>[
+                                      TextSpan(text: '同意'),
+                                      TextSpan(
+                                        text: '《XXXA用户服务协议》《XXXA用户隐私政策》',
+                                        style: TextStyle(color: AppColors.brand),
                                       ),
-                                  children: const <InlineSpan>[
-                                    TextSpan(text: '同意'),
-                                    TextSpan(
-                                      text: '《XXXA用户服务协议》《XXXA用户隐私政策》',
-                                      style: TextStyle(color: AppColors.brand),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(height: 24),
-                      const _SocialLoginSection(),
-                    ],
+                        const Spacer(),
+                        const SizedBox(height: 24),
+                        const _SocialLoginSection(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

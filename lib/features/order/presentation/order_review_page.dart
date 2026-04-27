@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class OrderReviewPage extends StatefulWidget {
   const OrderReviewPage({super.key});
@@ -77,123 +78,125 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-        children: <Widget>[
-          const _ReviewOrderCard(),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '综合评价',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
+      body: TapBlankToDismissKeyboard(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+          children: <Widget>[
+            const _ReviewOrderCard(),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    '综合评价',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      height: 20 / 14,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _RatingRow(
-                  rating: _rating,
-                  ratingLabel: _ratingLabel,
-                  onRatingChanged: (value) {
-                    setState(() => _rating = value);
-                  },
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  height: 264,
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 12),
+                  _RatingRow(
+                    rating: _rating,
+                    ratingLabel: _ratingLabel,
+                    onRatingChanged: (value) {
+                      setState(() => _rating = value);
+                    },
                   ),
-                  child: Column(
-                    children: <Widget>[
-                      Expanded(
-                        child: TextField(
-                          controller: _commentController,
-                          maxLength: 500,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          decoration: const InputDecoration(
-                            hintText: '写评论...',
-                            hintStyle: TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            border: InputBorder.none,
-                            counterText: '',
-                            isCollapsed: true,
-                          ),
-                          style: const TextStyle(
-                            color: Color(0xFF262626),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Text(
-                          '${_commentController.text.characters.length}/500',
-                          style: const TextStyle(
-                            color: Color(0xFFBFBFBF),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 16 / 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () => _showPlaceholder('上传图片（占位）'),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 106,
-                    height: 106,
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 264,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F7FA),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        const Icon(
-                          Icons.photo_camera_outlined,
-                          size: 24,
-                          color: Color(0xFF595959),
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            maxLength: 500,
+                            maxLines: null,
+                            expands: true,
+                            textAlignVertical: TextAlignVertical.top,
+                            decoration: const InputDecoration(
+                              hintText: '写评论...',
+                              hintStyle: TextStyle(
+                                color: Color(0xFF8C8C8C),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              border: InputBorder.none,
+                              counterText: '',
+                              isCollapsed: true,
+                            ),
+                            style: const TextStyle(
+                              color: Color(0xFF262626),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '上传图片',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF595959),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Text(
+                            '${_commentController.text.characters.length}/500',
+                            style: const TextStyle(
+                              color: Color(0xFFBFBFBF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              height: 16 / 12,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () => _showPlaceholder('上传图片（占位）'),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 106,
+                      height: 106,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F7FA),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          const Icon(
+                            Icons.photo_camera_outlined,
+                            size: 24,
+                            color: Color(0xFF595959),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '上传图片',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF595959),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         color: Colors.white,

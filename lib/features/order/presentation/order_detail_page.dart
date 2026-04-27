@@ -1,14 +1,13 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../utils/upload_picker_utils.dart';
 
 class OrderDetailPage extends StatefulWidget {
   const OrderDetailPage({super.key});
@@ -38,16 +37,15 @@ class OrderDetailPage extends StatefulWidget {
 }
 
 class _OrderDetailPageState extends State<OrderDetailPage> {
-  final ImagePicker _imagePicker = ImagePicker();
-  late final Map<String, List<_PickedUploadFile>> _uploadsByRequirement;
+  late final Map<String, List<PickedUploadFile>> _uploadsByRequirement;
 
   @override
   void initState() {
     super.initState();
-    _uploadsByRequirement = <String, List<_PickedUploadFile>>{
+    _uploadsByRequirement = <String, List<PickedUploadFile>>{
       for (final _MaterialRequirement requirement
           in OrderDetailPage._requirements)
-        requirement.id: <_PickedUploadFile>[],
+        requirement.id: <PickedUploadFile>[],
     };
   }
 
@@ -57,8 +55,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  List<_PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
-    return _uploadsByRequirement[requirement.id] ?? const <_PickedUploadFile>[];
+  List<PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
+    return _uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[];
   }
 
   Future<void> _openUploadSheet(_MaterialRequirement requirement) async {
@@ -90,20 +88,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromCamera(_MaterialRequirement requirement) async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 90,
-      );
-      if (image == null) {
+      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
+          .pickFromCamera();
+      if (pickedFiles.isEmpty) {
         return;
       }
-      _appendUploadFiles(requirement, <_PickedUploadFile>[
-        _buildUploadFile(
-          path: image.path,
-          sourceType: _UploadSourceType.camera,
-          name: image.name,
-        ),
-      ]);
+      _appendUploadFiles(requirement, pickedFiles);
     } catch (_) {
       if (!mounted) {
         return;
@@ -114,24 +104,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromGallery(_MaterialRequirement requirement) async {
     try {
-      final List<XFile> images = await _imagePicker.pickMultiImage(
-        imageQuality: 90,
-      );
-      if (images.isEmpty) {
+      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
+          .pickFromGallery();
+      if (pickedFiles.isEmpty) {
         return;
       }
-      _appendUploadFiles(
-        requirement,
-        images
-            .map(
-              (XFile image) => _buildUploadFile(
-                path: image.path,
-                sourceType: _UploadSourceType.gallery,
-                name: image.name,
-              ),
-            )
-            .toList(),
-      );
+      _appendUploadFiles(requirement, pickedFiles);
     } catch (_) {
       if (!mounted) {
         return;
@@ -142,25 +120,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromFiles(_MaterialRequirement requirement) async {
     try {
-      final FilePickerResult? result = await FilePicker.pickFiles(
-        allowMultiple: true,
-      );
-      if (result == null) {
-        return;
-      }
-
-      final List<_PickedUploadFile> pickedFiles = result.files
-          .where((PlatformFile file) => file.path != null)
-          .map(
-            (PlatformFile file) => _buildUploadFile(
-              path: file.path!,
-              sourceType: _UploadSourceType.file,
-              name: file.name,
-              sizeBytes: file.size,
-            ),
-          )
-          .toList();
-
+      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
+          .pickFromFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('未能读取所选文件');
         return;
@@ -175,38 +136,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     }
   }
 
-  _PickedUploadFile _buildUploadFile({
-    required String path,
-    required _UploadSourceType sourceType,
-    String? name,
-    int? sizeBytes,
-  }) {
-    final int resolvedSizeBytes = sizeBytes ?? _readFileSize(path);
-    final String resolvedName = (name == null || name.isEmpty)
-        ? _basename(path)
-        : name;
-    return _PickedUploadFile(
-      id: '${DateTime.now().microsecondsSinceEpoch}_${path.hashCode}',
-      name: resolvedName,
-      path: path,
-      sourceType: sourceType,
-      state: _UploadItemState.success,
-      isImage: _isImagePath(path),
-      sizeLabel: resolvedSizeBytes > 0
-          ? _formatFileSize(resolvedSizeBytes)
-          : null,
-    );
-  }
-
   void _appendUploadFiles(
     _MaterialRequirement requirement,
-    List<_PickedUploadFile> files,
+    List<PickedUploadFile> files,
   ) {
     if (files.isEmpty) {
       return;
     }
     setState(() {
-      _uploadsByRequirement[requirement.id] = <_PickedUploadFile>[
+      _uploadsByRequirement[requirement.id] = <PickedUploadFile>[
         ..._filesFor(requirement),
         ...files,
       ];
@@ -215,52 +153,13 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   void _removeUploadFile(
     _MaterialRequirement requirement,
-    _PickedUploadFile file,
+    PickedUploadFile file,
   ) {
     setState(() {
       _uploadsByRequirement[requirement.id] = _filesFor(
         requirement,
       ).where((item) => item.id != file.id).toList();
     });
-  }
-
-  String _basename(String path) {
-    return path.split(RegExp(r'[\\/]')).last;
-  }
-
-  int _readFileSize(String path) {
-    try {
-      final File file = File(path);
-      if (!file.existsSync()) {
-        return 0;
-      }
-      return file.lengthSync();
-    } catch (_) {
-      return 0;
-    }
-  }
-
-  bool _isImagePath(String path) {
-    final String normalizedPath = path.toLowerCase();
-    return normalizedPath.endsWith('.jpg') ||
-        normalizedPath.endsWith('.jpeg') ||
-        normalizedPath.endsWith('.png') ||
-        normalizedPath.endsWith('.webp') ||
-        normalizedPath.endsWith('.gif') ||
-        normalizedPath.endsWith('.heic') ||
-        normalizedPath.endsWith('.heif');
-  }
-
-  String _formatFileSize(int bytes) {
-    if (bytes <= 0) {
-      return '0KB';
-    }
-    if (bytes < 1024 * 1024) {
-      final double kb = bytes / 1024;
-      return '${kb.toStringAsFixed(kb >= 100 ? 0 : 1)}KB';
-    }
-    final double mb = bytes / (1024 * 1024);
-    return '${mb.toStringAsFixed(mb >= 100 ? 0 : 1)}MB';
   }
 
   @override
@@ -614,10 +513,10 @@ class _MaterialUploadCard extends StatelessWidget {
   });
 
   final List<_MaterialRequirement> requirements;
-  final Map<String, List<_PickedUploadFile>> uploadsByRequirement;
+  final Map<String, List<PickedUploadFile>> uploadsByRequirement;
   final ValueChanged<String> onPreviewTap;
   final ValueChanged<_MaterialRequirement> onUploadTap;
-  final void Function(_MaterialRequirement, _PickedUploadFile) onDeleteFile;
+  final void Function(_MaterialRequirement, PickedUploadFile) onDeleteFile;
 
   @override
   Widget build(BuildContext context) {
@@ -630,8 +529,8 @@ class _MaterialUploadCard extends StatelessWidget {
       child: Column(
         children: List<Widget>.generate(requirements.length, (int index) {
           final _MaterialRequirement item = requirements[index];
-          final List<_PickedUploadFile> files =
-              uploadsByRequirement[item.id] ?? const <_PickedUploadFile>[];
+          final List<PickedUploadFile> files =
+              uploadsByRequirement[item.id] ?? const <PickedUploadFile>[];
           return Padding(
             padding: EdgeInsets.only(
               bottom: index == requirements.length - 1 ? 0 : 20,
@@ -641,8 +540,7 @@ class _MaterialUploadCard extends StatelessWidget {
               files: files,
               onPreviewTap: () => onPreviewTap(item.title),
               onUploadTap: () => onUploadTap(item),
-              onDeleteFile: (_PickedUploadFile file) =>
-                  onDeleteFile(item, file),
+              onDeleteFile: (PickedUploadFile file) => onDeleteFile(item, file),
             ),
           );
         }),
@@ -661,10 +559,10 @@ class _MaterialUploadItem extends StatelessWidget {
   });
 
   final _MaterialRequirement requirement;
-  final List<_PickedUploadFile> files;
+  final List<PickedUploadFile> files;
   final VoidCallback onPreviewTap;
   final VoidCallback onUploadTap;
-  final ValueChanged<_PickedUploadFile> onDeleteFile;
+  final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
   Widget build(BuildContext context) {
@@ -730,9 +628,9 @@ class _MaterialUploadContent extends StatelessWidget {
     required this.onDeleteFile,
   });
 
-  final List<_PickedUploadFile> files;
+  final List<PickedUploadFile> files;
   final VoidCallback onAddTap;
-  final ValueChanged<_PickedUploadFile> onDeleteFile;
+  final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
   Widget build(BuildContext context) {
@@ -743,7 +641,7 @@ class _MaterialUploadContent extends StatelessWidget {
     return Column(
       children: <Widget>[
         ...List<Widget>.generate(files.length, (int index) {
-          final _PickedUploadFile file = files[index];
+          final PickedUploadFile file = files[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
@@ -761,13 +659,13 @@ class _MaterialUploadContent extends StatelessWidget {
 class _UploadFileCard extends StatelessWidget {
   const _UploadFileCard({required this.file, required this.onRemoveTap});
 
-  final _PickedUploadFile file;
+  final PickedUploadFile file;
   final VoidCallback onRemoveTap;
 
   @override
   Widget build(BuildContext context) {
     switch (file.state) {
-      case _UploadItemState.uploading:
+      case UploadItemState.uploading:
         return _UploadFileCardFrame(
           child: Row(
             children: <Widget>[
@@ -806,7 +704,7 @@ class _UploadFileCard extends StatelessWidget {
             ],
           ),
         );
-      case _UploadItemState.success:
+      case UploadItemState.success:
         return _UploadFileCardFrame(
           child: Row(
             children: <Widget>[
@@ -846,7 +744,7 @@ class _UploadFileCard extends StatelessWidget {
             ],
           ),
         );
-      case _UploadItemState.failure:
+      case UploadItemState.failure:
         return _UploadFileCardFrame(
           child: Row(
             children: <Widget>[
@@ -912,11 +810,11 @@ class _UploadFileCardFrame extends StatelessWidget {
 class _UploadFileLeading extends StatelessWidget {
   const _UploadFileLeading({required this.file});
 
-  final _PickedUploadFile file;
+  final PickedUploadFile file;
 
   @override
   Widget build(BuildContext context) {
-    if (file.isImage && file.state == _UploadItemState.success) {
+    if (file.isImage && file.state == UploadItemState.success) {
       final File localFile = File(file.path);
       if (localFile.existsSync()) {
         return ClipRRect(
@@ -1235,30 +1133,4 @@ class _MaterialRequirement {
   final String id;
   final String title;
   final bool required;
-}
-
-enum _UploadSourceType { camera, gallery, file }
-
-enum _UploadItemState { uploading, success, failure }
-
-class _PickedUploadFile {
-  const _PickedUploadFile({
-    required this.id,
-    required this.name,
-    required this.path,
-    required this.sourceType,
-    required this.state,
-    required this.isImage,
-    this.sizeLabel,
-  });
-
-  final String id;
-  final String name;
-  final String path;
-  final _UploadSourceType sourceType;
-  final _UploadItemState state;
-  final bool isImage;
-  final String? sizeLabel;
-  final String? errorMessage = null;
-  final double progress = 0.48;
 }

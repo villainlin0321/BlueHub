@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import 'service_detail_merchant_tab.dart';
@@ -742,7 +743,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
             Expanded(
               flex: 169,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () => context.push(RoutePaths.serviceDetailReport),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
                   side: const BorderSide(color: Color(0xFFD9D9D9)),

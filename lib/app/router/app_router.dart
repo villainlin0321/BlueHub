@@ -13,6 +13,7 @@ import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
+import '../../features/service_detail/presentation/service_detail_report_page.dart';
 import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
@@ -21,12 +22,12 @@ import 'route_paths.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: RoutePaths.home,
+    // initialLocation: RoutePaths.home,
     // initialLocation: RoutePaths.myOrders,
     // initialLocation: RoutePaths.loginPhone,
     // initialLocation: RoutePaths.selectRole,
     // initialLocation: RoutePaths.orderDetail,
-    // initialLocation: RoutePaths.serviceDetail,
+    initialLocation: RoutePaths.serviceDetail,
     routes: <RouteBase>[
       GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
       GoRoute(
@@ -52,6 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.serviceDetail,
         builder: (context, state) => const ServiceDetailPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceDetailReport,
+        builder: (context, state) => const ServiceDetailReportPage(),
       ),
       GoRoute(
         path: RoutePaths.myOrders,
