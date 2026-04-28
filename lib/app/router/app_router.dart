@@ -8,6 +8,8 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
+import '../../features/me/presentation/add_work_experience_page.dart';
+import '../../features/me/presentation/add_skill_certificate_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
@@ -89,6 +91,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             args: args ?? const ResumeEditorArgs.create(),
           );
         },
+      ),
+      GoRoute(
+        path: RoutePaths.addWorkExperience,
+        builder: (context, state) => const AddWorkExperiencePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.addSkillCertificate,
+        builder: (context, state) => const AddSkillCertificatePage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShellPage(

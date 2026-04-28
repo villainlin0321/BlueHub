@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import 'add_skill_certificate_page.dart';
+import 'add_work_experience_page.dart';
+import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
+import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 
 /// 编辑页的进入模式。
 enum ResumeEditorMode { create, edit }
@@ -78,17 +84,66 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
               '责菜品制作与出品把控，熟练掌握各类烹饪技法与风味呈现，协助厨师长进行菜品研发与摆盘优化，严格遵守后厨卫生标准与流程...',
         ),
       ];
+  static const List<_ResumeCertificate> _fallbackCertificates =
+      <_ResumeCertificate>[
+        _ResumeCertificate(
+          title: '中式烹调师·五级',
+          authority: '人力资源社会保障部',
+          issuedAt: '2016.10',
+          previewAssetPath: _ResumeEditorAssets.certificatePreview,
+        ),
+      ];
 
   static const List<String> _fallbackJobTags = <String>['中餐厨师', '中餐面点', '高级电工'];
+  static const List<String> _expectedJobOptions = <String>[
+    '中餐厨师',
+    '中餐面点',
+    '高级电工',
+    '护理员',
+    '中级电工',
+    '中餐主厨',
+  ];
+  static const List<SelectableSheetOption<String>> _expectedJobSheetOptions =
+      <SelectableSheetOption<String>>[
+        SelectableSheetOption<String>(value: '中餐厨师', label: '中餐厨师'),
+        SelectableSheetOption<String>(value: '中餐面点', label: '中餐面点'),
+        SelectableSheetOption<String>(value: '高级电工', label: '高级电工'),
+        SelectableSheetOption<String>(value: '护理员', label: '护理员'),
+        SelectableSheetOption<String>(value: '中级电工', label: '中级电工'),
+        SelectableSheetOption<String>(value: '中餐主厨', label: '中餐主厨'),
+      ];
 
-  static const List<String> _fallbackCountryTags = <String>['德国', '意大利'];
-
-  static const List<String> _languageTags = <String>['德福TestDaF', '法语专业四级'];
+  static const List<String> _fallbackCountryTags = <String>['德国', '法国', '意大利'];
+  static const List<SelectableSheetOption<String>> _countrySheetOptions =
+      <SelectableSheetOption<String>>[
+        SelectableSheetOption<String>(value: '德国', label: '德国'),
+        SelectableSheetOption<String>(value: '法国', label: '法国'),
+        SelectableSheetOption<String>(value: '瑞士', label: '瑞士'),
+        SelectableSheetOption<String>(value: '英国', label: '英国'),
+        SelectableSheetOption<String>(value: '意大利', label: '意大利'),
+        SelectableSheetOption<String>(value: '西班牙', label: '西班牙'),
+      ];
+  static const List<String> _fallbackLanguageTags = <String>[
+    '德福TestDaF',
+    '法语专业四级',
+    '歌德C2',
+  ];
+  static const List<SelectableSheetOption<String>> _languageSheetOptions =
+      <SelectableSheetOption<String>>[
+        SelectableSheetOption<String>(value: '德福TestDaF', label: '德福TestDaF'),
+        SelectableSheetOption<String>(value: '法语专业四级', label: '法语专业四级'),
+        SelectableSheetOption<String>(value: '英语专业四级', label: '英语专业四级'),
+        SelectableSheetOption<String>(value: '英语专业八级', label: '英语专业八级'),
+        SelectableSheetOption<String>(value: '歌德C2', label: '歌德C2'),
+        SelectableSheetOption<String>(value: '西班牙语三级', label: '西班牙语三级'),
+      ];
 
   late final ResumeDraft _draft;
   late final List<String> _jobTags;
   late final List<String> _countryTags;
+  late final List<String> _languageTags;
   late final List<_ResumeExperience> _experiences;
+  late final List<_ResumeCertificate> _certificates;
   late final String _salaryValue;
   late final String _selfEvaluation;
 
@@ -104,7 +159,9 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
     _draft = _resolveDraft(widget.args.draft);
     _jobTags = _buildJobTags(_draft.jobTitle);
     _countryTags = _buildCountryTags(_draft.region);
+    _languageTags = List<String>.of(_fallbackLanguageTags);
     _experiences = _buildExperiences();
+    _certificates = List<_ResumeCertificate>.of(_fallbackCertificates);
     _salaryValue = _extractSalaryValue(_draft.salary);
     _selfEvaluation = _draft.summary.isEmpty
         ? _demoDraft.summary
@@ -195,7 +252,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       if (!result.contains(item)) {
         result.add(item);
       }
-      if (result.length == 2) {
+      if (result.length == 3) {
         break;
       }
     }
@@ -462,16 +519,13 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildSectionHeader(
-            title: '求职意向',
-            showRedDot: true,
-          ),
+          _buildSectionHeader(title: '求职意向', showRedDot: true),
           const SizedBox(height: 20),
           _buildLabeledRow(
             label: '期望职位',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
+              onTap: _openExpectedJobSheet,
             ),
           ),
           const SizedBox(height: 12),
@@ -502,7 +556,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             label: '期望国家/地区',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
+              onTap: _openExpectedCountrySheet,
             ),
           ),
           const SizedBox(height: 12),
@@ -615,7 +669,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             title: '工作经历',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
+              onTap: _openAddWorkExperiencePage,
             ),
           ),
           const SizedBox(height: 20),
@@ -640,7 +694,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             title: '语言能力',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.sectionChevron,
-              onTap: _showComingSoon,
+              onTap: _openLanguageSheet,
             ),
           ),
           const SizedBox(height: 16),
@@ -675,70 +729,109 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             title: '技能证书',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
+              onTap: _openAddSkillCertificatePage,
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const <Widget>[
-                    Text(
-                      '中式烹调师·五级',
-                      style: TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 22 / 16,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '人力资源社会保障部',
-                      style: TextStyle(
-                        color: Color(0xFF595959),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Row(
+          for (
+            int index = 0;
+            index < _certificates.length;
+            index++
+          ) ...<Widget>[
+            _buildCertificateItem(_certificates[index]),
+            if (index != _certificates.length - 1) const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCertificateItem(_ResumeCertificate certificate) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text(
-                    '2016.10',
-                    style: TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 13,
+                  Text(
+                    certificate.title,
+                    style: const TextStyle(
+                      color: Color(0xFF262626),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 22 / 16,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Image.asset(
-                    _ResumeEditorAssets.itemChevron,
-                    width: 12,
-                    height: 12,
+                  const SizedBox(height: 8),
+                  Text(
+                    certificate.authority,
+                    style: const TextStyle(
+                      color: Color(0xFF595959),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 14,
+                    ),
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Image.asset(
-            _ResumeEditorAssets.certificatePreview,
-            width: 88,
-            height: 88,
-            fit: BoxFit.cover,
-          ),
-        ],
-      ),
+            ),
+            const SizedBox(width: 12),
+            Row(
+              children: <Widget>[
+                Text(
+                  certificate.issuedAt,
+                  style: const TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 18 / 13,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Image.asset(
+                  _ResumeEditorAssets.itemChevron,
+                  width: 12,
+                  height: 12,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCertificatePreview(certificate),
+      ],
+    );
+  }
+
+  Widget _buildCertificatePreview(_ResumeCertificate certificate) {
+    if (certificate.previewFilePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(certificate.previewFilePath!),
+          width: 88,
+          height: 88,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            return Container(
+              width: 88,
+              height: 88,
+              color: const Color(0xFFF5F7FA),
+            );
+          },
+        ),
+      );
+    }
+
+    return Image.asset(
+      certificate.previewAssetPath!,
+      width: 88,
+      height: 88,
+      fit: BoxFit.cover,
     );
   }
 
@@ -1150,6 +1243,109 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       context,
     ).showSnackBar(const SnackBar(content: Text('编辑功能开发中')));
   }
+
+  Future<void> _openExpectedJobSheet() async {
+    final List<String> currentSelected = _jobTags
+        .where(_expectedJobOptions.contains)
+        .toList(growable: false);
+
+    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+      context: context,
+      title: '期望职位',
+      options: _expectedJobSheetOptions,
+      initialSelectedValues: currentSelected,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _jobTags
+        ..clear()
+        ..addAll(result);
+    });
+  }
+
+  Future<void> _openExpectedCountrySheet() async {
+    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+      context: context,
+      title: '期望国家/地区',
+      options: _countrySheetOptions,
+      initialSelectedValues: _countryTags,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _countryTags
+        ..clear()
+        ..addAll(result);
+    });
+  }
+
+  Future<void> _openLanguageSheet() async {
+    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+      context: context,
+      title: '语言能力',
+      options: _languageSheetOptions,
+      initialSelectedValues: _languageTags,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _languageTags
+        ..clear()
+        ..addAll(result);
+    });
+  }
+
+  Future<void> _openAddSkillCertificatePage() async {
+    final ResumeCertificateFormResult? result = await context
+        .push<ResumeCertificateFormResult>(RoutePaths.addSkillCertificate);
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _certificates.insert(
+        0,
+        _ResumeCertificate(
+          title: result.title,
+          authority: '技能证书',
+          issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
+          previewFilePath: result.imagePath,
+        ),
+      );
+    });
+  }
+
+  Future<void> _openAddWorkExperiencePage() async {
+    final WorkExperienceFormResult? result = await context
+        .push<WorkExperienceFormResult>(RoutePaths.addWorkExperience);
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _experiences.insert(
+        0,
+        _ResumeExperience(
+          company: result.company,
+          period: result.period.displayText,
+          role: result.displayRole,
+          summary: result.description.isEmpty ? '未填写工作内容' : result.description,
+        ),
+      );
+    });
+  }
 }
 
 /// 编辑页资源路径。
@@ -1160,7 +1356,7 @@ class _ResumeEditorAssets {
       'assets/images/resume_editor/basic_info_edit.svg';
   static const String profileAvatar =
       'assets/images/resume_editor/profile_avatar.png';
-  static const String addCircle = 'assets/images/resume_editor/add_circle.png';
+  static const String addCircle = 'assets/images/resume_editor/add_circle.svg';
   static const String tagRemove = 'assets/images/resume_editor/tag_remove.svg';
   static const String tagAdd = 'assets/images/resume_editor/tag_add.svg';
   static const String dropdownArrow =
@@ -1190,4 +1386,21 @@ class _ResumeExperience {
   final String period;
   final String role;
   final String summary;
+}
+
+/// 技能证书展示模型。
+class _ResumeCertificate {
+  const _ResumeCertificate({
+    required this.title,
+    required this.authority,
+    required this.issuedAt,
+    this.previewAssetPath,
+    this.previewFilePath,
+  });
+
+  final String title;
+  final String authority;
+  final String issuedAt;
+  final String? previewAssetPath;
+  final String? previewFilePath;
 }

@@ -9,13 +9,15 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../../shared/widgets/upload_placeholder_tile.dart';
 import '../../../utils/upload_picker_utils.dart';
 
 class ServiceDetailReportPage extends StatefulWidget {
   const ServiceDetailReportPage({super.key});
 
   @override
-  State<ServiceDetailReportPage> createState() => _ServiceDetailReportPageState();
+  State<ServiceDetailReportPage> createState() =>
+      _ServiceDetailReportPageState();
 }
 
 class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
@@ -49,7 +51,9 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _showUploadSheet() async {
@@ -217,7 +221,9 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
                             maxLines: null,
                             textAlignVertical: TextAlignVertical.top,
                             inputFormatters: <TextInputFormatter>[
-                              LengthLimitingTextInputFormatter(_maxContentLength),
+                              LengthLimitingTextInputFormatter(
+                                _maxContentLength,
+                              ),
                             ],
                             decoration: const InputDecoration(
                               hintText: '请输入...',
@@ -306,7 +312,7 @@ class _AttachmentGrid extends StatelessWidget {
       ),
       itemBuilder: (BuildContext context, int index) {
         if (index >= attachments.length) {
-          return _AddAttachmentTile(
+          return UploadPlaceholderTile(
             assetPath: uploadAssetPath,
             onTap: onAddTap,
           );
@@ -448,56 +454,7 @@ class _AttachmentDeleteButton extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: const Icon(
-          Icons.close_rounded,
-          size: 14,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-}
-
-class _AddAttachmentTile extends StatelessWidget {
-  const _AddAttachmentTile({required this.assetPath, required this.onTap});
-
-  final String assetPath;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            SvgPicture.asset(
-              assetPath,
-              width: 24,
-              height: 24,
-              placeholderBuilder: (_) => const Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 24,
-                color: Color(0xFF262626),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '上传图片',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF595959),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
+        child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
       ),
     );
   }
@@ -578,17 +535,20 @@ class _UploadTypeBottomSheet extends StatelessWidget {
                   children: <Widget>[
                     _UploadTypeAction(
                       label: '拍照上传',
-                      iconAssetPath: 'assets/images/order_upload_sheet_camera.svg',
+                      iconAssetPath:
+                          'assets/images/order_upload_sheet_camera.svg',
                       onTap: onCameraTap,
                     ),
                     _UploadTypeAction(
                       label: '本地相册',
-                      iconAssetPath: 'assets/images/order_upload_sheet_gallery.svg',
+                      iconAssetPath:
+                          'assets/images/order_upload_sheet_gallery.svg',
                       onTap: onGalleryTap,
                     ),
                     _UploadTypeAction(
                       label: '本地文件',
-                      iconAssetPath: 'assets/images/order_upload_sheet_file.svg',
+                      iconAssetPath:
+                          'assets/images/order_upload_sheet_file.svg',
                       onTap: onFileTap,
                     ),
                   ],

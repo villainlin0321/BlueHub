@@ -1011,16 +1011,6 @@ class _UploadTypeBottomSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              const Spacer(),
-              Container(
-                width: 134,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF171A1D),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              const SizedBox(height: 8),
             ],
           ),
         ),
