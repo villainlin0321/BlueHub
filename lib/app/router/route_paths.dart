@@ -19,5 +19,9 @@ class RoutePaths {
   static const orderReview = '/order/review';
 
   static const loginPhone = '/login/phone';
+  static const qualificationCertification = '/auth/qualification';
+  static const qualificationCertificationStepTwo = '/auth/qualification/step-two';
+  static const qualificationCertificationStepThree =
+      '/auth/qualification/step-three';
   static const selectRole = '/auth/select-role';
 }

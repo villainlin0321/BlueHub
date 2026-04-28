@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/login_phone_page.dart';
+import '../../features/auth/presentation/qualification_certification_page.dart';
+import '../../features/auth/presentation/qualification_certification_step_three_page.dart';
+import '../../features/auth/presentation/qualification_certification_step_two_page.dart';
 import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
@@ -29,6 +32,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: RoutePaths.home,
     // initialLocation: RoutePaths.myOrders,
     // initialLocation: RoutePaths.loginPhone,
+    // initialLocation: RoutePaths.qualificationCertification,
     // initialLocation: RoutePaths.selectRole,
     // initialLocation: RoutePaths.orderDetail,
     // initialLocation: RoutePaths.serviceDetail,
@@ -37,6 +41,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.loginPhone,
         builder: (context, state) => const LoginPhonePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.qualificationCertification,
+        builder: (context, state) => const QualificationCertificationPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.qualificationCertificationStepTwo,
+        builder: (context, state) => const QualificationCertificationStepTwoPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.qualificationCertificationStepThree,
+        builder: (context, state) => const QualificationCertificationStepThreePage(),
       ),
       GoRoute(
         path: RoutePaths.selectRole,
