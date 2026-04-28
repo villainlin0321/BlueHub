@@ -327,11 +327,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
           padding: const EdgeInsets.only(right: 16),
           child: Center(
             child: GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('预览（占位）')));
-              },
+              onTap: _openPreview,
               child: const Text(
                 '预览',
                 style: TextStyle(
@@ -1201,15 +1197,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            _isCreateMode ? '创建并预览（占位）' : '更新并预览（占位）',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _openPreview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF096DD9),
                       foregroundColor: Colors.white,
@@ -1242,6 +1230,11 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('编辑功能开发中')));
+  }
+
+  /// 跳转到简历预览页，复用当前页面已经整理好的草稿数据。
+  void _openPreview() {
+    context.push(RoutePaths.myResumePreview, extra: _draft);
   }
 
   Future<void> _openExpectedJobSheet() async {

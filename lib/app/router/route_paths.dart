@@ -7,6 +7,7 @@ class RoutePaths {
   static const ai = '/ai';
   static const me = '/me';
   static const myResume = '/me/resume';
+  static const myResumePreview = '/me/resume/preview';
   static const myResumeEditor = '/me/resume/editor';
   static const addWorkExperience = '/me/resume/editor/work-experience/add';
   static const addSkillCertificate = '/me/resume/editor/skill-certificate/add';
@@ -20,5 +21,9 @@ class RoutePaths {
   static const orderReview = '/order/review';
 
   static const loginPhone = '/login/phone';
+  static const qualificationCertification = '/auth/qualification';
+  static const qualificationCertificationStepTwo = '/auth/qualification/step-two';
+  static const qualificationCertificationStepThree =
+      '/auth/qualification/step-three';
   static const selectRole = '/auth/select-role';
 }
