@@ -14,12 +14,9 @@ class ServiceDetailApplyBottomSheet {
     required BuildContext context,
     required String serviceTitle,
     required ServicePackageData package,
-  }) {
-    return showModalBottomSheet<void>(
+  }) async {
+    await _showServiceDetailBottomSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: false,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _ApplyBottomSheetContent(
           parentContext: context,
@@ -38,12 +35,9 @@ class ServiceDetailConfirmPaymentBottomSheet {
     required BuildContext context,
     required String amountText,
     required BuildContext parentContext,
-  }) {
-    return showModalBottomSheet<void>(
+  }) async {
+    await _showServiceDetailBottomSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: false,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _ConfirmPaymentBottomSheetContent(
           amountText: amountText,
@@ -52,6 +46,19 @@ class ServiceDetailConfirmPaymentBottomSheet {
       },
     );
   }
+}
+
+Future<void> _showServiceDetailBottomSheet({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: false,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => builder(sheetContext),
+  );
 }
 
 class _ApplyBottomSheetContent extends StatefulWidget {
@@ -97,99 +104,97 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
     final maxSheetHeight = MediaQuery.sizeOf(context).height - topSafeArea - 12;
 
     return TapBlankToDismissKeyboard(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxSheetHeight),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Flexible(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxSheetHeight),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Flexible(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                        height: 64,
-                        child: Stack(
-                          children: <Widget>[
-                            Align(
-                              child: Text(
-                                '确认订单信息',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: const Color(0xFF262626),
-                                  fontSize: 18,
-                                  height: 24 / 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 20,
-                              right: 20,
-                              child: GestureDetector(
-                                onTap: () => Navigator.of(context).pop(),
-                                behavior: HitTestBehavior.opaque,
-                                child: const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 20,
-                                    color: Color(0xFF262626),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(
+                          height: 64,
+                          child: Stack(
+                            children: <Widget>[
+                              Align(
+                                child: Text(
+                                  '确认订单信息',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: const Color(0xFF262626),
+                                    fontSize: 18,
+                                    height: 24 / 18,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(55.5, 0, 55.5, 34),
-                        child: Text(
-                          '提交后将生成订单，请在订单详情页上传相关材料',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFBFBFBF),
-                            fontSize: 12,
-                            height: 18 / 12,
-                            fontWeight: FontWeight.w400,
+                              Positioned(
+                                top: 20,
+                                right: 20,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.of(context).pop(),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: Icon(
+                                      Icons.close,
+                                      size: 20,
+                                      color: Color(0xFF262626),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: _ApplyOrderSummaryCard(
-                          serviceTitle: widget.serviceTitle,
-                          package: widget.package,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(55.5, 0, 55.5, 34),
+                          child: Text(
+                            '提交后将生成订单，请在订单详情页上传相关材料',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFFBFBFBF),
+                              fontSize: 12,
+                              height: 18 / 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 32),
-                        child: _ApplyApplicantSection(
-                          nameController: _nameController,
-                          phoneController: _phoneController,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: _ApplyOrderSummaryCard(
+                            serviceTitle: widget.serviceTitle,
+                            package: widget.package,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 32),
+                          child: _ApplyApplicantSection(
+                            nameController: _nameController,
+                            phoneController: _phoneController,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            AnimatedPadding(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: Container(
+              Container(
                 width: double.infinity,
                 padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
                 decoration: const BoxDecoration(
@@ -220,8 +225,8 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

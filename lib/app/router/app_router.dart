@@ -12,6 +12,7 @@ import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
+import '../../features/me/presentation/my_resume_preview_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
 import '../../features/service_detail/presentation/service_detail_payment_result_page.dart';
@@ -76,6 +77,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myResume,
         builder: (context, state) => const MyResumePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.myResumePreview,
+        builder: (context, state) => MyResumePreviewPage(
+          draft: state.extra as ResumeDraft?,
+        ),
       ),
       GoRoute(
         path: RoutePaths.myApplications,
