@@ -174,6 +174,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 return _OrderCard(
                   order: visibleOrders[index],
                   onActionTap: _handleActionTap,
+                  onTap: () => context.push(RoutePaths.orderDetail),
                 );
               },
             ),
@@ -325,10 +326,12 @@ class _OrderCard extends StatelessWidget {
   const _OrderCard({
     required this.order,
     required this.onActionTap,
+    this.onTap,
   });
 
   final _OrderItem order;
   final ValueChanged<_OrderAction> onActionTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -343,24 +346,29 @@ class _OrderCard extends StatelessWidget {
 
     return SizedBox(
       height: order.hasProgress ? 258 : 202,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: SvgPicture.asset(
-                'assets/images/my_orders_card_bg_blue.svg',
-                fit: BoxFit.fill,
-              ),
-            ),
-            Positioned.fill(
-              child: Container(color: Colors.white.withValues(alpha: 0.96)),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: SvgPicture.asset(
+                    'assets/images/my_orders_card_bg_blue.svg',
+                    fit: BoxFit.fill,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(color: Colors.white.withValues(alpha: 0.96)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
                   Row(
                     children: <Widget>[
                       Text(
@@ -458,20 +466,22 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      for (var i = 0; i < actionButtons.length; i++) ...<Widget>[
-                        if (i > 0) const SizedBox(width: 12),
-                        actionButtons[i],
-                      ],
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          for (var i = 0; i < actionButtons.length; i++) ...<Widget>[
+                            if (i > 0) const SizedBox(width: 12),
+                            actionButtons[i],
+                          ],
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

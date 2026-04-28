@@ -5,7 +5,7 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 import '../../../shared/widgets/app_search_bar.dart';
-import '../../../shared/widgets/tag_chip.dart';
+import '../../../shared/widgets/job_position_card.dart';
 
 /// 招聘列表页（按 Figma 截图还原，列表数据先静态占位）。
 class JobsPage extends StatelessWidget {
@@ -32,12 +32,15 @@ class JobsPage extends StatelessWidget {
             const _FilterRow(),
             const SizedBox(height: 12),
             _JobCard(
-              title: '中餐厨师 (包食宿)',
-              salary: '€2,500~3,500',
-              tags: const <String>['3-5年经验', '厨师证高级', '提供签证'],
-              highlights: const <String>['急招', '包吃住'],
-              company: '柏林老四川餐厅',
-              location: '德国·柏林',
+              data: const JobPositionCardData(
+                title: '中餐厨师 (包食宿)',
+                salary: '€2,500~3,500',
+                requirementTags: <String>['3-5年经验', '厨师证高级', '提供签证'],
+                highlightTags: <String>['急招', '包吃住'],
+                company: '柏林老四川餐厅',
+                location: '德国·柏林',
+                showApplyButton: true,
+              ),
               onApply: () {
                 ScaffoldMessenger.of(
                   context,
@@ -47,32 +50,41 @@ class JobsPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _JobCard(
-              title: '建筑工(包食宿)',
-              salary: '€2,200~2,800',
-              tags: const <String>['3-5年经验', '不限学历', '包食宿'],
-              highlights: const <String>['年假回国机票'],
-              company: '柏林老四川餐厅',
-              location: '德国·柏林',
+              data: const JobPositionCardData(
+                title: '建筑工(包食宿)',
+                salary: '€2,200~2,800',
+                requirementTags: <String>['3-5年经验', '不限学历', '包食宿'],
+                highlightTags: <String>['年假回国机票'],
+                company: '柏林老四川餐厅',
+                location: '德国·柏林',
+                showApplyButton: true,
+              ),
               onApply: () {},
             ),
             const SizedBox(height: 12),
             _JobCard(
-              title: '中餐帮厨',
-              salary: '€1,500~2,000',
-              tags: const <String>['3-5年经验', '厨师证', '提供签证'],
-              highlights: const <String>['双休'],
-              company: '柏林老四川餐厅',
-              location: '德国·柏林',
+              data: const JobPositionCardData(
+                title: '中餐帮厨',
+                salary: '€1,500~2,000',
+                requirementTags: <String>['3-5年经验', '厨师证', '提供签证'],
+                highlightTags: <String>['双休'],
+                company: '柏林老四川餐厅',
+                location: '德国·柏林',
+                showApplyButton: true,
+              ),
               onApply: () {},
             ),
             const SizedBox(height: 12),
             _JobCard(
-              title: '养老院护理员',
-              salary: '€2,000~2,500',
-              tags: const <String>['3-5年经验', '营养健康证', '提供签证'],
-              highlights: const <String>['长白班'],
-              company: '柏林老四川餐厅',
-              location: '德国·柏林',
+              data: const JobPositionCardData(
+                title: '养老院护理员',
+                salary: '€2,000~2,500',
+                requirementTags: <String>['3-5年经验', '营养健康证', '提供签证'],
+                highlightTags: <String>['长白班'],
+                company: '柏林老四川餐厅',
+                location: '德国·柏林',
+                showApplyButton: true,
+              ),
               onApply: () {},
             ),
           ],
@@ -154,135 +166,14 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _JobCard extends StatelessWidget {
-  const _JobCard({
-    required this.title,
-    required this.salary,
-    required this.tags,
-    required this.highlights,
-    required this.company,
-    required this.location,
-    required this.onApply,
-    this.onTap,
-  });
+  const _JobCard({required this.data, required this.onApply, this.onTap});
 
-  final String title;
-  final String salary;
-  final List<String> tags;
-  final List<String> highlights;
-  final String company;
-  final String location;
+  final JobPositionCardData data;
   final VoidCallback onApply;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    salary,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: tags.map((t) => TagChip(label: t)).toList(),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: highlights
-                    .map(
-                      (t) => TagChip(
-                        label: t,
-                        backgroundColor: AppColors.chipBackground,
-                        textColor: t == '急招'
-                            ? AppColors.danger
-                            : AppColors.textSecondary,
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.apartment, size: 18, color: AppColors.brand),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      company,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 34,
-                    child: FilledButton(
-                      onPressed: onApply,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.brand,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      child: const Text('一键投递'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.place,
-                    size: 18,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    location,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return JobPositionCard(data: data, onApply: onApply, onTap: onTap);
   }
 }
