@@ -465,10 +465,6 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
           _buildSectionHeader(
             title: '求职意向',
             showRedDot: true,
-            trailing: _buildActionIcon(
-              _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
-            ),
           ),
           const SizedBox(height: 20),
           _buildLabeledRow(
@@ -987,7 +983,9 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
         width: 20,
         height: 20,
         child: Center(
-          child: SvgPicture.asset(assetPath, width: 20, height: 20),
+          child: assetPath.endsWith('.svg')
+              ? SvgPicture.asset(assetPath, width: 20, height: 20)
+              : Image.asset(assetPath, width: 20, height: 20),
         ),
       ),
     );
@@ -1065,94 +1063,83 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
 
   /// 构建底部固定操作区。
   Widget _buildBottomAction(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _isCreateMode ? '创建简历已保存（占位）' : '简历修改已保存（占位）',
-                            ),
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isCreateMode ? '创建简历已保存（占位）' : '简历修改已保存（占位）',
                           ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF171A1D),
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFFD9D9D9)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
                         ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF171A1D),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFD9D9D9)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        '保存',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                    ),
+                    child: const Text(
+                      '保存',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 22 / 16,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _isCreateMode ? '创建并预览（占位）' : '更新并预览（占位）',
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF096DD9),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        '提交并预览',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 33),
-            Container(
-              width: 134,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(100),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isCreateMode ? '创建并预览（占位）' : '更新并预览（占位）',
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF096DD9),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      '提交并预览',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 22 / 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 33),
+        ],
       ),
     );
   }
@@ -1173,7 +1160,7 @@ class _ResumeEditorAssets {
       'assets/images/resume_editor/basic_info_edit.svg';
   static const String profileAvatar =
       'assets/images/resume_editor/profile_avatar.png';
-  static const String addCircle = 'assets/images/resume_editor/add_circle.svg';
+  static const String addCircle = 'assets/images/resume_editor/add_circle.png';
   static const String tagRemove = 'assets/images/resume_editor/tag_remove.svg';
   static const String tagAdd = 'assets/images/resume_editor/tag_add.svg';
   static const String dropdownArrow =
