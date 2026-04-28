@@ -155,7 +155,11 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: <Widget>[
-              const _StatItem(value: '3', label: '我的订单'),
+              _StatItem(
+                value: '3',
+                label: '我的订单',
+                onTap: () => context.push(RoutePaths.myOrders),
+              ),
               const _StatItem(value: '85%', label: '我的简历'),
               _StatItem(
                 value: '3',

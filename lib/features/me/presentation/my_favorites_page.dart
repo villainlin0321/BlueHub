@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/job_position_card.dart';
+import '../../../shared/widgets/visa_service_card.dart';
 
 class MyFavoritesPage extends StatefulWidget {
   const MyFavoritesPage({super.key});
@@ -566,138 +568,9 @@ class _FavoriteServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _Avatar(assetPath: item.avatarAssetPath),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF262626),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    height: 24 / 16,
-                                  ),
-                                ),
-                              ),
-                              if (item.verified) ...<Widget>[
-                                const SizedBox(width: 8),
-                                const _VerifiedBadge(),
-                              ],
-                              if (item.archived) ...<Widget>[
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '已下架',
-                                  style: TextStyle(
-                                    color: Color(0xFF8C8C8C),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: <Widget>[
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 16,
-                                color: Color(0xFFFE5815),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                item.rating,
-                                style: const TextStyle(
-                                  color: Color(0xFFFE5815),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                item.cases,
-                                style: const TextStyle(
-                                  color: Color(0xFF8C8C8C),
-                                  fontSize: 12,
-                                  height: 16 / 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ...item.tags
-                                  .take(2)
-                                  .map(
-                                    (tag) => Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: _InlineTag(label: tag),
-                                    ),
-                                  ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  item.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 12,
-                    height: 18 / 12,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...item.packages.asMap().entries.map((entry) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: entry.key == item.packages.length - 1 ? 0 : 8,
-                    ),
-                    child: _ServicePackageRow(
-                      item: entry.value,
-                      muted: item.archived,
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
-        if (item.archived)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.68),
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-      ],
+    return VisaServiceCard(
+      data: item.cardData,
+      onTap: () => context.push(RoutePaths.serviceDetail),
     );
   }
 }
@@ -715,341 +588,9 @@ class _FavoriteJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: const TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 24 / 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      item.salary,
-                      style: const TextStyle(
-                        color: Color(0xFFFE5815),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        height: 24 / 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: item.requirementTags
-                      .map((tag) => _JobTag(label: tag))
-                      .toList(),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: Color(0xFF8C8C8C),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      item.location,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (item.archived)
-                      const Text(
-                        '已下架',
-                        style: TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        item.company,
-                        style: const TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 20 / 14,
-                        ),
-                      ),
-                    ),
-                    if (item.showApplyButton && !item.archived)
-                      SizedBox(
-                        height: 32,
-                        child: FilledButton(
-                          onPressed: onApplyTap,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF186CFF),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                          ),
-                          child: const Text(
-                            '一键投递',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: item.highlightTags
-                      .map(
-                        (tag) => _JobTag(
-                          label: tag,
-                          backgroundColor: tag == '急招'
-                              ? const Color(0xFFFFF2F0)
-                              : const Color(0xFFF5F7FA),
-                          textColor: tag == '急招'
-                              ? const Color(0xFFFF4D4F)
-                              : const Color(0xFF8C8C8C),
-                        ),
-                      )
-                      .toList(),
-                ),
-                if (item.showMapPreview) ...<Widget>[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      mapAssetPath,
-                      width: double.infinity,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        if (item.archived)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({this.assetPath});
-
-  final String? assetPath;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF0F2F5),
-        shape: BoxShape.circle,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: assetPath == null
-          ? const Icon(Icons.person_outline, color: Color(0xFF8C8C8C))
-          : Image.asset(
-              assetPath!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return const Icon(
-                  Icons.person_outline,
-                  color: Color(0xFF8C8C8C),
-                );
-              },
-            ),
-    );
-  }
-}
-
-class _VerifiedBadge extends StatelessWidget {
-  const _VerifiedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF5DB),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            'V',
-            style: TextStyle(
-              color: Color(0xFF784301),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(width: 2),
-          Text(
-            '认证',
-            style: TextStyle(
-              color: Color(0xFF784301),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineTag extends StatelessWidget {
-  const _InlineTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDF5FF),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF386EF8),
-          fontSize: 10,
-          height: 10 / 10,
-        ),
-      ),
-    );
-  }
-}
-
-class _JobTag extends StatelessWidget {
-  const _JobTag({
-    required this.label,
-    this.backgroundColor = const Color(0xFFF5F7FA),
-    this.textColor = const Color(0xFF8C8C8C),
-  });
-
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: textColor, fontSize: 10, height: 14 / 10),
-      ),
-    );
-  }
-}
-
-class _ServicePackageRow extends StatelessWidget {
-  const _ServicePackageRow({required this.item, required this.muted});
-
-  final _FavoriteServicePackage item;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    final titleColor = muted
-        ? const Color(0xFF8C8C8C)
-        : const Color(0xFF262626);
-    final priceColor = muted
-        ? const Color(0xFF8C8C8C)
-        : const Color(0xFF262626);
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              item.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: titleColor,
-                fontSize: 14,
-                height: 24 / 14,
-              ),
-            ),
-          ),
-          if (item.priceHint != null) ...<Widget>[
-            Text(
-              item.priceHint!,
-              style: const TextStyle(
-                color: Color(0xFFFE5815),
-                fontSize: 12,
-                height: 24 / 12,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Text(
-            item.price,
-            style: TextStyle(
-              color: priceColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 24 / 14,
-            ),
-          ),
-        ],
-      ),
+    return JobPositionCard(
+      data: item.cardData(mapAssetPath: mapAssetPath),
+      onApply: item.showApplyButton && !item.archived ? onApplyTap : null,
     );
   }
 }
@@ -1152,6 +693,23 @@ class _FavoriteServiceItem {
   final List<_FavoriteServicePackage> packages;
   final bool verified;
   final bool archived;
+
+  VisaServiceCardData get cardData {
+    return VisaServiceCardData(
+      title: title,
+      avatarAssetPath: avatarAssetPath,
+      rating: rating,
+      cases: cases,
+      tags: tags,
+      description: description,
+      packages: packages
+          .map((package) => package.cardData)
+          .toList(growable: false),
+      verified: verified,
+      archived: archived,
+      statusText: archived ? '已下架' : null,
+    );
+  }
 }
 
 class _FavoriteServicePackage {
@@ -1164,6 +722,14 @@ class _FavoriteServicePackage {
   final String title;
   final String price;
   final String? priceHint;
+
+  VisaServicePackageData get cardData {
+    return VisaServicePackageData(
+      title: title,
+      price: price,
+      priceHint: priceHint,
+    );
+  }
 }
 
 class _FavoriteJobItem {
@@ -1190,4 +756,19 @@ class _FavoriteJobItem {
   final bool showMapPreview;
   final bool showApplyButton;
   final bool archived;
+
+  JobPositionCardData cardData({required String mapAssetPath}) {
+    return JobPositionCardData(
+      title: title,
+      salary: salary,
+      requirementTags: requirementTags,
+      highlightTags: highlightTags,
+      company: company,
+      location: location,
+      showApplyButton: showApplyButton && !archived,
+      archived: archived,
+      statusText: archived ? '已下架' : null,
+      previewImageAssetPath: showMapPreview ? mapAssetPath : null,
+    );
+  }
 }
