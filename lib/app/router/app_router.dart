@@ -29,7 +29,6 @@ import '../../features/service_detail/presentation/service_detail_report_page.da
 import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
-import '../app.dart';
 import 'route_paths.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -53,11 +52,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.qualificationCertificationStepTwo,
-        builder: (context, state) => const QualificationCertificationStepTwoPage(),
+        builder: (context, state) =>
+            const QualificationCertificationStepTwoPage(),
       ),
       GoRoute(
         path: RoutePaths.qualificationCertificationStepThree,
-        builder: (context, state) => const QualificationCertificationStepThreePage(),
+        builder: (context, state) =>
+            const QualificationCertificationStepThreePage(),
       ),
       GoRoute(
         path: RoutePaths.selectRole,
@@ -105,9 +106,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.myResumePreview,
-        builder: (context, state) => MyResumePreviewPage(
-          draft: state.extra as ResumeDraft?,
-        ),
+        builder: (context, state) =>
+            MyResumePreviewPage(draft: state.extra as ResumeDraft?),
       ),
       GoRoute(
         path: RoutePaths.myApplications,
@@ -132,9 +132,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.addEducationSchool,
-        builder: (context, state) => AddEducationSchoolPage(
-          initialSchool: state.extra as String?,
-        ),
+        builder: (context, state) =>
+            AddEducationSchoolPage(initialSchool: state.extra as String?),
       ),
       GoRoute(
         path: RoutePaths.addSkillCertificate,
@@ -142,15 +141,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.selfEvaluation,
-        builder: (context, state) => SelfEvaluationPage(
-          initialValue: state.extra as String? ?? '',
-        ),
+        builder: (context, state) =>
+            SelfEvaluationPage(initialValue: state.extra as String? ?? ''),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => MainShellPage(
-          title: ref.read(appTitleProvider),
-          navigationShell: navigationShell,
-        ),
+        builder: (context, state, navigationShell) =>
+            MainShellPage(navigationShell: navigationShell),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[

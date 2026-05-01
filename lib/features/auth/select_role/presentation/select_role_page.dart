@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../shell/application/shell_role_provider.dart';
 import '../../presentation/widgets/auth_language_switch.dart';
 import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
-class SelectRolePage extends StatefulWidget {
+class SelectRolePage extends ConsumerStatefulWidget {
   const SelectRolePage({super.key});
 
   @override
-  State<SelectRolePage> createState() => _SelectRolePageState();
+  ConsumerState<SelectRolePage> createState() => _SelectRolePageState();
 }
 
-class _SelectRolePageState extends State<SelectRolePage> {
+class _SelectRolePageState extends ConsumerState<SelectRolePage> {
   String? _selectedRoleId;
   bool _isChineseSelected = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRoleId = _roleIdFromShellRole(ref.read(shellRoleProvider));
+  }
 
   void _handleBack() {
     if (context.canPop()) {
@@ -27,10 +35,21 @@ class _SelectRolePageState extends State<SelectRolePage> {
   }
 
   void _handleConfirm() {
-    final role = _roles.firstWhere((item) => item.id == _selectedRoleId);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('已选择${role.title}（占位）')));
+    final selectedRoleId = _selectedRoleId;
+    if (selectedRoleId == null) {
+      return;
+    }
+
+    ref
+        .read(shellRoleProvider.notifier)
+        .setRole(_shellRoleFromRoleId(selectedRoleId));
+
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(RoutePaths.home);
   }
 
   @override
@@ -55,9 +74,9 @@ class _SelectRolePageState extends State<SelectRolePage> {
         title: Text(
           '选择角色',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         actions: <Widget>[
           Padding(
@@ -73,7 +92,9 @@ class _SelectRolePageState extends State<SelectRolePage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pagePadding,
+          ),
           child: Column(
             children: <Widget>[
               Expanded(
@@ -84,16 +105,17 @@ class _SelectRolePageState extends State<SelectRolePage> {
                       Text(
                         '不同角色将看到不同的首页与功能。后续可在 “我的” 中切换不同角色',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.6,
-                            ),
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
                       ),
                       const SizedBox(height: 28),
                       for (final role in _roles) ...<Widget>[
                         _RoleCard(
                           role: role,
                           selected: _selectedRoleId == role.id,
-                          onTap: () => setState(() => _selectedRoleId = role.id),
+                          onTap: () =>
+                              setState(() => _selectedRoleId = role.id),
                         ),
                         if (role != _roles.last) const SizedBox(height: 14),
                       ],
@@ -179,17 +201,17 @@ class _RoleCard extends StatelessWidget {
                     Text(
                       role.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       role.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
                     ),
                   ],
                 ),
@@ -236,3 +258,27 @@ const List<_RoleItem> _roles = <_RoleItem>[
     icon: Icons.fact_check_outlined,
   ),
 ];
+
+ShellRole _shellRoleFromRoleId(String roleId) {
+  switch (roleId) {
+    case 'worker':
+      return ShellRole.jobSeeker;
+    case 'employer':
+      return ShellRole.company;
+    case 'visaProvider':
+      return ShellRole.serviceProvider;
+  }
+
+  return ShellRole.jobSeeker;
+}
+
+String _roleIdFromShellRole(ShellRole role) {
+  switch (role) {
+    case ShellRole.jobSeeker:
+      return 'worker';
+    case ShellRole.company:
+      return 'employer';
+    case ShellRole.serviceProvider:
+      return 'visaProvider';
+  }
+}

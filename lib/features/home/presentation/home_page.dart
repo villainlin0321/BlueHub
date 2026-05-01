@@ -18,7 +18,7 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.push(RoutePaths.qualificationCertification);
+          context.push(RoutePaths.selectRole);
         },
       ),
       body: SafeArea(
