@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -12,13 +13,13 @@ import '../../../utils/upload_picker_utils.dart';
 class OrderDetailPage extends StatefulWidget {
   const OrderDetailPage({super.key});
 
-  static const List<_OrderStep> _steps = <_OrderStep>[
-    _OrderStep(label: '提交订单', state: _OrderStepState.completed),
-    _OrderStep(label: '支付费用', state: _OrderStepState.completed),
-    _OrderStep(label: '上传材料', state: _OrderStepState.current, number: 3),
-    _OrderStep(label: '材料审核', state: _OrderStepState.pending, number: 4),
-    _OrderStep(label: '使馆递交', state: _OrderStepState.pending, number: 5),
-    _OrderStep(label: '签证出签', state: _OrderStepState.pending, number: 6),
+  static const List<ProgressStep> _steps = <ProgressStep>[
+    ProgressStep(label: '提交订单', state: ProgressStepState.completed),
+    ProgressStep(label: '支付费用', state: ProgressStepState.completed),
+    ProgressStep(label: '上传材料', state: ProgressStepState.current, number: 3),
+    ProgressStep(label: '材料审核', state: ProgressStepState.pending, number: 4),
+    ProgressStep(label: '使馆递交', state: ProgressStepState.pending, number: 5),
+    ProgressStep(label: '签证出签', state: ProgressStepState.pending, number: 6),
   ];
 
   static const List<_MaterialRequirement> _requirements =
@@ -88,8 +89,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromCamera(_MaterialRequirement requirement) async {
     try {
-      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
-          .pickFromCamera();
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromCamera();
       if (pickedFiles.isEmpty) {
         return;
       }
@@ -104,8 +105,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromGallery(_MaterialRequirement requirement) async {
     try {
-      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
-          .pickFromGallery();
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromGallery();
       if (pickedFiles.isEmpty) {
         return;
       }
@@ -120,8 +121,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _pickFromFiles(_MaterialRequirement requirement) async {
     try {
-      final List<PickedUploadFile> pickedFiles = await UploadPickerUtils
-          .pickFromFiles();
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('未能读取所选文件');
         return;
@@ -240,192 +241,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 class _OrderProgressStepper extends StatelessWidget {
   const _OrderProgressStepper({required this.steps});
 
-  final List<_OrderStep> steps;
-
-  static const double _stepWidth = 50;
-  static const double _stepHeight = 46;
-  static const double _indicatorSize = 20;
-  static const double _connectorGap = 6;
-  static const double _connectorWidth = 9;
-  static const double _separatorWidth = 16;
-  static const double _trackHeight = 20;
-
-  Color _segmentColor(int segmentIndex) {
-    return segmentIndex < 2
-        ? const Color(0xFF096DD9)
-        : Colors.black.withValues(alpha: 0.15);
-  }
+  final List<ProgressStep> steps;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 86,
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        itemCount: steps.length,
-        separatorBuilder: (context, index) {
-          return SizedBox(
-            width: _separatorWidth,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: SizedBox(
-                height: _trackHeight,
-                child: Center(
-                  child: Container(
-                    width: _separatorWidth,
-                    height: 1,
-                    color: _segmentColor(index),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        itemBuilder: (context, index) {
-          final step = steps[index];
-          final showLeftConnector = index > 0;
-          final showRightConnector = index < steps.length - 1;
-
-          return SizedBox(
-            width: _stepWidth,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SizedBox(
-                  width: _stepWidth,
-                  height: _trackHeight,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      height: _trackHeight,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          SizedBox(
-                            width: _connectorWidth,
-                            child: Center(
-                              child: showLeftConnector
-                                  ? Container(
-                                      width: _connectorWidth,
-                                      height: 1,
-                                      color: _segmentColor(index - 1),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: _connectorGap),
-                          _StepIndicator(step: step),
-                          const SizedBox(width: _connectorGap),
-                          SizedBox(
-                            width: _connectorWidth,
-                            child: Center(
-                              child: showRightConnector
-                                  ? Container(
-                                      width: _connectorWidth,
-                                      height: 1,
-                                      color: _segmentColor(index),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: _stepWidth,
-                  height: _stepHeight - _indicatorSize - 8,
-                  child: Text(
-                    step.label,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: step.state == _OrderStepState.pending
-                          ? const Color(0xFF8C8C8C)
-                          : step.state == _OrderStepState.current
-                          ? const Color(0xFF096DD9)
-                          : const Color(0xFF262626),
-                      fontWeight: step.state == _OrderStepState.current
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                      fontSize: 11,
-                      height: 18 / 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      child: ProgressStepper(steps: steps),
     );
-  }
-}
-
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.step});
-
-  final _OrderStep step;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (step.state) {
-      case _OrderStepState.completed:
-        return Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF096DD9), width: 1.4),
-            color: Colors.white,
-          ),
-          alignment: Alignment.center,
-          child: SvgPicture.asset(
-            'assets/images/order_detail_step_done.svg',
-            width: 10,
-            height: 8,
-          ),
-        );
-      case _OrderStepState.current:
-        return Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF096DD9),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${step.number}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        );
-      case _OrderStepState.pending:
-        return Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFD9D9D9),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${step.number}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        );
-    }
   }
 }
 
@@ -1102,16 +926,6 @@ class _BottomSubmitBar extends StatelessWidget {
     );
   }
 }
-
-class _OrderStep {
-  const _OrderStep({required this.label, required this.state, this.number});
-
-  final String label;
-  final _OrderStepState state;
-  final int? number;
-}
-
-enum _OrderStepState { completed, current, pending }
 
 class _MaterialRequirement {
   const _MaterialRequirement({
