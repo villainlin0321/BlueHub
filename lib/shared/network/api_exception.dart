@@ -1,10 +1,4 @@
-enum ApiExceptionType {
-  network,
-  http,
-  biz,
-  parse,
-  unknown,
-}
+enum ApiExceptionType { network, http, biz, parse, unknown }
 
 class ApiException implements Exception {
   ApiException(
@@ -29,45 +23,36 @@ class ApiException implements Exception {
   }
 
   static ApiException network(Object error) => ApiException(
-        ApiExceptionType.network,
-        message: '网络异常，请稍后重试',
-        original: error,
-      );
+    ApiExceptionType.network,
+    message: '网络异常，请稍后重试',
+    original: error,
+  );
 
   static ApiException http({
     required int? statusCode,
     required String message,
     Object? original,
-  }) =>
-      ApiException(
-        ApiExceptionType.http,
-        message: message,
-        statusCode: statusCode,
-        original: original,
-      );
+  }) => ApiException(
+    ApiExceptionType.http,
+    message: message,
+    statusCode: statusCode,
+    original: original,
+  );
 
   static ApiException biz({
     required int code,
     required String message,
     String? requestId,
-  }) =>
-      ApiException(
-        ApiExceptionType.biz,
-        message: message.isEmpty ? '业务异常' : message,
-        code: code,
-        requestId: requestId,
-      );
+  }) => ApiException(
+    ApiExceptionType.biz,
+    message: message.isEmpty ? '业务异常' : message,
+    code: code,
+    requestId: requestId,
+  );
 
-  static ApiException parse(Object error) => ApiException(
-        ApiExceptionType.parse,
-        message: '数据解析失败',
-        original: error,
-      );
+  static ApiException parse(Object error) =>
+      ApiException(ApiExceptionType.parse, message: '数据解析失败', original: error);
 
-  static ApiException unknown(Object error) => ApiException(
-        ApiExceptionType.unknown,
-        message: '未知错误',
-        original: error,
-      );
+  static ApiException unknown(Object error) =>
+      ApiException(ApiExceptionType.unknown, message: '未知错误', original: error);
 }
-
