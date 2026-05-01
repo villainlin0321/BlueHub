@@ -20,6 +20,7 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        child: Text('切换\n角色'),
         onPressed: () {
           context.pushNamed(RoutePaths.selectRole);
         },
