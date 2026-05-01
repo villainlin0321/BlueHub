@@ -1,4 +1,6 @@
+import 'package:bluehub_app/app/router/route_paths.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
@@ -14,13 +16,21 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.push(RoutePaths.qualificationCertification);
+        },
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.pagePadding),
           children: <Widget>[
             Row(
               children: <Widget>[
-                const CircleAvatar(radius: 22, backgroundColor: AppColors.chipBackground),
+                const CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.chipBackground,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -28,7 +38,8 @@ class HomePage extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         '早上好，程先生',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w800,
                             ),
@@ -36,11 +47,16 @@ class HomePage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: <Widget>[
-                          const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '德国',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -52,11 +68,17 @@ class HomePage extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.chat_bubble_outline, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -111,10 +133,7 @@ class HomePage extends StatelessWidget {
               onActionTap: () {},
             ),
             const SizedBox(height: 10),
-            _EmptyPlaceholder(
-              title: '暂无岗位数据',
-              subtitle: '后续对接岗位列表接口后展示',
-            ),
+            _EmptyPlaceholder(title: '暂无岗位数据', subtitle: '后续对接岗位列表接口后展示'),
           ],
         ),
       ),
@@ -148,9 +167,9 @@ class _ShortcutRow extends StatelessWidget {
               Text(
                 it.label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -202,17 +221,17 @@ class _VisaMiniCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               Text(
                 price,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -221,9 +240,9 @@ class _VisaMiniCard extends StatelessWidget {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const Spacer(),
           Row(
@@ -235,9 +254,9 @@ class _VisaMiniCard extends StatelessWidget {
               Text(
                 rating,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -268,20 +287,19 @@ class _EmptyPlaceholder extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 }
-
