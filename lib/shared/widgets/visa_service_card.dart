@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_svg_icon.dart';
+
 class VisaServiceCardData {
   const VisaServiceCardData({
     required this.title,
@@ -31,11 +33,13 @@ class VisaServicePackageData {
     required this.title,
     required this.price,
     this.priceHint,
+    this.iconAssetPath,
   });
 
   final String title;
   final String price;
   final String? priceHint;
+  final String? iconAssetPath;
 }
 
 class VisaServiceCard extends StatelessWidget {
@@ -329,11 +333,19 @@ class _VisaServicePackageRow extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(
-            Icons.work_outline_rounded,
-            size: 16,
-            color: const Color(0xFF556EA3).withValues(alpha: 0.4),
-          ),
+          if (item.iconAssetPath == null)
+            Icon(
+              Icons.work_outline_rounded,
+              size: 16,
+              color: const Color(0xFF556EA3).withValues(alpha: 0.4),
+            )
+          else
+            AppSvgIcon(
+              assetPath: item.iconAssetPath!,
+              fallback: Icons.work_outline_rounded,
+              size: 16,
+              color: const Color(0xFF556EA3),
+            ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
