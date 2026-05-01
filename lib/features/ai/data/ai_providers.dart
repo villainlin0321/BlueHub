@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
-import 'auth_service.dart';
+import 'ai_service.dart';
 
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(
+final aiServiceProvider = Provider<AiService>((ref) {
+  return AiService(
     apiClient: ref.watch(apiClientProvider),
-    tokenStore: ref.watch(tokenStoreProvider),
+    sseClient: ref.watch(sseClientProvider),
   );
 });

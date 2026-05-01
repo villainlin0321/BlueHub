@@ -14,18 +14,13 @@ class ApiClient {
     required T Function(dynamic data) decode,
     Options? options,
   }) async {
-    try {
-      final res = await _dio.get<dynamic>(
-        path,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return _unwrap<T>(res.data, decode: decode);
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    } catch (e) {
-      throw ApiException.unknown(e);
-    }
+    return _request<T>(
+      method: 'GET',
+      path: path,
+      queryParameters: queryParameters,
+      decode: decode,
+      options: options,
+    );
   }
 
   Future<T> post<T>(
@@ -35,12 +30,122 @@ class ApiClient {
     required T Function(dynamic data) decode,
     Options? options,
   }) async {
+    return _request<T>(
+      method: 'POST',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      decode: decode,
+      options: options,
+    );
+  }
+
+  Future<T> put<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    required T Function(dynamic data) decode,
+    Options? options,
+  }) async {
+    return _request<T>(
+      method: 'PUT',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      decode: decode,
+      options: options,
+    );
+  }
+
+  Future<T> delete<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    required T Function(dynamic data) decode,
+    Options? options,
+  }) async {
+    return _request<T>(
+      method: 'DELETE',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      decode: decode,
+      options: options,
+    );
+  }
+
+  Future<void> getVoid(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _requestVoid(
+      method: 'GET',
+      path: path,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<void> postVoid(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _requestVoid(
+      method: 'POST',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<void> putVoid(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _requestVoid(
+      method: 'PUT',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<void> deleteVoid(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _requestVoid(
+      method: 'DELETE',
+      path: path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<T> _request<T>({
+    required String method,
+    required String path,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    required T Function(dynamic data) decode,
+    Options? options,
+  }) async {
     try {
-      final res = await _dio.post<dynamic>(
+      final res = await _dio.request<dynamic>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: options,
+        options: (options ?? Options()).copyWith(method: method),
       );
       return _unwrap<T>(res.data, decode: decode);
     } on DioException catch (e) {
@@ -50,10 +155,29 @@ class ApiClient {
     }
   }
 
-  T _unwrap<T>(
-    dynamic raw, {
-    required T Function(dynamic data) decode,
-  }) {
+  Future<void> _requestVoid({
+    required String method,
+    required String path,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final res = await _dio.request<dynamic>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: (options ?? Options()).copyWith(method: method),
+      );
+      _unwrapVoid(res.data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    } catch (e) {
+      throw ApiException.unknown(e);
+    }
+  }
+
+  T _unwrap<T>(dynamic raw, {required T Function(dynamic data) decode}) {
     if (raw is! Map<String, dynamic>) {
       throw ApiException.parse(raw ?? 'null');
     }
@@ -72,6 +196,21 @@ class ApiClient {
       throw ApiException.parse('data is null');
     }
     return data;
+  }
+
+  void _unwrapVoid(dynamic raw) {
+    if (raw is! Map<String, dynamic>) {
+      throw ApiException.parse(raw ?? 'null');
+    }
+
+    final result = ApiResult.fromJson<void>(raw, decode: (_) {});
+    if (!result.isSuccess) {
+      throw ApiException.biz(
+        code: result.code,
+        message: result.message,
+        requestId: result.requestId,
+      );
+    }
   }
 
   ApiException _mapDioException(DioException e) {

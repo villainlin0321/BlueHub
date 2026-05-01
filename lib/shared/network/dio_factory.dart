@@ -7,10 +7,7 @@ import 'interceptors/app_log_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
 
 class DioFactory {
-  DioFactory({
-    required this.config,
-    required this.tokenStore,
-  });
+  DioFactory({required this.config, required this.tokenStore});
 
   final AppConfig config;
   final TokenStore tokenStore;
@@ -35,4 +32,3 @@ class DioFactory {
     return dio;
   }
 }
-

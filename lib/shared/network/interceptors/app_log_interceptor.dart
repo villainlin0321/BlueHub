@@ -29,7 +29,9 @@ class AppLogInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (!enabled) return handler.next(response);
 
-    debugPrint('[HTTP] <-- ${response.statusCode} ${response.requestOptions.uri}');
+    debugPrint(
+      '[HTTP] <-- ${response.statusCode} ${response.requestOptions.uri}',
+    );
     debugPrint('[HTTP] data: ${_safeJson(response.data)}');
     handler.next(response);
   }
@@ -52,4 +54,3 @@ String _safeJson(Object? value) {
     return value?.toString() ?? 'null';
   }
 }
-
