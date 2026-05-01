@@ -17,7 +17,7 @@ class RoutePaths {
   static const myApplications = '/me/applications';
   static const serviceDetail = '/service-detail';
   static const serviceDetailReport = '/service-detail/report';
-  static const serviceDetailPaymentResult = '/service-detail/payment-result';
+  static const appResult = '/result';
   static const myOrders = '/me/orders';
   static const myFavorites = '/me/favorites';
   static const orderDetail = '/order/detail';

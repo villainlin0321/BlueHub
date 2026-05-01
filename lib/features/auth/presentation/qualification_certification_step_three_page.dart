@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../service_detail/presentation/app_result_page.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 class QualificationCertificationStepThreePage extends StatefulWidget {
@@ -22,13 +25,25 @@ class _QualificationCertificationStepThreePageState
     '服务信息',
   ];
 
-  static const List<String> _selectedCountries = <String>[
+  static const List<String> _fallbackSelectedCountries = <String>[
     '德国',
     '意大利',
     '法国',
   ];
+  static const List<SelectableSheetOption<String>> _countrySheetOptions =
+      <SelectableSheetOption<String>>[
+        SelectableSheetOption<String>(value: '德国', label: '德国'),
+        SelectableSheetOption<String>(value: '法国', label: '法国'),
+        SelectableSheetOption<String>(value: '瑞士', label: '瑞士'),
+        SelectableSheetOption<String>(value: '英国', label: '英国'),
+        SelectableSheetOption<String>(value: '意大利', label: '意大利'),
+        SelectableSheetOption<String>(value: '西班牙', label: '西班牙'),
+      ];
 
   final TextEditingController _experienceController = TextEditingController();
+  late final List<String> _selectedCountries = List<String>.of(
+    _fallbackSelectedCountries,
+  );
 
   @override
   void dispose() {
@@ -36,9 +51,41 @@ class _QualificationCertificationStepThreePageState
     super.dispose();
   }
 
-  void _showPlaceholderMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  Future<void> _openExpectedCountrySheet() async {
+    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+      context: context,
+      title: '期望国家/地区',
+      options: _countrySheetOptions,
+      initialSelectedValues: _selectedCountries,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedCountries
+        ..clear()
+        ..addAll(result);
+    });
+  }
+
+  void _removeSelectedCountry(String country) {
+    setState(() {
+      _selectedCountries.remove(country);
+    });
+  }
+
+  void _handleSubmit() {
+    context.push(
+      RoutePaths.appResult,
+      extra: const AppResultPageArgs(
+        pageTitle: '资质认证',
+        resultTitle: '信息已提交',
+        tipText: '预计1-3个工作日完成审核，5s后进入首页',
+        actionLabel: '进入首页',
+        action: AppResultAction.go(RoutePaths.home),
+      ),
     );
   }
 
@@ -141,17 +188,16 @@ class _QualificationCertificationStepThreePageState
                             ),
                           ),
                           const Spacer(),
-                          InkWell(
-                            onTap: () => _showPlaceholderMessage('新增国家/地区（占位）'),
-                            borderRadius: BorderRadius.circular(10),
+                          GestureDetector(
+                            onTap: _openExpectedCountrySheet,
                             child: SizedBox(
                               width: 20,
                               height: 20,
                               child: Center(
                                 child: SvgPicture.asset(
-                                  'assets/images/qualification_add.svg',
-                                  width: 12,
-                                  height: 12,
+                                  'assets/images/resume_editor/add_circle.svg',
+                                  width: 20,
+                                  height: 20,
                                   colorFilter: const ColorFilter.mode(
                                     Color(0x99262626),
                                     BlendMode.srcIn,
@@ -170,7 +216,7 @@ class _QualificationCertificationStepThreePageState
                             .map(
                               (String country) => _CountryTag(
                                 label: country,
-                                onTap: () => _showPlaceholderMessage('移除$country（占位）'),
+                                onTap: () => _removeSelectedCountry(country),
                               ),
                             )
                             .toList(),
@@ -296,7 +342,7 @@ class _QualificationCertificationStepThreePageState
                 child: SizedBox(
                   height: 44,
                   child: FilledButton(
-                    onPressed: () => _showPlaceholderMessage('提交审核（占位）'),
+                    onPressed: _handleSubmit,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF096DD9),
                       shape: RoundedRectangleBorder(

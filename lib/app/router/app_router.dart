@@ -23,7 +23,7 @@ import '../../features/me/presentation/my_resume_preview_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
 import '../../features/me/presentation/self_evaluation_page.dart';
-import '../../features/service_detail/presentation/service_detail_payment_result_page.dart';
+import '../../features/service_detail/presentation/app_result_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
 import '../../features/service_detail/presentation/service_detail_report_page.dart';
 import '../../features/me/presentation/my_orders_page.dart';
@@ -84,8 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ServiceDetailReportPage(),
       ),
       GoRoute(
-        path: RoutePaths.serviceDetailPaymentResult,
-        builder: (context, state) => const ServiceDetailPaymentResultPage(),
+        path: RoutePaths.appResult,
+        builder: (context, state) => AppResultPage(
+          args:
+              state.extra as AppResultPageArgs? ??
+              const AppResultPageArgs.paymentSuccess(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.myOrders,

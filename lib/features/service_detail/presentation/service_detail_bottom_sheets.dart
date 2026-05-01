@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'service_detail_package_tab.dart';
+import 'app_result_page.dart';
 
 class ServiceDetailApplyBottomSheet {
   const ServiceDetailApplyBottomSheet._();
@@ -401,7 +402,10 @@ class _ConfirmPaymentBottomSheetContentState
   void _handlePayNow() {
     Navigator.of(context).pop();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.parentContext.push(RoutePaths.serviceDetailPaymentResult);
+      widget.parentContext.push(
+        RoutePaths.appResult,
+        extra: const AppResultPageArgs.paymentSuccess(),
+      );
     });
   }
 }
