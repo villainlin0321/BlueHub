@@ -62,6 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.selectRole,
+        name: RoutePaths.selectRole,
         builder: (context, state) => const SelectRolePage(),
       ),
       GoRoute(

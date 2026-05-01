@@ -115,8 +115,10 @@ class JobPositionCard extends StatelessWidget {
                           avatarAssetPath: data.companyAvatarAssetPath,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(child: _LocationInfo(location: data.location)),
+                      if (data.location.trim().isNotEmpty) ...<Widget>[
+                        const SizedBox(width: 12),
+                        Flexible(child: _LocationInfo(location: data.location)),
+                      ],
                     ],
                   ),
                 ),
