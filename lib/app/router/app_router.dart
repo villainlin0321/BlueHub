@@ -11,6 +11,8 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/me/presentation/me_page.dart';
+import '../../features/me/presentation/add_education_experience_page.dart';
+import '../../features/me/presentation/add_education_school_page.dart';
 import '../../features/me/presentation/add_work_experience_page.dart';
 import '../../features/me/presentation/add_skill_certificate_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
@@ -20,6 +22,7 @@ import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
+import '../../features/me/presentation/self_evaluation_page.dart';
 import '../../features/service_detail/presentation/service_detail_payment_result_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
 import '../../features/service_detail/presentation/service_detail_report_page.dart';
@@ -120,8 +123,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AddWorkExperiencePage(),
       ),
       GoRoute(
+        path: RoutePaths.addEducationExperience,
+        builder: (context, state) => const AddEducationExperiencePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.addEducationSchool,
+        builder: (context, state) => AddEducationSchoolPage(
+          initialSchool: state.extra as String?,
+        ),
+      ),
+      GoRoute(
         path: RoutePaths.addSkillCertificate,
         builder: (context, state) => const AddSkillCertificatePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.selfEvaluation,
+        builder: (context, state) => SelfEvaluationPage(
+          initialValue: state.extra as String? ?? '',
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShellPage(

@@ -10,6 +10,9 @@ class RoutePaths {
   static const myResumePreview = '/me/resume/preview';
   static const myResumeEditor = '/me/resume/editor';
   static const addWorkExperience = '/me/resume/editor/work-experience/add';
+  static const addEducationExperience = '/me/resume/editor/education/add';
+  static const addEducationSchool = '/me/resume/editor/education/school';
+  static const selfEvaluation = '/me/resume/editor/self-evaluation';
   static const addSkillCertificate = '/me/resume/editor/skill-certificate/add';
   static const myApplications = '/me/applications';
   static const serviceDetail = '/service-detail';

@@ -17,6 +17,7 @@ class AddSkillCertificatePage extends StatefulWidget {
 }
 
 class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
+  static const int _maxAttachments = 9;
   static const String _uploadAsset =
       'assets/images/service_detail_report_upload.svg';
   static const List<SelectableSheetOption<String>> _certificateOptions =
@@ -31,7 +32,7 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
 
   String? _certificateName;
   ResumeTimePickerValue? _issuedAt;
-  PickedUploadFile? _selectedImage;
+  final List<PickedUploadFile> _selectedImages = <PickedUploadFile>[];
 
   Future<void> _openCertificateSheet() async {
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
@@ -103,20 +104,37 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
     required Future<List<PickedUploadFile>> Function() picker,
     required String errorMessage,
   }) async {
+    if (_selectedImages.length >= _maxAttachments) {
+      _showMessage('最多只能选择$_maxAttachments张');
+      return;
+    }
+
     try {
       final List<PickedUploadFile> files = await picker();
       if (!mounted || files.isEmpty) {
         return;
       }
 
-      final PickedUploadFile image = files.firstWhere(
-        (PickedUploadFile item) => item.isImage,
-        orElse: () => files.first,
-      );
+      final List<PickedUploadFile> images = files
+          .where((PickedUploadFile item) => item.isImage)
+          .toList();
+      final List<PickedUploadFile> candidates = images.isEmpty ? files : images;
+      final int availableCount = _maxAttachments - _selectedImages.length;
+      final List<PickedUploadFile> acceptedFiles = candidates
+          .take(availableCount)
+          .toList();
+      if (acceptedFiles.isEmpty) {
+        _showMessage('最多只能选择$_maxAttachments张');
+        return;
+      }
 
       setState(() {
-        _selectedImage = image;
+        _selectedImages.addAll(acceptedFiles);
       });
+
+      if (acceptedFiles.length < candidates.length) {
+        _showMessage('最多只能选择$_maxAttachments张');
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -140,7 +158,7 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
       _showMessage('请选择获得时间');
       return;
     }
-    if (_selectedImage == null) {
+    if (_selectedImages.isEmpty) {
       _showMessage('请上传证书图片');
       return;
     }
@@ -149,7 +167,9 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
       ResumeCertificateFormResult(
         title: _certificateName!,
         issuedAt: _issuedAt!,
-        imagePath: _selectedImage!.path,
+        imagePaths: _selectedImages
+            .map((PickedUploadFile file) => file.path)
+            .toList(growable: false),
       ),
     );
   }
@@ -209,22 +229,18 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: 104,
-              height: 104,
-              child: _selectedImage == null
-                  ? UploadPlaceholderTile(
-                      assetPath: _uploadAsset,
-                      onTap: _openImageSourceSheet,
-                    )
-                  : _CertificateImagePreviewTile(
-                      file: _selectedImage!,
-                      onDeleteTap: () {
-                        setState(() {
-                          _selectedImage = null;
-                        });
-                      },
-                    ),
+            _CertificateImageGrid(
+              attachments: _selectedImages,
+              maxAttachments: _maxAttachments,
+              uploadAssetPath: _uploadAsset,
+              onAddTap: _openImageSourceSheet,
+              onDeleteTap: (PickedUploadFile file) {
+                setState(() {
+                  _selectedImages.removeWhere(
+                    (PickedUploadFile item) => item.id == file.id,
+                  );
+                });
+              },
             ),
           ],
         ),
@@ -263,15 +279,7 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 33),
-              Container(
-                width: 134,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
+              const SizedBox(height: 33)
             ],
           ),
         ),
@@ -284,12 +292,12 @@ class ResumeCertificateFormResult {
   const ResumeCertificateFormResult({
     required this.title,
     required this.issuedAt,
-    required this.imagePath,
+    required this.imagePaths,
   });
 
   final String title;
   final ResumeTimePickerValue issuedAt;
-  final String imagePath;
+  final List<String> imagePaths;
 }
 
 class _CertificateSelectorField extends StatelessWidget {
@@ -415,6 +423,54 @@ class _CertificateImagePreviewTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CertificateImageGrid extends StatelessWidget {
+  const _CertificateImageGrid({
+    required this.attachments,
+    required this.maxAttachments,
+    required this.uploadAssetPath,
+    required this.onAddTap,
+    required this.onDeleteTap,
+  });
+
+  final List<PickedUploadFile> attachments;
+  final int maxAttachments;
+  final String uploadAssetPath;
+  final VoidCallback onAddTap;
+  final ValueChanged<PickedUploadFile> onDeleteTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool showAddTile = attachments.length < maxAttachments;
+    final int itemCount = attachments.length + (showAddTile ? 1 : 0);
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        if (index >= attachments.length) {
+          return UploadPlaceholderTile(
+            assetPath: uploadAssetPath,
+            onTap: onAddTap,
+          );
+        }
+
+        final PickedUploadFile file = attachments[index];
+        return _CertificateImagePreviewTile(
+          file: file,
+          onDeleteTap: () => onDeleteTap(file),
+        );
+      },
     );
   }
 }

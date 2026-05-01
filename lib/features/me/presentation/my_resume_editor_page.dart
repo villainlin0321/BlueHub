@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import 'add_education_experience_page.dart';
 import 'add_skill_certificate_page.dart';
 import 'add_work_experience_page.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
@@ -93,6 +94,14 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
           previewAssetPath: _ResumeEditorAssets.certificatePreview,
         ),
       ];
+  static const List<_ResumeEducation> _fallbackEducations =
+      <_ResumeEducation>[
+        _ResumeEducation(
+          school: '扬州大学',
+          subtitle: '烹饪与营养教育',
+          period: '2010 - 2013',
+        ),
+      ];
 
   static const List<String> _fallbackJobTags = <String>['中餐厨师', '中餐面点', '高级电工'];
   static const List<String> _expectedJobOptions = <String>[
@@ -144,8 +153,9 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
   late final List<String> _languageTags;
   late final List<_ResumeExperience> _experiences;
   late final List<_ResumeCertificate> _certificates;
+  late final List<_ResumeEducation> _educations;
   late final String _salaryValue;
-  late final String _selfEvaluation;
+  late String _selfEvaluation;
 
   /// 当前页面是否为创建模式。
   bool get _isCreateMode => widget.args.mode == ResumeEditorMode.create;
@@ -162,6 +172,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
     _languageTags = List<String>.of(_fallbackLanguageTags);
     _experiences = _buildExperiences();
     _certificates = List<_ResumeCertificate>.of(_fallbackCertificates);
+    _educations = List<_ResumeEducation>.of(_fallbackEducations);
     _salaryValue = _extractSalaryValue(_draft.salary);
     _selfEvaluation = _draft.summary.isEmpty
         ? _demoDraft.summary
@@ -804,22 +815,30 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
   }
 
   Widget _buildCertificatePreview(_ResumeCertificate certificate) {
-    if (certificate.previewFilePath != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(certificate.previewFilePath!),
-          width: 88,
-          height: 88,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) {
-            return Container(
-              width: 88,
-              height: 88,
-              color: const Color(0xFFF5F7FA),
-            );
-          },
-        ),
+    if (certificate.previewFilePaths.isNotEmpty) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: certificate.previewFilePaths
+            .map(
+              (String path) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(path),
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) {
+                    return Container(
+                      width: 88,
+                      height: 88,
+                      color: const Color(0xFFF5F7FA),
+                    );
+                  },
+                ),
+              ),
+            )
+            .toList(growable: false),
       );
     }
 
@@ -843,76 +862,83 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             title: '教育经历',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
-              onTap: _showComingSoon,
+              onTap: _openAddEducationExperiencePage,
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Image.asset(
-                _ResumeEditorAssets.educationLogo,
-                width: 40,
-                height: 40,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const <Widget>[
-                      Text(
-                        '扬州大学',
-                        style: TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 16,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        '烹饪与营养教育',
-                        style: TextStyle(
-                          color: Color(0xFF595959),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 20 / 14,
-                        ),
-                      ),
-                    ],
+          for (int index = 0; index < _educations.length; index++) ...<Widget>[
+            _buildEducationItem(_educations[index]),
+            if (index != _educations.length - 1) const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEducationItem(_ResumeEducation item) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Image.asset(
+          _ResumeEditorAssets.educationLogo,
+          width: 40,
+          height: 40,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.school,
+                  style: const TextStyle(
+                    color: Color(0xFF262626),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 22 / 16,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Row(
-                  children: <Widget>[
-                    const Text(
-                      '2010 - 2013',
-                      style: TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        height: 18 / 13,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Image.asset(
-                      _ResumeEditorAssets.itemChevron,
-                      width: 12,
-                      height: 12,
-                    ),
-                  ],
+                const SizedBox(height: 6),
+                Text(
+                  item.subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF595959),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
                 ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: <Widget>[
+              Text(
+                item.period,
+                style: const TextStyle(
+                  color: Color(0xFF8C8C8C),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 18 / 13,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Image.asset(
+                _ResumeEditorAssets.itemChevron,
+                width: 12,
+                height: 12,
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -928,7 +954,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
             title: '自我评价',
             trailing: _buildActionIcon(
               _ResumeEditorAssets.sectionChevron,
-              onTap: _showComingSoon,
+              onTap: _openSelfEvaluationPage,
             ),
           ),
           const SizedBox(height: 14),
@@ -1234,7 +1260,21 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
 
   /// 跳转到简历预览页，复用当前页面已经整理好的草稿数据。
   void _openPreview() {
-    context.push(RoutePaths.myResumePreview, extra: _draft);
+    context.push(RoutePaths.myResumePreview, extra: _currentDraft);
+  }
+
+  ResumeDraft get _currentDraft {
+    return ResumeDraft(
+      name: _draft.name,
+      region: _draft.region,
+      age: _draft.age,
+      gender: _draft.gender,
+      phone: _draft.phone,
+      salary: _draft.salary,
+      jobTitle: _draft.jobTitle,
+      duration: _draft.duration,
+      summary: _selfEvaluation,
+    );
   }
 
   Future<void> _openExpectedJobSheet() async {
@@ -1313,7 +1353,42 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
           title: result.title,
           authority: '技能证书',
           issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
-          previewFilePath: result.imagePath,
+          previewFilePaths: result.imagePaths,
+        ),
+      );
+    });
+  }
+
+  Future<void> _openSelfEvaluationPage() async {
+    final String? result = await context.push<String>(
+      RoutePaths.selfEvaluation,
+      extra: _selfEvaluation,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _selfEvaluation = result;
+    });
+  }
+
+  Future<void> _openAddEducationExperiencePage() async {
+    final EducationExperienceFormResult? result = await context
+        .push<EducationExperienceFormResult>(RoutePaths.addEducationExperience);
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _educations.insert(
+        0,
+        _ResumeEducation(
+          school: result.school,
+          subtitle: result.displaySubtitle,
+          period: result.displayPeriod,
         ),
       );
     });
@@ -1388,12 +1463,25 @@ class _ResumeCertificate {
     required this.authority,
     required this.issuedAt,
     this.previewAssetPath,
-    this.previewFilePath,
+    this.previewFilePaths = const <String>[],
   });
 
   final String title;
   final String authority;
   final String issuedAt;
   final String? previewAssetPath;
-  final String? previewFilePath;
+  final List<String> previewFilePaths;
+}
+
+/// 教育经历展示模型。
+class _ResumeEducation {
+  const _ResumeEducation({
+    required this.school,
+    required this.subtitle,
+    required this.period,
+  });
+
+  final String school;
+  final String subtitle;
+  final String period;
 }

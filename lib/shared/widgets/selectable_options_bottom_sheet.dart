@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'resume_time_picker_bottom_sheet.dart';
+
 class SelectableSheetOption<T> {
   const SelectableSheetOption({required this.value, required this.label});
 
@@ -14,10 +16,8 @@ Future<List<T>?> showSelectableOptionsBottomSheet<T>({
   Iterable<T> initialSelectedValues = const [],
   bool multiple = true,
 }) {
-  return showModalBottomSheet<List<T>>(
+  return showResumeBottomSheet<List<T>>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (BuildContext context) {
       return _SelectableOptionsBottomSheet<T>(
         title: title,

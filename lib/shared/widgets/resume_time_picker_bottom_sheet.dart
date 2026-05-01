@@ -2,6 +2,37 @@ import 'package:flutter/material.dart';
 
 enum ResumeTimePickerType { period, singleMonth }
 
+Future<T?> showResumeBottomSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = true,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext sheetContext) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(sheetContext).maybePop(),
+        child: ColoredBox(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {},
+                child: builder(sheetContext),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class ResumeTimePickerValue {
   const ResumeTimePickerValue({
     required this.startYear,
@@ -81,10 +112,8 @@ Future<ResumeTimePickerValue?> showResumeTimePickerBottomSheet({
   required ResumeTimePickerValue initialValue,
   String title = '时间段',
 }) {
-  return showModalBottomSheet<ResumeTimePickerValue>(
+  return showResumeBottomSheet<ResumeTimePickerValue>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (BuildContext context) {
       return _ResumeTimePickerBottomSheet(
         type: type,
