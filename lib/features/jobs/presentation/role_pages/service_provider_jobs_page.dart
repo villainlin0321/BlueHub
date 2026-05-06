@@ -18,7 +18,6 @@ class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
   static const List<_PackageCardData> _cards = <_PackageCardData>[
     _PackageCardData(
       title: '德国厨师专属工作签证',
-      backgroundAssetPath: 'assets/images/jobs/mou4an3g-lktonim.svg',
       previewCountText: '浏览 342',
       tags: <String>['德国', '工作签'],
       packages: <_PackagePriceItem>[
@@ -29,7 +28,6 @@ class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
     ),
     _PackageCardData(
       title: '法国高级技术人才签',
-      backgroundAssetPath: 'assets/images/jobs/mou4an3g-k9pz1oe.svg',
       previewCountText: '浏览 342',
       headerPreviewCount: '342',
       tags: <String>['法国', '技术签'],
@@ -41,7 +39,6 @@ class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
     ),
     _PackageCardData(
       title: '意大利护理工定制套餐',
-      backgroundAssetPath: 'assets/images/jobs/mou4an3g-7o2wf17.svg',
       previewCountText: '浏览 342',
       tags: <String>['意大利', '工作签'],
       packages: <_PackagePriceItem>[
@@ -199,109 +196,99 @@ class _PackageCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: SvgPicture.asset(
-                data.backgroundAssetPath,
-                fit: BoxFit.fill,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-              child: Column(
+        child:             Padding(
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(
-                        child: Row(
-                          children: <Widget>[
-                            Flexible(
-                              child: Text(
-                                data.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  height: 24 / 16,
-                                ),
-                              ),
+                  Expanded(
+                    child: Row(
+                      children: <Widget>[
+                        Flexible(
+                          child: Text(
+                            data.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF262626),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              height: 24 / 16,
                             ),
-                            if (data.showPreviewIcon &&
-                                data.headerPreviewCount != null) ...<Widget>[
-                              const SizedBox(width: 8),
-                              SvgPicture.asset(
-                                'assets/images/jobs/mou4an3g-gd04jfo.svg',
-                                width: 10,
-                                height: 10,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                data.headerPreviewCount!,
-                                style: const TextStyle(
-                                  color: Color(0xFF8C8C8C),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 16 / 12,
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const _MoreIcon(),
-                    ],
+                        if (data.showPreviewIcon &&
+                            data.headerPreviewCount != null) ...<Widget>[
+                          const SizedBox(width: 8),
+                          SvgPicture.asset(
+                            'assets/images/mou4an3g-gd04jfo.svg',
+                            width: 10,
+                            height: 10,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            data.headerPreviewCount!,
+                            style: const TextStyle(
+                              color: Color(0xFF8C8C8C),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              height: 16 / 12,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: <Widget>[
-                      ...data.tags.map(
+                  const SizedBox(width: 12),
+                  const _MoreIcon(),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Row(
+                children: <Widget>[
+                  ...data.tags.map(
                         (String tag) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _TagChip(label: tag),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        data.previewCountText,
-                        style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          height: 18 / 12,
-                        ),
-                      ),
-                    ],
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _TagChip(label: tag),
+                    ),
                   ),
-                  const SizedBox(height: 11),
-                  ...List<Widget>.generate(data.packages.length, (int index) {
-                    final _PackagePriceItem item = data.packages[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == data.packages.length - 1 ? 0 : 8,
-                      ),
-                      child: _PackagePriceRow(item: item),
-                    );
-                  }),
-                  const SizedBox(height: 12),
-                  const Row(
-                    children: <Widget>[
-                      _DeleteButton(),
-                      Spacer(),
-                      _GhostButton(label: '下架'),
-                      SizedBox(width: 8),
-                      _PrimaryButton(label: '编辑'),
-                    ],
+                  const Spacer(),
+                  Text(
+                    data.previewCountText,
+                    style: const TextStyle(
+                      color: Color(0xFF8C8C8C),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 18 / 12,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 11),
+              ...List<Widget>.generate(data.packages.length, (int index) {
+                final _PackagePriceItem item = data.packages[index];
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == data.packages.length - 1 ? 0 : 8,
+                  ),
+                  child: _PackagePriceRow(item: item),
+                );
+              }),
+              const SizedBox(height: 12),
+              const Row(
+                children: <Widget>[
+                  _DeleteButton(),
+                  Spacer(),
+                  _GhostButton(label: '下架'),
+                  SizedBox(width: 8),
+                  _PrimaryButton(label: '编辑'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -497,7 +484,6 @@ class _PrimaryButton extends StatelessWidget {
 class _PackageCardData {
   const _PackageCardData({
     required this.title,
-    required this.backgroundAssetPath,
     required this.previewCountText,
     required this.tags,
     required this.packages,
@@ -506,7 +492,6 @@ class _PackageCardData {
   });
 
   final String title;
-  final String backgroundAssetPath;
   final String previewCountText;
   final List<String> tags;
   final List<_PackagePriceItem> packages;

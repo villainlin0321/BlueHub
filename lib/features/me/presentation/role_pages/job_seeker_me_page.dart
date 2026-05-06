@@ -9,35 +9,35 @@ class JobSeekerMePage extends StatelessWidget {
   const JobSeekerMePage({super.key});
 
   static const String _profileCardBgAsset =
-      'assets/images/me/mou4gf12-37h742f.svg';
+      'assets/images/mou4gf12-37h742f.svg';
   static const String _menuCardBgAsset =
-      'assets/images/me/mou4gf12-4znlacm.svg';
+      'assets/images/mou4gf12-4znlacm.svg';
   static const String _verifiedBadgeBgAsset =
-      'assets/images/me/mou4gf12-gd4t3xy.svg';
-  static const String _avatarAsset = 'assets/images/me/mou4gf12-gby6i3c.png';
-  static const String _chevronAsset = 'assets/images/me/mou4gf12-khnjije.png';
-  static const String _messageAsset = 'assets/images/me/mou4gf12-spcrp36.svg';
-  static const String _settingsAsset = 'assets/images/me/mou4gf12-hem78nx.svg';
+      'assets/images/mou4gf12-gd4t3xy.svg';
+  static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
+  static const String _chevronAsset = 'assets/images/mou4gf12-khnjije.png';
+  static const String _messageAsset = 'assets/images/mou4gf12-spcrp36.svg';
+  static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
 
   static const List<_MenuActionItem> _menuItems = <_MenuActionItem>[
     _MenuActionItem(
       label: '简历管理',
-      iconAsset: 'assets/images/me/mou4gf13-1hzw3yt.svg',
+      iconAsset: 'assets/images/mou4gf13-1hzw3yt.svg',
       fallbackIcon: Icons.badge_outlined,
     ),
     _MenuActionItem(
       label: '订单进度',
-      iconAsset: 'assets/images/me/mou4gf13-o2ya2qn.svg',
+      iconAsset: 'assets/images/mou4gf13-o2ya2qn.svg',
       fallbackIcon: Icons.assignment_outlined,
     ),
     _MenuActionItem(
       label: '我的收藏',
-      iconAsset: 'assets/images/me/mou4gf13-2yasg57.svg',
+      iconAsset: 'assets/images/mou4gf13-2yasg57.svg',
       fallbackIcon: Icons.star_outline_rounded,
     ),
     _MenuActionItem(
       label: '客服中心',
-      iconAsset: 'assets/images/me/mou4gf13-lra1z08.svg',
+      iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
       fallbackIcon: Icons.support_agent_outlined,
     ),
   ];

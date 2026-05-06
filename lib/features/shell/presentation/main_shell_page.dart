@@ -52,103 +52,103 @@ class _BottomBar extends StatelessWidget {
 
   static const Color _inactiveColor = Color(0xFF5B708E);
   static const String _homeInactiveAsset =
-      'assets/images/shell/home_inactive.svg';
+      'assets/images/home_inactive.svg';
 
   static const Map<ShellRole, List<_BottomItem>> _itemsByRole =
       <ShellRole, List<_BottomItem>>{
         ShellRole.jobSeeker: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/shell/mon1zl1k-xdjbb8t.svg',
+            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
             inactiveAsset: _homeInactiveAsset,
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
             label: '签证',
-            activeAsset: 'assets/images/shell/mon1zl1k-8vikm4z.svg',
-            inactiveAsset: 'assets/images/shell/mon1zl1k-8vikm4z.svg',
+            activeAsset: 'assets/images/mon1zl1k-8vikm4z.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-8vikm4z.svg',
             fallback: Icons.assignment_rounded,
           ),
           _BottomItem(
             label: '招聘',
-            activeAsset: 'assets/images/shell/mon1zl1k-loy1tez.svg',
-            inactiveAsset: 'assets/images/shell/mon1zl1k-loy1tez.svg',
+            activeAsset: 'assets/images/mon1zl1k-loy1tez.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-loy1tez.svg',
             fallback: Icons.work_rounded,
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/shell/mon1zl1k-3r846kq.svg',
-            inactiveAsset: 'assets/images/shell/mon1zl1k-3r846kq.svg',
+            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
             fallback: Icons.smart_toy_rounded,
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/shell/mon1zl1k-xuo8q82.svg',
-            inactiveAsset: 'assets/images/shell/mon1zl1k-xuo8q82.svg',
+            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
             fallback: Icons.person_rounded,
           ),
         ],
         ShellRole.serviceProvider: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/shell/mon1zpec-y8912h0.svg',
+            activeAsset: 'assets/images/mon1zpec-y8912h0.svg',
             inactiveAsset: _homeInactiveAsset,
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
             label: '订单',
-            activeAsset: 'assets/images/shell/mon1zpec-q3kkmca.svg',
-            inactiveAsset: 'assets/images/shell/mon1zpec-q3kkmca.svg',
+            activeAsset: 'assets/images/mon1zpec-q3kkmca.svg',
+            inactiveAsset: 'assets/images/mon1zpec-q3kkmca.svg',
             fallback: Icons.receipt_long_rounded,
           ),
           _BottomItem(
             label: '套餐',
-            activeAsset: 'assets/images/shell/mon1zpec-8rwalq7.svg',
-            inactiveAsset: 'assets/images/shell/mon1zpec-8rwalq7.svg',
+            activeAsset: 'assets/images/mon1zpec-8rwalq7.svg',
+            inactiveAsset: 'assets/images/mon1zpec-8rwalq7.svg',
             fallback: Icons.shopping_bag_rounded,
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/shell/mon1zpec-3ck1bes.svg',
-            inactiveAsset: 'assets/images/shell/mon1zpec-3ck1bes.svg',
+            activeAsset: 'assets/images/mon1zpec-3ck1bes.svg',
+            inactiveAsset: 'assets/images/mon1zpec-3ck1bes.svg',
             fallback: Icons.smart_toy_rounded,
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/shell/mon1zpeb-ntefo96.svg',
-            inactiveAsset: 'assets/images/shell/mon1zpeb-ntefo96.svg',
+            activeAsset: 'assets/images/mon1zpeb-ntefo96.svg',
+            inactiveAsset: 'assets/images/mon1zpeb-ntefo96.svg',
             fallback: Icons.person_rounded,
           ),
         ],
         ShellRole.company: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/shell/mon1zsur-pq619ml.svg',
+            activeAsset: 'assets/images/mon1zsur-pq619ml.svg',
             inactiveAsset: _homeInactiveAsset,
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
             label: '岗位',
-            activeAsset: 'assets/images/shell/mon1zsur-xb20l62.svg',
-            inactiveAsset: 'assets/images/shell/mon1zsur-xb20l62.svg',
+            activeAsset: 'assets/images/mon1zsur-xb20l62.svg',
+            inactiveAsset: 'assets/images/mon1zsur-xb20l62.svg',
             fallback: Icons.work_outline_rounded,
           ),
           _BottomItem(
             label: '人才',
-            activeAsset: 'assets/images/shell/mon1zsur-q8s6lmr.svg',
-            inactiveAsset: 'assets/images/shell/mon1zsur-q8s6lmr.svg',
+            activeAsset: 'assets/images/mon1zsur-q8s6lmr.svg',
+            inactiveAsset: 'assets/images/mon1zsur-q8s6lmr.svg',
             fallback: Icons.school_rounded,
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/shell/mon1zsur-0uz78we.svg',
-            inactiveAsset: 'assets/images/shell/mon1zsur-0uz78we.svg',
+            activeAsset: 'assets/images/mon1zsur-0uz78we.svg',
+            inactiveAsset: 'assets/images/mon1zsur-0uz78we.svg',
             fallback: Icons.smart_toy_rounded,
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/shell/mon1zsur-0oz9j5d.svg',
-            inactiveAsset: 'assets/images/shell/mon1zsur-0oz9j5d.svg',
+            activeAsset: 'assets/images/mon1zsur-0oz9j5d.svg',
+            inactiveAsset: 'assets/images/mon1zsur-0oz9j5d.svg',
             fallback: Icons.person_rounded,
           ),
         ],

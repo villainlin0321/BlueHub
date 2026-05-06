@@ -11,22 +11,22 @@ class CompanyHomePage extends ConsumerWidget {
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
       label: '发布招聘',
-      assetPath: 'assets/images/home/mon6z4rt-qet9p7k.svg',
+      assetPath: 'assets/images/mon6z4rt-qet9p7k.svg',
       fallback: Icons.add_business_outlined,
     ),
     _QuickActionItem(
       label: '人才中心',
-      assetPath: 'assets/images/home/mon6z4rt-vvh6pmo.svg',
+      assetPath: 'assets/images/mon6z4rt-vvh6pmo.svg',
       fallback: Icons.school_outlined,
     ),
     _QuickActionItem(
       label: '应聘管理',
-      assetPath: 'assets/images/home/mon6z4ru-nlqxve0.svg',
+      assetPath: 'assets/images/mon6z4ru-nlqxve0.svg',
       fallback: Icons.assignment_ind_outlined,
     ),
     _QuickActionItem(
       label: '签证服务',
-      assetPath: 'assets/images/home/mon6z4rt-44w61yz.svg',
+      assetPath: 'assets/images/mon6z4rt-44w61yz.svg',
       fallback: Icons.assignment_outlined,
     ),
   ];
@@ -437,7 +437,7 @@ class _AiAssistantBanner extends StatelessWidget {
       children: <Widget>[
         Positioned.fill(
           child: SvgPicture.asset(
-            'assets/images/home/mon6z4rt-nbxozyy.svg',
+            'assets/images/mon6z4rt-nbxozyy.svg',
             fit: BoxFit.fill,
           ),
         ),
@@ -446,7 +446,7 @@ class _AiAssistantBanner extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Image.asset(
-                'assets/images/home/mon6z4rt-kh50fma.png',
+                'assets/images/mon6z4rt-kh50fma.png',
                 width: 40,
                 height: 40,
               ),
@@ -500,7 +500,7 @@ class _AiAssistantBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Image.asset(
-                      'assets/images/home/mon6z4rt-3ivopc0.png',
+                      'assets/images/mon6z4rt-3ivopc0.png',
                       width: 12,
                       height: 12,
                     ),
@@ -543,7 +543,7 @@ class _ResumeSectionHeader extends StatelessWidget {
         ),
         const SizedBox(width: 2),
         Image.asset(
-          'assets/images/home/mon6z4rt-eqk5cki.png',
+          'assets/images/mon6z4rt-eqk5cki.png',
           width: 16,
           height: 16,
         ),
@@ -570,7 +570,7 @@ class _ResumeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Image.asset(
-                  'assets/images/home/mon6z4rt-xyu3wvu.png',
+                  'assets/images/mon6z4rt-xyu3wvu.png',
                   width: 40,
                   height: 40,
                 ),
