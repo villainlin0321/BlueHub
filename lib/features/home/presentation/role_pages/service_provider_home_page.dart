@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -111,54 +113,144 @@ class _TopHeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
 
-    return Container(
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+    return SizedBox(
+      height: topPadding + 128,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          ),
+          gradient: LinearGradient(
+            begin: Alignment(-0.78, -1.0),
+            end: Alignment(0.85, 1.0),
+            colors: <Color>[Color(0xFF3F9BF7), Color(0xFF2F73E5)],
+          ),
         ),
-        image: DecorationImage(
-          image: AssetImage('assets/images/mon6azmx-levpzde.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, topPadding + 13, 16, 76),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _StatusBarRow(),
-            SizedBox(height: 10),
-            _ProviderInfoRow(),
-          ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          ),
+          child: Stack(
+            children: <Widget>[
+              const Positioned(
+                left: -35,
+                top: 8,
+                child: _HeroGlow(width: 445, height: 129),
+              ),
+              Positioned(
+                left: -12,
+                right: -12,
+                bottom: 0,
+                child: Opacity(
+                  opacity: 0.16,
+                  child: Image.asset(
+                    'assets/images/mon6azmx-levpzde.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: topPadding,
+                left: 16,
+                right: 16,
+                child: const SizedBox(height: 52, child: _ProviderInfoRow()),
+              ),
+              const Positioned(
+                left: 13,
+                right: 14,
+                bottom: 20,
+                child: _HeroStatsRow(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _StatusBarRow extends StatelessWidget {
-  const _StatusBarRow();
+class _HeroGlow extends StatelessWidget {
+  const _HeroGlow({required this.width, required this.height});
+
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        const SizedBox(width: 8),
-        const Text(
-          '10:41',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            height: 19 / 16,
+    return IgnorePointer(
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 44.85, sigmaY: 44.85),
+        child: Container(
+          width: width,
+          height: height,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-0.75, -1.0),
+              end: Alignment(0.85, 1.0),
+              colors: <Color>[Color(0xFF079EE9), Color(0xFF096DD9)],
+            ),
           ),
         ),
-        const Spacer(),
-        SvgPicture.asset(
-          'assets/images/mon6azmx-n37s2z8.svg',
-          width: 71,
-          height: 12,
+      ),
+    );
+  }
+}
+
+class _HeroStatsRow extends StatelessWidget {
+  const _HeroStatsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: <Widget>[
+        Expanded(
+          child: _HeroStatItem(value: '24', label: '今日咨询'),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _HeroStatItem(value: '132', label: '进行中订单'),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _HeroStatItem(value: '12.34w', label: '本月收入(¥)'),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroStatItem extends StatelessWidget {
+  const _HeroStatItem({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            height: 24 / 18,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            height: 16 / 12,
+          ),
         ),
       ],
     );
@@ -173,7 +265,11 @@ class _ProviderInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Image.asset('assets/images/mon6azmx-ecnf5h2.png', width: 40, height: 40),
+        Image.asset(
+          'assets/images/mon6azmx-ecnf5h2.png',
+          width: 40,
+          height: 40,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -486,7 +582,11 @@ class _OrdersSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset('assets/images/mon6azmx-ic3gin6.png', width: 16, height: 16),
+        Image.asset(
+          'assets/images/mon6azmx-ic3gin6.png',
+          width: 16,
+          height: 16,
+        ),
       ],
     );
   }
@@ -501,7 +601,7 @@ class _PendingOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child:           Padding(
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
