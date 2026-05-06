@@ -12,25 +12,25 @@ class JobSeekerHomePage extends ConsumerWidget {
   static const List<_ShortcutItem> _shortcutItems = <_ShortcutItem>[
     _ShortcutItem(
       label: 'AI招聘',
-      assetPath: '.figma/image/mon5bjog-oey0vv1.svg',
+      assetPath: 'assets/images/home/mon5bjog-oey0vv1.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.auto_awesome_rounded,
     ),
     _ShortcutItem(
       label: '欧洲招聘',
-      assetPath: '.figma/image/mon5bjog-wp0nhm8.svg',
+      assetPath: 'assets/images/home/mon5bjog-wp0nhm8.svg',
       colors: <Color>[Color(0xFFFF943C), Color(0xFFFF5900)],
       fallback: Icons.work_outline_rounded,
     ),
     _ShortcutItem(
       label: '签证服务',
-      assetPath: '.figma/image/mon5bjog-8hp521f.svg',
+      assetPath: 'assets/images/home/mon5bjog-8hp521f.svg',
       colors: <Color>[Color(0xFF01D99B), Color(0xFF00B879)],
       fallback: Icons.assignment_outlined,
     ),
     _ShortcutItem(
       label: '我的简历',
-      assetPath: '.figma/image/mon5bjog-wivq7ef.svg',
+      assetPath: 'assets/images/home/mon5bjog-wivq7ef.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.badge_outlined,
     ),
@@ -44,8 +44,8 @@ class JobSeekerHomePage extends ConsumerWidget {
       rating: '4.8',
       casesText: '200+案例',
       country: '德国',
-      ribbonAssetPath: '.figma/image/mon5bjog-lmu6456.svg',
-      actionAssetPath: '.figma/image/mon5bjog-9ler7sj.png',
+      ribbonAssetPath: 'assets/images/home/mon5bjog-lmu6456.svg',
+      actionAssetPath: 'assets/images/home/mon5bjog-9ler7sj.png',
     ),
     _VisaMiniCardData(
       title: '电工专属签证',
@@ -54,8 +54,8 @@ class JobSeekerHomePage extends ConsumerWidget {
       rating: '4.8',
       casesText: '200+案例',
       country: '德国',
-      ribbonAssetPath: '.figma/image/mon5bjog-xpp1qgm.svg',
-      actionAssetPath: '.figma/image/mon5bjog-9ler7sj.png',
+      ribbonAssetPath: 'assets/images/home/mon5bjog-xpp1qgm.svg',
+      actionAssetPath: 'assets/images/home/mon5bjog-9ler7sj.png',
     ),
   ];
 
@@ -67,7 +67,7 @@ class JobSeekerHomePage extends ConsumerWidget {
       highlightTags: <String>['德国柏林', '提供签证支持'],
       company: '柏林老四川餐厅',
       location: '',
-      companyAvatarAssetPath: '.figma/image/mon5bjog-zwr9bsu.png',
+      companyAvatarAssetPath: 'assets/images/home/mon5bjog-zwr9bsu.png',
       showApplyButton: true,
     ),
     JobPositionCardData(
@@ -77,7 +77,7 @@ class JobSeekerHomePage extends ConsumerWidget {
       highlightTags: <String>['德国柏林', '提供签证支持'],
       company: '柏林老四川餐厅',
       location: '',
-      companyAvatarAssetPath: '.figma/image/mon5bjog-zwr9bsu.png',
+      companyAvatarAssetPath: 'assets/images/home/mon5bjog-zwr9bsu.png',
       showApplyButton: true,
     ),
   ];
@@ -96,7 +96,7 @@ class JobSeekerHomePage extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
-              '.figma/image/mon5bjog-qq5tufd.png',
+              'assets/images/home/mon5bjog-qq5tufd.png',
               height: 80,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -156,7 +156,7 @@ class _HomeTopHeader extends StatelessWidget {
       children: <Widget>[
         Positioned.fill(
           child: SvgPicture.asset(
-            '.figma/image/mon5bjog-m6uktu1.svg',
+            'assets/images/home/mon5bjog-m6uktu1.svg',
             fit: BoxFit.cover,
           ),
         ),
@@ -204,7 +204,7 @@ class _HeaderProfileRow extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.asset(
-            '.figma/image/mon5bjog-wv3qvoa.png',
+            'assets/images/home/mon5bjog-wv3qvoa.png',
             width: 32,
             height: 32,
             fit: BoxFit.cover,
@@ -227,7 +227,7 @@ class _HeaderProfileRow extends StatelessWidget {
               Row(
                 children: <Widget>[
                   const AppSvgIcon(
-                    assetPath: '.figma/image/mon5bjog-7bcl82r.svg',
+                    assetPath: 'assets/images/home/mon5bjog-7bcl82r.svg',
                     fallback: Icons.location_on_outlined,
                     size: 16,
                     color: Color(0xFF595959),
@@ -266,7 +266,7 @@ class _MessageButton extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: AppSvgIcon(
-                assetPath: '.figma/image/mon5bjog-vgesd2k.svg',
+                assetPath: 'assets/images/home/mon5bjog-vgesd2k.svg',
                 fallback: Icons.chat_bubble_outline_rounded,
                 size: 24,
                 color: Color(0xFF171A1D),
@@ -306,7 +306,7 @@ class _HomeSearchBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           const AppSvgIcon(
-            assetPath: '.figma/image/mon5bjog-j2j6s3e.svg',
+            assetPath: 'assets/images/home/mon5bjog-j2j6s3e.svg',
             fallback: Icons.search_rounded,
             size: 16,
             color: Color(0xFFBFBFBF),
@@ -416,7 +416,7 @@ class _HomeSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset('.figma/image/mon5bjog-34xqksz.png', width: 16, height: 16),
+        Image.asset('assets/images/home/mon5bjog-34xqksz.png', width: 16, height: 16),
       ],
     );
   }

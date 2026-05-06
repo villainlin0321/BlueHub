@@ -19,7 +19,7 @@ class ServiceProviderVisaPage extends StatelessWidget {
       updateTime: '10分钟前更新',
       status: '待审核',
       statusType: _OrderStatusType.danger,
-      avatarAssetPath: '.figma/image/mon8ysqa-s0y5kqs.png',
+      avatarAssetPath: 'assets/images/visa/mon8ysqa-s0y5kqs.png',
       urgentTag: '紧急',
     ),
     _OrderCardData(
@@ -30,7 +30,7 @@ class ServiceProviderVisaPage extends StatelessWidget {
       updateTime: '2小时前更新',
       status: '待用户上传材料',
       statusType: _OrderStatusType.info,
-      avatarAssetPath: '.figma/image/mon8ysqa-s0y5kqs.png',
+      avatarAssetPath: 'assets/images/visa/mon8ysqa-s0y5kqs.png',
     ),
     _OrderCardData(
       orderNo: 'SJEH9823964875',
@@ -40,7 +40,7 @@ class ServiceProviderVisaPage extends StatelessWidget {
       updateTime: '2小时前更新',
       status: '使馆审核中',
       statusType: _OrderStatusType.info,
-      avatarAssetPath: '.figma/image/mon8ysqa-s0y5kqs.png',
+      avatarAssetPath: 'assets/images/visa/mon8ysqa-s0y5kqs.png',
     ),
     _OrderCardData(
       orderNo: 'SJEH9823964875',
@@ -50,7 +50,7 @@ class ServiceProviderVisaPage extends StatelessWidget {
       updateTime: '2小时前更新',
       status: '待付款',
       statusType: _OrderStatusType.info,
-      avatarAssetPath: '.figma/image/mon8ysqa-s0y5kqs.png',
+      avatarAssetPath: 'assets/images/visa/mon8ysqa-s0y5kqs.png',
     ),
   ];
 
@@ -127,7 +127,7 @@ class _OrderTopSection extends StatelessWidget {
                 ),
               ),
               SvgPicture.asset(
-                '.figma/image/mon8ysqa-n6jz78w.svg',
+                'assets/images/visa/mon8ysqa-n6jz78w.svg',
                 width: 14,
                 height: 14,
               ),
@@ -165,7 +165,7 @@ class _OrderFilterChip extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Image.asset(
-            '.figma/image/mon8ysqa-i6uxhdr.png',
+            'assets/images/visa/mon8ysqa-i6uxhdr.png',
             width: 12,
             height: 12,
           ),

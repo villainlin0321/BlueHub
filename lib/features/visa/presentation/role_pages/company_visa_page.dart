@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// 企业岗位页。
 class CompanyVisaPage extends StatefulWidget {

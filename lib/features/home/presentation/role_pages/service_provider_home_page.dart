@@ -11,22 +11,22 @@ class ServiceProviderHomePage extends ConsumerWidget {
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
       label: '发布套餐',
-      assetPath: '.figma/image/mon6azmx-yws4mpq.svg',
+      assetPath: 'assets/images/home/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_box_outlined,
     ),
     _QuickActionItem(
       label: '订单处理',
-      assetPath: '.figma/image/mon6azmx-b7iu27t.svg',
+      assetPath: 'assets/images/home/mon6azmx-b7iu27t.svg',
       fallback: Icons.fact_check_outlined,
     ),
     _QuickActionItem(
       label: '人才中心',
-      assetPath: '.figma/image/mon6azmx-gxjq4wk.svg',
+      assetPath: 'assets/images/home/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
     ),
     _QuickActionItem(
       label: '财务结算',
-      assetPath: '.figma/image/mon6azmx-tafz6au.svg',
+      assetPath: 'assets/images/home/mon6azmx-tafz6au.svg',
       fallback: Icons.account_balance_wallet_outlined,
     ),
   ];
@@ -39,7 +39,6 @@ class ServiceProviderHomePage extends ConsumerWidget {
       updateText: '10分钟前更新',
       materialsText: '已上传护照、技能证书…',
       priceText: '¥15,000',
-      backgroundAssetPath: '.figma/image/mon6azmx-b9cdg8q.svg',
     ),
     _PendingOrderItem(
       customerName: '程*彬 (中餐厨师)',
@@ -48,7 +47,6 @@ class ServiceProviderHomePage extends ConsumerWidget {
       updateText: '10分钟前更新',
       materialsText: '已上传护照、技能证书…',
       priceText: '¥15,000',
-      backgroundAssetPath: '.figma/image/mon6azmx-p8koacy.svg',
     ),
     _PendingOrderItem(
       customerName: '程*彬 (中餐厨师)',
@@ -57,7 +55,6 @@ class ServiceProviderHomePage extends ConsumerWidget {
       updateText: '10分钟前更新',
       materialsText: '已上传护照、技能证书…',
       priceText: '¥15,000',
-      backgroundAssetPath: '.figma/image/mon6azmx-7epfucr.svg',
     ),
   ];
 
@@ -121,7 +118,7 @@ class _TopHeroSection extends StatelessWidget {
           bottomRight: Radius.circular(28),
         ),
         image: DecorationImage(
-          image: AssetImage('.figma/image/mon6azmx-levpzde.png'),
+          image: AssetImage('assets/images/home/mon6azmx-levpzde.png'),
           fit: BoxFit.cover,
         ),
       ),
@@ -159,7 +156,7 @@ class _StatusBarRow extends StatelessWidget {
         ),
         const Spacer(),
         SvgPicture.asset(
-          '.figma/image/mon6azmx-n37s2z8.svg',
+          'assets/images/home/mon6azmx-n37s2z8.svg',
           width: 71,
           height: 12,
         ),
@@ -176,7 +173,7 @@ class _ProviderInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Image.asset('.figma/image/mon6azmx-ecnf5h2.png', width: 40, height: 40),
+        Image.asset('assets/images/home/mon6azmx-ecnf5h2.png', width: 40, height: 40),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -233,7 +230,7 @@ class _CertificationBadge extends StatelessWidget {
           Positioned(
             left: 11,
             child: SvgPicture.asset(
-              '.figma/image/mon6azmx-eeohkob.svg',
+              'assets/images/home/mon6azmx-eeohkob.svg',
               width: 36,
               height: 14,
             ),
@@ -241,7 +238,7 @@ class _CertificationBadge extends StatelessWidget {
           Positioned(
             left: 0,
             child: SvgPicture.asset(
-              '.figma/image/mon6azmx-2975g0p.svg',
+              'assets/images/home/mon6azmx-2975g0p.svg',
               width: 15,
               height: 14,
             ),
@@ -292,7 +289,7 @@ class _MessageActionButton extends StatelessWidget {
         children: <Widget>[
           const Positioned.fill(
             child: AppSvgIcon(
-              assetPath: '.figma/image/mon6azmx-xwxov19.svg',
+              assetPath: 'assets/images/home/mon6azmx-xwxov19.svg',
               fallback: Icons.chat_bubble_outline_rounded,
               size: 24,
               color: Colors.white,
@@ -384,7 +381,7 @@ class _AiAssistantBanner extends StatelessWidget {
       children: <Widget>[
         Positioned.fill(
           child: SvgPicture.asset(
-            '.figma/image/mon6azmx-n75bcra.svg',
+            'assets/images/home/mon6azmx-n75bcra.svg',
             fit: BoxFit.fill,
           ),
         ),
@@ -393,7 +390,7 @@ class _AiAssistantBanner extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Image.asset(
-                '.figma/image/mon6azmx-7balpug.png',
+                'assets/images/home/mon6azmx-7balpug.png',
                 width: 40,
                 height: 40,
               ),
@@ -447,7 +444,7 @@ class _AiAssistantBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Image.asset(
-                      '.figma/image/mon6azmx-wqt9b30.png',
+                      'assets/images/home/mon6azmx-wqt9b30.png',
                       width: 12,
                       height: 12,
                     ),
@@ -489,7 +486,7 @@ class _OrdersSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset('.figma/image/mon6azmx-ic3gin6.png', width: 16, height: 16),
+        Image.asset('assets/images/home/mon6azmx-ic3gin6.png', width: 16, height: 16),
       ],
     );
   }
@@ -504,90 +501,83 @@ class _PendingOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: SvgPicture.asset(item.backgroundAssetPath, fit: BoxFit.fill),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-            child: Column(
+      child:           Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            item.customerName,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
-                            ),
-                          ),
-                          _OutlineTag(label: item.serviceTag),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _StatusTag(label: item.statusText),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      item.updateText,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        item.materialsText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        item.customerName,
                         style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          height: 16 / 12,
+                          color: Color(0xFF262626),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 24 / 16,
                         ),
                       ),
-                    ),
-                  ],
+                      _OutlineTag(label: item.serviceTag),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      item.priceText,
-                      style: const TextStyle(
-                        color: Color(0xFFFE5815),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 24 / 16,
-                      ),
+                const SizedBox(width: 8),
+                _StatusTag(label: item.statusText),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: <Widget>[
+                Text(
+                  item.updateText,
+                  style: const TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 12,
+                    height: 16 / 12,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    item.materialsText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF8C8C8C),
+                      fontSize: 12,
+                      height: 16 / 12,
                     ),
-                    const Spacer(),
-                    const _GhostActionButton(label: '联系客户'),
-                    const SizedBox(width: 8),
-                    const _PrimaryActionButton(label: '审核材料'),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Row(
+              children: <Widget>[
+                Text(
+                  item.priceText,
+                  style: const TextStyle(
+                    color: Color(0xFFFE5815),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 24 / 16,
+                  ),
+                ),
+                const Spacer(),
+                const _GhostActionButton(label: '联系客户'),
+                const SizedBox(width: 8),
+                const _PrimaryActionButton(label: '审核材料'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -719,7 +709,6 @@ class _PendingOrderItem {
     required this.updateText,
     required this.materialsText,
     required this.priceText,
-    required this.backgroundAssetPath,
   });
 
   final String customerName;
@@ -728,5 +717,4 @@ class _PendingOrderItem {
   final String updateText;
   final String materialsText;
   final String priceText;
-  final String backgroundAssetPath;
 }

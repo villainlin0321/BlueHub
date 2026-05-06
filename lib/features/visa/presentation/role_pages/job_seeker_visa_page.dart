@@ -21,7 +21,7 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
   static const List<VisaServiceCardData> _cards = <VisaServiceCardData>[
     VisaServiceCardData(
       title: '德国厨师专属工作签',
-      avatarAssetPath: '.figma/image/mon8on2b-9hmjfiv.png',
+      avatarAssetPath: 'assets/images/visa/mon8on2b-9hmjfiv.png',
       rating: '4.8',
       cases: '服务案例1.2K',
       tags: <String>['过签率高', '办理快'],
@@ -30,14 +30,14 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
         VisaServicePackageData(
           title: '德国厨师专签标准包包包包包包包',
           price: '¥15,000',
-          iconAssetPath: '.figma/image/mon8on2b-zz8fpa6.svg',
+          iconAssetPath: 'assets/images/visa/mon8on2b-zz8fpa6.svg',
         ),
       ],
       verified: true,
     ),
     VisaServiceCardData(
       title: '法签通个人服务',
-      avatarAssetPath: '.figma/image/mon8on2b-9hmjfiv.png',
+      avatarAssetPath: 'assets/images/visa/mon8on2b-9hmjfiv.png',
       rating: '4.8',
       cases: '服务案例1.2K',
       tags: <String>['工作签', '个人旅游'],
@@ -46,13 +46,13 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
         VisaServicePackageData(
           title: '法国工作签加急',
           price: '¥18,000',
-          iconAssetPath: '.figma/image/mon8on2b-zz8fpa6.svg',
+          iconAssetPath: 'assets/images/visa/mon8on2b-zz8fpa6.svg',
         ),
       ],
     ),
     VisaServiceCardData(
       title: '意游签证中心',
-      avatarAssetPath: '.figma/image/mon8on2b-9hmjfiv.png',
+      avatarAssetPath: 'assets/images/visa/mon8on2b-9hmjfiv.png',
       rating: '4.8',
       cases: '服务案例1.2K',
       tags: <String>['加急办理', '材料辅导'],
@@ -61,14 +61,14 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
         VisaServicePackageData(
           title: '意大利劳务普签',
           price: '¥15,000',
-          iconAssetPath: '.figma/image/mon8on2b-zz8fpa6.svg',
+          iconAssetPath: 'assets/images/visa/mon8on2b-zz8fpa6.svg',
         ),
       ],
       verified: true,
     ),
     VisaServiceCardData(
       title: '中欧出海签证服务',
-      avatarAssetPath: '.figma/image/mon8on2b-9hmjfiv.png',
+      avatarAssetPath: 'assets/images/visa/mon8on2b-9hmjfiv.png',
       rating: '4.8',
       cases: '服务案例1.2K',
       tags: <String>['过签率高', '办理快'],
@@ -77,7 +77,7 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
         VisaServicePackageData(
           title: '德国厨师专签标准包',
           price: '¥12,000',
-          iconAssetPath: '.figma/image/mon8on2b-zz8fpa6.svg',
+          iconAssetPath: 'assets/images/visa/mon8on2b-zz8fpa6.svg',
         ),
       ],
     ),
@@ -141,36 +141,30 @@ class _VisaHeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
 
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(
-              top: topPadding + 13,
-              bottom: 10,
-              left: 20,
-            ),
-            child: Text(
-              '服务商与签证套餐',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(top: topPadding + 13, bottom: 10, left: 20),
+          child: Text(
+            '服务商与签证套餐',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+              height: 24 / 17,
             ),
           ),
-          const SizedBox(height: 10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: _VisaSearchBar(),
-          ),
-          const SizedBox(height: 14),
-          _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
-          const SizedBox(height: 14),
-        ],
-      ),
+        ),
+        const SizedBox(height: 10),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: _VisaSearchBar(),
+        ),
+        const SizedBox(height: 14),
+        _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
+        const SizedBox(height: 14),
+      ],
     );
   }
 }
@@ -190,7 +184,7 @@ class _VisaSearchBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           SvgPicture.asset(
-            '.figma/image/mon8on2b-h3091wk.svg',
+            'assets/images/visa/mon8on2b-h3091wk.svg',
             width: 16,
             height: 16,
           ),

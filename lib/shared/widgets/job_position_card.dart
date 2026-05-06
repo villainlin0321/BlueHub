@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class JobPositionCardData {
   const JobPositionCardData({
@@ -9,6 +10,7 @@ class JobPositionCardData {
     required this.company,
     required this.location,
     this.companyAvatarAssetPath,
+    this.locationIconAssetPath,
     this.showApplyButton = false,
     this.archived = false,
     this.statusText,
@@ -22,6 +24,7 @@ class JobPositionCardData {
   final String company;
   final String location;
   final String? companyAvatarAssetPath;
+  final String? locationIconAssetPath;
   final bool showApplyButton;
   final bool archived;
   final String? statusText;
@@ -117,7 +120,12 @@ class JobPositionCard extends StatelessWidget {
                       ),
                       if (data.location.trim().isNotEmpty) ...<Widget>[
                         const SizedBox(width: 12),
-                        Flexible(child: _LocationInfo(location: data.location)),
+                        Flexible(
+                          child: _LocationInfo(
+                            location: data.location,
+                            iconAssetPath: data.locationIconAssetPath,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -250,16 +258,17 @@ class _CompanyInfo extends StatelessWidget {
 }
 
 class _LocationInfo extends StatelessWidget {
-  const _LocationInfo({required this.location});
+  const _LocationInfo({required this.location, this.iconAssetPath});
 
   final String location;
+  final String? iconAssetPath;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const Icon(Icons.place_outlined, size: 16, color: Color(0xFFBCBCBC)),
+        _LocationIcon(assetPath: iconAssetPath),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
@@ -275,6 +284,51 @@ class _LocationInfo extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LocationIcon extends StatelessWidget {
+  const _LocationIcon({this.assetPath});
+
+  final String? assetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    if (assetPath == null || assetPath!.isEmpty) {
+      return const Icon(
+        Icons.place_outlined,
+        size: 16,
+        color: Color(0xFFBCBCBC),
+      );
+    }
+
+    if (assetPath!.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.asset(
+        assetPath!,
+        width: 16,
+        height: 16,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => const Icon(
+          Icons.place_outlined,
+          size: 16,
+          color: Color(0xFFBCBCBC),
+        ),
+      );
+    }
+
+    return Image.asset(
+      assetPath!,
+      width: 16,
+      height: 16,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) {
+        return const Icon(
+          Icons.place_outlined,
+          size: 16,
+          color: Color(0xFFBCBCBC),
+        );
+      },
     );
   }
 }
