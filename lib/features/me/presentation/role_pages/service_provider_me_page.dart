@@ -43,24 +43,21 @@ class ServiceProviderMePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return SafeArea(
-      bottom: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: bottomInset + 96),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            const _HeaderSection(),
-            const SizedBox(height: 40),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: _MenuCard(
-                items: _menus,
-                onTap: (String label) => _showPlaceholderToast(context, label),
-              ),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: bottomInset + 96),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const _HeaderSection(),
+          const SizedBox(height: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _MenuCard(
+              items: _menus,
+              onTap: (String label) => _showPlaceholderToast(context, label),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
