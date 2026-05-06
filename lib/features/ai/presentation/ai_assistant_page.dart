@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
+import '../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../shared/widgets/tag_chip.dart';
 
 /// AI 助手页（按 Figma 截图还原：对话流 + 推荐问题 + 输入框）。
@@ -56,65 +57,71 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pagePadding,
-                10,
-                AppSpacing.pagePadding,
-                10,
+      backgroundColor: Colors.transparent,
+      body: JobSeekerPageBackground(
+        fit: BoxFit.fitWidth,
+        alignment: Alignment.topCenter,
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pagePadding,
+                  10,
+                  AppSpacing.pagePadding,
+                  10,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Text(
+                      'AI助手',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text('历史记录'),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: <Widget>[
-                  Text(
-                    'AI助手',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.pagePadding,
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('历史记录'),
-                  ),
-                ],
+                  children: <Widget>[
+                    ..._messages.map((m) => _ChatBubble(message: m)),
+                    const SizedBox(height: 10),
+                    _QuickQuestion(
+                      label: '推荐适合我的欧洲签证服务商',
+                      onTap: () => _controller.text = '推荐适合我的欧洲签证服务商',
+                    ),
+                    const SizedBox(height: 10),
+                    _QuickQuestion(
+                      label: '推荐匹配我的欧洲岗位',
+                      onTap: () => _controller.text = '推荐匹配我的欧洲岗位',
+                    ),
+                    const SizedBox(height: 10),
+                    _QuickQuestion(
+                      label: '签证办理流程是什么',
+                      onTap: () => _controller.text = '签证办理流程是什么',
+                    ),
+                    const SizedBox(height: 10),
+                    const _EmbeddedJobCard(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadding),
-                children: <Widget>[
-                  ..._messages.map((m) => _ChatBubble(message: m)),
-                  const SizedBox(height: 10),
-                  _QuickQuestion(
-                    label: '推荐适合我的欧洲签证服务商',
-                    onTap: () => _controller.text = '推荐适合我的欧洲签证服务商',
-                  ),
-                  const SizedBox(height: 10),
-                  _QuickQuestion(
-                    label: '推荐匹配我的欧洲岗位',
-                    onTap: () => _controller.text = '推荐匹配我的欧洲岗位',
-                  ),
-                  const SizedBox(height: 10),
-                  _QuickQuestion(
-                    label: '签证办理流程是什么',
-                    onTap: () => _controller.text = '签证办理流程是什么',
-                  ),
-                  const SizedBox(height: 10),
-                  const _EmbeddedJobCard(),
-                  const SizedBox(height: 16),
-                ],
+              _Composer(
+                controller: _controller,
+                onSend: _send,
               ),
-            ),
-            _Composer(
-              controller: _controller,
-              onSend: _send,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -403,4 +410,3 @@ class _Composer extends StatelessWidget {
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
@@ -67,6 +68,25 @@ class JobSeekerJobsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return const JobSeekerPageBackground(
+      fit: BoxFit.fitWidth,
+      alignment: Alignment.topCenter,
+      child: _JobsPageBody(),
+    );
+  }
+
+  static void _showPlaceholderMessage(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('功能开发中')));
+  }
+}
+
+class _JobsPageBody extends StatelessWidget {
+  const _JobsPageBody();
+
+  @override
+  Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return SafeArea(
@@ -102,11 +122,11 @@ class JobSeekerJobsPage extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _jobs.length,
+                itemCount: JobSeekerJobsPage._jobs.length,
               padding: EdgeInsets.zero,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (BuildContext context, int index) {
-                final _JobCardItem item = _jobs[index];
+                  final _JobCardItem item = JobSeekerJobsPage._jobs[index];
                 return JobPositionCard(
                   data: item.data,
                   onTap: () {
@@ -114,9 +134,10 @@ class JobSeekerJobsPage extends StatelessWidget {
                       context.push(RoutePaths.jobDetail);
                       return;
                     }
-                    _showPlaceholderMessage(context);
+                      JobSeekerJobsPage._showPlaceholderMessage(context);
                   },
-                  onApply: () => _showPlaceholderMessage(context),
+                    onApply: () =>
+                        JobSeekerJobsPage._showPlaceholderMessage(context),
                 );
               },
             ),
@@ -124,12 +145,6 @@ class JobSeekerJobsPage extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static void _showPlaceholderMessage(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('功能开发中')));
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/visa_service_card.dart';
 
 /// 求职者签证页。
@@ -87,14 +88,9 @@ class _JobSeekerVisaPageState extends State<JobSeekerVisaPage> {
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/job_seeker_visa_header_bg.png'),
-          fit: BoxFit.fitWidth,
-          alignment: Alignment.topCenter,
-        ),
-      ),
+    return JobSeekerPageBackground(
+      fit: BoxFit.fitWidth,
+      alignment: Alignment.topCenter,
       child: SingleChildScrollView(
         padding: EdgeInsets.only(bottom: bottomPadding + 20),
         child: Column(

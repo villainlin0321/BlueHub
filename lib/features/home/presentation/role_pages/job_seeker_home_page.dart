@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
+import '../../../../shared/widgets/job_seeker_page_background.dart';
 
 /// 求职者首页：独立页面文件，后续该角色的业务逻辑统一放在这里处理。
 class JobSeekerHomePage extends ConsumerWidget {
@@ -152,28 +153,20 @@ class _HomeTopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
 
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(
-          child: SvgPicture.asset(
-            'assets/images/mon5bjog-m6uktu1.svg',
-            fit: BoxFit.cover,
-          ),
+    return JobSeekerPageBackground(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, topPadding + 6, 15, 12),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _HeaderProfileRow(),
+            SizedBox(height: 12),
+            _HomeSearchBar(),
+            SizedBox(height: 20),
+            _ShortcutRow(items: JobSeekerHomePage._shortcutItems),
+          ],
         ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(12, topPadding + 6, 15, 12),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _HeaderProfileRow(),
-              SizedBox(height: 12),
-              _HomeSearchBar(),
-              SizedBox(height: 20),
-              _ShortcutRow(items: JobSeekerHomePage._shortcutItems),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

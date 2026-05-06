@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/widgets/job_seeker_page_background.dart';
 
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends StatelessWidget {
@@ -46,31 +47,35 @@ class JobSeekerMePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return SafeArea(
-      bottom: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 96),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _Header(
-              onMessageTap: () => _showPlaceholderToast(context, '消息中心'),
-              onSettingsTap: () => _showPlaceholderToast(context, '设置'),
-            ),
-            const SizedBox(height: 11),
-            _ProfileCard(
-              onTap: () => _showPlaceholderToast(context, '个人资料'),
-              onOrderTap: () => context.push(RoutePaths.myOrders),
-              onResumeTap: () => context.push(RoutePaths.myResume),
-              onApplicationTap: () => context.push(RoutePaths.myApplications),
-              onFavoriteTap: () => context.push(RoutePaths.myFavorites),
-            ),
-            const SizedBox(height: 12),
-            _MenuCard(
-              items: _menuItems,
-              onItemTap: (String label) => _handleMenuTap(context, label),
-            ),
-          ],
+    return JobSeekerPageBackground(
+      fit: BoxFit.fitWidth,
+      alignment: Alignment.topCenter,
+      child: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 96),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _Header(
+                onMessageTap: () => _showPlaceholderToast(context, '消息中心'),
+                onSettingsTap: () => _showPlaceholderToast(context, '设置'),
+              ),
+              const SizedBox(height: 11),
+              _ProfileCard(
+                onTap: () => _showPlaceholderToast(context, '个人资料'),
+                onOrderTap: () => context.push(RoutePaths.myOrders),
+                onResumeTap: () => context.push(RoutePaths.myResume),
+                onApplicationTap: () => context.push(RoutePaths.myApplications),
+                onFavoriteTap: () => context.push(RoutePaths.myFavorites),
+              ),
+              const SizedBox(height: 12),
+              _MenuCard(
+                items: _menuItems,
+                onItemTap: (String label) => _handleMenuTap(context, label),
+              ),
+            ],
+          ),
         ),
       ),
     );
