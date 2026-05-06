@@ -39,7 +39,6 @@ class CompanyHomePage extends ConsumerWidget {
       matchPercent: '85%',
       tags: <String>['5年经验', '高级厨师证', '随时到岗'],
       deliveryTime: '昨日14:40投递',
-      backgroundAssetPath: 'assets/images/home/mon6z4rt-r2ngunt.svg',
     ),
     _ResumeCardItem(
       name: '万先生',
@@ -48,7 +47,6 @@ class CompanyHomePage extends ConsumerWidget {
       matchPercent: '85%',
       tags: <String>['5年经验', '高级厨师证', '随时到岗'],
       deliveryTime: '昨日14:40投递',
-      backgroundAssetPath: 'assets/images/home/mon6z4rt-eonp2ib.svg',
     ),
   ];
 
