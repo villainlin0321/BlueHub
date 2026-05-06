@@ -11,22 +11,22 @@ class ServiceProviderHomePage extends ConsumerWidget {
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
       label: '发布套餐',
-      assetPath: 'assets/images/home/mon6azmx-yws4mpq.svg',
+      assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_box_outlined,
     ),
     _QuickActionItem(
       label: '订单处理',
-      assetPath: 'assets/images/home/mon6azmx-b7iu27t.svg',
+      assetPath: 'assets/images/mon6azmx-b7iu27t.svg',
       fallback: Icons.fact_check_outlined,
     ),
     _QuickActionItem(
       label: '人才中心',
-      assetPath: 'assets/images/home/mon6azmx-gxjq4wk.svg',
+      assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
     ),
     _QuickActionItem(
       label: '财务结算',
-      assetPath: 'assets/images/home/mon6azmx-tafz6au.svg',
+      assetPath: 'assets/images/mon6azmx-tafz6au.svg',
       fallback: Icons.account_balance_wallet_outlined,
     ),
   ];
@@ -118,7 +118,7 @@ class _TopHeroSection extends StatelessWidget {
           bottomRight: Radius.circular(28),
         ),
         image: DecorationImage(
-          image: AssetImage('assets/images/home/mon6azmx-levpzde.png'),
+          image: AssetImage('assets/images/mon6azmx-levpzde.png'),
           fit: BoxFit.cover,
         ),
       ),
@@ -156,7 +156,7 @@ class _StatusBarRow extends StatelessWidget {
         ),
         const Spacer(),
         SvgPicture.asset(
-          'assets/images/home/mon6azmx-n37s2z8.svg',
+          'assets/images/mon6azmx-n37s2z8.svg',
           width: 71,
           height: 12,
         ),
@@ -173,7 +173,7 @@ class _ProviderInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Image.asset('assets/images/home/mon6azmx-ecnf5h2.png', width: 40, height: 40),
+        Image.asset('assets/images/mon6azmx-ecnf5h2.png', width: 40, height: 40),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -230,7 +230,7 @@ class _CertificationBadge extends StatelessWidget {
           Positioned(
             left: 11,
             child: SvgPicture.asset(
-              'assets/images/home/mon6azmx-eeohkob.svg',
+              'assets/images/mon6azmx-eeohkob.svg',
               width: 36,
               height: 14,
             ),
@@ -238,7 +238,7 @@ class _CertificationBadge extends StatelessWidget {
           Positioned(
             left: 0,
             child: SvgPicture.asset(
-              'assets/images/home/mon6azmx-2975g0p.svg',
+              'assets/images/mon6azmx-2975g0p.svg',
               width: 15,
               height: 14,
             ),
@@ -289,7 +289,7 @@ class _MessageActionButton extends StatelessWidget {
         children: <Widget>[
           const Positioned.fill(
             child: AppSvgIcon(
-              assetPath: 'assets/images/home/mon6azmx-xwxov19.svg',
+              assetPath: 'assets/images/mon6azmx-xwxov19.svg',
               fallback: Icons.chat_bubble_outline_rounded,
               size: 24,
               color: Colors.white,
@@ -381,7 +381,7 @@ class _AiAssistantBanner extends StatelessWidget {
       children: <Widget>[
         Positioned.fill(
           child: SvgPicture.asset(
-            'assets/images/home/mon6azmx-n75bcra.svg',
+            'assets/images/mon6azmx-n75bcra.svg',
             fit: BoxFit.fill,
           ),
         ),
@@ -390,7 +390,7 @@ class _AiAssistantBanner extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Image.asset(
-                'assets/images/home/mon6azmx-7balpug.png',
+                'assets/images/mon6azmx-7balpug.png',
                 width: 40,
                 height: 40,
               ),
@@ -444,7 +444,7 @@ class _AiAssistantBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Image.asset(
-                      'assets/images/home/mon6azmx-wqt9b30.png',
+                      'assets/images/mon6azmx-wqt9b30.png',
                       width: 12,
                       height: 12,
                     ),
@@ -486,7 +486,7 @@ class _OrdersSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset('assets/images/home/mon6azmx-ic3gin6.png', width: 16, height: 16),
+        Image.asset('assets/images/mon6azmx-ic3gin6.png', width: 16, height: 16),
       ],
     );
   }

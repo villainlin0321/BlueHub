@@ -195,7 +195,7 @@ class _QualificationCertificationStepThreePageState
                               height: 20,
                               child: Center(
                                 child: SvgPicture.asset(
-                                  'assets/images/resume_editor/add_circle.svg',
+                                  'assets/images/add_circle.svg',
                                   width: 20,
                                   height: 20,
                                   colorFilter: const ColorFilter.mode(

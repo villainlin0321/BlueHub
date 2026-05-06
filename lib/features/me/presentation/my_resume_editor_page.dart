@@ -1419,26 +1419,26 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
 /// 编辑页资源路径。
 class _ResumeEditorAssets {
   static const String completionBadgeBg =
-      'assets/images/resume_editor/completion_badge_bg.png';
+      'assets/images/completion_badge_bg.png';
   static const String basicInfoEdit =
-      'assets/images/resume_editor/basic_info_edit.svg';
+      'assets/images/basic_info_edit.svg';
   static const String profileAvatar =
-      'assets/images/resume_editor/profile_avatar.png';
-  static const String addCircle = 'assets/images/resume_editor/add_circle.svg';
-  static const String tagRemove = 'assets/images/resume_editor/tag_remove.svg';
-  static const String tagAdd = 'assets/images/resume_editor/tag_add.svg';
+      'assets/images/profile_avatar.png';
+  static const String addCircle = 'assets/images/add_circle.svg';
+  static const String tagRemove = 'assets/images/tag_remove.svg';
+  static const String tagAdd = 'assets/images/tag_add.svg';
   static const String dropdownArrow =
-      'assets/images/resume_editor/dropdown_arrow.png';
+      'assets/images/dropdown_arrow.png';
   static const String itemChevron =
-      'assets/images/resume_editor/item_chevron.png';
+      'assets/images/item_chevron.png';
   static const String sectionChevron =
-      'assets/images/resume_editor/section_chevron.svg';
+      'assets/images/section_chevron.svg';
   static const String languageTagRemove =
-      'assets/images/resume_editor/language_tag_remove.svg';
+      'assets/images/language_tag_remove.svg';
   static const String certificatePreview =
-      'assets/images/resume_editor/certificate_preview.png';
+      'assets/images/certificate_preview.png';
   static const String educationLogo =
-      'assets/images/resume_editor/education_logo.png';
+      'assets/images/education_logo.png';
 }
 
 /// 工作经历展示模型。
