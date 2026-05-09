@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../current_user_view_data.dart';
+import '../../../auth/application/auth_session_provider.dart';
+import '../../../auth/application/auth_user.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 
 /// 求职者端我的页，按 Figma 设计图还原。
-class JobSeekerMePage extends StatelessWidget {
+class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({super.key});
 
   static const String _profileCardBgAsset =
       'assets/images/mou4gf12-37h742f.svg';
-  static const String _menuCardBgAsset =
-      'assets/images/mou4gf12-4znlacm.svg';
+  static const String _menuCardBgAsset = 'assets/images/mou4gf12-4znlacm.svg';
   static const String _verifiedBadgeBgAsset =
       'assets/images/mou4gf12-gd4t3xy.svg';
   static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
@@ -44,8 +47,13 @@ class JobSeekerMePage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  /// 构建求职者端“我的”页面，并展示当前登录用户的资料摘要。
+  Widget build(BuildContext context, WidgetRef ref) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final AuthUser? currentUser = ref.watch(authSessionProvider).user;
+    final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
+      currentUser,
+    );
 
     return JobSeekerPageBackground(
       fit: BoxFit.fitWidth,
@@ -63,7 +71,8 @@ class JobSeekerMePage extends StatelessWidget {
               ),
               const SizedBox(height: 11),
               _ProfileCard(
-                onTap: () => _showPlaceholderToast(context, '个人资料'),
+                userViewData: userViewData,
+                onTap: () => context.push(RoutePaths.myInfo),
                 onOrderTap: () => context.push(RoutePaths.myOrders),
                 onResumeTap: () => context.push(RoutePaths.myResume),
                 onApplicationTap: () => context.push(RoutePaths.myApplications),
@@ -81,6 +90,7 @@ class JobSeekerMePage extends StatelessWidget {
     );
   }
 
+  /// 根据菜单名称分发跳转行为。
   void _handleMenuTap(BuildContext context, String label) {
     switch (label) {
       case '简历管理':
@@ -94,6 +104,7 @@ class JobSeekerMePage extends StatelessWidget {
     }
   }
 
+  /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。
   void _showPlaceholderToast(BuildContext context, String label) {
     ScaffoldMessenger.of(
       context,
@@ -175,6 +186,7 @@ class _TopIconButton extends StatelessWidget {
 
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
+    required this.userViewData,
     required this.onTap,
     required this.onOrderTap,
     required this.onResumeTap,
@@ -182,6 +194,7 @@ class _ProfileCard extends StatelessWidget {
     required this.onFavoriteTap,
   });
 
+  final CurrentUserViewData userViewData;
   final VoidCallback onTap;
   final VoidCallback onOrderTap;
   final VoidCallback onResumeTap;
@@ -189,6 +202,7 @@ class _ProfileCard extends StatelessWidget {
   final VoidCallback onFavoriteTap;
 
   @override
+  /// 构建顶部资料卡，并展示当前登录用户的核心信息。
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(19.2),
@@ -209,11 +223,10 @@ class _ProfileCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: Row(
                     children: <Widget>[
-                      Image.asset(
-                        JobSeekerMePage._avatarAsset,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
+                      _UserAvatar(
+                        avatarUrl: userViewData.avatarUrl,
+                        fallbackAssetPath: JobSeekerMePage._avatarAsset,
+                        size: 48,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -225,7 +238,7 @@ class _ProfileCard extends StatelessWidget {
                               children: <Widget>[
                                 Flexible(
                                   child: Text(
-                                    '程先生',
+                                    userViewData.nickname,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -237,36 +250,38 @@ class _ProfileCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 42,
-                                  height: 18,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: <Widget>[
-                                      SvgPicture.asset(
-                                        JobSeekerMePage._verifiedBadgeBgAsset,
-                                        fit: BoxFit.fill,
-                                      ),
-                                      const Center(
-                                        child: Text(
-                                          '已实名',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
-                                            height: 14 / 10,
+                                if (userViewData.isVerified) ...<Widget>[
+                                  SizedBox(
+                                    width: 42,
+                                    height: 18,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: <Widget>[
+                                        SvgPicture.asset(
+                                          JobSeekerMePage._verifiedBadgeBgAsset,
+                                          fit: BoxFit.fill,
+                                        ),
+                                        const Center(
+                                          child: Text(
+                                            '已实名',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                              height: 14 / 10,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 5),
-                            const Text(
-                              '132****3456',
-                              style: TextStyle(
+                            Text(
+                              userViewData.maskedPhone,
+                              style: const TextStyle(
                                 color: Color(0xFF595959),
                                 fontSize: 13,
                                 height: 16 / 13,
@@ -469,4 +484,50 @@ class _MenuActionItem {
   final String label;
   final String iconAsset;
   final IconData fallbackIcon;
+}
+
+/// 用户头像组件：优先展示服务端头像，失败时回退到本地占位图。
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar({
+    required this.avatarUrl,
+    required this.fallbackAssetPath,
+    required this.size,
+  });
+
+  final String avatarUrl;
+  final String fallbackAssetPath;
+  final double size;
+
+  @override
+  /// 构建圆形头像，统一处理网络图、占位图和异常态。
+  Widget build(BuildContext context) {
+    final Widget fallback = ClipOval(
+      child: Image.asset(
+        fallbackAssetPath,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
+    );
+    if (avatarUrl.isEmpty) {
+      return fallback;
+    }
+
+    return ClipOval(
+      child: Image.network(
+        avatarUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+        loadingBuilder:
+            (BuildContext context, Widget child, ImageChunkEvent? event) {
+              if (event == null) {
+                return child;
+              }
+              return fallback;
+            },
+      ),
+    );
+  }
 }

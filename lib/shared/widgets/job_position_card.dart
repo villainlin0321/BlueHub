@@ -37,12 +37,17 @@ class JobPositionCard extends StatelessWidget {
     required this.data,
     this.onApply,
     this.onTap,
+    this.isApplying = false,
+    this.applyButtonText = '一键投递',
   });
 
   final JobPositionCardData data;
   final VoidCallback? onApply;
   final VoidCallback? onTap;
+  final bool isApplying;
+  final String applyButtonText;
 
+  /// 构建职位卡片，并根据外部状态展示投递按钮的禁用或加载文案。
   @override
   Widget build(BuildContext context) {
     final Widget cardBody = Container(
@@ -146,7 +151,7 @@ class JobPositionCard extends StatelessWidget {
                   SizedBox(
                     height: 28,
                     child: FilledButton(
-                      onPressed: onApply,
+                      onPressed: isApplying ? null : onApply,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF096DD9),
                         disabledBackgroundColor: const Color(0xFF91C3F7),
@@ -156,8 +161,8 @@ class JobPositionCard extends StatelessWidget {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        '一键投递',
+                      child: Text(
+                        applyButtonText,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,

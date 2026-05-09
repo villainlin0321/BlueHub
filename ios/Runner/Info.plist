@@ -46,5 +46,6 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
+	<dict/>
 </dict>
 </plist>

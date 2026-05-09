@@ -10,6 +10,8 @@ import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
+import '../job_apply_helper.dart';
+import '../job_detail_page.dart';
 
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
 class JobSeekerJobsPage extends ConsumerWidget {
@@ -22,12 +24,6 @@ class JobSeekerJobsPage extends ConsumerWidget {
       alignment: Alignment.topCenter,
       child: _JobsPageBody(),
     );
-  }
-
-  static void _showPlaceholderMessage(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('功能开发中')));
   }
 }
 
@@ -42,6 +38,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   static const int _pageSize = 20;
 
   final List<JobListVO> _jobs = <JobListVO>[];
+  final Set<int> _submittingJobIds = <int>{};
+  final Set<int> _appliedJobIds = <int>{};
   int _currentPage = 0;
   bool _hasNext = true;
   bool _isInitialLoading = true;
@@ -102,6 +100,9 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               isInitialLoading: _isInitialLoading,
               initialErrorMessage: _initialErrorMessage,
               onRetry: _loadInitialJobs,
+              applyingJobIds: _submittingJobIds,
+              appliedJobIds: _appliedJobIds,
+              onApply: _handleApply,
             ),
             SliverToBoxAdapter(
               child: SizedBox(height: bottomPadding + 24),
@@ -200,6 +201,41 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       return error.message;
     }
     return '岗位列表加载失败，请稍后重试';
+  }
+
+  /// 提交岗位投递请求，并根据结果更新按钮状态与页面提示。
+  Future<void> _handleApply(JobListVO job) async {
+    if (_submittingJobIds.contains(job.jobId) || _appliedJobIds.contains(job.jobId)) {
+      return;
+    }
+
+    setState(() {
+      _submittingJobIds.add(job.jobId);
+    });
+
+    final String? errorMessage = await submitJobApplication(
+      context,
+      jobId: job.jobId,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (errorMessage == null) {
+      setState(() {
+        _submittingJobIds.remove(job.jobId);
+        _appliedJobIds.add(job.jobId);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('投递成功')));
+    } else {
+      setState(() {
+        _submittingJobIds.remove(job.jobId);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+    }
   }
 }
 
@@ -381,13 +417,20 @@ class _JobsListSection extends StatelessWidget {
     required this.isInitialLoading,
     required this.initialErrorMessage,
     required this.onRetry,
+    required this.applyingJobIds,
+    required this.appliedJobIds,
+    required this.onApply,
   });
 
   final List<JobListVO> jobs;
   final bool isInitialLoading;
   final String? initialErrorMessage;
   final Future<void> Function() onRetry;
+  final Set<int> applyingJobIds;
+  final Set<int> appliedJobIds;
+  final Future<void> Function(JobListVO job) onApply;
 
+  /// 根据列表状态切换首屏加载、错误、空态和正常卡片列表。
   @override
   Widget build(BuildContext context) {
     if (isInitialLoading) {
@@ -426,8 +469,17 @@ class _JobsListSection extends StatelessWidget {
             padding: EdgeInsets.only(bottom: index == jobs.length - 1 ? 0 : 12),
             child: JobPositionCard(
               data: item.toCardData(),
-              onTap: () => context.push(RoutePaths.jobDetail),
-              onApply: () => JobSeekerJobsPage._showPlaceholderMessage(context),
+              onTap: () => context.push(
+                RoutePaths.jobDetail,
+                extra: JobDetailPageArgs(jobId: item.jobId),
+              ),
+              onApply: appliedJobIds.contains(item.jobId)
+                  ? null
+                  : () {
+                      onApply(item);
+                    },
+              isApplying: applyingJobIds.contains(item.jobId),
+              applyButtonText: appliedJobIds.contains(item.jobId) ? '已投递' : '一键投递',
             ),
           );
         }, childCount: jobs.length),

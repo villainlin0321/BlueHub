@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_exception.dart';
+import '../data/resume_models.dart';
+import '../data/resume_providers.dart';
 import 'add_education_experience_page.dart';
 import 'add_skill_certificate_page.dart';
 import 'add_work_experience_page.dart';
@@ -16,14 +20,17 @@ enum ResumeEditorMode { create, edit }
 
 /// 简历编辑页的路由参数。
 class ResumeEditorArgs {
-  const ResumeEditorArgs.create()
+  const ResumeEditorArgs.create({this.isPublic = true})
     : mode = ResumeEditorMode.create,
       draft = null;
 
-  const ResumeEditorArgs.edit(this.draft) : mode = ResumeEditorMode.edit;
+  ResumeEditorArgs.edit(this.draft)
+    : mode = ResumeEditorMode.edit,
+      isPublic = draft?.isPublic ?? true;
 
   final ResumeEditorMode mode;
   final ResumeDraft? draft;
+  final bool isPublic;
 }
 
 /// 简历草稿数据。
@@ -35,9 +42,11 @@ class ResumeDraft {
     this.gender = '',
     this.phone = '',
     this.salary = '',
+    this.salaryCurrency = 'EUR',
     this.jobTitle = '',
     this.duration = '',
     this.summary = '',
+    this.isPublic = true,
   });
 
   final String name;
@@ -46,22 +55,24 @@ class ResumeDraft {
   final String gender;
   final String phone;
   final String salary;
+  final String salaryCurrency;
   final String jobTitle;
   final String duration;
   final String summary;
+  final bool isPublic;
 }
 
 /// 我的简历编辑页。
-class MyResumeEditorPage extends StatefulWidget {
+class MyResumeEditorPage extends ConsumerStatefulWidget {
   const MyResumeEditorPage({super.key, required this.args});
 
   final ResumeEditorArgs args;
 
   @override
-  State<MyResumeEditorPage> createState() => _MyResumeEditorPageState();
+  ConsumerState<MyResumeEditorPage> createState() => _MyResumeEditorPageState();
 }
 
-class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
+class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   static const ResumeDraft _demoDraft = ResumeDraft(
     name: '程先生',
     region: '德国',
@@ -156,6 +167,8 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
   late final List<_ResumeEducation> _educations;
   late final String _salaryValue;
   late String _selfEvaluation;
+  bool _isSaving = false;
+  bool _didSave = false;
 
   /// 当前页面是否为创建模式。
   bool get _isCreateMode => widget.args.mode == ResumeEditorMode.create;
@@ -218,9 +231,13 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       gender: source.gender.isEmpty ? _demoDraft.gender : source.gender,
       phone: source.phone.isEmpty ? _demoDraft.phone : source.phone,
       salary: source.salary.isEmpty ? _demoDraft.salary : source.salary,
+      salaryCurrency: source.salaryCurrency.isEmpty
+          ? _demoDraft.salaryCurrency
+          : source.salaryCurrency,
       jobTitle: source.jobTitle.isEmpty ? _demoDraft.jobTitle : source.jobTitle,
       duration: source.duration.isEmpty ? _demoDraft.duration : source.duration,
       summary: source.summary.isEmpty ? _demoDraft.summary : source.summary,
+      isPublic: source.isPublic,
     );
   }
 
@@ -314,7 +331,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       leading: IconButton(
         onPressed: () {
           if (context.canPop()) {
-            context.pop();
+            context.pop(_didSave);
             return;
           }
           context.go(RoutePaths.myResume);
@@ -1190,15 +1207,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
                 child: SizedBox(
                   height: 44,
                   child: OutlinedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            _isCreateMode ? '创建简历已保存（占位）' : '简历修改已保存（占位）',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _isSaving ? null : _saveResume,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF171A1D),
                       backgroundColor: Colors.white,
@@ -1223,7 +1232,7 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton(
-                    onPressed: _openPreview,
+                    onPressed: _isSaving ? null : _saveAndPreview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF096DD9),
                       foregroundColor: Colors.white,
@@ -1258,6 +1267,155 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
     ).showSnackBar(const SnackBar(content: Text('编辑功能开发中')));
   }
 
+  /// 提交保存接口，并在成功后把结果回传上一页用于刷新。
+  Future<void> _saveResume() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await ref.read(resumeServiceProvider).saveResume(
+        request: _buildSaveRequest(),
+      );
+      if (!mounted) {
+        return;
+      }
+      _didSave = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isCreateMode ? '创建简历已保存' : '简历修改已保存'),
+        ),
+      );
+      context.pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveSaveErrorMessage(error))));
+    }
+  }
+
+  /// 保存当前编辑内容后再进入预览页，避免预览与服务端数据不一致。
+  Future<void> _saveAndPreview() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await ref.read(resumeServiceProvider).saveResume(
+        request: _buildSaveRequest(),
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+      });
+      _didSave = true;
+      _openPreview();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveSaveErrorMessage(error))));
+    }
+  }
+
+  /// 组装保存简历所需的全量请求。
+  SaveResumeBO _buildSaveRequest() {
+    return SaveResumeBO(
+      jobIntention: JobIntentionBO(
+        positions: _jobTags,
+        countries: _countryTags,
+        salaryMin: _parseSalaryMin(),
+        salaryMax: _parseSalaryMax(),
+        salaryCurrency: _draft.salaryCurrency,
+      ),
+      workExperiences: _experiences
+          .asMap()
+          .entries
+          .map(
+            (entry) => WorkExperienceBO(
+              expId: 0,
+              company: entry.value.company,
+              department: '',
+              position: entry.value.role,
+              startDate: _parsePeriodStart(entry.value.period),
+              endDate: _parsePeriodEnd(entry.value.period),
+              isCurrent: entry.value.period.contains('至今'),
+              description: entry.value.summary,
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      languages: _languageTags
+          .asMap()
+          .entries
+          .map(
+            (entry) => LanguageAbilityBO(
+              langId: 0,
+              language: _resolveLanguageName(entry.value),
+              certificate: entry.value,
+              level: '',
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      skillCertificates: _certificates
+          .asMap()
+          .entries
+          .map(
+            (entry) => SkillCertificateBO(
+              certId: 0,
+              name: entry.value.title,
+              level: '',
+              issuer: entry.value.authority,
+              issuedDate: entry.value.issuedAt,
+              imageUrl: entry.value.previewFilePaths.isNotEmpty
+                  ? entry.value.previewFilePaths.first
+                  : '',
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      educations: _educations
+          .asMap()
+          .entries
+          .map(
+            (entry) => EducationBO(
+              eduId: 0,
+              school: entry.value.school,
+              major: entry.value.subtitle,
+              degree: '',
+              startYear: _parseEducationStart(entry.value.period),
+              endYear: _parseEducationEnd(entry.value.period),
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      selfEvaluation: _selfEvaluation,
+      isPublic: _draft.isPublic,
+    );
+  }
+
+  /// 统一提取保存失败提示。
+  String _resolveSaveErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '简历保存失败，请稍后重试';
+  }
+
   /// 跳转到简历预览页，复用当前页面已经整理好的草稿数据。
   void _openPreview() {
     context.push(RoutePaths.myResumePreview, extra: _currentDraft);
@@ -1270,11 +1428,80 @@ class _MyResumeEditorPageState extends State<MyResumeEditorPage> {
       age: _draft.age,
       gender: _draft.gender,
       phone: _draft.phone,
-      salary: _draft.salary,
+      salary: _draft.salary.contains('-') || _draft.salary.contains('~')
+          ? _draft.salary
+          : _salaryValue,
+      salaryCurrency: _draft.salaryCurrency,
       jobTitle: _draft.jobTitle,
       duration: _draft.duration,
       summary: _selfEvaluation,
+      isPublic: _draft.isPublic,
     );
+  }
+
+  /// 提取保存请求使用的最低薪资。
+  double _parseSalaryMin() {
+    return _parseNumeric(_salaryValue);
+  }
+
+  /// 提取保存请求使用的最高薪资。
+  double _parseSalaryMax() {
+    final String salary = _draft.salary;
+    if (salary.contains('-')) {
+      return _parseNumeric(salary.split('-').last);
+    }
+    if (salary.contains('~')) {
+      return _parseNumeric(salary.split('~').last);
+    }
+    return 0;
+  }
+
+  double _parseNumeric(String text) {
+    final String normalized = text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  /// 将“2020.09 - 2024.11 / 2020 - 2024 / 2020.09 - 至今”解析为接口需要的开始时间。
+  String _parsePeriodStart(String period) {
+    final List<String> parts = period.split(RegExp(r'\s*-\s*'));
+    return parts.isEmpty ? '' : parts.first.trim();
+  }
+
+  /// 将“至今”类文案转换为空结束时间，并配合 `isCurrent` 使用。
+  String _parsePeriodEnd(String period) {
+    final List<String> parts = period.split(RegExp(r'\s*-\s*'));
+    if (parts.length < 2) {
+      return '';
+    }
+    final String end = parts.last.trim();
+    return end == '至今' ? '' : end;
+  }
+
+  int _parseEducationStart(String period) {
+    final String start = _parsePeriodStart(period);
+    return int.tryParse(start.split('.').first) ?? 0;
+  }
+
+  int _parseEducationEnd(String period) {
+    final String end = _parsePeriodEnd(period);
+    return int.tryParse(end.split('.').first) ?? 0;
+  }
+
+  /// 从证书名中尽量提取语言名称，证书原文仍保留到 certificate 字段。
+  String _resolveLanguageName(String label) {
+    if (label.contains('德')) {
+      return '德语';
+    }
+    if (label.contains('法')) {
+      return '法语';
+    }
+    if (label.contains('英')) {
+      return '英语';
+    }
+    if (label.contains('西班牙')) {
+      return '西班牙语';
+    }
+    return label;
   }
 
   Future<void> _openExpectedJobSheet() async {

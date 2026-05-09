@@ -8,6 +8,7 @@ class RoutePaths {
   static const postJob = '/jobs/post';
   static const ai = '/ai';
   static const me = '/me';
+  static const myInfo = '/me/info';
   static const myResume = '/me/resume';
   static const myResumePreview = '/me/resume/preview';
   static const myResumeEditor = '/me/resume/editor';

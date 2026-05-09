@@ -1,73 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_exception.dart';
+import '../data/resume_models.dart';
+import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
 
 /// 我的简历页。
 ///
-/// 这里先按设计稿实现静态展示与本地交互：
-/// 1. 支持切换默认展示简历。
-/// 2. 支持切换首份简历的“可见”开关。
-/// 3. 支持进入管理态，展示卡片管理操作。
-/// 4. 支持弹出删除确认弹窗并执行本地删除。
-/// 5. 底部“创建简历”按钮先保留占位提示。
-class MyResumePage extends StatefulWidget {
+/// 当前改为真实接口驱动：
+/// 1. 首屏调用 `getMyResume` 拉取当前用户简历；
+/// 2. 根据接口状态展示加载、错误、空态或内容态；
+/// 3. 仍保留原有编辑入口与管理态 UI；
+/// 4. 删除接口暂未接入，管理态下仅给出明确提示。
+class MyResumePage extends ConsumerStatefulWidget {
   const MyResumePage({super.key});
 
   @override
-  State<MyResumePage> createState() => _MyResumePageState();
+  ConsumerState<MyResumePage> createState() => _MyResumePageState();
 }
 
-class _MyResumePageState extends State<MyResumePage> {
-  static const List<_ResumeItemData> _initialResumeItems = <_ResumeItemData>[
-    _ResumeItemData(
-      name: '程先生',
-      region: '德国',
-      age: '32岁',
-      gender: '男',
-      phone: '189****8655',
-      salary: '1,500-2,000',
-      jobTitle: '伦敦康诺特酒店·高级电工',
-      duration: '2016-至今',
-      summary: '从事电气技术工作8年，持高级电工证，擅长工业电气系统安装调试、设备维护升级、配电方案优化及安全管理…',
-      avatarColor: Color(0xFF8FB6FF),
-      avatarIcon: Icons.person,
-    ),
-    _ResumeItemData(
-      name: '程先生',
-      region: '德国',
-      age: '32岁',
-      gender: '男',
-      phone: '189****8655',
-      salary: '1,500-2,000',
-      jobTitle: '伦敦康诺特酒店·高级电工',
-      duration: '2016-至今',
-      summary: '从事电气技术工作8年，持高级电工证，持有海外酒店维修经验，熟悉设备点检和安全规范执行…',
-      avatarColor: Color(0xFFB4D7FF),
-      avatarIcon: Icons.face_rounded,
-    ),
-    _ResumeItemData(
-      name: '程先生',
-      region: '德国',
-      age: '32岁',
-      gender: '男',
-      phone: '189****8655',
-      salary: '1,500-2,000',
-      jobTitle: '伦敦康诺特酒店·高级电工',
-      duration: '2016-至今',
-      summary: '从事电气技术工作8年，持高级电工证，擅长工业电气系统安装调试、设备维护升级及安全管理…',
-      avatarColor: Color(0xFF9EC2FF),
-      avatarIcon: Icons.person,
-    ),
-  ];
-
-  late final List<_ResumeItemData> _resumeItems = List<_ResumeItemData>.of(
-    _initialResumeItems,
-  );
-  int _defaultResumeIndex = 0;
-  bool _isFirstResumeVisible = true;
+class _MyResumePageState extends ConsumerState<MyResumePage> {
+  ResumeVO? _resume;
+  bool _isLoading = true;
+  bool _isSavingVisibility = false;
   bool _isManaging = false;
+  bool _isResumeVisible = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadResume();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +46,44 @@ class _MyResumePageState extends State<MyResumePage> {
       body: _buildBody(),
       bottomNavigationBar: _buildBottomAction(context),
     );
+  }
+
+  /// 拉取当前登录用户的简历，并切换页面状态。
+  Future<void> _loadResume() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final ResumeVO resume = await ref.read(resumeServiceProvider).getMyResume();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resume = resume;
+        _isLoading = false;
+        _errorMessage = null;
+        _isResumeVisible = resume.isPublic ?? _isResumeVisible;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resume = null;
+        _isLoading = false;
+        _errorMessage = _resolveErrorMessage(error);
+      });
+    }
+  }
+
+  /// 提取简历请求失败时的用户可读文案。
+  String _resolveErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '简历加载失败，请稍后重试';
   }
 
   /// 构建顶部导航栏，处理返回与右上角“管理”文案。
@@ -111,32 +118,63 @@ class _MyResumePageState extends State<MyResumePage> {
         ),
       ),
       actions: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: TextButton(
-            onPressed: _toggleManageMode,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF262626),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(44, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              _isManaging ? '完成' : '管理',
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
+        if (_resume != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: _toggleManageMode,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF262626),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(44, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                _isManaging ? '完成' : '管理',
+                style: const TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
 
-  /// 构建页面主体内容，包含说明文案和简历卡片列表。
+  /// 构建页面主体内容，根据接口状态切换不同 UI。
   Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return _ResumeErrorState(
+        message: _errorMessage!,
+        onRetry: _loadResume,
+      );
+    }
+    final ResumeVO? resume = _resume;
+    if (resume == null) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+        children: <Widget>[
+          const Text(
+            '选择默认展示简历',
+            style: TextStyle(
+              color: Color(0xFF262626),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 20 / 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildEmptyState(),
+        ],
+      );
+    }
+
+    final _ResumeItemData item = resume.toResumeItemData();
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
       children: <Widget>[
@@ -150,22 +188,13 @@ class _MyResumePageState extends State<MyResumePage> {
           ),
         ),
         const SizedBox(height: 12),
-        if (_resumeItems.isEmpty)
-          _buildEmptyState()
-        else
-          for (var index = 0; index < _resumeItems.length; index++) ...<Widget>[
-            _buildResumeCard(index, _resumeItems[index]),
-            if (index != _resumeItems.length - 1) const SizedBox(height: 12),
-          ],
+        _buildResumeCard(item),
       ],
     );
   }
 
-  /// 构建单张简历卡片。
-  Widget _buildResumeCard(int index, _ResumeItemData item) {
-    final bool isDefault = _defaultResumeIndex == index;
-    final bool showVisibilitySwitch = index == 0;
-
+  /// 构建单张简历卡片，展示接口返回的真实简历数据。
+  Widget _buildResumeCard(_ResumeItemData item) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -176,7 +205,7 @@ class _MyResumePageState extends State<MyResumePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           InkWell(
-            onTap: _isManaging ? null : () => _openResumeEditor(item),
+            onTap: _isManaging ? null : () => _openResumeEditor(),
             borderRadius: BorderRadius.circular(8),
             child: Row(
               children: <Widget>[
@@ -244,29 +273,22 @@ class _MyResumePageState extends State<MyResumePage> {
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 12),
           if (_isManaging)
-            _buildManageActions(index)
+            _buildManageActions()
           else
             Row(
               children: <Widget>[
                 InkWell(
-                  onTap: () {
-                    // 点击任一简历的底部单选区时，切换当前默认展示简历。
-                    setState(() => _defaultResumeIndex = index);
-                  },
+                  onTap: () {},
                   borderRadius: BorderRadius.circular(10),
-                  child: Row(
+                  child: const Row(
                     children: <Widget>[
                       Icon(
-                        isDefault
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded,
+                        Icons.radio_button_checked_rounded,
                         size: 20,
-                        color: isDefault
-                            ? const Color(0xFF096DD9)
-                            : const Color(0xFFBFBFBF),
+                        color: Color(0xFF096DD9),
                       ),
-                      const SizedBox(width: 7),
-                      const Text(
+                      SizedBox(width: 7),
+                      Text(
                         '已设默认',
                         style: TextStyle(
                           color: Color(0xFF8C8C8C),
@@ -279,33 +301,28 @@ class _MyResumePageState extends State<MyResumePage> {
                   ),
                 ),
                 const Spacer(),
-                if (showVisibilitySwitch) ...<Widget>[
-                  const Text(
-                    '可见',
-                    style: TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                const Text(
+                  '可见',
+                  style: TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
                   ),
-                  const SizedBox(width: 8),
-                  Transform.scale(
-                    scale: 0.9,
-                    child: Switch(
-                      value: _isFirstResumeVisible,
-                      onChanged: (value) {
-                        // 设计稿只有首张卡片展示可见开关，这里保持同样的结构。
-                        setState(() => _isFirstResumeVisible = value);
-                      },
-                      activeThumbColor: Colors.white,
-                      activeTrackColor: const Color(0xFF096DD9),
-                      inactiveThumbColor: Colors.white,
-                      inactiveTrackColor: const Color(0xFFD9D9D9),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                Transform.scale(
+                  scale: 0.9,
+                  child: Switch(
+                    value: _isResumeVisible,
+                    onChanged: _isSavingVisibility ? null : _updateResumeVisibility,
+                    activeThumbColor: Colors.white,
+                    activeTrackColor: const Color(0xFF096DD9),
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: const Color(0xFFD9D9D9),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                ],
+                ),
               ],
             ),
         ],
@@ -313,45 +330,32 @@ class _MyResumePageState extends State<MyResumePage> {
     );
   }
 
-  /// 构建管理态下的卡片底部操作区。
-  Widget _buildManageActions(int index) {
-    final bool isDefault = _defaultResumeIndex == index;
-
+  /// 构建管理态下的底部操作区。
+  Widget _buildManageActions() {
     return Row(
       children: <Widget>[
-        InkWell(
-          onTap: () {
-            // 管理态下仍允许切换默认简历，保持与设计稿左侧勾选区一致。
-            setState(() => _defaultResumeIndex = index);
-          },
-          borderRadius: BorderRadius.circular(10),
-          child: Row(
-            children: <Widget>[
-              Icon(
-                isDefault
-                    ? Icons.check_circle_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                size: 20,
-                color: isDefault
-                    ? const Color(0xFF096DD9)
-                    : const Color(0xFFBFBFBF),
+        const Row(
+          children: <Widget>[
+            Icon(
+              Icons.check_circle_rounded,
+              size: 20,
+              color: Color(0xFF096DD9),
+            ),
+            SizedBox(width: 7),
+            Text(
+              '已设默认',
+              style: TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 20 / 14,
               ),
-              const SizedBox(width: 7),
-              const Text(
-                '已设默认',
-                style: TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         const Spacer(),
         InkWell(
-          onTap: () => _showDeleteDialog(index),
+          onTap: _showDeleteUnavailableMessage,
           borderRadius: BorderRadius.circular(10),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 2),
@@ -473,7 +477,7 @@ class _MyResumePageState extends State<MyResumePage> {
     );
   }
 
-  /// 构建空状态，占位处理全部删除后的页面反馈。
+  /// 构建空状态，用于后端未返回简历时的页面反馈。
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 48),
@@ -505,153 +509,122 @@ class _MyResumePageState extends State<MyResumePage> {
   }
 
   /// 进入创建简历页，使用空白初始值。
-  void _openCreateResume() {
-    context.push(
+  Future<void> _openCreateResume() async {
+    final bool? didSave = await context.push<bool>(
       RoutePaths.myResumeEditor,
-      extra: const ResumeEditorArgs.create(),
+      extra: ResumeEditorArgs.create(isPublic: _isResumeVisible),
     );
+    if (didSave == true && mounted) {
+      await _loadResume();
+    }
   }
 
-  /// 进入编辑简历页，并把当前卡片数据带入表单。
-  void _openResumeEditor(_ResumeItemData item) {
-    context.push(
+  /// 进入编辑简历页，并把真实接口数据映射为编辑页草稿。
+  Future<void> _openResumeEditor() async {
+    final ResumeVO? resume = _resume;
+    if (resume == null) {
+      return;
+    }
+    final bool? didSave = await context.push<bool>(
       RoutePaths.myResumeEditor,
-      extra: ResumeEditorArgs.edit(
-        ResumeDraft(
-          name: item.name,
-          region: item.region,
-          age: item.age,
-          gender: item.gender,
-          phone: item.phone,
-          salary: item.salary,
-          jobTitle: item.jobTitle,
-          duration: item.duration,
-          summary: item.summary,
-        ),
-      ),
+      extra: ResumeEditorArgs.edit(resume.toResumeDraft()),
     );
+    if (didSave == true && mounted) {
+      await _loadResume();
+    }
   }
 
-  /// 弹出删除确认弹窗，并在确认后移除本地列表项。
-  Future<void> _showDeleteDialog(int index) async {
-    final bool? shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 49),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: Container(
-            width: 276,
-            padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Text(
-                  '确认删除吗？',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '删除简历后将不可恢复',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    SizedBox(
-                      width: 100,
-                      height: 36,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF262626),
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFFD9D9D9)),
-                          padding: const EdgeInsets.symmetric(horizontal: 0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        child: const Text(
-                          '取消',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 112,
-                      height: 36,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD9363E),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        child: const Text(
-                          '确认删除',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (shouldDelete != true || !mounted) {
+  /// 切换简历公开状态，并通过保存接口同步到服务端。
+  Future<void> _updateResumeVisibility(bool value) async {
+    final ResumeVO? resume = _resume;
+    if (_isSavingVisibility || resume == null) {
       return;
     }
 
     setState(() {
-      // 删除后同步修正默认简历索引，避免越界。
-      _resumeItems.removeAt(index);
-      if (_resumeItems.isEmpty) {
-        _defaultResumeIndex = 0;
-        _isManaging = false;
+      _isSavingVisibility = true;
+      _isResumeVisible = value;
+    });
+
+    try {
+      await ref.read(resumeServiceProvider).saveResume(
+        request: resume.toSaveResumeBO(isPublic: value),
+      );
+      if (!mounted) {
         return;
       }
-      if (_defaultResumeIndex > index) {
-        _defaultResumeIndex -= 1;
-      } else if (_defaultResumeIndex >= _resumeItems.length) {
-        _defaultResumeIndex = _resumeItems.length - 1;
+      setState(() {
+        _isSavingVisibility = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(value ? '已设为可见' : '已设为不可见')));
+    } catch (error) {
+      if (!mounted) {
+        return;
       }
-    });
+      setState(() {
+        _isSavingVisibility = false;
+        _isResumeVisible = resume.isPublic ?? !value;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+    }
+  }
+
+  /// 提示当前文档未提供删除简历接口，避免误导用户。
+  void _showDeleteUnavailableMessage() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('当前 API 文档未提供删除简历接口')));
+  }
+}
+
+class _ResumeErrorState extends StatelessWidget {
+  const _ResumeErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  /// 简历加载失败时展示错误提示与重试入口。
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: Color(0xFFBFBFBF),
+              size: 32,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                onRetry();
+              },
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -682,4 +655,167 @@ class _ResumeItemData {
   final String summary;
   final Color avatarColor;
   final IconData avatarIcon;
+}
+
+extension on ResumeVO {
+  /// 将接口返回的简历映射为当前列表卡片展示数据。
+  _ResumeItemData toResumeItemData() {
+    final WorkExperienceVO? firstExperience = workExperiences.isEmpty
+        ? null
+        : workExperiences.first;
+    final String title = firstExperience?.position.trim().isNotEmpty == true
+        ? firstExperience!.position.trim()
+        : (jobIntention.positions.isEmpty ? '期望职位待完善' : jobIntention.positions.first);
+    final String duration = firstExperience == null
+        ? (updatedAt.isEmpty ? '刚刚更新' : updatedAt)
+        : firstExperience.isCurrent
+            ? '${firstExperience.startDate}-至今'
+            : '${firstExperience.startDate}-${firstExperience.endDate}';
+    final String summaryText = selfEvaluation.trim().isNotEmpty
+        ? selfEvaluation.trim()
+        : (firstExperience?.description.trim().isNotEmpty == true
+              ? firstExperience!.description.trim()
+              : '请完善自我评价');
+
+    return _ResumeItemData(
+      name: basicInfo.realName.isEmpty ? '未填写姓名' : basicInfo.realName,
+      region: basicInfo.currentLocation.isEmpty ? '地区待完善' : basicInfo.currentLocation,
+      age: basicInfo.age > 0 ? '${basicInfo.age}岁' : '年龄待完善',
+      gender: basicInfo.gender.isEmpty ? '性别待完善' : basicInfo.gender,
+      phone: basicInfo.phone,
+      salary: _formatSalary(),
+      jobTitle: title,
+      duration: duration,
+      summary: summaryText,
+      avatarColor: const Color(0xFF8FB6FF),
+      avatarIcon: Icons.person,
+    );
+  }
+
+  /// 将真实简历转换为编辑页所需的草稿数据。
+  ResumeDraft toResumeDraft() {
+    final WorkExperienceVO? firstExperience = workExperiences.isEmpty
+        ? null
+        : workExperiences.first;
+    final String title = firstExperience?.position.trim().isNotEmpty == true
+        ? firstExperience!.position.trim()
+        : (jobIntention.positions.isEmpty ? '' : jobIntention.positions.first);
+    final String duration = firstExperience == null
+        ? ''
+        : firstExperience.isCurrent
+            ? '${firstExperience.startDate} - 至今'
+            : '${firstExperience.startDate} - ${firstExperience.endDate}';
+
+    return ResumeDraft(
+      name: basicInfo.realName,
+      region: basicInfo.currentLocation,
+      age: basicInfo.age > 0 ? basicInfo.age.toString() : '',
+      gender: basicInfo.gender,
+      phone: basicInfo.phone,
+      salary: _formatSalary(raw: true),
+      salaryCurrency: jobIntention.salaryCurrency,
+      jobTitle: title,
+      duration: duration,
+      summary: selfEvaluation,
+      isPublic: isPublic ?? true,
+    );
+  }
+
+  /// 将当前简历详情转换成保存接口需要的全量请求。
+  SaveResumeBO toSaveResumeBO({required bool isPublic}) {
+    return SaveResumeBO(
+      jobIntention: JobIntentionBO(
+        positions: jobIntention.positions,
+        countries: jobIntention.countries,
+        salaryMin: jobIntention.salaryMin,
+        salaryMax: jobIntention.salaryMax,
+        salaryCurrency: jobIntention.salaryCurrency,
+      ),
+      workExperiences: workExperiences
+          .asMap()
+          .entries
+          .map(
+            (entry) => WorkExperienceBO(
+              expId: entry.value.expId,
+              company: entry.value.company,
+              department: entry.value.department,
+              position: entry.value.position,
+              startDate: entry.value.startDate,
+              endDate: entry.value.endDate,
+              isCurrent: entry.value.isCurrent,
+              description: entry.value.description,
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      languages: languages
+          .asMap()
+          .entries
+          .map(
+            (entry) => LanguageAbilityBO(
+              langId: entry.value.langId,
+              language: entry.value.language,
+              certificate: entry.value.certificate,
+              level: entry.value.level,
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      skillCertificates: skillCertificates
+          .asMap()
+          .entries
+          .map(
+            (entry) => SkillCertificateBO(
+              certId: entry.value.certId,
+              name: entry.value.name,
+              level: entry.value.level,
+              issuer: entry.value.issuer,
+              issuedDate: entry.value.issuedDate,
+              imageUrl: entry.value.imageUrl,
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      educations: educations
+          .asMap()
+          .entries
+          .map(
+            (entry) => EducationBO(
+              eduId: entry.value.eduId,
+              school: entry.value.school,
+              major: entry.value.major,
+              degree: entry.value.degree,
+              startYear: entry.value.startYear,
+              endYear: entry.value.endYear,
+              sortOrder: entry.key + 1,
+            ),
+          )
+          .toList(growable: false),
+      selfEvaluation: selfEvaluation,
+      isPublic: isPublic,
+    );
+  }
+
+  /// 组装简历页展示或编辑页传值使用的薪资文案。
+  String _formatSalary({bool raw = false}) {
+    final String currency = jobIntention.salaryCurrency.isEmpty
+        ? ''
+        : '${jobIntention.salaryCurrency} ';
+    final String minText = _formatDouble(jobIntention.salaryMin);
+    final String maxText = _formatDouble(jobIntention.salaryMax);
+    if (jobIntention.salaryMin <= 0 && jobIntention.salaryMax <= 0) {
+      return raw ? '' : '薪资待完善';
+    }
+    if (jobIntention.salaryMax > 0) {
+      return '$currency$minText-$maxText';
+    }
+    return '$currency$minText';
+  }
+
+  String _formatDouble(double value) {
+    if (value % 1 == 0) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
+  }
 }

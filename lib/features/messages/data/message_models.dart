@@ -46,13 +46,14 @@ class CreateConversationBO {
   const CreateConversationBO({
     required this.targetUserId,
     required this.targetUserRole,
-    required this.orderId,
+    this.orderId,
   });
 
   final int targetUserId;
   final String targetUserRole;
-  final int orderId;
+  final int? orderId;
 
+  /// 安全解析创建会话请求，兼容可选的关联订单 ID。
   factory CreateConversationBO.fromJson(JsonMap json) {
     return CreateConversationBO(
       targetUserId: readInt(json, 'targetUserId'),
@@ -65,7 +66,7 @@ class CreateConversationBO {
     return <String, dynamic>{
       'targetUserId': targetUserId,
       'targetUserRole': targetUserRole,
-      'orderId': orderId,
+      if (orderId != null) 'orderId': orderId,
     };
   }
 }

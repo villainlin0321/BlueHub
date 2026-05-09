@@ -20,6 +20,7 @@ import '../../features/me/presentation/add_work_experience_page.dart';
 import '../../features/me/presentation/add_skill_certificate_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
+import '../../features/me/presentation/my_info_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
@@ -136,7 +137,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.jobDetail,
-        builder: (context, state) => const JobDetailPage(),
+        builder: (context, state) =>
+            JobDetailPage(args: state.extra as JobDetailPageArgs?),
       ),
       GoRoute(
         path: RoutePaths.postJob,
@@ -170,6 +172,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.extra as AppResultPageArgs? ??
               const AppResultPageArgs.paymentSuccess(),
         ),
+      ),
+      GoRoute(
+        path: RoutePaths.myInfo,
+        builder: (context, state) => const MyInfoPage(),
       ),
       GoRoute(
         path: RoutePaths.myOrders,
