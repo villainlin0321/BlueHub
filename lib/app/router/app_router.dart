@@ -12,6 +12,7 @@ import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
+import '../../features/jobs/presentation/post_job_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/me/presentation/add_education_experience_page.dart';
 import '../../features/me/presentation/add_education_school_page.dart';
@@ -30,6 +31,7 @@ import '../../features/service_detail/presentation/service_detail_page.dart';
 import '../../features/service_detail/presentation/service_detail_report_page.dart';
 import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
+import '../../features/visa/presentation/edit_visa_package_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
 import 'route_paths.dart';
 
@@ -109,6 +111,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const JobDetailPage(),
       ),
       GoRoute(
+        path: RoutePaths.postJob,
+        builder: (context, state) => const PostJobPage(),
+      ),
+      GoRoute(
         path: RoutePaths.orderDetail,
         builder: (context, state) => const OrderDetailPage(),
       ),
@@ -119,6 +125,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.serviceDetail,
         builder: (context, state) => const ServiceDetailPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.editVisaPackage,
+        builder: (context, state) => const EditVisaPackagePage(),
       ),
       GoRoute(
         path: RoutePaths.serviceDetailReport,

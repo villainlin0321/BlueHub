@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 
 /// 当前按需求承载服务商首页实现，后续如补企业端首页可再拆分。
@@ -15,6 +17,7 @@ class ServiceProviderHomePage extends ConsumerWidget {
       label: '发布套餐',
       assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_box_outlined,
+      routePath: RoutePaths.editVisaPackage,
     ),
     _QuickActionItem(
       label: '订单处理',
@@ -432,37 +435,46 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      child: Column(
-        children: <Widget>[
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEBF4FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: AppSvgIcon(
-                assetPath: item.assetPath,
-                fallback: item.fallback,
-                size: 24,
-                color: const Color(0xFF262626),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.routePath == null
+            ? null
+            : () => context.push(item.routePath!),
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 72,
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEBF4FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: AppSvgIcon(
+                    assetPath: item.assetPath,
+                    fallback: item.fallback,
+                    size: 24,
+                    color: const Color(0xFF262626),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF171A1D),
+                  fontSize: 12,
+                  height: 18 / 12,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            item.label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -794,11 +806,13 @@ class _QuickActionItem {
     required this.label,
     required this.assetPath,
     required this.fallback,
+    this.routePath,
   });
 
   final String label;
   final String assetPath;
   final IconData fallback;
+  final String? routePath;
 }
 
 class _PendingOrderItem {
