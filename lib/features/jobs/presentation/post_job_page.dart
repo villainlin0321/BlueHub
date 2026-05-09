@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/logging/app_logger.dart';
 import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
@@ -29,7 +30,23 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   @override
   void initState() {
     super.initState();
-    ref.read(postJobControllerProvider.notifier).loadRequirementTags();
+    final PostJobState currentState = ref.read(postJobControllerProvider);
+    AppLogger.instance.info(
+      'POST_JOB',
+      'PostJobPage initState 触发标签加载',
+      context: <String, Object?>{
+        'isLoadingRequirementTags': currentState.isLoadingRequirementTags,
+        'hasLoadedRequirementTags': currentState.hasLoadedRequirementTags,
+        'tagCount': currentState.requirementTags.length,
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      AppLogger.instance.info('POST_JOB', '首帧完成，开始触发标签加载');
+      ref.read(postJobControllerProvider.notifier).loadRequirementTags();
+    });
   }
 
   @override
@@ -122,7 +139,8 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       onBack: () => Navigator.of(context).maybePop(),
       onSaveDraft: controller.saveDraft,
       onPublish: _handlePublish,
-      onRetryLoadRequirementTags: controller.loadRequirementTags,
+      onRetryLoadRequirementTags: () =>
+          controller.loadRequirementTags(force: true),
       onJobTypeChanged: controller.setJobType,
       onSalaryUnitChanged: controller.setSalaryUnit,
       onRequirementTagTap: controller.toggleRequirementTag,

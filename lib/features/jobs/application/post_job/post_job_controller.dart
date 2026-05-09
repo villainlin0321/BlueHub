@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../config/data/config_service.dart';
+import '../../../../shared/logging/app_logger.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'post_job_state.dart';
 
 final postJobControllerProvider =
-    NotifierProvider<PostJobController, PostJobState>(PostJobController.new);
+    NotifierProvider.autoDispose<PostJobController, PostJobState>(
+      PostJobController.new,
+    );
 
 class PostJobFormDraft {
   const PostJobFormDraft({
@@ -56,10 +59,57 @@ class PostJobController extends Notifier<PostJobState> {
   };
 
   @override
-  PostJobState build() => const PostJobState();
+  PostJobState build() {
+    ref.onDispose(() {
+      AppLogger.instance.info(
+        'POST_JOB',
+        'PostJobController 已销毁',
+        context: <String, Object?>{'controllerHash': identityHashCode(this)},
+      );
+    });
+    AppLogger.instance.info(
+      'POST_JOB',
+      'PostJobController 已创建',
+      context: <String, Object?>{'controllerHash': identityHashCode(this)},
+    );
+    return const PostJobState();
+  }
 
-  Future<void> loadRequirementTags() async {
+  Future<void> loadRequirementTags({bool force = false}) async {
+    AppLogger.instance.info(
+      'POST_JOB',
+      '开始加载任职要求标签',
+      context: <String, Object?>{
+        'controllerHash': identityHashCode(this),
+        'force': force,
+        'isLoadingRequirementTags': state.isLoadingRequirementTags,
+        'hasLoadedRequirementTags': state.hasLoadedRequirementTags,
+        'tagCount': state.requirementTags.length,
+      },
+    );
     if (state.isLoadingRequirementTags) {
+      AppLogger.instance.warn(
+        'POST_JOB',
+        '任职要求标签加载被跳过：已有请求进行中',
+        context: <String, Object?>{
+          'controllerHash': identityHashCode(this),
+          'force': force,
+          'isLoadingRequirementTags': state.isLoadingRequirementTags,
+          'hasLoadedRequirementTags': state.hasLoadedRequirementTags,
+        },
+      );
+      return;
+    }
+    if (state.hasLoadedRequirementTags && !force) {
+      AppLogger.instance.info(
+        'POST_JOB',
+        '任职要求标签加载被跳过：已存在缓存',
+        context: <String, Object?>{
+          'controllerHash': identityHashCode(this),
+          'force': force,
+          'tagCount': state.requirementTags.length,
+        },
+      );
       return;
     }
 
@@ -67,22 +117,49 @@ class PostJobController extends Notifier<PostJobState> {
       isLoadingRequirementTags: true,
       requirementTagsError: null,
     );
+    AppLogger.instance.info(
+      'POST_JOB',
+      '即将请求任职要求标签接口',
+      context: <String, Object?>{
+        'controllerHash': identityHashCode(this),
+        'targetKey': TagCategory.requirement.value,
+      },
+    );
 
     try {
       final TagDictVO response = await ref
           .read(configServiceProvider)
-          .getTags(category: TagCategory.requirement);
+          .getTags();
       final List<TagItemVO> tags = List<TagItemVO>.from(
         response.tags[TagCategory.requirement.value] ?? const <TagItemVO>[],
       )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
       state = state.copyWith(
         requirementTags: tags,
+        hasLoadedRequirementTags: true,
         isLoadingRequirementTags: false,
       );
-    } catch (_) {
+      AppLogger.instance.info(
+        'POST_JOB',
+        '任职要求标签加载成功',
+        context: <String, Object?>{
+          'controllerHash': identityHashCode(this),
+          'tagCount': tags.length,
+        },
+      );
+    } catch (error, stackTrace) {
       state = state.copyWith(
         isLoadingRequirementTags: false,
         requirementTagsError: '任职要求标签加载失败',
+      );
+      AppLogger.instance.error(
+        'POST_JOB',
+        '任职要求标签加载失败',
+        error: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{
+          'controllerHash': identityHashCode(this),
+          'force': force,
+        },
       );
     }
   }

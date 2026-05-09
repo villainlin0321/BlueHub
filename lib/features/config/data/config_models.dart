@@ -9,7 +9,7 @@ class TagDictVO {
     return TagDictVO(
       tags: decodeMapValues<List<TagItemVO>>(
         json['tags'] ?? const <String, dynamic>{},
-        (value) => value,
+        (value) => decodeModelList<TagItemVO>(value, TagItemVO.fromJson),
       ),
     );
   }
