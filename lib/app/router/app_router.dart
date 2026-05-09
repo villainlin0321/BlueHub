@@ -10,6 +10,7 @@ import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
+import '../../features/jobs/presentation/post_job_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/me/presentation/add_education_experience_page.dart';
 import '../../features/me/presentation/add_education_school_page.dart';
@@ -68,6 +69,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.jobDetail,
         builder: (context, state) => const JobDetailPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.postJob,
+        builder: (context, state) => const PostJobPage(),
       ),
       GoRoute(
         path: RoutePaths.orderDetail,

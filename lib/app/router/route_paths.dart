@@ -4,6 +4,7 @@ class RoutePaths {
   static const visa = '/visa';
   static const jobs = '/jobs';
   static const jobDetail = '/jobs/detail';
+  static const postJob = '/jobs/post';
   static const ai = '/ai';
   static const me = '/me';
   static const myResume = '/me/resume';
@@ -25,7 +26,8 @@ class RoutePaths {
 
   static const loginPhone = '/login/phone';
   static const qualificationCertification = '/auth/qualification';
-  static const qualificationCertificationStepTwo = '/auth/qualification/step-two';
+  static const qualificationCertificationStepTwo =
+      '/auth/qualification/step-two';
   static const qualificationCertificationStepThree =
       '/auth/qualification/step-three';
   static const selectRole = '/auth/select-role';
