@@ -36,6 +36,7 @@ import '../../features/visa/presentation/visa_page.dart';
 import '../../shared/logging/app_logger.dart';
 import 'route_paths.dart';
 
+/// 提供全局 `GoRouter` 实例，并在关键路由变化时输出日志。
 final routerProvider = Provider<GoRouter>((ref) {
   final authSession = ref.watch(authSessionProvider);
 
@@ -271,7 +272,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  String previousLocation = router.state.uri.toString();
+  // go_router 刚创建时，首轮路由匹配可能尚未完成，此时直接读取 state 会抛错。
+  String previousLocation = _readCurrentLocation(
+    router,
+    fallbackLocation: RoutePaths.loginPhone,
+  );
   AppLogger.instance.info(
     'ROUTE',
     '路由器初始化完成',
@@ -280,7 +285,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   /// 监听 go_router 当前地址变化，记录真实跳转结果。
   void handleRouteChanged() {
-    final currentLocation = router.state.uri.toString();
+    final currentLocation = _readCurrentLocation(
+      router,
+      fallbackLocation: previousLocation,
+    );
     if (currentLocation == previousLocation) {
       return;
     }
@@ -302,3 +310,16 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+/// 安全读取当前路由地址，避免 go_router 在首轮匹配前访问 `state` 抛出异常。
+String _readCurrentLocation(
+  GoRouter router, {
+  required String fallbackLocation,
+}) {
+  try {
+    return router.state.uri.toString();
+  } on StateError {
+    // 关键兜底：初始化阶段尚未产生 match 时，回退到已知地址。
+    return fallbackLocation;
+  }
+}

@@ -12,23 +12,24 @@ import 'shared/network/providers.dart';
 
 /// 应用入口：初始化依赖、挂接全局异常处理，并启动 Riverpod 根节点。
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await AppLogger.instance.init();
-  _registerGlobalErrorHandlers();
+  await runZonedGuarded<Future<void>>(
+    () async {
+      // 关键点：Binding 初始化与 runApp 必须处于同一个 Zone，避免 Zone mismatch。
+      WidgetsFlutterBinding.ensureInitialized();
+      await AppLogger.instance.init();
+      _registerGlobalErrorHandlers();
 
-  final prefs = await SharedPreferences.getInstance();
-  final tokenStore = TokenStore.sharedPreferences(prefs);
-  AppLogger.instance.info(
-    'APP',
-    '应用启动',
-    context: <String, Object?>{
-      'hasPersistedToken': (tokenStore.accessToken ?? '').isNotEmpty,
-      'logFilePath': AppLogger.instance.currentLogFilePath,
-    },
-  );
+      final prefs = await SharedPreferences.getInstance();
+      final tokenStore = TokenStore.sharedPreferences(prefs);
+      AppLogger.instance.info(
+        'APP',
+        '应用启动',
+        context: <String, Object?>{
+          'hasPersistedToken': (tokenStore.accessToken ?? '').isNotEmpty,
+          'logFilePath': AppLogger.instance.currentLogFilePath,
+        },
+      );
 
-  runZonedGuarded(
-    () {
       runApp(
         ProviderScope(
           overrides: [tokenStoreProvider.overrideWithValue(tokenStore)],
