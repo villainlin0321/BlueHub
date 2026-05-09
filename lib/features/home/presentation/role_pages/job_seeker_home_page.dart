@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
@@ -16,24 +18,28 @@ class JobSeekerHomePage extends ConsumerWidget {
       assetPath: 'assets/images/mon5bjog-oey0vv1.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.auto_awesome_rounded,
+      destination: _ShortcutDestination.aiAssistant,
     ),
     _ShortcutItem(
       label: '欧洲招聘',
       assetPath: 'assets/images/mon5bjog-wp0nhm8.svg',
       colors: <Color>[Color(0xFFFF943C), Color(0xFFFF5900)],
       fallback: Icons.work_outline_rounded,
+      destination: _ShortcutDestination.jobs,
     ),
     _ShortcutItem(
       label: '签证服务',
       assetPath: 'assets/images/mon5bjog-8hp521f.svg',
       colors: <Color>[Color(0xFF01D99B), Color(0xFF00B879)],
       fallback: Icons.assignment_outlined,
+      destination: _ShortcutDestination.visa,
     ),
     _ShortcutItem(
       label: '我的简历',
       assetPath: 'assets/images/mon5bjog-wivq7ef.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.badge_outlined,
+      destination: _ShortcutDestination.resumeList,
     ),
   ];
 
@@ -90,7 +96,9 @@ class JobSeekerHomePage extends ConsumerWidget {
     return ListView(
       padding: EdgeInsets.only(bottom: bottomPadding + 20),
       children: <Widget>[
-        const _HomeTopHeader(),
+        _HomeTopHeader(
+          onShortcutTap: (_ShortcutItem item) => _handleShortcutTap(context, item),
+        ),
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -144,10 +152,30 @@ class JobSeekerHomePage extends ConsumerWidget {
       ],
     );
   }
+
+  /// 处理顶部快捷入口点击，根据入口类型跳转到对应页面或 Tab。
+  void _handleShortcutTap(BuildContext context, _ShortcutItem item) {
+    switch (item.destination) {
+      case _ShortcutDestination.aiAssistant:
+        // 跳转到底部 Tab 的 AI 助手页。
+        context.go(RoutePaths.ai);
+      case _ShortcutDestination.jobs:
+        // 跳转到底部 Tab 的招聘页。
+        context.go(RoutePaths.jobs);
+      case _ShortcutDestination.visa:
+        // 跳转到底部 Tab 的签证页。
+        context.go(RoutePaths.visa);
+      case _ShortcutDestination.resumeList:
+        // 简历入口进入独立的简历列表页。
+        context.push(RoutePaths.myResume);
+    }
+  }
 }
 
 class _HomeTopHeader extends StatelessWidget {
-  const _HomeTopHeader();
+  const _HomeTopHeader({required this.onShortcutTap});
+
+  final ValueChanged<_ShortcutItem> onShortcutTap;
 
   @override
   Widget build(BuildContext context) {
@@ -156,15 +184,18 @@ class _HomeTopHeader extends StatelessWidget {
     return JobSeekerPageBackground(
       child: Padding(
         padding: EdgeInsets.fromLTRB(12, topPadding + 6, 15, 12),
-        child: const Column(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _HeaderProfileRow(),
-            SizedBox(height: 12),
-            _HomeSearchBar(),
-            SizedBox(height: 20),
-            _ShortcutRow(items: JobSeekerHomePage._shortcutItems),
-          ],
+              const _HeaderProfileRow(),
+              const SizedBox(height: 12),
+              const _HomeSearchBar(),
+              const SizedBox(height: 20),
+              _ShortcutRow(
+                items: JobSeekerHomePage._shortcutItems,
+                onItemTap: onShortcutTap,
+              ),
+            ],
         ),
       ),
     );
@@ -172,16 +203,17 @@ class _HomeTopHeader extends StatelessWidget {
 }
 
 class _ShortcutRow extends StatelessWidget {
-  const _ShortcutRow({required this.items});
+  const _ShortcutRow({required this.items, required this.onItemTap});
 
   final List<_ShortcutItem> items;
+  final ValueChanged<_ShortcutItem> onItemTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: items
-          .map((item) => _ShortcutButton(item: item))
+          .map((item) => _ShortcutButton(item: item, onTap: () => onItemTap(item)))
           .toList(growable: false),
     );
   }
@@ -323,50 +355,60 @@ class _HomeSearchBar extends StatelessWidget {
 }
 
 class _ShortcutButton extends StatelessWidget {
-  const _ShortcutButton({required this.item});
+  const _ShortcutButton({required this.item, required this.onTap});
 
   final _ShortcutItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 72,
-      child: Column(
-        children: <Widget>[
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: item.colors,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: item.colors,
+                  ),
+                ),
+                child: Center(
+                  child: AppSvgIcon(
+                    assetPath: item.assetPath,
+                    fallback: item.fallback,
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-            ),
-            child: Center(
-              child: AppSvgIcon(
-                assetPath: item.assetPath,
-                fallback: item.fallback,
-                size: 24,
-                color: Colors.white,
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF171A1D),
+                  fontSize: 12,
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            item.label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF171A1D),
-              fontSize: 12,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
+
+enum _ShortcutDestination { aiAssistant, jobs, visa, resumeList }
 
 class _ShortcutItem {
   const _ShortcutItem({
@@ -374,12 +416,14 @@ class _ShortcutItem {
     required this.assetPath,
     required this.colors,
     required this.fallback,
+    required this.destination,
   });
 
   final String label;
   final String assetPath;
   final List<Color> colors;
   final IconData fallback;
+  final _ShortcutDestination destination;
 }
 
 class _HomeSectionHeader extends StatelessWidget {
