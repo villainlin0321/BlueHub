@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/route_paths.dart';
 
 /// 企业岗位页。
 class CompanyVisaPage extends StatefulWidget {
@@ -76,7 +79,10 @@ class _CompanyVisaPageState extends State<CompanyVisaPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _CompanyVisaHeader(topPadding: topPadding, onPublishTap: () {}),
+          _CompanyVisaHeader(
+            topPadding: topPadding,
+            onPublishTap: () => context.push(RoutePaths.postJob),
+          ),
           _CompanyVisaTabBar(
             selectedIndex: _tabIndex,
             onTap: (int index) {

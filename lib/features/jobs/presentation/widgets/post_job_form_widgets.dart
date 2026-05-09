@@ -104,6 +104,7 @@ class PostJobInputField extends StatelessWidget {
     this.maxLength,
     this.textInputAction,
     this.onChanged,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
@@ -114,6 +115,7 @@ class PostJobInputField extends StatelessWidget {
   final int? maxLength;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +134,7 @@ class PostJobInputField extends StatelessWidget {
         maxLength: maxLength,
         textInputAction: textInputAction,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
         buildCounter:
             (
               BuildContext context, {
