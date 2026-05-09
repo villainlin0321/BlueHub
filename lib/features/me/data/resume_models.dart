@@ -275,6 +275,7 @@ class ResumeVO {
     required this.skillCertificates,
     required this.educations,
     required this.selfEvaluation,
+    required this.isPublic,
     required this.updatedAt,
   });
 
@@ -287,8 +288,10 @@ class ResumeVO {
   final List<SkillCertificateVO> skillCertificates;
   final List<EducationVO> educations;
   final String selfEvaluation;
+  final bool? isPublic;
   final String updatedAt;
 
+  /// 安全解析简历详情；`isPublic` 在文档中未声明时允许为空，避免误判可见性。
   factory ResumeVO.fromJson(JsonMap json) {
     return ResumeVO(
       resumeId: readInt(json, 'resumeId'),
@@ -304,6 +307,7 @@ class ResumeVO {
       skillCertificates: readModelList<SkillCertificateVO>(json, 'skillCertificates', SkillCertificateVO.fromJson),
       educations: readModelList<EducationVO>(json, 'educations', EducationVO.fromJson),
       selfEvaluation: readString(json, 'selfEvaluation'),
+      isPublic: json.containsKey('isPublic') ? readBool(json, 'isPublic') : null,
       updatedAt: readString(json, 'updatedAt'),
     );
   }
@@ -327,6 +331,7 @@ class ResumeVO {
           .map((item) => item.toJson())
           .toList(growable: false),
       'selfEvaluation': selfEvaluation,
+      if (isPublic != null) 'isPublic': isPublic,
       'updatedAt': updatedAt,
     };
   }
