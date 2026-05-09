@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../auth/token_store.dart';
+import '../logging/app_logger.dart';
 import 'app_config.dart';
 import 'interceptors/app_log_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
@@ -12,6 +12,7 @@ class DioFactory {
   final AppConfig config;
   final TokenStore tokenStore;
 
+  /// 创建全局共享的 Dio 实例，并挂接鉴权与日志拦截器。
   Dio create() {
     final dio = Dio(
       BaseOptions(
@@ -27,7 +28,12 @@ class DioFactory {
     );
 
     dio.interceptors.add(AuthInterceptor(tokenStore));
-    dio.interceptors.add(AppLogInterceptor(enabled: kDebugMode));
+    dio.interceptors.add(AppLogInterceptor(enabled: true));
+    AppLogger.instance.info(
+      'HTTP',
+      'Dio 客户端初始化完成',
+      context: <String, Object?>{'baseUrl': config.baseUrl},
+    );
 
     return dio;
   }
