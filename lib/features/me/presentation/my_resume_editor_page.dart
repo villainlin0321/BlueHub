@@ -62,6 +62,74 @@ class ResumeDraft {
   final bool isPublic;
 }
 
+/// 简历预览页所需的真实数据快照。
+class ResumePreviewArgs {
+  const ResumePreviewArgs({
+    required this.draft,
+    required this.avatarUrl,
+    required this.positions,
+    required this.countries,
+    required this.languages,
+    required this.experiences,
+    required this.certificates,
+    required this.educations,
+  });
+
+  final ResumeDraft draft;
+  final String avatarUrl;
+  final List<String> positions;
+  final List<String> countries;
+  final List<String> languages;
+  final List<ResumePreviewExperience> experiences;
+  final List<ResumePreviewCertificate> certificates;
+  final List<ResumePreviewEducation> educations;
+}
+
+/// 预览页工作经历模型。
+class ResumePreviewExperience {
+  const ResumePreviewExperience({
+    required this.company,
+    required this.period,
+    required this.role,
+    required this.summary,
+  });
+
+  final String company;
+  final String period;
+  final String role;
+  final String summary;
+}
+
+/// 预览页技能证书模型。
+class ResumePreviewCertificate {
+  const ResumePreviewCertificate({
+    required this.title,
+    required this.period,
+    required this.issuer,
+    this.localImagePaths = const <String>[],
+    this.networkImageUrls = const <String>[],
+  });
+
+  final String title;
+  final String period;
+  final String issuer;
+  final List<String> localImagePaths;
+  final List<String> networkImageUrls;
+}
+
+/// 预览页教育经历模型。
+class ResumePreviewEducation {
+  const ResumePreviewEducation({
+    required this.school,
+    required this.period,
+    required this.major,
+  });
+
+  final String school;
+  final String period;
+  final String major;
+}
+
 /// 我的简历编辑页。
 class MyResumeEditorPage extends ConsumerStatefulWidget {
   const MyResumeEditorPage({super.key, required this.args});
@@ -1640,9 +1708,52 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return '简历保存失败，请稍后重试';
   }
 
-  /// 跳转到简历预览页，复用当前页面已经整理好的草稿数据。
+  /// 跳转到简历预览页，并把当前编辑中的真实快照一并传递过去。
   void _openPreview() {
-    context.push(RoutePaths.myResumePreview, extra: _currentDraft);
+    context.push(RoutePaths.myResumePreview, extra: _buildPreviewArgs());
+  }
+
+  /// 组装预览页所需的真实数据快照，避免预览页再拼接任何假数据。
+  ResumePreviewArgs _buildPreviewArgs() {
+    return ResumePreviewArgs(
+      draft: _currentDraft,
+      avatarUrl: _resume?.basicInfo.avatarUrl ?? '',
+      positions: List<String>.of(_jobTags),
+      countries: List<String>.of(_countryTags),
+      languages: _languages
+          .map((item) => item.displayLabel)
+          .toList(growable: false),
+      experiences: _experiences
+          .map(
+            (item) => ResumePreviewExperience(
+              company: item.company,
+              period: item.period,
+              role: item.roleLabel,
+              summary: item.summary,
+            ),
+          )
+          .toList(growable: false),
+      certificates: _certificates
+          .map(
+            (item) => ResumePreviewCertificate(
+              title: item.title,
+              period: item.issuedAt,
+              issuer: item.authority,
+              localImagePaths: List<String>.of(item.previewFilePaths),
+              networkImageUrls: List<String>.of(item.previewImageUrls),
+            ),
+          )
+          .toList(growable: false),
+      educations: _educations
+          .map(
+            (item) => ResumePreviewEducation(
+              school: item.school,
+              period: item.period,
+              major: item.subtitle,
+            ),
+          )
+          .toList(growable: false),
+    );
   }
 
   ResumeDraft get _currentDraft {

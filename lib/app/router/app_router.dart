@@ -197,7 +197,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myResumePreview,
         builder: (context, state) =>
-            MyResumePreviewPage(draft: state.extra as ResumeDraft?),
+            MyResumePreviewPage(args: state.extra as ResumePreviewArgs?),
       ),
       GoRoute(
         path: RoutePaths.myApplications,

@@ -1,115 +1,89 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import 'my_resume_editor_page.dart';
 
-/// 简历预览页，按 Figma「我的简历-预览」节点实现。
+/// 简历预览页，仅展示编辑页传入的真实数据快照。
 class MyResumePreviewPage extends StatelessWidget {
-  const MyResumePreviewPage({super.key, this.draft});
+  const MyResumePreviewPage({super.key, this.args});
 
-  final ResumeDraft? draft;
+  final ResumePreviewArgs? args;
 
-  static const ResumeDraft _demoDraft = ResumeDraft(
-    name: '程先生',
-    region: '德国·法国',
-    salary: '2,500~3,500',
-    jobTitle: '伦敦康诺特酒店·厨师长',
-    duration: '2024.11 - 至今',
-    summary:
-        '本人从事餐饮烹饪工作多年，具备扎实的烹调功底，熟练掌握煎、炒、烹、炸、蒸等各类烹饪技法，擅长各类中餐菜品制作，能精准把控火候与口味，注重菜品营养搭配和出品品相，保证出品稳定优质。工作中，我严格恪守食品安全与后厨卫生规范，细心把控食材处理、烹饪全流程，严守卫生标准，杜绝安全隐患。我吃苦耐劳，执行力强，服从管理安排，善于配合团队完成后厨各项工作，具备良好的职业素养和团队协作意识。始终秉持精益求精的做菜理念，用心做好每一道菜品，全力保障用餐品质。',
-  );
-
-  static const List<_PreviewExperience> _fallbackExperiences =
-      <_PreviewExperience>[
-        _PreviewExperience(
-          company: '香港文华东方酒店',
-          period: '2020.09 - 2024.11',
-          role: '餐饮部·高级厨师',
-          summary:
-              '负责菜品的具体制作与出品把控，熟练运用各类烹饪技法，严格按照菜单要求和标准处理食材、把控火候，确保菜品口味、品相稳定统一。严格遵守食品安全与后厨操作规范，做好食材清洗、加工及烹饪全流程卫生管控，减少食材损耗。服从厨师长的分工安排，配合团队完成后厨日常运营工作，主动学习新的烹饪技巧和菜品做法，及时调整制作细节，全力保障每一道菜品符合门店标准和顾客需求。',
-        ),
-      ];
-
-  static const List<String> _languageTags = <String>[
-    '德福TestDaF',
-    '歌德 C2',
-    '法语专业四级',
-  ];
-
-  static const _PreviewCertificate _certificate = _PreviewCertificate(
-    title: '中式烹调师·五级',
-    period: '2016.10',
-    issuer: '人力资源社会保障部',
-  );
-
-  static const _PreviewEducation _education = _PreviewEducation(
-    school: '扬州大学',
-    period: '2010 - 2013',
-    major: '烹饪与营养教育',
-  );
-
-  ResumeDraft get _resolvedDraft {
-    final ResumeDraft source = draft ?? const ResumeDraft();
-    return ResumeDraft(
-      name: source.name.isEmpty ? _demoDraft.name : source.name,
-      region: source.region.isEmpty ? _demoDraft.region : source.region,
-      age: source.age,
-      gender: source.gender,
-      phone: source.phone,
-      salary: source.salary.isEmpty ? _demoDraft.salary : source.salary,
-      jobTitle: source.jobTitle.isEmpty ? _demoDraft.jobTitle : source.jobTitle,
-      duration: source.duration.isEmpty ? _demoDraft.duration : source.duration,
-      summary: source.summary.isEmpty ? _demoDraft.summary : source.summary,
-    );
+  /// 空入参时提供一个纯空白快照，避免页面崩溃。
+  ResumePreviewArgs get _resolvedArgs {
+    return args ??
+        const ResumePreviewArgs(
+          draft: ResumeDraft(),
+          avatarUrl: '',
+          positions: <String>[],
+          countries: <String>[],
+          languages: <String>[],
+          experiences: <ResumePreviewExperience>[],
+          certificates: <ResumePreviewCertificate>[],
+          educations: <ResumePreviewEducation>[],
+        );
   }
 
+  /// 预览页始终以当前草稿为主，避免再从别处拼接示例值。
+  ResumeDraft get _draft => _resolvedArgs.draft;
+
+  /// 头像下方优先展示首条真实工作经历的公司名。
   String get _companyName {
-    final List<String> parts = _resolvedDraft.jobTitle.split('·');
-    return parts.isEmpty ? '伦敦康诺特酒店' : parts.first.trim();
+    if (_resolvedArgs.experiences.isNotEmpty) {
+      return _resolvedArgs.experiences.first.company;
+    }
+    final List<String> parts = _draft.jobTitle.split('·');
+    return parts.isEmpty ? '' : parts.first.trim();
   }
 
+  /// 头像下方优先展示首条真实工作经历的职位名。
   String get _roleName {
-    final List<String> parts = _resolvedDraft.jobTitle.split('·');
+    if (_resolvedArgs.experiences.isNotEmpty) {
+      return _resolvedArgs.experiences.first.role;
+    }
+    final List<String> parts = _draft.jobTitle.split('·');
     if (parts.length > 1) {
       return parts.sublist(1).join('·').trim();
     }
-    return _resolvedDraft.jobTitle.trim().isEmpty ? '厨师长' : _resolvedDraft.jobTitle.trim();
+    return _draft.jobTitle.trim();
   }
 
+  /// 求职意向优先展示真实期望职位列表的第一个值。
   String get _primaryJobTitle {
-    final String role = _roleName;
-    return role.isEmpty ? '中餐厨师' : role;
-  }
-
-  String get _salaryText {
-    final String value = _resolvedDraft.salary.trim().replaceAll('-', '~');
-    if (value.isEmpty) {
-      return '€2,500~3,500';
+    if (_resolvedArgs.positions.isNotEmpty) {
+      return _resolvedArgs.positions.first;
     }
-    return value.startsWith('€') ? value : '€$value';
+    if (_roleName.isNotEmpty) {
+      return _roleName;
+    }
+    return '暂无期望职位';
   }
 
-  _PreviewExperience get _primaryExperience {
-    final String role = _roleName;
-    final String experienceRole = role.contains('·') ? role : '餐饮部·$role';
-    return _PreviewExperience(
-      company: _companyName,
-      period: _resolvedDraft.duration,
-      role: experienceRole,
-      summary:
-          '全面统筹厨房日常运营管理，制定并优化菜单，负责菜品研发、成本核算与食材损耗控制。统筹后厨人员分工、排班及技能培训，提升团队整体厨艺水平。严格监督食材采购、验收与库存管理，落实食品安全与卫生规范，排查安全隐患。协调前厅与后厨的沟通衔接，处理菜品相关客诉及突发问题，规范厨房操作流程，保障厨房高效、有序运转，兼顾出品质量与运营效率。',
-    );
+  /// 求职意向的国家地区展示只使用真实标签。
+  String get _countryText {
+    if (_resolvedArgs.countries.isEmpty) {
+      return '暂无期望国家/地区';
+    }
+    return _resolvedArgs.countries.join(' · ');
+  }
+
+  /// 薪资展示保留真实币种与区间，不再补任何默认值。
+  String get _salaryText {
+    if (_draft.salary.trim().isEmpty) {
+      return '薪资待完善';
+    }
+    if (_draft.salaryCurrency.trim().isEmpty) {
+      return _draft.salary.trim();
+    }
+    return '${_draft.salaryCurrency} ${_draft.salary.trim()}';
   }
 
   @override
   Widget build(BuildContext context) {
     final EdgeInsets viewPadding = MediaQuery.paddingOf(context);
-    final ResumeDraft previewDraft = _resolvedDraft;
-    final List<_PreviewExperience> experiences = <_PreviewExperience>[
-      _primaryExperience,
-      ..._fallbackExperiences,
-    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -146,11 +120,11 @@ class MyResumePreviewPage extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.only(bottom: 16 + viewPadding.bottom),
         children: <Widget>[
-          _buildProfileSection(previewDraft),
+          _buildProfileSection(),
           const SizedBox(height: 2),
-          _buildIntentionSection(previewDraft),
+          _buildIntentionSection(),
           const SizedBox(height: 2),
-          _buildWorkExperienceSection(experiences),
+          _buildWorkExperienceSection(),
           const SizedBox(height: 2),
           _buildLanguageSection(),
           const SizedBox(height: 2),
@@ -158,15 +132,17 @@ class MyResumePreviewPage extends StatelessWidget {
           const SizedBox(height: 2),
           _buildEducationSection(),
           const SizedBox(height: 2),
-          _buildSelfEvaluationSection(previewDraft),
+          _buildSelfEvaluationSection(),
         ],
       ),
     );
   }
 
-  Widget _buildProfileSection(ResumeDraft previewDraft) {
+  /// 构建顶部资料区，只展示真实姓名、头像和岗位信息。
+  Widget _buildProfileSection() {
+    final String name = _draft.name.trim().isEmpty ? '未填写姓名' : _draft.name;
+
     return Container(
-      height: 100,
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 20, 20, 20),
       child: Row(
@@ -178,7 +154,7 @@ class MyResumePreviewPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    previewDraft.name,
+                    name,
                     style: const TextStyle(
                       color: Color(0xFF262626),
                       fontSize: 20,
@@ -187,58 +163,56 @@ class MyResumePreviewPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          _companyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF595959),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
+                  if (_companyName.isEmpty && _roleName.isEmpty)
+                    _buildEmptyText('暂无岗位信息')
+                  else
+                    Row(
+                      children: <Widget>[
+                        if (_companyName.isNotEmpty)
+                          Flexible(
+                            child: Text(
+                              _companyName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF595959),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                height: 20 / 14,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _roleName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF595959),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
+                        if (_companyName.isNotEmpty && _roleName.isNotEmpty)
+                          const SizedBox(width: 8),
+                        if (_roleName.isNotEmpty)
+                          Flexible(
+                            child: Text(
+                              _roleName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF595959),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                height: 20 / 14,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 16),
-          ClipOval(
-            child: SizedBox(
-              width: 60,
-              height: 60,
-              child: Image.asset(
-                _ResumePreviewAssets.avatar,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          _buildAvatar(),
         ],
       ),
     );
   }
 
-  Widget _buildIntentionSection(ResumeDraft previewDraft) {
+  /// 构建求职意向区，仅展示真实国家、职位和薪资。
+  Widget _buildIntentionSection() {
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -255,24 +229,27 @@ class MyResumePreviewPage extends StatelessWidget {
                   color: Color(0xFFBFBFBF),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  previewDraft.region,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 16 / 12,
+                Expanded(
+                  child: Text(
+                    _countryText,
+                    style: const TextStyle(
+                      color: Color(0xFF595959),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 16 / 12,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
                   child: Text(
                     _primaryJobTitle,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF262626),
@@ -300,7 +277,9 @@ class MyResumePreviewPage extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkExperienceSection(List<_PreviewExperience> experiences) {
+  /// 构建工作经历区，完整展示当前真实经历列表。
+  Widget _buildWorkExperienceSection() {
+    final List<ResumePreviewExperience> experiences = _resolvedArgs.experiences;
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 15, 24),
@@ -309,16 +288,26 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             _buildSectionTitle('工作经历'),
             const SizedBox(height: 20),
-            _buildExperienceItem(experiences.first),
-            const SizedBox(height: 24),
-            _buildExperienceItem(experiences.last),
+            if (experiences.isEmpty)
+              _buildEmptyText('暂无工作经历')
+            else
+              for (
+                int index = 0;
+                index < experiences.length;
+                index++
+              ) ...<Widget>[
+                _buildExperienceItem(experiences[index]),
+                if (index != experiences.length - 1) const SizedBox(height: 24),
+              ],
           ],
         ),
       ),
     );
   }
 
+  /// 构建语言能力区，仅展示真实语言标签。
   Widget _buildLanguageSection() {
+    final List<String> languages = _resolvedArgs.languages;
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -327,18 +316,24 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             _buildSectionTitle('语言能力'),
             const SizedBox(height: 20),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _languageTags.map(_buildTag).toList(),
-            ),
+            if (languages.isEmpty)
+              _buildEmptyText('暂无语言能力')
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: languages.map(_buildTag).toList(growable: false),
+              ),
           ],
         ),
       ),
     );
   }
 
+  /// 构建技能证书区，按真实证书列表渲染。
   Widget _buildCertificateSection() {
+    final List<ResumePreviewCertificate> certificates =
+        _resolvedArgs.certificates;
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 15, 24),
@@ -347,64 +342,27 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             _buildSectionTitle('技能证书'),
             const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    _certificate.title,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 22 / 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    _certificate.period,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 13,
-                    ),
-                  ),
-                ),
+            if (certificates.isEmpty)
+              _buildEmptyText('暂无技能证书')
+            else
+              for (
+                int index = 0;
+                index < certificates.length;
+                index++
+              ) ...<Widget>[
+                _buildCertificateItem(certificates[index]),
+                if (index != certificates.length - 1)
+                  const SizedBox(height: 20),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _certificate.issuer,
-              style: const TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 88,
-                height: 88,
-                child: Image.asset(
-                  _ResumePreviewAssets.certificate,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
+  /// 构建教育经历区，按真实教育列表渲染。
   Widget _buildEducationSection() {
+    final List<ResumePreviewEducation> educations = _resolvedArgs.educations;
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 15, 24),
@@ -413,79 +371,25 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             _buildSectionTitle('教育经历'),
             const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: Image.asset(
-                      _ResumePreviewAssets.education,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                _education.school,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  height: 22 / 16,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                _education.period,
-                                style: const TextStyle(
-                                  color: Color(0xFF8C8C8C),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w400,
-                                  height: 18 / 13,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _education.major,
-                          style: const TextStyle(
-                            color: Color(0xFF595959),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+            if (educations.isEmpty)
+              _buildEmptyText('暂无教育经历')
+            else
+              for (
+                int index = 0;
+                index < educations.length;
+                index++
+              ) ...<Widget>[
+                _buildEducationItem(educations[index]),
+                if (index != educations.length - 1) const SizedBox(height: 20),
               ],
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSelfEvaluationSection(ResumeDraft previewDraft) {
+  /// 构建自我评价区，只展示真实输入内容。
+  Widget _buildSelfEvaluationSection() {
     return _buildSectionContainer(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -494,22 +398,26 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             _buildSectionTitle('自我评价'),
             const SizedBox(height: 20),
-            Text(
-              previewDraft.summary,
-              style: const TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 24 / 14,
+            if (_draft.summary.trim().isEmpty)
+              _buildEmptyText('暂无自我评价')
+            else
+              Text(
+                _draft.summary,
+                style: const TextStyle(
+                  color: Color(0xFF595959),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 24 / 14,
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExperienceItem(_PreviewExperience experience) {
+  /// 渲染单条工作经历。
+  Widget _buildExperienceItem(ResumePreviewExperience experience) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -518,7 +426,7 @@ class MyResumePreviewPage extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: Text(
-                experience.company,
+                experience.company.isEmpty ? '未填写公司名称' : experience.company,
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -527,21 +435,23 @@ class MyResumePreviewPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              experience.period,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                height: 18 / 13,
+            if (experience.period.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 12),
+              Text(
+                experience.period,
+                style: const TextStyle(
+                  color: Color(0xFF8C8C8C),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 18 / 13,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         const SizedBox(height: 10),
         Text(
-          experience.role,
+          experience.role.isEmpty ? '未填写职位' : experience.role,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -551,7 +461,7 @@ class MyResumePreviewPage extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          experience.summary,
+          experience.summary.isEmpty ? '未填写工作内容' : experience.summary,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -563,6 +473,199 @@ class MyResumePreviewPage extends StatelessWidget {
     );
   }
 
+  /// 渲染单条证书信息与其真实图片。
+  Widget _buildCertificateItem(ResumePreviewCertificate certificate) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                certificate.title,
+                style: const TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 22 / 16,
+                ),
+              ),
+            ),
+            if (certificate.period.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  certificate.period,
+                  style: const TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 18 / 13,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          certificate.issuer.isEmpty ? '未填写发证机构' : certificate.issuer,
+          style: const TextStyle(
+            color: Color(0xFF595959),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            height: 20 / 14,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildCertificateImages(certificate),
+      ],
+    );
+  }
+
+  /// 渲染单条教育经历。
+  Widget _buildEducationItem(ResumePreviewEducation education) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.school_outlined,
+            color: Color(0xFF8C8C8C),
+            size: 26,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        education.school.isEmpty ? '未填写学校' : education.school,
+                        style: const TextStyle(
+                          color: Color(0xFF262626),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 22 / 16,
+                        ),
+                      ),
+                    ),
+                    if (education.period.isNotEmpty) ...<Widget>[
+                      const SizedBox(width: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          education.period,
+                          style: const TextStyle(
+                            color: Color(0xFF8C8C8C),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            height: 18 / 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  education.major.isEmpty ? '未填写专业/学历' : education.major,
+                  style: const TextStyle(
+                    color: Color(0xFF595959),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 根据图片来源类型渲染本地或网络证书图。
+  Widget _buildCertificateImages(ResumePreviewCertificate certificate) {
+    if (certificate.localImagePaths.isNotEmpty) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: certificate.localImagePaths
+            .map(
+              (String path) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(path),
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      );
+    }
+    if (certificate.networkImageUrls.isNotEmpty) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: certificate.networkImageUrls
+            .map(
+              (String url) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  url,
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      );
+    }
+    return _buildImagePlaceholder();
+  }
+
+  /// 渲染统一图片占位，避免继续展示任何示例素材。
+  Widget _buildImagePlaceholder() {
+    return Container(
+      width: 88,
+      height: 88,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        '暂无图片',
+        style: TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
+
+  /// 渲染标签样式的只读内容。
   Widget _buildTag(String text) {
     return Container(
       height: 32,
@@ -584,18 +687,16 @@ class MyResumePreviewPage extends StatelessWidget {
     );
   }
 
+  /// 构建通用分组容器。
   Widget _buildSectionContainer({required Widget child}) {
     return ColoredBox(color: Colors.white, child: child);
   }
 
+  /// 构建通用分组标题。
   Widget _buildSectionTitle(String title) {
     return Row(
       children: <Widget>[
-        Container(
-          width: 3,
-          height: 12,
-          color: const Color(0xFF096DD9),
-        ),
+        Container(width: 3, height: 12, color: const Color(0xFF096DD9)),
         const SizedBox(width: 8),
         Text(
           title,
@@ -609,51 +710,47 @@ class MyResumePreviewPage extends StatelessWidget {
       ],
     );
   }
-}
 
-class _PreviewExperience {
-  const _PreviewExperience({
-    required this.company,
-    required this.period,
-    required this.role,
-    required this.summary,
-  });
+  /// 构建统一空态文本。
+  Widget _buildEmptyText(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Color(0xFF8C8C8C),
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14,
+      ),
+    );
+  }
 
-  final String company;
-  final String period;
-  final String role;
-  final String summary;
-}
+  /// 构建头像，优先展示真实网络头像。
+  Widget _buildAvatar() {
+    final String avatarUrl = _resolvedArgs.avatarUrl;
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return ClipOval(
+        child: Image.network(
+          avatarUrl,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+        ),
+      );
+    }
+    return _buildAvatarPlaceholder();
+  }
 
-class _PreviewCertificate {
-  const _PreviewCertificate({
-    required this.title,
-    required this.period,
-    required this.issuer,
-  });
-
-  final String title;
-  final String period;
-  final String issuer;
-}
-
-class _PreviewEducation {
-  const _PreviewEducation({
-    required this.school,
-    required this.period,
-    required this.major,
-  });
-
-  final String school;
-  final String period;
-  final String major;
-}
-
-class _ResumePreviewAssets {
-  static const String avatar =
-      'assets/images/resume_preview/resume_preview_avatar-56586a.png';
-  static const String certificate =
-      'assets/images/resume_preview/resume_preview_certificate-56586a.png';
-  static const String education =
-      'assets/images/resume_preview/resume_preview_education-56586a.png';
+  /// 未上传头像时展示中性的占位样式。
+  Widget _buildAvatarPlaceholder() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE9EEF5),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, color: Color(0xFF8C8C8C), size: 28),
+    );
+  }
 }
