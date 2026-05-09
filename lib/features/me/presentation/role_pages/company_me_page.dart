@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/route_paths.dart';
 
 /// 企业端我的页，按 Figma 设计图还原。
 class CompanyMePage extends StatelessWidget {
@@ -8,9 +11,6 @@ class CompanyMePage extends StatelessWidget {
   static const String _messageAsset = 'assets/images/mou64ult-r2vhiam.svg';
   static const String _settingsAsset = 'assets/images/mou64ult-u3ktrfm.svg';
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
-  static const String _profileChevronAsset =
-      'assets/images/mou64ult-k92hjgs.png';
-  static const String _menuChevronAsset = 'assets/images/mou64ult-tp8zkgi.png';
 
   static const List<_StatData> _stats = <_StatData>[
     _StatData(value: '88', label: '再招岗位'),
@@ -131,8 +131,11 @@ class _CompanyHeaderSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 80),
+                Positioned(
+                  left: 16,
+                  top: topPadding + 14,
+                  right: 16,
+                  // 关键修复：顶部内容仅按自身高度布局，避免固定底部留白把可用高度挤爆。
                   child: const Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
@@ -156,6 +159,7 @@ class _HeaderActions extends StatelessWidget {
   const _HeaderActions();
 
   @override
+  /// 构建头部右上角操作区，并把设置按钮接入真实设置页路由。
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
@@ -169,7 +173,7 @@ class _HeaderActions extends StatelessWidget {
         _TopIconButton(
           assetPath: CompanyMePage._settingsAsset,
           fallbackIcon: Icons.settings_outlined,
-          onTap: () => _showPlaceholderToast(context, '设置'),
+          onTap: () => context.push(RoutePaths.settings),
         ),
       ],
     );
@@ -245,12 +249,12 @@ class _CompanyProfileRow extends StatelessWidget {
               ],
             ),
           ),
-          Opacity(
+          const Opacity(
             opacity: 0.8,
-            child: Image.asset(
-              CompanyMePage._profileChevronAsset,
-              width: 16,
-              height: 16,
+            child: Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.white,
             ),
           ),
         ],
@@ -474,7 +478,11 @@ class _MenuTile extends StatelessWidget {
                 ),
               ),
             ),
-            Image.asset(CompanyMePage._menuChevronAsset, width: 16, height: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Color(0xFFBFBFBF),
+            ),
           ],
         ),
       ),

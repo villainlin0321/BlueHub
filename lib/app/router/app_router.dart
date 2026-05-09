@@ -24,6 +24,7 @@ import '../../features/me/presentation/my_info_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
+import '../../features/me/presentation/settings_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
 import '../../features/me/presentation/self_evaluation_page.dart';
@@ -176,6 +177,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myInfo,
         builder: (context, state) => const MyInfoPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.settings,
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: RoutePaths.myOrders,

@@ -19,7 +19,6 @@ class JobSeekerMePage extends ConsumerWidget {
   static const String _verifiedBadgeBgAsset =
       'assets/images/mou4gf12-gd4t3xy.svg';
   static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
-  static const String _chevronAsset = 'assets/images/mou4gf12-khnjije.png';
   static const String _messageAsset = 'assets/images/mou4gf12-spcrp36.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
 
@@ -291,10 +290,10 @@ class _ProfileCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Image.asset(
-                        JobSeekerMePage._chevronAsset,
-                        width: 16,
-                        height: 16,
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: Color(0xFFBFBFBF),
                       ),
                     ],
                   ),
@@ -466,7 +465,11 @@ class _MenuTile extends StatelessWidget {
                 ),
               ),
             ),
-            Image.asset(JobSeekerMePage._chevronAsset, width: 16, height: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Color(0xFFBFBFBF),
+            ),
           ],
         ),
       ),
