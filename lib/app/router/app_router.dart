@@ -136,7 +136,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.jobDetail,
-        builder: (context, state) => const JobDetailPage(),
+        builder: (context, state) =>
+            JobDetailPage(args: state.extra as JobDetailPageArgs?),
       ),
       GoRoute(
         path: RoutePaths.postJob,

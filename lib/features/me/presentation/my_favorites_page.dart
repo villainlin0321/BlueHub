@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/job_position_card.dart';
 import '../../../shared/widgets/visa_service_card.dart';
+import '../../jobs/presentation/job_apply_helper.dart';
+import '../../jobs/presentation/job_detail_page.dart';
+import '../data/collection_models.dart' as collection_models;
+import '../data/collection_providers.dart';
 
-class MyFavoritesPage extends StatefulWidget {
+class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 
   @override
-  State<MyFavoritesPage> createState() => _MyFavoritesPageState();
+  ConsumerState<MyFavoritesPage> createState() => _MyFavoritesPageState();
 }
 
-class _MyFavoritesPageState extends State<MyFavoritesPage>
+class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
   static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
@@ -31,14 +37,16 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
   late List<_FavoriteServiceItem> _serviceItems = List<_FavoriteServiceItem>.of(
     _initialServiceItems,
   );
-  late List<_FavoriteJobItem> _jobItems = List<_FavoriteJobItem>.of(
-    _initialJobItems,
-  );
+  List<collection_models.JobListVO> _jobItems = <collection_models.JobListVO>[];
 
   bool _isManaging = false;
   FavoriteTabType _currentTab = FavoriteTabType.services;
+  bool _isJobLoading = false;
+  String? _jobErrorMessage;
   final Set<String> _selectedServiceIds = <String>{};
   final Set<String> _selectedJobIds = <String>{};
+  final Set<String> _submittingJobIds = <String>{};
+  final Set<String> _appliedJobIds = <String>{};
 
   static const List<_FavoriteServiceItem> _initialServiceItems =
       <_FavoriteServiceItem>[
@@ -100,39 +108,13 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
         ),
       ];
 
-  static const List<_FavoriteJobItem> _initialJobItems = <_FavoriteJobItem>[
-    _FavoriteJobItem(
-      id: 'job-chef',
-      title: '中餐厨师 (包食宿)',
-      salary: '€2,500~3,500',
-      company: '柏林老四川餐厅',
-      location: '德国·柏林',
-      requirementTags: <String>['3-5年经验', '厨师证高级', '提供签证'],
-      highlightTags: <String>['急招', '包吃住'],
-      showMapPreview: true,
-      showApplyButton: true,
-    ),
-    _FavoriteJobItem(
-      id: 'job-assistant',
-      title: '中餐帮厨',
-      salary: '€1,800~2,200',
-      company: '柏林老四川餐厅',
-      location: '德国·柏林',
-      requirementTags: <String>['3-5年经验', '厨师证高级', '提供签证'],
-      highlightTags: <String>['双休', '时间自由'],
-      showApplyButton: true,
-    ),
-    _FavoriteJobItem(
-      id: 'job-assistant-offline',
-      title: '中餐帮厨',
-      salary: '€1,800~2,200',
-      company: '柏林老四川餐厅',
-      location: '德国·柏林',
-      requirementTags: <String>['3-5年经验', '厨师证高级', '提供签证'],
-      highlightTags: <String>['双休', '时间自由'],
-      archived: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCollectedJobs();
+    });
+  }
 
   @override
   void dispose() {
@@ -191,6 +173,79 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
     });
   }
 
+  /// 加载收藏岗位列表，成功后用于详情跳转与投递。
+  Future<void> _loadCollectedJobs() async {
+    setState(() {
+      _isJobLoading = true;
+      _jobErrorMessage = null;
+    });
+
+    try {
+      final response = await ref.read(collectionServiceProvider).listCollectedJobs(
+        page: 1,
+        pageSize: 50,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isJobLoading = false;
+        _jobItems = response.list;
+        _jobErrorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isJobLoading = false;
+        _jobErrorMessage = _resolveJobErrorMessage(error);
+      });
+    }
+  }
+
+  /// 统一提取收藏岗位列表的错误文案。
+  String _resolveJobErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '收藏岗位加载失败，请稍后重试';
+  }
+
+  /// 处理收藏页岗位投递，真实岗位有 `jobId` 时直接调用接口。
+  Future<void> _handleApplyJob(collection_models.JobListVO item) async {
+    final String itemId = item.jobId.toString();
+    if (_submittingJobIds.contains(itemId) || _appliedJobIds.contains(itemId)) {
+      return;
+    }
+
+    setState(() {
+      _submittingJobIds.add(itemId);
+    });
+
+    final String? errorMessage = await submitJobApplication(
+      context,
+      jobId: item.jobId,
+    );
+    if (!mounted) {
+      return;
+    }
+
+    if (errorMessage == null) {
+      setState(() {
+        _submittingJobIds.remove(itemId);
+        _appliedJobIds.add(itemId);
+      });
+      _showMessage('投递成功');
+      return;
+    }
+
+    setState(() {
+      _submittingJobIds.remove(itemId);
+    });
+    _showMessage(errorMessage);
+  }
+
   void _toggleJobSelection(String id) {
     setState(() {
       if (_selectedJobIds.contains(id)) {
@@ -214,7 +269,7 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
         }
         return;
       }
-      final ids = _jobItems.map((item) => item.id).toSet();
+      final ids = _jobItems.map((item) => item.jobId.toString()).toSet();
       if (_selectedJobIds.length == ids.length) {
         _selectedJobIds.clear();
       } else {
@@ -225,20 +280,22 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
     });
   }
 
-  void _deleteSelected() {
-    setState(() {
-      if (_currentTab == FavoriteTabType.services) {
+  Future<void> _deleteSelected() async {
+    if (_currentTab == FavoriteTabType.services) {
+      setState(() {
         _serviceItems = _serviceItems
             .where((item) => !_selectedServiceIds.contains(item.id))
             .toList();
         _selectedServiceIds.clear();
-      } else {
-        _jobItems = _jobItems
-            .where((item) => !_selectedJobIds.contains(item.id))
-            .toList();
-        _selectedJobIds.clear();
-      }
-    });
+      });
+      return;
+    }
+
+    final List<int> targetIds = _selectedJobIds
+        .map(int.tryParse)
+        .whereType<int>()
+        .toList(growable: false);
+    await _removeCollectedJobs(targetIds);
   }
 
   void _deleteServiceItem(String id) {
@@ -248,11 +305,44 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
     });
   }
 
-  void _deleteJobItem(String id) {
-    setState(() {
-      _jobItems = _jobItems.where((item) => item.id != id).toList();
-      _selectedJobIds.remove(id);
-    });
+  Future<void> _deleteJobItem(int jobId) async {
+    await _removeCollectedJobs(<int>[jobId]);
+  }
+
+  /// 调用真实取消收藏接口，并同步刷新本地列表。
+  Future<void> _removeCollectedJobs(List<int> jobIds) async {
+    if (jobIds.isEmpty) {
+      return;
+    }
+
+    try {
+      for (final int jobId in jobIds) {
+        await ref.read(collectionServiceProvider).removeCollection(
+          request: collection_models.CollectionBO(
+            targetType: 'job',
+            targetId: jobId,
+          ),
+        );
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        final Set<int> jobIdSet = jobIds.toSet();
+        _jobItems = _jobItems
+            .where((item) => !jobIdSet.contains(item.jobId))
+            .toList();
+        _selectedJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
+        _submittingJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
+        _appliedJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
+      });
+      _showMessage(jobIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveJobErrorMessage(error));
+    }
   }
 
   bool get _isCurrentTabFullySelected {
@@ -367,20 +457,39 @@ class _MyFavoritesPageState extends State<MyFavoritesPage>
                   onItemSelectionToggle: _toggleServiceSelection,
                   onDeleteItem: _deleteServiceItem,
                 ),
-                _FavoriteJobList(
-                  items: _jobItems,
-                  isManaging: _isManaging,
-                  selectedIds: _selectedJobIds,
-                  mapAssetPath: _mapAsset,
-                  onItemSelectionToggle: _toggleJobSelection,
-                  onApplyTap: () => _showMessage('一键投递（占位）'),
-                  onDeleteItem: _deleteJobItem,
-                ),
+                _buildJobTab(),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 根据收藏岗位加载状态切换列表、空态和错误态。
+  Widget _buildJobTab() {
+    if (_isJobLoading && _jobItems.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_jobErrorMessage != null && _jobItems.isEmpty) {
+      return _FavoriteJobsErrorState(
+        message: _jobErrorMessage!,
+        onRetry: _loadCollectedJobs,
+      );
+    }
+    if (_jobItems.isEmpty) {
+      return const _FavoriteJobsEmptyState();
+    }
+    return _FavoriteJobList(
+      items: _jobItems,
+      isManaging: _isManaging,
+      selectedIds: _selectedJobIds,
+      mapAssetPath: _mapAsset,
+      onItemSelectionToggle: _toggleJobSelection,
+      applyingJobIds: _submittingJobIds,
+      appliedJobIds: _appliedJobIds,
+      onApplyTap: _handleApplyJob,
+      onDeleteItem: _deleteJobItem,
     );
   }
 }
@@ -430,17 +539,21 @@ class _FavoriteJobList extends StatelessWidget {
     required this.selectedIds,
     required this.mapAssetPath,
     required this.onItemSelectionToggle,
+    required this.applyingJobIds,
+    required this.appliedJobIds,
     required this.onApplyTap,
     required this.onDeleteItem,
   });
 
-  final List<_FavoriteJobItem> items;
+  final List<collection_models.JobListVO> items;
   final bool isManaging;
   final Set<String> selectedIds;
   final String mapAssetPath;
   final ValueChanged<String> onItemSelectionToggle;
-  final VoidCallback onApplyTap;
-  final ValueChanged<String> onDeleteItem;
+  final Set<String> applyingJobIds;
+  final Set<String> appliedJobIds;
+  final Future<void> Function(collection_models.JobListVO item) onApplyTap;
+  final Future<void> Function(int jobId) onDeleteItem;
 
   @override
   Widget build(BuildContext context) {
@@ -450,15 +563,18 @@ class _FavoriteJobList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = items[index];
+        final String itemId = item.jobId.toString();
         return _SelectableWrapper(
-          key: ValueKey<String>('job-${item.id}'),
+          key: ValueKey<String>('job-$itemId'),
           isManaging: isManaging,
-          selected: selectedIds.contains(item.id),
-          onTap: () => onItemSelectionToggle(item.id),
-          onDelete: () => onDeleteItem(item.id),
+          selected: selectedIds.contains(itemId),
+          onTap: () => onItemSelectionToggle(itemId),
+          onDelete: () => onDeleteItem(item.jobId),
           child: _FavoriteJobCard(
             item: item,
             mapAssetPath: mapAssetPath,
+            isApplying: applyingJobIds.contains(itemId),
+            isApplied: appliedJobIds.contains(itemId),
             onApplyTap: onApplyTap,
           ),
         );
@@ -579,18 +695,94 @@ class _FavoriteJobCard extends StatelessWidget {
   const _FavoriteJobCard({
     required this.item,
     required this.mapAssetPath,
+    required this.isApplying,
+    required this.isApplied,
     required this.onApplyTap,
   });
 
-  final _FavoriteJobItem item;
+  final collection_models.JobListVO item;
   final String mapAssetPath;
-  final VoidCallback onApplyTap;
+  final bool isApplying;
+  final bool isApplied;
+  final Future<void> Function(collection_models.JobListVO item) onApplyTap;
 
   @override
   Widget build(BuildContext context) {
     return JobPositionCard(
-      data: item.cardData(mapAssetPath: mapAssetPath),
-      onApply: item.showApplyButton && !item.archived ? onApplyTap : null,
+      data: item.toCardData(mapAssetPath: mapAssetPath),
+      onTap: () => context.push(
+        RoutePaths.jobDetail,
+        extra: JobDetailPageArgs(jobId: item.jobId),
+      ),
+      onApply: !isApplied
+          ? () {
+              onApplyTap(item);
+            }
+          : null,
+      isApplying: isApplying,
+      applyButtonText: isApplied ? '已投递' : '一键投递',
+    );
+  }
+}
+
+class _FavoriteJobsEmptyState extends StatelessWidget {
+  const _FavoriteJobsEmptyState();
+
+  /// 收藏岗位为空时展示空态提示。
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        '还没有收藏岗位',
+        style: TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteJobsErrorState extends StatelessWidget {
+  const _FavoriteJobsErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  /// 收藏岗位加载失败时展示重试入口。
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(Icons.cloud_off_rounded, color: Color(0xFFBFBFBF), size: 32),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                onRetry();
+              },
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -732,43 +924,42 @@ class _FavoriteServicePackage {
   }
 }
 
-class _FavoriteJobItem {
-  const _FavoriteJobItem({
-    required this.id,
-    required this.title,
-    required this.salary,
-    required this.company,
-    required this.location,
-    required this.requirementTags,
-    required this.highlightTags,
-    this.showMapPreview = false,
-    this.showApplyButton = false,
-    this.archived = false,
-  });
+extension on collection_models.JobListVO {
+  /// 将收藏岗位接口返回的数据映射为职位卡片数据。
+  JobPositionCardData toCardData({required String mapAssetPath}) {
+    final List<String> tagLabels = tags
+        .map((collection_models.TagVO tag) => tag.label.trim())
+        .where((String label) => label.isNotEmpty)
+        .toList(growable: false);
+    final List<String> requirementTags = <String>[
+      ...tagLabels.where((String label) => label != '急招'),
+      if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
+    ].take(3).toList(growable: false);
+    final List<String> highlightTags = <String>[
+      if (isUrgent) '急招',
+    ];
+    final List<String> parts = <String>[
+      country.trim(),
+      city.trim(),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+    final String currency = salaryCurrency.isEmpty ? '¥' : salaryCurrency;
+    final String minText = salaryMin % 1 == 0
+        ? salaryMin.toInt().toString()
+        : salaryMin.toStringAsFixed(1);
+    final String maxText = salaryMax % 1 == 0
+        ? salaryMax.toInt().toString()
+        : salaryMax.toStringAsFixed(1);
+    final String salary = salaryMax > 0 ? '$currency$minText~$maxText' : '$currency$minText';
 
-  final String id;
-  final String title;
-  final String salary;
-  final String company;
-  final String location;
-  final List<String> requirementTags;
-  final List<String> highlightTags;
-  final bool showMapPreview;
-  final bool showApplyButton;
-  final bool archived;
-
-  JobPositionCardData cardData({required String mapAssetPath}) {
     return JobPositionCardData(
       title: title,
-      salary: salary,
+      salary: salaryPeriod.isEmpty ? salary : '$salary/$salaryPeriod',
       requirementTags: requirementTags,
       highlightTags: highlightTags,
-      company: company,
-      location: location,
-      showApplyButton: showApplyButton && !archived,
-      archived: archived,
-      statusText: archived ? '已下架' : null,
-      previewImageAssetPath: showMapPreview ? mapAssetPath : null,
+      company: employer.name,
+      location: parts.join('·'),
+      showApplyButton: true,
+      previewImageAssetPath: mapAssetPath,
     );
   }
 }
