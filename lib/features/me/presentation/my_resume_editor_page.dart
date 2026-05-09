@@ -22,14 +22,14 @@ enum ResumeEditorMode { create, edit }
 class ResumeEditorArgs {
   const ResumeEditorArgs.create({this.isPublic = true})
     : mode = ResumeEditorMode.create,
-      draft = null;
+      resume = null;
 
-  ResumeEditorArgs.edit(this.draft)
+  ResumeEditorArgs.edit(this.resume)
     : mode = ResumeEditorMode.edit,
-      isPublic = draft?.isPublic ?? true;
+      isPublic = resume?.isPublic ?? true;
 
   final ResumeEditorMode mode;
-  final ResumeDraft? draft;
+  final ResumeVO? resume;
   final bool isPublic;
 }
 
@@ -73,48 +73,6 @@ class MyResumeEditorPage extends ConsumerStatefulWidget {
 }
 
 class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
-  static const ResumeDraft _demoDraft = ResumeDraft(
-    name: '程先生',
-    region: '德国',
-    age: '32',
-    gender: '男',
-    phone: '189****8655',
-    salary: '1,500',
-    jobTitle: '伦敦康诺特酒店·高级电工',
-    duration: '2024.11 - 至今',
-    summary:
-        '本人从事餐饮烹饪工作多年，具备扎实的烹调功底，熟练掌握煎、炒、烹、炸、蒸等各类烹饪技法，擅长各类中餐菜品制作，能精准把控火候与口味，注重菜品营养搭配，能精准把控火候与口味，注重菜品营养搭配。',
-  );
-
-  static const List<_ResumeExperience> _fallbackExperiences =
-      <_ResumeExperience>[
-        _ResumeExperience(
-          company: '香港文华东方酒店',
-          period: '2020.09 - 2024.11',
-          role: '餐饮部·高级厨师',
-          summary:
-              '责菜品制作与出品把控，熟练掌握各类烹饪技法与风味呈现，协助厨师长进行菜品研发与摆盘优化，严格遵守后厨卫生标准与流程...',
-        ),
-      ];
-  static const List<_ResumeCertificate> _fallbackCertificates =
-      <_ResumeCertificate>[
-        _ResumeCertificate(
-          title: '中式烹调师·五级',
-          authority: '人力资源社会保障部',
-          issuedAt: '2016.10',
-          previewAssetPath: _ResumeEditorAssets.certificatePreview,
-        ),
-      ];
-  static const List<_ResumeEducation> _fallbackEducations =
-      <_ResumeEducation>[
-        _ResumeEducation(
-          school: '扬州大学',
-          subtitle: '烹饪与营养教育',
-          period: '2010 - 2013',
-        ),
-      ];
-
-  static const List<String> _fallbackJobTags = <String>['中餐厨师', '中餐面点', '高级电工'];
   static const List<String> _expectedJobOptions = <String>[
     '中餐厨师',
     '中餐面点',
@@ -133,7 +91,6 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         SelectableSheetOption<String>(value: '中餐主厨', label: '中餐主厨'),
       ];
 
-  static const List<String> _fallbackCountryTags = <String>['德国', '法国', '意大利'];
   static const List<SelectableSheetOption<String>> _countrySheetOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: '德国', label: '德国'),
@@ -143,11 +100,6 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         SelectableSheetOption<String>(value: '意大利', label: '意大利'),
         SelectableSheetOption<String>(value: '西班牙', label: '西班牙'),
       ];
-  static const List<String> _fallbackLanguageTags = <String>[
-    '德福TestDaF',
-    '法语专业四级',
-    '歌德C2',
-  ];
   static const List<SelectableSheetOption<String>> _languageSheetOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: '德福TestDaF', label: '德福TestDaF'),
@@ -158,14 +110,16 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         SelectableSheetOption<String>(value: '西班牙语三级', label: '西班牙语三级'),
       ];
 
+  late final ResumeVO? _resume;
   late final ResumeDraft _draft;
   late final List<String> _jobTags;
   late final List<String> _countryTags;
-  late final List<String> _languageTags;
+  late final List<_ResumeLanguage> _languages;
   late final List<_ResumeExperience> _experiences;
   late final List<_ResumeCertificate> _certificates;
   late final List<_ResumeEducation> _educations;
   late final String _salaryValue;
+  late final String _salaryMaxValue;
   late String _selfEvaluation;
   bool _isSaving = false;
   bool _didSave = false;
@@ -173,23 +127,32 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   /// 当前页面是否为创建模式。
   bool get _isCreateMode => widget.args.mode == ResumeEditorMode.create;
 
-  /// 当前页面按设计稿固定展示 85% 完整度。
-  int get _completionRate => 85;
+  /// 当前页面展示服务端返回的简历完整度，创建模式默认 0。
+  int get _completionRate {
+    final int value = _resume?.completeness ?? 0;
+    if (value < 0) {
+      return 0;
+    }
+    if (value > 100) {
+      return 100;
+    }
+    return value;
+  }
 
   @override
   void initState() {
     super.initState();
-    _draft = _resolveDraft(widget.args.draft);
-    _jobTags = _buildJobTags(_draft.jobTitle);
-    _countryTags = _buildCountryTags(_draft.region);
-    _languageTags = List<String>.of(_fallbackLanguageTags);
-    _experiences = _buildExperiences();
-    _certificates = List<_ResumeCertificate>.of(_fallbackCertificates);
-    _educations = List<_ResumeEducation>.of(_fallbackEducations);
+    _resume = widget.args.resume;
+    _draft = _resolveDraft(_resume, isPublic: widget.args.isPublic);
+    _jobTags = _buildJobTags(_resume);
+    _countryTags = _buildCountryTags(_resume);
+    _languages = _buildLanguages(_resume);
+    _experiences = _buildExperiences(_resume);
+    _certificates = _buildCertificates(_resume);
+    _educations = _buildEducations(_resume);
     _salaryValue = _extractSalaryValue(_draft.salary);
-    _selfEvaluation = _draft.summary.isEmpty
-        ? _demoDraft.summary
-        : _draft.summary;
+    _salaryMaxValue = _extractSalaryMaxValue(_draft.salary);
+    _selfEvaluation = _draft.summary;
   }
 
   @override
@@ -221,94 +184,147 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     );
   }
 
-  /// 用草稿值覆盖设计稿默认值，保证创建和编辑模式都有完整布局。
-  ResumeDraft _resolveDraft(ResumeDraft? draft) {
-    final ResumeDraft source = draft ?? const ResumeDraft();
+  /// 使用真实接口数据组装编辑页草稿，创建模式保留空白初始值。
+  ResumeDraft _resolveDraft(ResumeVO? resume, {required bool isPublic}) {
+    final WorkExperienceVO? firstExperience =
+        resume == null || resume.workExperiences.isEmpty
+        ? null
+        : resume.workExperiences.first;
+
+    if (resume == null) {
+      return ResumeDraft(salaryCurrency: 'EUR', isPublic: isPublic);
+    }
+
     return ResumeDraft(
-      name: source.name.isEmpty ? _demoDraft.name : source.name,
-      region: source.region.isEmpty ? _demoDraft.region : source.region,
-      age: source.age.isEmpty ? _demoDraft.age : source.age,
-      gender: source.gender.isEmpty ? _demoDraft.gender : source.gender,
-      phone: source.phone.isEmpty ? _demoDraft.phone : source.phone,
-      salary: source.salary.isEmpty ? _demoDraft.salary : source.salary,
-      salaryCurrency: source.salaryCurrency.isEmpty
-          ? _demoDraft.salaryCurrency
-          : source.salaryCurrency,
-      jobTitle: source.jobTitle.isEmpty ? _demoDraft.jobTitle : source.jobTitle,
-      duration: source.duration.isEmpty ? _demoDraft.duration : source.duration,
-      summary: source.summary.isEmpty ? _demoDraft.summary : source.summary,
-      isPublic: source.isPublic,
+      name: resume.basicInfo.realName,
+      region: resume.basicInfo.currentLocation,
+      age: resume.basicInfo.age > 0 ? resume.basicInfo.age.toString() : '',
+      gender: resume.basicInfo.gender,
+      phone: resume.basicInfo.phone,
+      salary: _formatSalaryText(resume.jobIntention),
+      salaryCurrency: resume.jobIntention.salaryCurrency.isEmpty
+          ? 'EUR'
+          : resume.jobIntention.salaryCurrency,
+      jobTitle: _buildDraftJobTitle(firstExperience),
+      duration: _formatExperiencePeriod(
+        startDate: firstExperience?.startDate ?? '',
+        endDate: firstExperience?.endDate ?? '',
+        isCurrent: firstExperience?.isCurrent ?? false,
+      ),
+      summary: resume.selfEvaluation,
+      isPublic: resume.isPublic ?? isPublic,
     );
   }
 
-  /// 从职位文案中提取更适合展示为标签的角色名。
-  String _extractRoleName(String jobTitle) {
-    if (jobTitle.contains('·')) {
-      return jobTitle.split('·').last.trim();
+  /// 根据第一条工作经历生成预览所需的职位文案。
+  String _buildDraftJobTitle(WorkExperienceVO? experience) {
+    if (experience == null) {
+      return '';
     }
-    if (jobTitle.contains('-')) {
-      return jobTitle.split('-').last.trim();
+
+    final String role = experience.department.isEmpty
+        ? experience.position
+        : '${experience.department}·${experience.position}';
+    if (experience.company.isEmpty) {
+      return role;
     }
-    return jobTitle.trim();
+    return '${experience.company}·$role';
   }
 
-  /// 构建期望职位标签，优先使用当前草稿值，再补齐设计稿示例。
-  List<String> _buildJobTags(String jobTitle) {
-    final List<String> result = <String>[];
-    final String primaryRole = _extractRoleName(jobTitle);
-    if (primaryRole.isNotEmpty) {
-      result.add(primaryRole);
+  /// 将接口薪资区间格式化为编辑页使用的纯数值文案。
+  String _formatSalaryText(JobIntentionVO jobIntention) {
+    final String minText = _formatDouble(jobIntention.salaryMin);
+    final String maxText = _formatDouble(jobIntention.salaryMax);
+    if (jobIntention.salaryMin <= 0 && jobIntention.salaryMax <= 0) {
+      return '';
     }
-    for (final String item in _fallbackJobTags) {
-      if (!result.contains(item)) {
-        result.add(item);
-      }
-      if (result.length == 3) {
-        break;
-      }
+    if (jobIntention.salaryMax > 0) {
+      return '$minText-$maxText';
     }
-    return result;
+    return minText;
   }
 
-  /// 构建期望国家标签，保证首个标签与当前草稿一致。
-  List<String> _buildCountryTags(String region) {
-    final List<String> result = <String>[];
-    if (region.trim().isNotEmpty) {
-      result.add(region.trim());
-    }
-    for (final String item in _fallbackCountryTags) {
-      if (!result.contains(item)) {
-        result.add(item);
-      }
-      if (result.length == 3) {
-        break;
-      }
-    }
-    return result;
+  /// 构建期望职位标签，仅使用真实接口数据。
+  List<String> _buildJobTags(ResumeVO? resume) {
+    return List<String>.of(resume?.jobIntention.positions ?? const <String>[]);
   }
 
-  /// 由草稿职位生成第一段工作经历，再拼接设计稿里的补充经历。
-  List<_ResumeExperience> _buildExperiences() {
-    final List<String> parts = _draft.jobTitle.split('·');
-    final String company = parts.isNotEmpty
-        ? parts.first.trim()
-        : _draft.jobTitle;
-    final String role = parts.length > 1
-        ? parts.last.trim()
-        : _extractRoleName(_draft.jobTitle);
-
-    return <_ResumeExperience>[
-      _ResumeExperience(
-        company: company.isEmpty ? '伦敦康诺特酒店' : company,
-        period: _draft.duration,
-        role: role.isEmpty ? '餐饮部·厨师长' : role,
-        summary: _draft.summary,
-      ),
-      ..._fallbackExperiences,
-    ];
+  /// 构建期望国家标签，仅使用真实接口数据。
+  List<String> _buildCountryTags(ResumeVO? resume) {
+    return List<String>.of(resume?.jobIntention.countries ?? const <String>[]);
   }
 
-  /// 只保留薪资左侧输入值，以匹配设计稿当前状态。
+  /// 构建真实语言能力列表，保留接口返回的原始字段。
+  List<_ResumeLanguage> _buildLanguages(ResumeVO? resume) {
+    return (resume?.languages ?? const <LanguageAbilityVO>[])
+        .map(
+          (LanguageAbilityVO item) => _ResumeLanguage(
+            langId: item.langId,
+            language: item.language,
+            certificate: item.certificate,
+            level: item.level,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// 构建真实工作经历列表，避免继续混入本地示例内容。
+  List<_ResumeExperience> _buildExperiences(ResumeVO? resume) {
+    return (resume?.workExperiences ?? const <WorkExperienceVO>[])
+        .map(
+          (WorkExperienceVO item) => _ResumeExperience(
+            expId: item.expId,
+            company: item.company,
+            department: item.department,
+            position: item.position,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            isCurrent: item.isCurrent,
+            summary: item.description,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// 构建真实技能证书列表，图片按本地路径或网络地址分类。
+  List<_ResumeCertificate> _buildCertificates(ResumeVO? resume) {
+    return (resume?.skillCertificates ?? const <SkillCertificateVO>[])
+        .map(
+          (SkillCertificateVO item) => _ResumeCertificate(
+            certId: item.certId,
+            title: item.name,
+            level: item.level,
+            authority: item.issuer,
+            issuedAt: item.issuedDate,
+            previewFilePaths:
+                item.imageUrl.isNotEmpty && !_isNetworkPath(item.imageUrl)
+                ? <String>[item.imageUrl]
+                : const <String>[],
+            previewImageUrls: _isNetworkPath(item.imageUrl)
+                ? <String>[item.imageUrl]
+                : const <String>[],
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// 构建真实教育经历列表，保留专业、学历与年份。
+  List<_ResumeEducation> _buildEducations(ResumeVO? resume) {
+    return (resume?.educations ?? const <EducationVO>[])
+        .map(
+          (EducationVO item) => _ResumeEducation(
+            eduId: item.eduId,
+            school: item.school,
+            major: item.major,
+            degree: item.degree,
+            startYear: item.startYear,
+            endYear: item.endYear,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// 只保留薪资左侧输入值，以匹配当前页面布局。
   String _extractSalaryValue(String salary) {
     if (salary.contains('-')) {
       return salary.split('-').first.trim();
@@ -317,6 +333,54 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       return salary.split('~').first.trim();
     }
     return salary.trim();
+  }
+
+  /// 提取薪资右侧上限值，用于展示真实最高期望。
+  String _extractSalaryMaxValue(String salary) {
+    if (salary.contains('-')) {
+      return salary.split('-').last.trim();
+    }
+    if (salary.contains('~')) {
+      return salary.split('~').last.trim();
+    }
+    return '';
+  }
+
+  /// 统一格式化工作经历时间段文案。
+  String _formatExperiencePeriod({
+    required String startDate,
+    required String endDate,
+    required bool isCurrent,
+  }) {
+    if (startDate.isEmpty && endDate.isEmpty) {
+      return '';
+    }
+    if (isCurrent) {
+      return startDate.isEmpty ? '至今' : '$startDate - 至今';
+    }
+    if (startDate.isEmpty) {
+      return endDate;
+    }
+    if (endDate.isEmpty) {
+      return startDate;
+    }
+    return '$startDate - $endDate';
+  }
+
+  /// 将数值转成不带多余小数的字符串。
+  String _formatDouble(double value) {
+    if (value <= 0) {
+      return '';
+    }
+    if (value % 1 == 0) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
+  }
+
+  /// 判断图片地址是否为网络资源。
+  bool _isNetworkPath(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
 
   /// 构建顶部导航栏。
@@ -473,6 +537,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 构建基础信息区域。
   Widget _buildBasicInfoSection() {
+    final List<Widget> metaWidgets = <Widget>[
+      if (_draft.region.trim().isNotEmpty) _buildMetaText(_draft.region),
+      if (_draft.gender.trim().isNotEmpty || _draft.age.trim().isNotEmpty)
+        _buildMetaText(
+          [
+            if (_draft.gender.trim().isNotEmpty) _draft.gender.trim(),
+            if (_draft.age.trim().isNotEmpty) '${_draft.age.trim()}岁',
+          ].join('·'),
+        ),
+      if (_draft.phone.trim().isNotEmpty) _buildMetaText(_draft.phone),
+    ];
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -486,7 +562,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 _buildSectionHeader(title: '基础信息'),
                 const SizedBox(height: 20),
                 Text(
-                  _draft.name,
+                  _draft.name.isEmpty ? '未填写姓名' : _draft.name,
                   style: const TextStyle(
                     color: Color(0xFF262626),
                     fontSize: 16,
@@ -495,15 +571,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
-                  children: <Widget>[
-                    _buildMetaText(_draft.region),
-                    _buildMetaText('${_draft.gender}·${_draft.age}岁'),
-                    _buildMetaText(_draft.phone),
-                  ],
-                ),
+                if (metaWidgets.isEmpty)
+                  _buildMetaText('暂无基础信息')
+                else
+                  Wrap(spacing: 12, runSpacing: 6, children: metaWidgets),
               ],
             ),
           ),
@@ -519,15 +590,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 ),
               ),
               const SizedBox(height: 22),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.asset(
-                  _ResumeEditorAssets.profileAvatar,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              _buildProfileAvatar(),
             ],
           ),
         ],
@@ -537,6 +600,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 构建求职意向区域。
   Widget _buildJobIntentionSection() {
+    final String currencyLabel = _draft.salaryCurrency.trim().isEmpty
+        ? '币种未设置'
+        : _draft.salaryCurrency;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -556,16 +623,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: _jobTags
-                .map(
-                  (String item) => _buildTagChip(
-                    label: item,
-                    iconPath: _ResumeEditorAssets.tagRemove,
-                    backgroundColor: const Color(0xFFEDF4FF),
-                    textColor: const Color(0xFF096DD9),
-                  ),
-                )
-                .toList(),
+            children: _jobTags.isEmpty
+                ? <Widget>[_buildEmptyStateChip('暂无期望职位')]
+                : _jobTags
+                      .map(
+                        (String item) => _buildTagChip(
+                          label: item,
+                          iconPath: _ResumeEditorAssets.tagRemove,
+                          backgroundColor: const Color(0xFFEDF4FF),
+                          textColor: const Color(0xFF096DD9),
+                        ),
+                      )
+                      .toList(),
           ),
           const SizedBox(height: 12),
           _buildTagChip(
@@ -587,16 +656,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: _countryTags
-                .map(
-                  (String item) => _buildTagChip(
-                    label: item,
-                    iconPath: _ResumeEditorAssets.tagRemove,
-                    backgroundColor: const Color(0xFFEDF4FF),
-                    textColor: const Color(0xFF096DD9),
-                  ),
-                )
-                .toList(),
+            children: _countryTags.isEmpty
+                ? <Widget>[_buildEmptyStateChip('暂无期望国家/地区')]
+                : _countryTags
+                      .map(
+                        (String item) => _buildTagChip(
+                          label: item,
+                          iconPath: _ResumeEditorAssets.tagRemove,
+                          backgroundColor: const Color(0xFFEDF4FF),
+                          textColor: const Color(0xFF096DD9),
+                        ),
+                      )
+                      .toList(),
           ),
           const SizedBox(height: 24),
           _buildLabeledRow(
@@ -604,9 +675,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Text(
-                  '欧元',
-                  style: TextStyle(
+                Text(
+                  currencyLabel,
+                  style: const TextStyle(
                     color: Color(0xFF595959),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -634,11 +705,15 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _salaryValue,
-                    style: const TextStyle(
-                      color: Color(0xFF171A1D),
+                    _salaryValue.isEmpty ? '最低期望' : _salaryValue,
+                    style: TextStyle(
+                      color: _salaryValue.isEmpty
+                          ? const Color(0xFFBFBFBF)
+                          : const Color(0xFF171A1D),
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: _salaryValue.isEmpty
+                          ? FontWeight.w400
+                          : FontWeight.w500,
                       height: 18 / 16,
                     ),
                   ),
@@ -663,12 +738,16 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     color: const Color(0xFFF5F7FA),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
-                    '最高期望',
+                  child: Text(
+                    _salaryMaxValue.isEmpty ? '最高期望' : _salaryMaxValue,
                     style: TextStyle(
-                      color: Color(0xFFBFBFBF),
+                      color: _salaryMaxValue.isEmpty
+                          ? const Color(0xFFBFBFBF)
+                          : const Color(0xFF171A1D),
                       fontSize: 16,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: _salaryMaxValue.isEmpty
+                          ? FontWeight.w400
+                          : FontWeight.w500,
                       height: 18 / 16,
                     ),
                   ),
@@ -697,10 +776,17 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             ),
           ),
           const SizedBox(height: 20),
-          for (int index = 0; index < _experiences.length; index++) ...<Widget>[
-            _buildExperienceItem(_experiences[index]),
-            if (index != _experiences.length - 1) const SizedBox(height: 24),
-          ],
+          if (_experiences.isEmpty)
+            _buildEmptySectionText('暂无工作经历')
+          else
+            for (
+              int index = 0;
+              index < _experiences.length;
+              index++
+            ) ...<Widget>[
+              _buildExperienceItem(_experiences[index]),
+              if (index != _experiences.length - 1) const SizedBox(height: 24),
+            ],
         ],
       ),
     );
@@ -722,16 +808,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: _languageTags
-                .map(
-                  (String item) => _buildTagChip(
-                    label: item,
-                    iconPath: _ResumeEditorAssets.languageTagRemove,
-                    backgroundColor: const Color(0xFFEDF4FF),
-                    textColor: const Color(0xFF096DD9),
-                  ),
-                )
-                .toList(),
+            children: _languages.isEmpty
+                ? <Widget>[_buildEmptySectionText('暂无语言能力')]
+                : _languages
+                      .map(
+                        (_ResumeLanguage item) => _buildTagChip(
+                          label: item.displayLabel,
+                          iconPath: _ResumeEditorAssets.languageTagRemove,
+                          backgroundColor: const Color(0xFFEDF4FF),
+                          textColor: const Color(0xFF096DD9),
+                        ),
+                      )
+                      .toList(),
           ),
         ],
       ),
@@ -754,14 +842,17 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             ),
           ),
           const SizedBox(height: 20),
-          for (
-            int index = 0;
-            index < _certificates.length;
-            index++
-          ) ...<Widget>[
-            _buildCertificateItem(_certificates[index]),
-            if (index != _certificates.length - 1) const SizedBox(height: 20),
-          ],
+          if (_certificates.isEmpty)
+            _buildEmptySectionText('暂无技能证书')
+          else
+            for (
+              int index = 0;
+              index < _certificates.length;
+              index++
+            ) ...<Widget>[
+              _buildCertificateItem(_certificates[index]),
+              if (index != _certificates.length - 1) const SizedBox(height: 20),
+            ],
         ],
       ),
     );
@@ -856,11 +947,57 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       );
     }
 
-    return Image.asset(
-      certificate.previewAssetPath!,
+    if (certificate.previewImageUrls.isNotEmpty) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: certificate.previewImageUrls
+            .map(
+              (String url) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  url,
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) {
+                    return Container(
+                      width: 88,
+                      height: 88,
+                      alignment: Alignment.center,
+                      color: const Color(0xFFF5F7FA),
+                      child: const Text(
+                        '加载失败',
+                        style: TextStyle(
+                          color: Color(0xFF8C8C8C),
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            )
+            .toList(growable: false),
+      );
+    }
+
+    return Container(
       width: 88,
       height: 88,
-      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        '暂无图片',
+        style: TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
     );
   }
 
@@ -880,10 +1017,17 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             ),
           ),
           const SizedBox(height: 20),
-          for (int index = 0; index < _educations.length; index++) ...<Widget>[
-            _buildEducationItem(_educations[index]),
-            if (index != _educations.length - 1) const SizedBox(height: 20),
-          ],
+          if (_educations.isEmpty)
+            _buildEmptySectionText('暂无教育经历')
+          else
+            for (
+              int index = 0;
+              index < _educations.length;
+              index++
+            ) ...<Widget>[
+              _buildEducationItem(_educations[index]),
+              if (index != _educations.length - 1) const SizedBox(height: 20),
+            ],
         ],
       ),
     );
@@ -969,17 +1113,20 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             trailing: _buildChevronActionIcon(onTap: _openSelfEvaluationPage),
           ),
           const SizedBox(height: 14),
-          Text(
-            _selfEvaluation,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
+          if (_selfEvaluation.trim().isEmpty)
+            _buildEmptySectionText('暂无自我评价')
+          else
+            Text(
+              _selfEvaluation,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF595959),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 22 / 14,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1057,6 +1204,71 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         fontWeight: FontWeight.w400,
         height: 16 / 14,
       ),
+    );
+  }
+
+  /// 构建区块为空时的统一提示文案。
+  Widget _buildEmptySectionText(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Color(0xFF8C8C8C),
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14,
+      ),
+    );
+  }
+
+  /// 构建空状态标签，保持标签区域的视觉结构一致。
+  Widget _buildEmptyStateChip(String text) {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 18 / 14,
+        ),
+      ),
+    );
+  }
+
+  /// 构建基础信息区头像，优先展示接口返回的真实头像地址。
+  Widget _buildProfileAvatar() {
+    final String avatarUrl = _resume?.basicInfo.avatarUrl ?? '';
+    if (_isNetworkPath(avatarUrl)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.network(
+          avatarUrl,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+        ),
+      );
+    }
+    return _buildAvatarPlaceholder();
+  }
+
+  /// 接口未返回头像时展示统一占位头像。
+  Widget _buildAvatarPlaceholder() {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE9EEF5),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, size: 24, color: Color(0xFF8C8C8C)),
     );
   }
 
@@ -1181,7 +1393,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         ),
         const SizedBox(height: 4),
         Text(
-          item.role,
+          item.roleLabel,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -1286,17 +1498,15 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
 
     try {
-      await ref.read(resumeServiceProvider).saveResume(
-        request: _buildSaveRequest(),
-      );
+      await ref
+          .read(resumeServiceProvider)
+          .saveResume(request: _buildSaveRequest());
       if (!mounted) {
         return;
       }
       _didSave = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isCreateMode ? '创建简历已保存' : '简历修改已保存'),
-        ),
+        SnackBar(content: Text(_isCreateMode ? '创建简历已保存' : '简历修改已保存')),
       );
       context.pop(true);
     } catch (error) {
@@ -1319,9 +1529,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
 
     try {
-      await ref.read(resumeServiceProvider).saveResume(
-        request: _buildSaveRequest(),
-      );
+      await ref
+          .read(resumeServiceProvider)
+          .saveResume(request: _buildSaveRequest());
       if (!mounted) {
         return;
       }
@@ -1358,27 +1568,27 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           .entries
           .map(
             (entry) => WorkExperienceBO(
-              expId: 0,
+              expId: entry.value.expId,
               company: entry.value.company,
-              department: '',
-              position: entry.value.role,
-              startDate: _parsePeriodStart(entry.value.period),
-              endDate: _parsePeriodEnd(entry.value.period),
-              isCurrent: entry.value.period.contains('至今'),
+              department: entry.value.department,
+              position: entry.value.position,
+              startDate: entry.value.startDate,
+              endDate: entry.value.endDate,
+              isCurrent: entry.value.isCurrent,
               description: entry.value.summary,
               sortOrder: entry.key + 1,
             ),
           )
           .toList(growable: false),
-      languages: _languageTags
+      languages: _languages
           .asMap()
           .entries
           .map(
             (entry) => LanguageAbilityBO(
-              langId: 0,
-              language: _resolveLanguageName(entry.value),
-              certificate: entry.value,
-              level: '',
+              langId: entry.value.langId,
+              language: entry.value.language,
+              certificate: entry.value.certificate,
+              level: entry.value.level,
               sortOrder: entry.key + 1,
             ),
           )
@@ -1388,13 +1598,15 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           .entries
           .map(
             (entry) => SkillCertificateBO(
-              certId: 0,
+              certId: entry.value.certId,
               name: entry.value.title,
-              level: '',
+              level: entry.value.level,
               issuer: entry.value.authority,
               issuedDate: entry.value.issuedAt,
               imageUrl: entry.value.previewFilePaths.isNotEmpty
                   ? entry.value.previewFilePaths.first
+                  : entry.value.previewImageUrls.isNotEmpty
+                  ? entry.value.previewImageUrls.first
                   : '',
               sortOrder: entry.key + 1,
             ),
@@ -1405,12 +1617,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           .entries
           .map(
             (entry) => EducationBO(
-              eduId: 0,
+              eduId: entry.value.eduId,
               school: entry.value.school,
-              major: entry.value.subtitle,
-              degree: '',
-              startYear: _parseEducationStart(entry.value.period),
-              endYear: _parseEducationEnd(entry.value.period),
+              major: entry.value.major,
+              degree: entry.value.degree,
+              startYear: entry.value.startYear,
+              endYear: entry.value.endYear,
               sortOrder: entry.key + 1,
             ),
           )
@@ -1434,18 +1646,24 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   ResumeDraft get _currentDraft {
+    final _ResumeExperience? firstExperience = _experiences.isEmpty
+        ? null
+        : _experiences.first;
+
     return ResumeDraft(
       name: _draft.name,
       region: _draft.region,
       age: _draft.age,
       gender: _draft.gender,
       phone: _draft.phone,
-      salary: _draft.salary.contains('-') || _draft.salary.contains('~')
-          ? _draft.salary
-          : _salaryValue,
+      salary: _salaryMaxValue.isEmpty
+          ? _salaryValue
+          : '$_salaryValue-$_salaryMaxValue',
       salaryCurrency: _draft.salaryCurrency,
-      jobTitle: _draft.jobTitle,
-      duration: _draft.duration,
+      jobTitle: firstExperience == null
+          ? _draft.jobTitle
+          : _buildDraftTitleFromExperience(firstExperience),
+      duration: firstExperience?.period ?? _draft.duration,
       summary: _selfEvaluation,
       isPublic: _draft.isPublic,
     );
@@ -1458,45 +1676,26 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 提取保存请求使用的最高薪资。
   double _parseSalaryMax() {
-    final String salary = _draft.salary;
-    if (salary.contains('-')) {
-      return _parseNumeric(salary.split('-').last);
-    }
-    if (salary.contains('~')) {
-      return _parseNumeric(salary.split('~').last);
-    }
-    return 0;
+    return _parseNumeric(_salaryMaxValue);
   }
 
   double _parseNumeric(String text) {
-    final String normalized = text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
+    final String normalized = text
+        .replaceAll(',', '')
+        .replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(normalized) ?? 0;
   }
 
-  /// 将“2020.09 - 2024.11 / 2020 - 2024 / 2020.09 - 至今”解析为接口需要的开始时间。
-  String _parsePeriodStart(String period) {
-    final List<String> parts = period.split(RegExp(r'\s*-\s*'));
-    return parts.isEmpty ? '' : parts.first.trim();
-  }
-
-  /// 将“至今”类文案转换为空结束时间，并配合 `isCurrent` 使用。
-  String _parsePeriodEnd(String period) {
-    final List<String> parts = period.split(RegExp(r'\s*-\s*'));
-    if (parts.length < 2) {
-      return '';
+  /// 从本地工作经历模型生成预览页使用的职位文案。
+  String _buildDraftTitleFromExperience(_ResumeExperience experience) {
+    final String role = experience.roleLabel;
+    if (experience.company.isEmpty) {
+      return role;
     }
-    final String end = parts.last.trim();
-    return end == '至今' ? '' : end;
-  }
-
-  int _parseEducationStart(String period) {
-    final String start = _parsePeriodStart(period);
-    return int.tryParse(start.split('.').first) ?? 0;
-  }
-
-  int _parseEducationEnd(String period) {
-    final String end = _parsePeriodEnd(period);
-    return int.tryParse(end.split('.').first) ?? 0;
+    if (role.isEmpty) {
+      return experience.company;
+    }
+    return '${experience.company}·$role';
   }
 
   /// 从证书名中尽量提取语言名称，证书原文仍保留到 certificate 字段。
@@ -1559,11 +1758,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openLanguageSheet() async {
+    final Map<String, _ResumeLanguage> existingByLabel =
+        <String, _ResumeLanguage>{
+          for (final _ResumeLanguage item in _languages)
+            item.displayLabel: item,
+        };
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '语言能力',
       options: _languageSheetOptions,
-      initialSelectedValues: _languageTags,
+      initialSelectedValues: _languages
+          .map((item) => item.displayLabel)
+          .toList(growable: false),
     );
 
     if (result == null) {
@@ -1571,9 +1777,20 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     }
 
     setState(() {
-      _languageTags
+      _languages
         ..clear()
-        ..addAll(result);
+        ..addAll(
+          result.map(
+            (String value) =>
+                existingByLabel[value] ??
+                _ResumeLanguage(
+                  langId: 0,
+                  language: _resolveLanguageName(value),
+                  certificate: value,
+                  level: '',
+                ),
+          ),
+        );
     });
   }
 
@@ -1589,7 +1806,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _certificates.insert(
         0,
         _ResumeCertificate(
+          certId: 0,
           title: result.title,
+          level: '',
           authority: '技能证书',
           issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
           previewFilePaths: result.imagePaths,
@@ -1625,9 +1844,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _educations.insert(
         0,
         _ResumeEducation(
+          eduId: 0,
           school: result.school,
-          subtitle: result.displaySubtitle,
-          period: result.displayPeriod,
+          major: result.major,
+          degree: result.degree,
+          startYear: result.period.startYear,
+          endYear: result.period.endYear ?? 0,
         ),
       );
     });
@@ -1645,13 +1867,30 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _experiences.insert(
         0,
         _ResumeExperience(
+          expId: 0,
           company: result.company,
-          period: result.period.displayText,
-          role: result.displayRole,
+          department: result.department,
+          position: result.jobTitle,
+          startDate: _formatYearMonth(
+            result.period.startYear,
+            result.period.startMonth,
+          ),
+          endDate: result.period.isCurrent
+              ? ''
+              : _formatYearMonth(
+                  result.period.endYear ?? result.period.startYear,
+                  result.period.endMonth ?? result.period.startMonth,
+                ),
+          isCurrent: result.period.isCurrent,
           summary: result.description.isEmpty ? '未填写工作内容' : result.description,
         ),
       );
     });
+  }
+
+  /// 将年月组装成接口兼容的 `yyyy.MM` 字符串。
+  String _formatYearMonth(int year, int month) {
+    return '${year.toString().padLeft(4, '0')}.${month.toString().padLeft(2, '0')}';
   }
 }
 
@@ -1659,64 +1898,145 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 class _ResumeEditorAssets {
   static const String completionBadgeBg =
       'assets/images/completion_badge_bg.png';
-  static const String basicInfoEdit =
-      'assets/images/basic_info_edit.svg';
-  static const String profileAvatar =
-      'assets/images/profile_avatar.png';
+  static const String basicInfoEdit = 'assets/images/basic_info_edit.svg';
   static const String addCircle = 'assets/images/add_circle.svg';
   static const String tagRemove = 'assets/images/tag_remove.svg';
   static const String tagAdd = 'assets/images/tag_add.svg';
-  static const String dropdownArrow =
-      'assets/images/dropdown_arrow.png';
+  static const String dropdownArrow = 'assets/images/dropdown_arrow.png';
   static const String languageTagRemove =
       'assets/images/language_tag_remove.svg';
-  static const String certificatePreview =
-      'assets/images/certificate_preview.png';
-  static const String educationLogo =
-      'assets/images/education_logo.png';
+  static const String educationLogo = 'assets/images/education_logo.png';
 }
 
 /// 工作经历展示模型。
 class _ResumeExperience {
   const _ResumeExperience({
+    required this.expId,
     required this.company,
-    required this.period,
-    required this.role,
+    required this.department,
+    required this.position,
+    required this.startDate,
+    required this.endDate,
+    required this.isCurrent,
     required this.summary,
   });
 
+  final int expId;
   final String company;
-  final String period;
-  final String role;
+  final String department;
+  final String position;
+  final String startDate;
+  final String endDate;
+  final bool isCurrent;
   final String summary;
+
+  /// 工作经历展示时优先拼接“部门·职位”结构。
+  String get roleLabel {
+    if (department.isEmpty) {
+      return position;
+    }
+    if (position.isEmpty) {
+      return department;
+    }
+    return '$department·$position';
+  }
+
+  /// 工作经历展示时统一输出时间段文案。
+  String get period {
+    if (startDate.isEmpty && endDate.isEmpty) {
+      return '';
+    }
+    if (isCurrent) {
+      return startDate.isEmpty ? '至今' : '$startDate - 至今';
+    }
+    if (startDate.isEmpty) {
+      return endDate;
+    }
+    if (endDate.isEmpty) {
+      return startDate;
+    }
+    return '$startDate - $endDate';
+  }
+}
+
+/// 语言能力展示模型。
+class _ResumeLanguage {
+  const _ResumeLanguage({
+    required this.langId,
+    required this.language,
+    required this.certificate,
+    required this.level,
+  });
+
+  final int langId;
+  final String language;
+  final String certificate;
+  final String level;
+
+  /// 标签展示优先使用证书名，缺失时回退到语言名。
+  String get displayLabel {
+    return certificate.isEmpty ? language : certificate;
+  }
 }
 
 /// 技能证书展示模型。
 class _ResumeCertificate {
   const _ResumeCertificate({
+    required this.certId,
     required this.title,
+    required this.level,
     required this.authority,
     required this.issuedAt,
-    this.previewAssetPath,
     this.previewFilePaths = const <String>[],
+    this.previewImageUrls = const <String>[],
   });
 
+  final int certId;
   final String title;
+  final String level;
   final String authority;
   final String issuedAt;
-  final String? previewAssetPath;
   final List<String> previewFilePaths;
+  final List<String> previewImageUrls;
 }
 
 /// 教育经历展示模型。
 class _ResumeEducation {
   const _ResumeEducation({
+    required this.eduId,
     required this.school,
-    required this.subtitle,
-    required this.period,
+    required this.major,
+    required this.degree,
+    required this.startYear,
+    required this.endYear,
   });
 
+  final int eduId;
   final String school;
-  final String subtitle;
-  final String period;
+  final String major;
+  final String degree;
+  final int startYear;
+  final int endYear;
+
+  /// 教育经历副标题展示专业与学历。
+  String get subtitle {
+    if (major.isEmpty) {
+      return degree;
+    }
+    if (degree.isEmpty) {
+      return major;
+    }
+    return '$major · $degree';
+  }
+
+  /// 教育经历展示年份区间。
+  String get period {
+    if (startYear <= 0 && endYear <= 0) {
+      return '';
+    }
+    if (endYear <= 0) {
+      return '$startYear - 至今';
+    }
+    return '$startYear - $endYear';
+  }
 }

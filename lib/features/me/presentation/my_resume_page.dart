@@ -56,7 +56,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     });
 
     try {
-      final ResumeVO resume = await ref.read(resumeServiceProvider).getMyResume();
+      final ResumeVO resume = await ref
+          .read(resumeServiceProvider)
+          .getMyResume();
       if (!mounted) {
         return;
       }
@@ -149,10 +151,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_errorMessage != null) {
-      return _ResumeErrorState(
-        message: _errorMessage!,
-        onRetry: _loadResume,
-      );
+      return _ResumeErrorState(message: _errorMessage!, onRetry: _loadResume);
     }
     final ResumeVO? resume = _resume;
     if (resume == null) {
@@ -315,7 +314,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                   scale: 0.9,
                   child: Switch(
                     value: _isResumeVisible,
-                    onChanged: _isSavingVisibility ? null : _updateResumeVisibility,
+                    onChanged: _isSavingVisibility
+                        ? null
+                        : _updateResumeVisibility,
                     activeThumbColor: Colors.white,
                     activeTrackColor: const Color(0xFF096DD9),
                     inactiveThumbColor: Colors.white,
@@ -519,7 +520,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     }
   }
 
-  /// 进入编辑简历页，并把真实接口数据映射为编辑页草稿。
+  /// 进入编辑简历页，并把真实接口对象直接传给编辑页。
   Future<void> _openResumeEditor() async {
     final ResumeVO? resume = _resume;
     if (resume == null) {
@@ -527,7 +528,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     }
     final bool? didSave = await context.push<bool>(
       RoutePaths.myResumeEditor,
-      extra: ResumeEditorArgs.edit(resume.toResumeDraft()),
+      extra: ResumeEditorArgs.edit(resume),
     );
     if (didSave == true && mounted) {
       await _loadResume();
@@ -547,9 +548,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     });
 
     try {
-      await ref.read(resumeServiceProvider).saveResume(
-        request: resume.toSaveResumeBO(isPublic: value),
-      );
+      await ref
+          .read(resumeServiceProvider)
+          .saveResume(request: resume.toSaveResumeBO(isPublic: value));
       if (!mounted) {
         return;
       }
@@ -582,10 +583,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 }
 
 class _ResumeErrorState extends StatelessWidget {
-  const _ResumeErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ResumeErrorState({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -665,12 +663,14 @@ extension on ResumeVO {
         : workExperiences.first;
     final String title = firstExperience?.position.trim().isNotEmpty == true
         ? firstExperience!.position.trim()
-        : (jobIntention.positions.isEmpty ? '期望职位待完善' : jobIntention.positions.first);
+        : (jobIntention.positions.isEmpty
+              ? '期望职位待完善'
+              : jobIntention.positions.first);
     final String duration = firstExperience == null
         ? (updatedAt.isEmpty ? '刚刚更新' : updatedAt)
         : firstExperience.isCurrent
-            ? '${firstExperience.startDate}-至今'
-            : '${firstExperience.startDate}-${firstExperience.endDate}';
+        ? '${firstExperience.startDate}-至今'
+        : '${firstExperience.startDate}-${firstExperience.endDate}';
     final String summaryText = selfEvaluation.trim().isNotEmpty
         ? selfEvaluation.trim()
         : (firstExperience?.description.trim().isNotEmpty == true
@@ -679,7 +679,9 @@ extension on ResumeVO {
 
     return _ResumeItemData(
       name: basicInfo.realName.isEmpty ? '未填写姓名' : basicInfo.realName,
-      region: basicInfo.currentLocation.isEmpty ? '地区待完善' : basicInfo.currentLocation,
+      region: basicInfo.currentLocation.isEmpty
+          ? '地区待完善'
+          : basicInfo.currentLocation,
       age: basicInfo.age > 0 ? '${basicInfo.age}岁' : '年龄待完善',
       gender: basicInfo.gender.isEmpty ? '性别待完善' : basicInfo.gender,
       phone: basicInfo.phone,
@@ -689,35 +691,6 @@ extension on ResumeVO {
       summary: summaryText,
       avatarColor: const Color(0xFF8FB6FF),
       avatarIcon: Icons.person,
-    );
-  }
-
-  /// 将真实简历转换为编辑页所需的草稿数据。
-  ResumeDraft toResumeDraft() {
-    final WorkExperienceVO? firstExperience = workExperiences.isEmpty
-        ? null
-        : workExperiences.first;
-    final String title = firstExperience?.position.trim().isNotEmpty == true
-        ? firstExperience!.position.trim()
-        : (jobIntention.positions.isEmpty ? '' : jobIntention.positions.first);
-    final String duration = firstExperience == null
-        ? ''
-        : firstExperience.isCurrent
-            ? '${firstExperience.startDate} - 至今'
-            : '${firstExperience.startDate} - ${firstExperience.endDate}';
-
-    return ResumeDraft(
-      name: basicInfo.realName,
-      region: basicInfo.currentLocation,
-      age: basicInfo.age > 0 ? basicInfo.age.toString() : '',
-      gender: basicInfo.gender,
-      phone: basicInfo.phone,
-      salary: _formatSalary(raw: true),
-      salaryCurrency: jobIntention.salaryCurrency,
-      jobTitle: title,
-      duration: duration,
-      summary: selfEvaluation,
-      isPublic: isPublic ?? true,
     );
   }
 
