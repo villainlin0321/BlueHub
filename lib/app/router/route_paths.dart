@@ -17,6 +17,7 @@ class RoutePaths {
   static const addSkillCertificate = '/me/resume/editor/skill-certificate/add';
   static const myApplications = '/me/applications';
   static const serviceDetail = '/service-detail';
+  static const editVisaPackage = '/visa/package/edit';
   static const serviceDetailReport = '/service-detail/report';
   static const appResult = '/result';
   static const myOrders = '/me/orders';
