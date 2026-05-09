@@ -84,36 +84,42 @@ class SwitchRoleBO {
 
 class UpdateUserBO {
   const UpdateUserBO({
-    required this.nickname,
-    required this.avatarId,
-    required this.gender,
-    required this.birthday,
-    required this.currentLocation,
+    this.nickname,
+    this.avatarId,
+    this.gender,
+    this.birthday,
+    this.currentLocation,
   });
 
-  final String nickname;
-  final int avatarId;
-  final String gender;
-  final String birthday;
-  final String currentLocation;
+  final String? nickname;
+  final int? avatarId;
+  final String? gender;
+  final String? birthday;
+  final String? currentLocation;
 
   factory UpdateUserBO.fromJson(JsonMap json) {
     return UpdateUserBO(
-      nickname: readString(json, 'nickname'),
-      avatarId: readInt(json, 'avatarId'),
-      gender: readString(json, 'gender'),
-      birthday: readString(json, 'birthday'),
-      currentLocation: readString(json, 'currentLocation'),
+      nickname: json.containsKey('nickname')
+          ? readString(json, 'nickname')
+          : null,
+      avatarId: json.containsKey('avatarId') ? readInt(json, 'avatarId') : null,
+      gender: json.containsKey('gender') ? readString(json, 'gender') : null,
+      birthday: json.containsKey('birthday')
+          ? readString(json, 'birthday')
+          : null,
+      currentLocation: json.containsKey('currentLocation')
+          ? readString(json, 'currentLocation')
+          : null,
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'nickname': nickname,
-      'avatarId': avatarId,
-      'gender': gender,
-      'birthday': birthday,
-      'currentLocation': currentLocation,
+      if (nickname != null) 'nickname': nickname,
+      if (avatarId != null) 'avatarId': avatarId,
+      if (gender != null) 'gender': gender,
+      if (birthday != null) 'birthday': birthday,
+      if (currentLocation != null) 'currentLocation': currentLocation,
     };
   }
 }
