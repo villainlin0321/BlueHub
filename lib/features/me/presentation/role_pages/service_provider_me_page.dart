@@ -7,8 +7,6 @@ class ServiceProviderMePage extends StatelessWidget {
 
   static const String _headerBgAsset = 'assets/images/mou588hj-8pcermw.png';
   static const String _avatarAsset = 'assets/images/mou588hj-vpl779h.png';
-  static const String _chevronAsset = 'assets/images/mou588hj-xcqwdgc.png';
-  static const String _menuChevronAsset = 'assets/images/mou588hj-hrfxjua.png';
   static const String _messageAsset = 'assets/images/mou588hj-ehihl8o.svg';
   static const String _settingsAsset = 'assets/images/mou588hj-ycjdz35.svg';
   static const String _badgeBgAsset = 'assets/images/mou588hj-umrxyv9.svg';
@@ -213,12 +211,12 @@ class _ProviderProfileRow extends StatelessWidget {
               ],
             ),
           ),
-          Opacity(
+          const Opacity(
             opacity: 0.7,
-            child: Image.asset(
-              ServiceProviderMePage._chevronAsset,
-              width: 16,
-              height: 16,
+            child: Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.white,
             ),
           ),
         ],
@@ -420,10 +418,10 @@ class _MenuTile extends StatelessWidget {
                 ),
               ),
             ),
-            Image.asset(
-              ServiceProviderMePage._menuChevronAsset,
-              width: 16,
-              height: 16,
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Color(0xFFBFBFBF),
             ),
           ],
         ),

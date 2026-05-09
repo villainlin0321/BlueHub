@@ -52,7 +52,7 @@ class _EditVisaPackagePageState extends State<EditVisaPackagePage> {
             ),
             titleHint: '选择材料类型',
             descriptionHint: '请输入材料描述（20字以内）',
-            trailingAsset: 'assets/images/visa_package_chevron_blue.svg',
+            trailingIconColor: EditVisaPackageStyles.primary,
           ),
           _EditVisaPackageMaterialDraft(
             label: '材料2',
@@ -62,7 +62,7 @@ class _EditVisaPackagePageState extends State<EditVisaPackagePage> {
             descriptionController: TextEditingController(),
             titleHint: '选择材料类型',
             descriptionHint: '请输入材料描述（20字以内）',
-            trailingAsset: 'assets/images/visa_package_chevron_gray.svg',
+            trailingIconColor: EditVisaPackageStyles.textTertiary,
           ),
         ],
       ),
@@ -384,11 +384,11 @@ class _EditVisaPackagePageState extends State<EditVisaPackagePage> {
         EditVisaPackageInputField(
           controller: material.titleController,
           hintText: material.titleHint,
-          readOnly: material.trailingAsset != null,
-          trailing: material.trailingAsset == null
+          readOnly: material.trailingIconColor != null,
+          trailing: material.trailingIconColor == null
               ? null
               : _EditVisaPackageMaterialTrailingIcon(
-                  assetPath: material.trailingAsset!,
+                  color: material.trailingIconColor!,
                 ),
         ),
         const SizedBox(height: 12),
@@ -427,7 +427,7 @@ class _EditVisaPackagePageState extends State<EditVisaPackagePage> {
           descriptionController: TextEditingController(),
           titleHint: '选择材料类型',
           descriptionHint: '请输入材料描述（20字以内）',
-          trailingAsset: 'assets/images/visa_package_chevron_gray.svg',
+          trailingIconColor: EditVisaPackageStyles.textTertiary,
         ),
       );
     });
@@ -1200,13 +1200,15 @@ class _EditVisaPackageFieldArrow extends StatelessWidget {
 }
 
 class _EditVisaPackageMaterialTrailingIcon extends StatelessWidget {
-  const _EditVisaPackageMaterialTrailingIcon({required this.assetPath});
+  const _EditVisaPackageMaterialTrailingIcon({required this.color});
 
-  final String assetPath;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: SvgPicture.asset(assetPath, width: 16, height: 16));
+    return Center(
+      child: Icon(Icons.arrow_forward_ios, size: 14, color: color),
+    );
   }
 }
 
@@ -1248,7 +1250,7 @@ class _EditVisaPackageMaterialDraft {
     required this.descriptionController,
     required this.titleHint,
     required this.descriptionHint,
-    this.trailingAsset,
+    this.trailingIconColor,
   });
 
   final String label;
@@ -1258,7 +1260,7 @@ class _EditVisaPackageMaterialDraft {
   final TextEditingController descriptionController;
   final String titleHint;
   final String descriptionHint;
-  final String? trailingAsset;
+  final Color? trailingIconColor;
 
   void dispose() {
     titleController.dispose();

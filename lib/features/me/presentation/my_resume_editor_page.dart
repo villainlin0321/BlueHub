@@ -716,10 +716,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         children: <Widget>[
           _buildSectionHeader(
             title: '语言能力',
-            trailing: _buildActionIcon(
-              _ResumeEditorAssets.sectionChevron,
-              onTap: _openLanguageSheet,
-            ),
+            trailing: _buildChevronActionIcon(onTap: _openLanguageSheet),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -816,10 +813,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Image.asset(
-                  _ResumeEditorAssets.itemChevron,
-                  width: 12,
-                  height: 12,
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Color(0xFFBFBFBF),
                 ),
               ],
             ),
@@ -947,10 +944,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 ),
               ),
               const SizedBox(width: 4),
-              Image.asset(
-                _ResumeEditorAssets.itemChevron,
-                width: 12,
-                height: 12,
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 12,
+                color: Color(0xFFBFBFBF),
               ),
             ],
           ),
@@ -969,10 +966,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         children: <Widget>[
           _buildSectionHeader(
             title: '自我评价',
-            trailing: _buildActionIcon(
-              _ResumeEditorAssets.sectionChevron,
-              onTap: _openSelfEvaluationPage,
-            ),
+            trailing: _buildChevronActionIcon(onTap: _openSelfEvaluationPage),
           ),
           const SizedBox(height: 14),
           Text(
@@ -1107,7 +1101,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     );
   }
 
-  /// 构建右侧操作图标。
+  /// 构建右侧操作图标，当前用于“添加”这类资源型按钮。
   Widget _buildActionIcon(String assetPath, {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -1118,6 +1112,24 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           child: assetPath.endsWith('.svg')
               ? SvgPicture.asset(assetPath, width: 20, height: 20)
               : Image.asset(assetPath, width: 20, height: 20),
+        ),
+      ),
+    );
+  }
+
+  /// 构建统一的系统右箭头操作按钮，替代原有图片箭头资源。
+  Widget _buildChevronActionIcon({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: const SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: Color(0xFFBFBFBF),
+          ),
         ),
       ),
     );
@@ -1157,10 +1169,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Image.asset(
-                    _ResumeEditorAssets.itemChevron,
-                    width: 12,
-                    height: 12,
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: Color(0xFFBFBFBF),
                   ),
                 ],
               ),
@@ -1656,10 +1668,6 @@ class _ResumeEditorAssets {
   static const String tagAdd = 'assets/images/tag_add.svg';
   static const String dropdownArrow =
       'assets/images/dropdown_arrow.png';
-  static const String itemChevron =
-      'assets/images/item_chevron.png';
-  static const String sectionChevron =
-      'assets/images/section_chevron.svg';
   static const String languageTagRemove =
       'assets/images/language_tag_remove.svg';
   static const String certificatePreview =

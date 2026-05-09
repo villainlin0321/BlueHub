@@ -453,7 +453,11 @@ class _HomeSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset('assets/images/mon5bjog-34xqksz.png', width: 16, height: 16),
+        const Icon(
+          Icons.arrow_forward_ios,
+          size: 14,
+          color: Color(0xFFBFBFBF),
+        ),
       ],
     );
   }
