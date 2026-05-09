@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/route_paths.dart';
 
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
 class ServiceProviderJobsPage extends StatefulWidget {
@@ -57,7 +60,10 @@ class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
     return ListView(
       padding: EdgeInsets.only(bottom: bottomPadding + 8),
       children: <Widget>[
-        _PageHeader(topPadding: topPadding),
+        _PageHeader(
+          topPadding: topPadding,
+          onPublishTap: () => context.push(RoutePaths.editVisaPackage),
+        ),
         _PageTabBar(
           selectedIndex: _selectedTabIndex,
           onTap: (int index) {
@@ -85,18 +91,19 @@ class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
 }
 
 class _PageHeader extends StatelessWidget {
-  const _PageHeader({required this.topPadding});
+  const _PageHeader({required this.topPadding, required this.onPublishTap});
 
   final double topPadding;
+  final VoidCallback onPublishTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(20, topPadding + 10, 16, 10),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          Expanded(
+          const Expanded(
             child: Text(
               '套餐管理',
               style: TextStyle(
@@ -107,15 +114,19 @@ class _PageHeader extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Text(
-              '发布',
-              style: TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
+          InkWell(
+            onTap: onPublishTap,
+            borderRadius: BorderRadius.circular(4),
+            child: const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Text(
+                '发布',
+                style: TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 14,
+                ),
               ),
             ),
           ),
