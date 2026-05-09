@@ -1,6 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/application/auth_session_provider.dart';
 import '../../features/auth/presentation/login_phone_page.dart';
 import '../../features/auth/presentation/qualification_certification_page.dart';
 import '../../features/auth/presentation/qualification_certification_step_three_page.dart';
@@ -32,8 +34,41 @@ import '../../features/visa/presentation/visa_page.dart';
 import 'route_paths.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authSession = ref.watch(authSessionProvider);
+
   return GoRouter(
-    initialLocation: RoutePaths.home,
+    initialLocation: RoutePaths.loginPhone,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isLoginRoute = location == RoutePaths.loginPhone;
+      final isSelectRoleRoute = location == RoutePaths.selectRole;
+      final isAuthRoute = isLoginRoute || isSelectRoleRoute;
+
+      if (authSession.isHydrating) {
+        return null;
+      }
+
+      if (!authSession.isAuthenticated) {
+        if (isLoginRoute) {
+          return null;
+        }
+        return RoutePaths.loginPhone;
+      }
+
+      if (authSession.needSelectRole) {
+        if (isSelectRoleRoute) {
+          return null;
+        }
+        return RoutePaths.selectRole;
+      }
+
+      if (location == RoutePaths.root || isAuthRoute) {
+        return RoutePaths.home;
+      }
+
+      return null;
+    },
+    // initialLocation: RoutePaths.home,
     // initialLocation: RoutePaths.myOrders,
     // initialLocation: RoutePaths.loginPhone,
     // initialLocation: RoutePaths.qualificationCertification,
@@ -41,9 +76,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     // initialLocation: RoutePaths.orderDetail,
     // initialLocation: RoutePaths.serviceDetail,
     routes: <RouteBase>[
-      GoRoute(path: RoutePaths.root, redirect: (_, __) => RoutePaths.home),
+      GoRoute(
+        path: RoutePaths.root,
+        builder: (context, state) => const SizedBox.shrink(),
+      ),
       GoRoute(
         path: RoutePaths.loginPhone,
+        name: RoutePaths.loginPhoneName,
         builder: (context, state) => const LoginPhonePage(),
       ),
       GoRoute(
@@ -62,7 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.selectRole,
-        name: RoutePaths.selectRole,
+        name: RoutePaths.selectRoleName,
         builder: (context, state) => const SelectRolePage(),
       ),
       GoRoute(
@@ -153,6 +192,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: <RouteBase>[
               GoRoute(
                 path: RoutePaths.home,
+                name: RoutePaths.homeName,
                 builder: (context, state) => const HomePage(),
               ),
             ],

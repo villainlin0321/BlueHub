@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
-import '../../../shell/application/shell_role_provider.dart';
+import '../../application/auth_role_mapper.dart';
+import '../application/select_role_controller.dart';
 import '../../presentation/widgets/auth_language_switch.dart';
 import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
@@ -17,44 +18,40 @@ class SelectRolePage extends ConsumerStatefulWidget {
 }
 
 class _SelectRolePageState extends ConsumerState<SelectRolePage> {
-  String? _selectedRoleId;
   bool _isChineseSelected = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedRoleId = _roleIdFromShellRole(ref.read(shellRoleProvider));
-  }
 
   void _handleBack() {
     if (context.canPop()) {
       context.pop();
       return;
     }
-    context.go(RoutePaths.loginPhone);
+    context.goNamed(RoutePaths.loginPhoneName);
   }
 
-  void _handleConfirm() {
-    final selectedRoleId = _selectedRoleId;
-    if (selectedRoleId == null) {
+  Future<void> _handleConfirm() async {
+    final success =
+        await ref.read(selectRoleControllerProvider.notifier).submitSelection();
+    if (!mounted || !success) {
       return;
     }
-
-    ref
-        .read(shellRoleProvider.notifier)
-        .setRole(_shellRoleFromRoleId(selectedRoleId));
-
-    if (context.canPop()) {
-      context.pop();
-      return;
-    }
-
-    context.go(RoutePaths.home);
+    context.goNamed(RoutePaths.homeName);
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasSelection = _selectedRoleId != null;
+    final state = ref.watch(selectRoleControllerProvider);
+    final hasSelection = state.selectedRoleId != null;
+
+    ref.listen(selectRoleControllerProvider, (previous, next) {
+      if (previous?.feedbackId == next.feedbackId || next.feedbackMessage == null) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(next.feedbackMessage!)),
+      );
+      ref.read(selectRoleControllerProvider.notifier).clearFeedback();
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,9 +110,11 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
                       for (final role in _roles) ...<Widget>[
                         _RoleCard(
                           role: role,
-                          selected: _selectedRoleId == role.id,
+                          selected: state.selectedRoleId == role.id,
                           onTap: () =>
-                              setState(() => _selectedRoleId = role.id),
+                              ref
+                                  .read(selectRoleControllerProvider.notifier)
+                                  .setSelectedRole(role.id),
                         ),
                         if (role != _roles.last) const SizedBox(height: 14),
                       ],
@@ -125,9 +124,11 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
               ),
               const SizedBox(height: 12),
               PrimaryButton(
-                label: '确认选择',
-                enabled: hasSelection,
-                onPressed: hasSelection ? _handleConfirm : null,
+                label: state.isSubmitting ? '提交中...' : '确认选择',
+                enabled: hasSelection && !state.isSubmitting,
+                onPressed: hasSelection && !state.isSubmitting
+                    ? _handleConfirm
+                    : null,
               ),
               const SizedBox(height: 20),
             ],
@@ -240,45 +241,21 @@ class _RoleItem {
 
 const List<_RoleItem> _roles = <_RoleItem>[
   _RoleItem(
-    id: 'worker',
+    id: workerRoleId,
     title: '工人/求职者',
     description: '寻找海外工作、办理签证',
     icon: Icons.person_outline_rounded,
   ),
   _RoleItem(
-    id: 'employer',
+    id: employerRoleId,
     title: '企业/雇主',
     description: '发布职位、筛选候选人',
     icon: Icons.business_center_outlined,
   ),
   _RoleItem(
-    id: 'visaProvider',
+    id: visaProviderRoleId,
     title: '签证服务商',
     description: '提供签证服务、管理案件',
     icon: Icons.fact_check_outlined,
   ),
 ];
-
-ShellRole _shellRoleFromRoleId(String roleId) {
-  switch (roleId) {
-    case 'worker':
-      return ShellRole.jobSeeker;
-    case 'employer':
-      return ShellRole.company;
-    case 'visaProvider':
-      return ShellRole.serviceProvider;
-  }
-
-  return ShellRole.jobSeeker;
-}
-
-String _roleIdFromShellRole(ShellRole role) {
-  switch (role) {
-    case ShellRole.jobSeeker:
-      return 'worker';
-    case ShellRole.company:
-      return 'employer';
-    case ShellRole.serviceProvider:
-      return 'visaProvider';
-  }
-}

@@ -22,7 +22,7 @@ class JobsPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         child: const Text('切换\n角色'),
         onPressed: () {
-          context.pushNamed(RoutePaths.selectRole);
+          context.pushNamed(RoutePaths.selectRoleName);
         },
       ),
       body: switch (currentRole) {

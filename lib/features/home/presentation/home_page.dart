@@ -22,7 +22,7 @@ class HomePage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         child: Text('切换\n角色'),
         onPressed: () {
-          context.pushNamed(RoutePaths.selectRole);
+          context.pushNamed(RoutePaths.selectRoleName);
         },
       ),
       body: switch (currentRole) {

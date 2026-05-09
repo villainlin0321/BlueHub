@@ -21,7 +21,7 @@ class MePage extends ConsumerWidget {
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.pushNamed(RoutePaths.selectRole);
+          context.pushNamed(RoutePaths.selectRoleName);
         },
         child: const Text('切换\n角色'),
       ),

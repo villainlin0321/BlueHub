@@ -1,5 +1,6 @@
 class RoutePaths {
   static const root = '/';
+  static const homeName = 'home';
   static const home = '/home';
   static const visa = '/visa';
   static const jobs = '/jobs';
@@ -23,10 +24,12 @@ class RoutePaths {
   static const orderDetail = '/order/detail';
   static const orderReview = '/order/review';
 
+  static const loginPhoneName = 'loginPhone';
   static const loginPhone = '/login/phone';
   static const qualificationCertification = '/auth/qualification';
   static const qualificationCertificationStepTwo = '/auth/qualification/step-two';
   static const qualificationCertificationStepThree =
       '/auth/qualification/step-three';
+  static const selectRoleName = 'selectRole';
   static const selectRole = '/auth/select-role';
 }
