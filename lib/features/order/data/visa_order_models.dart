@@ -8,8 +8,8 @@ class CreateVisaOrderBO {
 
   factory CreateVisaOrderBO.fromJson(JsonMap json) {
     return CreateVisaOrderBO(
-      packageId: (json['packageId'] as num?)?.toInt() ?? 0,
-      tierId: (json['tierId'] as num?)?.toInt() ?? 0,
+      packageId: readInt(json, 'packageId'),
+      tierId: readInt(json, 'tierId'),
     );
   }
 
@@ -33,10 +33,10 @@ class DocumentItemBO {
 
   factory DocumentItemBO.fromJson(JsonMap json) {
     return DocumentItemBO(
-      docName: json['docName'] as String? ?? '',
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
+      docName: readString(json, 'docName'),
+      fileId: readInt(json, 'fileId'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileType: readString(json, 'fileType'),
     );
   }
 
@@ -67,11 +67,11 @@ class MaterialItemBO {
 
   factory MaterialItemBO.fromJson(JsonMap json) {
     return MaterialItemBO(
-      materialName: json['materialName'] as String? ?? '',
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
+      materialName: readString(json, 'materialName'),
+      fileId: readInt(json, 'fileId'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileType: readString(json, 'fileType'),
+      fileSize: readInt(json, 'fileSize'),
     );
   }
 
@@ -103,11 +103,11 @@ class MaterialVO {
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
-      materialName: json['materialName'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
-      uploadedAt: json['uploadedAt'] as String? ?? '',
+      materialName: readString(json, 'materialName'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileType: readString(json, 'fileType'),
+      fileSize: readInt(json, 'fileSize'),
+      uploadedAt: readString(json, 'uploadedAt'),
     );
   }
 
@@ -135,9 +135,9 @@ class PackageInfoVO {
 
   factory PackageInfoVO.fromJson(JsonMap json) {
     return PackageInfoVO(
-      packageName: json['packageName'] as String? ?? '',
-      tierName: json['tierName'] as String? ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      packageName: readString(json, 'packageName'),
+      tierName: readString(json, 'tierName'),
+      amount: readDouble(json, 'amount'),
     );
   }
 
@@ -163,9 +163,9 @@ class ProcessOrderBO {
 
   factory ProcessOrderBO.fromJson(JsonMap json) {
     return ProcessOrderBO(
-      action: json['action'] as String? ?? '',
-      remark: json['remark'] as String? ?? '',
-      nextStatus: json['nextStatus'] as String? ?? '',
+      action: readString(json, 'action'),
+      remark: readString(json, 'remark'),
+      nextStatus: readString(json, 'nextStatus'),
     );
   }
 
@@ -186,8 +186,8 @@ class ProviderInfoVO {
 
   factory ProviderInfoVO.fromJson(JsonMap json) {
     return ProviderInfoVO(
-      providerId: (json['providerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
+      providerId: readInt(json, 'providerId'),
+      name: readString(json, 'name'),
     );
   }
 
@@ -205,9 +205,9 @@ class StepVO {
 
   factory StepVO.fromJson(JsonMap json) {
     return StepVO(
-      step: (json['step'] as num?)?.toInt() ?? 0,
-      label: json['label'] as String? ?? '',
-      status: json['status'] as String? ?? '',
+      step: readInt(json, 'step'),
+      label: readString(json, 'label'),
+      status: readString(json, 'status'),
     );
   }
 
@@ -223,10 +223,7 @@ class UploadOrderMaterialsBO {
 
   factory UploadOrderMaterialsBO.fromJson(JsonMap json) {
     return UploadOrderMaterialsBO(
-      materials: decodeModelList<MaterialItemBO>(
-        json['materials'] ?? const <dynamic>[],
-        MaterialItemBO.fromJson,
-      ),
+      materials: readModelList<MaterialItemBO>(json, 'materials', MaterialItemBO.fromJson),
     );
   }
 
@@ -246,10 +243,7 @@ class UploadVisaDocumentsBO {
 
   factory UploadVisaDocumentsBO.fromJson(JsonMap json) {
     return UploadVisaDocumentsBO(
-      documents: decodeModelList<DocumentItemBO>(
-        json['documents'] ?? const <dynamic>[],
-        DocumentItemBO.fromJson,
-      ),
+      documents: readModelList<DocumentItemBO>(json, 'documents', DocumentItemBO.fromJson),
     );
   }
 
@@ -275,9 +269,9 @@ class VisaDocVO {
 
   factory VisaDocVO.fromJson(JsonMap json) {
     return VisaDocVO(
-      docName: json['docName'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      uploadedAt: json['uploadedAt'] as String? ?? '',
+      docName: readString(json, 'docName'),
+      fileUrl: readString(json, 'fileUrl'),
+      uploadedAt: readString(json, 'uploadedAt'),
     );
   }
 
@@ -335,38 +329,29 @@ class VisaOrderVO {
 
   factory VisaOrderVO.fromJson(JsonMap json) {
     return VisaOrderVO(
-      orderId: (json['orderId'] as num?)?.toInt() ?? 0,
-      orderNo: json['orderNo'] as String? ?? '',
-      status: json['status'] as String? ?? '',
-      statusLabel: json['statusLabel'] as String? ?? '',
-      currentStep: (json['currentStep'] as num?)?.toInt() ?? 0,
-      steps: decodeModelList<StepVO>(
-        json['steps'] ?? const <dynamic>[],
-        StepVO.fromJson,
-      ),
-      amount: (json['amount'] as num?)?.toDouble() ?? 0,
-      packageName: json['packageName'] as String? ?? '',
-      tierName: json['tierName'] as String? ?? '',
-      providerName: json['providerName'] as String? ?? '',
+      orderId: readInt(json, 'orderId'),
+      orderNo: readString(json, 'orderNo'),
+      status: readString(json, 'status'),
+      statusLabel: readString(json, 'statusLabel'),
+      currentStep: readInt(json, 'currentStep'),
+      steps: readModelList<StepVO>(json, 'steps', StepVO.fromJson),
+      amount: readDouble(json, 'amount'),
+      packageName: readString(json, 'packageName'),
+      tierName: readString(json, 'tierName'),
+      providerName: readString(json, 'providerName'),
       packageInfo: PackageInfoVO.fromJson(
-        asJsonMap(json['packageInfo'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'packageInfo'),
       ),
       providerInfo: ProviderInfoVO.fromJson(
-        asJsonMap(json['providerInfo'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'providerInfo'),
       ),
-      materials: decodeModelList<MaterialVO>(
-        json['materials'] ?? const <dynamic>[],
-        MaterialVO.fromJson,
-      ),
-      visaDocuments: decodeModelList<VisaDocVO>(
-        json['visaDocuments'] ?? const <dynamic>[],
-        VisaDocVO.fromJson,
-      ),
-      rejectReason: json['rejectReason'] as String? ?? '',
-      isUrgent: json['isUrgent'] as bool? ?? false,
-      createdAt: json['createdAt'] as String? ?? '',
-      updatedAt: json['updatedAt'] as String? ?? '',
-      paymentUrl: json['paymentUrl'] as String? ?? '',
+      materials: readModelList<MaterialVO>(json, 'materials', MaterialVO.fromJson),
+      visaDocuments: readModelList<VisaDocVO>(json, 'visaDocuments', VisaDocVO.fromJson),
+      rejectReason: readString(json, 'rejectReason'),
+      isUrgent: readBool(json, 'isUrgent'),
+      createdAt: readString(json, 'createdAt'),
+      updatedAt: readString(json, 'updatedAt'),
+      paymentUrl: readString(json, 'paymentUrl'),
     );
   }
 

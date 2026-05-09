@@ -8,8 +8,8 @@ class BlacklistBO {
 
   factory BlacklistBO.fromJson(JsonMap json) {
     return BlacklistBO(
-      targetUserId: (json['targetUserId'] as num?)?.toInt() ?? 0,
-      action: json['action'] as String? ?? '',
+      targetUserId: readInt(json, 'targetUserId'),
+      action: readString(json, 'action'),
     );
   }
 
@@ -26,8 +26,8 @@ class DeviceTokenBO {
 
   factory DeviceTokenBO.fromJson(JsonMap json) {
     return DeviceTokenBO(
-      deviceToken: json['deviceToken'] as String? ?? '',
-      platform: json['platform'] as String? ?? '',
+      deviceToken: readString(json, 'deviceToken'),
+      platform: readString(json, 'platform'),
     );
   }
 
@@ -51,10 +51,10 @@ class RealNameVerifyBO {
 
   factory RealNameVerifyBO.fromJson(JsonMap json) {
     return RealNameVerifyBO(
-      realName: json['realName'] as String? ?? '',
-      idCardNumber: json['idCardNumber'] as String? ?? '',
-      idCardFrontUrl: json['idCardFrontUrl'] as String? ?? '',
-      idCardBackUrl: json['idCardBackUrl'] as String? ?? '',
+      realName: readString(json, 'realName'),
+      idCardNumber: readString(json, 'idCardNumber'),
+      idCardFrontUrl: readString(json, 'idCardFrontUrl'),
+      idCardBackUrl: readString(json, 'idCardBackUrl'),
     );
   }
 
@@ -74,7 +74,7 @@ class SwitchRoleBO {
   final String role;
 
   factory SwitchRoleBO.fromJson(JsonMap json) {
-    return SwitchRoleBO(role: json['role'] as String? ?? '');
+    return SwitchRoleBO(role: readString(json, 'role'));
   }
 
   JsonMap toJson() {
@@ -99,11 +99,11 @@ class UpdateUserBO {
 
   factory UpdateUserBO.fromJson(JsonMap json) {
     return UpdateUserBO(
-      nickname: json['nickname'] as String? ?? '',
-      avatarId: (json['avatarId'] as num?)?.toInt() ?? 0,
-      gender: json['gender'] as String? ?? '',
-      birthday: json['birthday'] as String? ?? '',
-      currentLocation: json['currentLocation'] as String? ?? '',
+      nickname: readString(json, 'nickname'),
+      avatarId: readInt(json, 'avatarId'),
+      gender: readString(json, 'gender'),
+      birthday: readString(json, 'birthday'),
+      currentLocation: readString(json, 'currentLocation'),
     );
   }
 
@@ -149,18 +149,18 @@ class UserVO {
 
   factory UserVO.fromJson(JsonMap json) {
     return UserVO(
-      userId: (json['userId'] as num?)?.toInt() ?? 0,
-      phone: json['phone'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      nickname: json['nickname'] as String? ?? '',
-      avatarUrl: json['avatarUrl'] as String? ?? '',
-      gender: json['gender'] as String? ?? '',
-      birthday: json['birthday'] as String? ?? '',
-      role: json['role'] as String? ?? '',
-      currentLocation: json['currentLocation'] as String? ?? '',
-      isVerified: json['isVerified'] as bool? ?? false,
-      blacklistCount: (json['blacklistCount'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] as String? ?? '',
+      userId: readInt(json, 'userId'),
+      phone: readString(json, 'phone'),
+      email: readString(json, 'email'),
+      nickname: readString(json, 'nickname'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      gender: readString(json, 'gender'),
+      birthday: readString(json, 'birthday'),
+      role: readString(json, 'role'),
+      currentLocation: readString(json, 'currentLocation'),
+      isVerified: readBool(json, 'isVerified'),
+      blacklistCount: readInt(json, 'blacklistCount'),
+      createdAt: readString(json, 'createdAt'),
     );
   }
 

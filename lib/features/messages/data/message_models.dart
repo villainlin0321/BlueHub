@@ -17,17 +17,17 @@ class ConversationVO {
 
   factory ConversationVO.fromJson(JsonMap json) {
     return ConversationVO(
-      conversationId: (json['conversationId'] as num?)?.toInt() ?? 0,
+      conversationId: readInt(json, 'conversationId'),
       targetUser: TargetUserVO.fromJson(
-        asJsonMap(json['targetUser'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'targetUser'),
       ),
       relatedOrder: RelatedOrderVO.fromJson(
-        asJsonMap(json['relatedOrder'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'relatedOrder'),
       ),
       lastMessage: LastMessageVO.fromJson(
-        asJsonMap(json['lastMessage'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'lastMessage'),
       ),
-      unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+      unreadCount: readInt(json, 'unreadCount'),
     );
   }
 
@@ -55,9 +55,9 @@ class CreateConversationBO {
 
   factory CreateConversationBO.fromJson(JsonMap json) {
     return CreateConversationBO(
-      targetUserId: (json['targetUserId'] as num?)?.toInt() ?? 0,
-      targetUserRole: json['targetUserRole'] as String? ?? '',
-      orderId: (json['orderId'] as num?)?.toInt() ?? 0,
+      targetUserId: readInt(json, 'targetUserId'),
+      targetUserRole: readString(json, 'targetUserRole'),
+      orderId: readInt(json, 'orderId'),
     );
   }
 
@@ -85,10 +85,10 @@ class LastMessageVO {
 
   factory LastMessageVO.fromJson(JsonMap json) {
     return LastMessageVO(
-      content: json['content'] as String? ?? '',
-      type: json['type'] as String? ?? '',
-      sentAt: json['sentAt'] as String? ?? '',
-      isRead: json['isRead'] as bool? ?? false,
+      content: readString(json, 'content'),
+      type: readString(json, 'type'),
+      sentAt: readString(json, 'sentAt'),
+      isRead: readBool(json, 'isRead'),
     );
   }
 
@@ -131,17 +131,17 @@ class MessageVO {
 
   factory MessageVO.fromJson(JsonMap json) {
     return MessageVO(
-      messageId: (json['messageId'] as num?)?.toInt() ?? 0,
-      conversationId: (json['conversationId'] as num?)?.toInt() ?? 0,
-      senderId: (json['senderId'] as num?)?.toInt() ?? 0,
-      type: json['type'] as String? ?? '',
-      content: json['content'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileName: json['fileName'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
-      isRead: json['isRead'] as bool? ?? false,
-      isRetracted: json['isRetracted'] as bool? ?? false,
-      sentAt: json['sentAt'] as String? ?? '',
+      messageId: readInt(json, 'messageId'),
+      conversationId: readInt(json, 'conversationId'),
+      senderId: readInt(json, 'senderId'),
+      type: readString(json, 'type'),
+      content: readString(json, 'content'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileName: readString(json, 'fileName'),
+      fileSize: readInt(json, 'fileSize'),
+      isRead: readBool(json, 'isRead'),
+      isRetracted: readBool(json, 'isRetracted'),
+      sentAt: readString(json, 'sentAt'),
     );
   }
 
@@ -177,10 +177,10 @@ class RelatedOrderVO {
 
   factory RelatedOrderVO.fromJson(JsonMap json) {
     return RelatedOrderVO(
-      orderId: (json['orderId'] as num?)?.toInt() ?? 0,
-      orderNo: json['orderNo'] as String? ?? '',
-      packageName: json['packageName'] as String? ?? '',
-      status: json['status'] as String? ?? '',
+      orderId: readInt(json, 'orderId'),
+      orderNo: readString(json, 'orderNo'),
+      packageName: readString(json, 'packageName'),
+      status: readString(json, 'status'),
     );
   }
 
@@ -213,12 +213,12 @@ class SendMessageBO {
 
   factory SendMessageBO.fromJson(JsonMap json) {
     return SendMessageBO(
-      type: json['type'] as String? ?? '',
-      content: json['content'] as String? ?? '',
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileName: json['fileName'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
+      type: readString(json, 'type'),
+      content: readString(json, 'content'),
+      fileId: readInt(json, 'fileId'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileName: readString(json, 'fileName'),
+      fileSize: readInt(json, 'fileSize'),
     );
   }
 
@@ -251,11 +251,11 @@ class TargetUserVO {
 
   factory TargetUserVO.fromJson(JsonMap json) {
     return TargetUserVO(
-      userId: (json['userId'] as num?)?.toInt() ?? 0,
-      nickname: json['nickname'] as String? ?? '',
-      avatarUrl: json['avatarUrl'] as String? ?? '',
-      role: json['role'] as String? ?? '',
-      isOnline: json['isOnline'] as bool? ?? false,
+      userId: readInt(json, 'userId'),
+      nickname: readString(json, 'nickname'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      role: readString(json, 'role'),
+      isOnline: readBool(json, 'isOnline'),
     );
   }
 

@@ -17,11 +17,11 @@ class Pagination {
 
   factory Pagination.fromJson(JsonMap json) {
     return Pagination(
-      page: (json['page'] as num?)?.toInt() ?? 1,
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      pageSize: (json['page_size'] as num?)?.toInt() ?? 0,
-      totalPages: (json['total_pages'] as num?)?.toInt() ?? 0,
-      hasNext: json['has_next'] as bool? ?? false,
+      page: readInt(json, 'page', fallback: 1),
+      total: readInt(json, 'total'),
+      pageSize: readInt(json, 'page_size'),
+      totalPages: readInt(json, 'total_pages'),
+      hasNext: readBool(json, 'has_next'),
     );
   }
 }
@@ -37,9 +37,9 @@ class PageResult<T> {
     required T Function(JsonMap item) fromJson,
   }) {
     return PageResult<T>(
-      list: decodeModelList<T>(json['list'] ?? const <dynamic>[], fromJson),
+      list: readModelList<T>(json, 'list', fromJson),
       pagination: Pagination.fromJson(
-        asJsonMap(json['pagination'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'pagination'),
       ),
     );
   }

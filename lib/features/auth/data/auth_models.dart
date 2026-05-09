@@ -13,9 +13,9 @@ class EmailLoginBO {
 
   factory EmailLoginBO.fromJson(JsonMap json) {
     return EmailLoginBO(
-      email: json['email'] as String? ?? '',
-      password: json['password'] as String? ?? '',
-      code: json['code'] as String? ?? '',
+      email: readString(json, 'email'),
+      password: readString(json, 'password'),
+      code: readString(json, 'code'),
     );
   }
 
@@ -47,13 +47,13 @@ class LoginVO {
 
   factory LoginVO.fromJson(JsonMap json) {
     return LoginVO(
-      accessToken: json['accessToken'] as String? ?? '',
-      refreshToken: json['refreshToken'] as String? ?? '',
-      expiresIn: (json['expiresIn'] as num?)?.toInt() ?? 0,
-      isNewUser: json['isNewUser'] as bool? ?? false,
-      needSelectRole: json['needSelectRole'] as bool? ?? false,
+      accessToken: readString(json, 'accessToken'),
+      refreshToken: readString(json, 'refreshToken'),
+      expiresIn: readInt(json, 'expiresIn'),
+      isNewUser: readBool(json, 'isNewUser'),
+      needSelectRole: readBool(json, 'needSelectRole'),
       user: UserSimpleVO.fromJson(
-        asJsonMap(json['user'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'user'),
       ),
     );
   }
@@ -83,9 +83,9 @@ class OauthLoginBO {
 
   factory OauthLoginBO.fromJson(JsonMap json) {
     return OauthLoginBO(
-      provider: json['provider'] as String? ?? '',
-      authCode: json['authCode'] as String? ?? '',
-      platform: json['platform'] as String? ?? '',
+      provider: readString(json, 'provider'),
+      authCode: readString(json, 'authCode'),
+      platform: readString(json, 'platform'),
     );
   }
 
@@ -111,9 +111,9 @@ class PhoneLoginBO {
 
   factory PhoneLoginBO.fromJson(JsonMap json) {
     return PhoneLoginBO(
-      phone: json['phone'] as String? ?? '',
-      countryCode: json['countryCode'] as String? ?? '',
-      code: json['code'] as String? ?? '',
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      code: readString(json, 'code'),
     );
   }
 
@@ -132,7 +132,7 @@ class RefreshTokenBO {
   final String refreshToken;
 
   factory RefreshTokenBO.fromJson(JsonMap json) {
-    return RefreshTokenBO(refreshToken: json['refreshToken'] as String? ?? '');
+    return RefreshTokenBO(refreshToken: readString(json, 'refreshToken'));
   }
 
   JsonMap toJson() {
@@ -146,7 +146,7 @@ class SelectRoleBO {
   final String role;
 
   factory SelectRoleBO.fromJson(JsonMap json) {
-    return SelectRoleBO(role: json['role'] as String? ?? '');
+    return SelectRoleBO(role: readString(json, 'role'));
   }
 
   JsonMap toJson() {
@@ -162,8 +162,8 @@ class SendEmailBO {
 
   factory SendEmailBO.fromJson(JsonMap json) {
     return SendEmailBO(
-      email: json['email'] as String? ?? '',
-      scene: json['scene'] as String? ?? '',
+      email: readString(json, 'email'),
+      scene: readString(json, 'scene'),
     );
   }
 
@@ -185,9 +185,9 @@ class SendSmsBO {
 
   factory SendSmsBO.fromJson(JsonMap json) {
     return SendSmsBO(
-      phone: json['phone'] as String? ?? '',
-      countryCode: json['countryCode'] as String? ?? '',
-      scene: json['scene'] as String? ?? '',
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      scene: readString(json, 'scene'),
     );
   }
 
@@ -221,13 +221,13 @@ class UserSimpleVO {
 
   factory UserSimpleVO.fromJson(JsonMap json) {
     return UserSimpleVO(
-      userId: (json['userId'] as num?)?.toInt() ?? 0,
-      phone: json['phone'] as String? ?? '',
-      countryCode: json['countryCode'] as String? ?? '',
-      role: json['role'] as String? ?? '',
-      avatarUrl: json['avatarUrl'] as String? ?? '',
-      nickname: json['nickname'] as String? ?? '',
-      email: json['email'] as String? ?? '',
+      userId: readInt(json, 'userId'),
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      role: readString(json, 'role'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      nickname: readString(json, 'nickname'),
+      email: readString(json, 'email'),
     );
   }
 

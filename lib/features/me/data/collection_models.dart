@@ -8,8 +8,8 @@ class CollectionBO {
 
   factory CollectionBO.fromJson(JsonMap json) {
     return CollectionBO(
-      targetType: json['targetType'] as String? ?? '',
-      targetId: (json['targetId'] as num?)?.toInt() ?? 0,
+      targetType: readString(json, 'targetType'),
+      targetId: readInt(json, 'targetId'),
     );
   }
 
@@ -31,9 +31,9 @@ class EmployerSimpleVO {
 
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: (json['employerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
+      employerId: readInt(json, 'employerId'),
+      name: readString(json, 'name'),
+      logoUrl: readString(json, 'logoUrl'),
     );
   }
 
@@ -81,25 +81,22 @@ class JobListVO {
 
   factory JobListVO.fromJson(JsonMap json) {
     return JobListVO(
-      jobId: (json['jobId'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
-      salaryPeriod: json['salaryPeriod'] as String? ?? '',
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      tags: decodeModelList<TagVO>(
-        json['tags'] ?? const <dynamic>[],
-        TagVO.fromJson,
-      ),
-      hasVisaSupport: json['hasVisaSupport'] as bool? ?? false,
+      jobId: readInt(json, 'jobId'),
+      title: readString(json, 'title'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
+      salaryPeriod: readString(json, 'salaryPeriod'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+      tags: readModelList<TagVO>(json, 'tags', TagVO.fromJson),
+      hasVisaSupport: readBool(json, 'hasVisaSupport'),
       employer: EmployerSimpleVO.fromJson(
-        asJsonMap(json['employer'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'employer'),
       ),
-      isUrgent: json['isUrgent'] as bool? ?? false,
-      isCollected: json['isCollected'] as bool? ?? false,
-      publishedAt: json['publishedAt'] as String? ?? '',
+      isUrgent: readBool(json, 'isUrgent'),
+      isCollected: readBool(json, 'isCollected'),
+      publishedAt: readString(json, 'publishedAt'),
     );
   }
 
@@ -140,11 +137,11 @@ class MaterialVO {
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
-      materialName: json['materialName'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
-      uploadedAt: json['uploadedAt'] as String? ?? '',
+      materialName: readString(json, 'materialName'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileType: readString(json, 'fileType'),
+      fileSize: readInt(json, 'fileSize'),
+      uploadedAt: readString(json, 'uploadedAt'),
     );
   }
 
@@ -168,9 +165,9 @@ class TagVO {
 
   factory TagVO.fromJson(JsonMap json) {
     return TagVO(
-      type: json['type'] as String? ?? '',
-      label: json['label'] as String? ?? '',
-      color: json['color'] as String? ?? '',
+      type: readString(json, 'type'),
+      label: readString(json, 'label'),
+      color: readString(json, 'color'),
     );
   }
 
@@ -198,12 +195,12 @@ class TierVO {
 
   factory TierVO.fromJson(JsonMap json) {
     return TierVO(
-      tierId: (json['tierId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0,
-      services: decodeStringList(json['services'] ?? const <dynamic>[]),
-      description: json['description'] as String? ?? '',
-      soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
+      tierId: readInt(json, 'tierId'),
+      name: readString(json, 'name'),
+      price: readDouble(json, 'price'),
+      services: readStringList(json, 'services'),
+      description: readString(json, 'description'),
+      soldCount: readInt(json, 'soldCount'),
     );
   }
 
@@ -242,20 +239,14 @@ class VisaPackageVO {
 
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
-      packageId: (json['packageId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      targetCountry: json['targetCountry'] as String? ?? '',
-      visaType: json['visaType'] as String? ?? '',
-      estimatedDays: (json['estimatedDays'] as num?)?.toInt() ?? 0,
-      coverImages: decodeStringList(json['coverImages'] ?? const <dynamic>[]),
-      tiers: decodeModelList<TierVO>(
-        json['tiers'] ?? const <dynamic>[],
-        TierVO.fromJson,
-      ),
-      requiredMaterials: decodeModelList<MaterialVO>(
-        json['requiredMaterials'] ?? const <dynamic>[],
-        MaterialVO.fromJson,
-      ),
+      packageId: readInt(json, 'packageId'),
+      name: readString(json, 'name'),
+      targetCountry: readString(json, 'targetCountry'),
+      visaType: readString(json, 'visaType'),
+      estimatedDays: readInt(json, 'estimatedDays'),
+      coverImages: readStringList(json, 'coverImages'),
+      tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
+      requiredMaterials: readModelList<MaterialVO>(json, 'requiredMaterials', MaterialVO.fromJson),
     );
   }
 

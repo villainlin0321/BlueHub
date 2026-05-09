@@ -49,36 +49,31 @@ class CreateJobBO {
   final String description;
   final bool isDraft;
 
+  /// 安全解析创建岗位请求模型，遇到字段类型不匹配时使用默认值兜底。
   factory CreateJobBO.fromJson(JsonMap json) {
     return CreateJobBO(
-      title: json['title'] as String? ?? '',
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      address: json['address'] as String? ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      headcount: (json['headcount'] as num?)?.toInt() ?? 0,
-      employmentType: json['employmentType'] as String? ?? '',
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
-      salaryPeriod: json['salaryPeriod'] as String? ?? '',
-      requirementTags: decodeStringList(
-        json['requirementTags'] ?? const <dynamic>[],
-      ),
-      customTags: decodeStringList(json['customTags'] ?? const <dynamic>[]),
-      highlightTags: decodeStringList(
-        json['highlightTags'] ?? const <dynamic>[],
-      ),
-      hasVisaSupport: json['hasVisaSupport'] as bool? ?? false,
-      isUrgent: json['isUrgent'] as bool? ?? false,
-      responsibilities: decodeStringList(
-        json['responsibilities'] ?? const <dynamic>[],
-      ),
-      requirements: decodeStringList(json['requirements'] ?? const <dynamic>[]),
-      benefits: decodeStringList(json['benefits'] ?? const <dynamic>[]),
-      description: json['description'] as String? ?? '',
-      isDraft: json['isDraft'] as bool? ?? false,
+      title: readString(json, 'title'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+      address: readString(json, 'address'),
+      latitude: readDouble(json, 'latitude'),
+      longitude: readDouble(json, 'longitude'),
+      headcount: readInt(json, 'headcount'),
+      employmentType: readString(json, 'employmentType'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
+      salaryPeriod: readString(json, 'salaryPeriod'),
+      requirementTags: readStringList(json, 'requirementTags'),
+      customTags: readStringList(json, 'customTags'),
+      highlightTags: readStringList(json, 'highlightTags'),
+      hasVisaSupport: readBool(json, 'hasVisaSupport'),
+      isUrgent: readBool(json, 'isUrgent'),
+      responsibilities: readStringList(json, 'responsibilities'),
+      requirements: readStringList(json, 'requirements'),
+      benefits: readStringList(json, 'benefits'),
+      description: readString(json, 'description'),
+      isDraft: readBool(json, 'isDraft'),
     );
   }
 
@@ -125,13 +120,14 @@ class EmployerInfoVO {
   final String size;
   final String logoUrl;
 
+  /// 安全解析雇主信息，避免单个字段异常导致整条职位详情失败。
   factory EmployerInfoVO.fromJson(JsonMap json) {
     return EmployerInfoVO(
-      employerId: (json['employerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      industry: json['industry'] as String? ?? '',
-      size: json['size'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
+      employerId: readInt(json, 'employerId'),
+      name: readString(json, 'name'),
+      industry: readString(json, 'industry'),
+      size: readString(json, 'size'),
+      logoUrl: readString(json, 'logoUrl'),
     );
   }
 
@@ -157,11 +153,12 @@ class EmployerSimpleVO {
   final String name;
   final String logoUrl;
 
+  /// 安全解析雇主简要信息，避免后端字段类型漂移时直接抛异常。
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: (json['employerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
+      employerId: readInt(json, 'employerId'),
+      name: readString(json, 'name'),
+      logoUrl: readString(json, 'logoUrl'),
     );
   }
 
@@ -231,41 +228,37 @@ class JobDetailVO {
   final bool isCollected;
   final String publishedAt;
 
+  /// 安全解析职位详情模型，确保嵌套对象和数组在异常数据下也能兜底。
   factory JobDetailVO.fromJson(JsonMap json) {
     return JobDetailVO(
-      jobId: (json['jobId'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
-      salaryPeriod: json['salaryPeriod'] as String? ?? '',
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      address: json['address'] as String? ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      headcount: (json['headcount'] as num?)?.toInt() ?? 0,
-      employmentType: json['employmentType'] as String? ?? '',
-      tags: decodeModelList<TagVO>(
-        json['tags'] ?? const <dynamic>[],
-        TagVO.fromJson,
-      ),
-      hasVisaSupport: json['hasVisaSupport'] as bool? ?? false,
-      isUrgent: json['isUrgent'] as bool? ?? false,
-      responsibilities: decodeStringList(
-        json['responsibilities'] ?? const <dynamic>[],
-      ),
-      requirements: decodeStringList(json['requirements'] ?? const <dynamic>[]),
-      benefits: decodeStringList(json['benefits'] ?? const <dynamic>[]),
-      description: json['description'] as String? ?? '',
-      status: json['status'] as String? ?? '',
+      jobId: readInt(json, 'jobId'),
+      title: readString(json, 'title'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
+      salaryPeriod: readString(json, 'salaryPeriod'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+      address: readString(json, 'address'),
+      latitude: readDouble(json, 'latitude'),
+      longitude: readDouble(json, 'longitude'),
+      headcount: readInt(json, 'headcount'),
+      employmentType: readString(json, 'employmentType'),
+      tags: readModelList<TagVO>(json, 'tags', TagVO.fromJson),
+      hasVisaSupport: readBool(json, 'hasVisaSupport'),
+      isUrgent: readBool(json, 'isUrgent'),
+      responsibilities: readStringList(json, 'responsibilities'),
+      requirements: readStringList(json, 'requirements'),
+      benefits: readStringList(json, 'benefits'),
+      description: readString(json, 'description'),
+      status: readString(json, 'status'),
       employer: EmployerInfoVO.fromJson(
-        asJsonMap(json['employer'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'employer'),
       ),
-      viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,
-      applyCount: (json['applyCount'] as num?)?.toInt() ?? 0,
-      isCollected: json['isCollected'] as bool? ?? false,
-      publishedAt: json['publishedAt'] as String? ?? '',
+      viewCount: readInt(json, 'viewCount'),
+      applyCount: readInt(json, 'applyCount'),
+      isCollected: readBool(json, 'isCollected'),
+      publishedAt: readString(json, 'publishedAt'),
     );
   }
 
@@ -334,27 +327,25 @@ class JobListVO {
   final bool isCollected;
   final String publishedAt;
 
+  /// 安全解析职位列表模型，避免字段类型抖动影响整页列表渲染。
   factory JobListVO.fromJson(JsonMap json) {
     return JobListVO(
-      jobId: (json['jobId'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
-      salaryPeriod: json['salaryPeriod'] as String? ?? '',
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      tags: decodeModelList<TagVO>(
-        json['tags'] ?? const <dynamic>[],
-        TagVO.fromJson,
-      ),
-      hasVisaSupport: json['hasVisaSupport'] as bool? ?? false,
+      jobId: readInt(json, 'jobId'),
+      title: readString(json, 'title'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
+      salaryPeriod: readString(json, 'salaryPeriod'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+      tags: readModelList<TagVO>(json, 'tags', TagVO.fromJson),
+      hasVisaSupport: readBool(json, 'hasVisaSupport'),
       employer: EmployerSimpleVO.fromJson(
-        asJsonMap(json['employer'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'employer'),
       ),
-      isUrgent: json['isUrgent'] as bool? ?? false,
-      isCollected: json['isCollected'] as bool? ?? false,
-      publishedAt: json['publishedAt'] as String? ?? '',
+      isUrgent: readBool(json, 'isUrgent'),
+      isCollected: readBool(json, 'isCollected'),
+      publishedAt: readString(json, 'publishedAt'),
     );
   }
 
@@ -385,11 +376,12 @@ class TagVO {
   final String label;
   final String color;
 
+  /// 安全解析标签模型，字段不合法时回退为空字符串。
   factory TagVO.fromJson(JsonMap json) {
     return TagVO(
-      type: json['type'] as String? ?? '',
-      label: json['label'] as String? ?? '',
-      color: json['color'] as String? ?? '',
+      type: readString(json, 'type'),
+      label: readString(json, 'label'),
+      color: readString(json, 'color'),
     );
   }
 
@@ -403,8 +395,9 @@ class UpdateJobStatusBO {
 
   final String status;
 
+  /// 安全解析更新岗位状态请求，兼容后端把状态字段返回为非字符串的情况。
   factory UpdateJobStatusBO.fromJson(JsonMap json) {
-    return UpdateJobStatusBO(status: json['status'] as String? ?? '');
+    return UpdateJobStatusBO(status: readString(json, 'status'));
   }
 
   JsonMap toJson() {
