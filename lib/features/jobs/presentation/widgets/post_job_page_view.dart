@@ -439,21 +439,24 @@ class _RequirementTagContent extends StatelessWidget {
       return const Text('暂无任职要求标签', style: PostJobPageStyles.placeholder);
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
-      children: requirementTags
-          .map(
-            (TagItemVO tag) => SizedBox(
-              width: 104,
-              child: PostJobSelectableChip(
-                label: tagLabelBuilder(tag),
-                selected: selectedRequirementTagCodes.contains(tag.tagCode),
-                onTap: () => onRequirementTagTap(tag.tagCode),
-              ),
-            ),
-          )
-          .toList(growable: false),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: requirementTags.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 12,
+        childAspectRatio: 104 / 34,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        final TagItemVO tag = requirementTags[index];
+        return PostJobSelectableChip(
+          label: tagLabelBuilder(tag),
+          selected: selectedRequirementTagCodes.contains(tag.tagCode),
+          onTap: () => onRequirementTagTap(tag.tagCode),
+        );
+      },
     );
   }
 }

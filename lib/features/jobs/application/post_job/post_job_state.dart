@@ -10,6 +10,7 @@ class PostJobState {
     this.requirementTags = const <TagItemVO>[],
     this.selectedRequirementTagCodes = const <String>{},
     this.customTags = const <String>[],
+    this.hasLoadedRequirementTags = false,
     this.isLoadingRequirementTags = false,
     this.requirementTagsError,
     this.isPublishing = false,
@@ -24,6 +25,7 @@ class PostJobState {
   final List<TagItemVO> requirementTags;
   final Set<String> selectedRequirementTagCodes;
   final List<String> customTags;
+  final bool hasLoadedRequirementTags;
   final bool isLoadingRequirementTags;
   final String? requirementTagsError;
   final bool isPublishing;
@@ -38,6 +40,7 @@ class PostJobState {
     List<TagItemVO>? requirementTags,
     Set<String>? selectedRequirementTagCodes,
     List<String>? customTags,
+    bool? hasLoadedRequirementTags,
     bool? isLoadingRequirementTags,
     Object? requirementTagsError = _requirementTagsErrorSentinel,
     bool? isPublishing,
@@ -53,6 +56,8 @@ class PostJobState {
       selectedRequirementTagCodes:
           selectedRequirementTagCodes ?? this.selectedRequirementTagCodes,
       customTags: customTags ?? this.customTags,
+      hasLoadedRequirementTags:
+          hasLoadedRequirementTags ?? this.hasLoadedRequirementTags,
       isLoadingRequirementTags:
           isLoadingRequirementTags ?? this.isLoadingRequirementTags,
       requirementTagsError:

@@ -213,7 +213,7 @@ class PostJobSelectableChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color borderColor = selected
-        ? PostJobPageStyles.chipSelectedBorder
+        ? PostJobPageStyles.primary
         : PostJobPageStyles.chipUnselectedBorder;
     final Color backgroundColor = selected
         ? PostJobPageStyles.chipSelectedBackground
@@ -234,36 +234,31 @@ class PostJobSelectableChip extends StatelessWidget {
             ? PostJobPageStyles.chipSelectedBackground.withValues(alpha: 0.9)
             : PostJobPageStyles.inputFill,
         child: Container(
-          height: 32,
-          constraints: const BoxConstraints(minWidth: 96),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 34,
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(PostJobPageStyles.chipRadius),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: borderColor, width: 0.5),
           ),
           child: Stack(
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.hardEdge,
             children: <Widget>[
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 14,
+              Positioned.fill(
+                child: Center(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 18 / 14,
+                    ),
                   ),
                 ),
               ),
               if (selected)
-                const Positioned(
-                  right: -1,
-                  bottom: -1,
-                  child: _ChipCheckCorner(),
-                ),
+                const Positioned(right: 0, bottom: 0, child: _ChipCheckIcon()),
             ],
           ),
         ),
@@ -303,45 +298,50 @@ class _RadioDot extends StatelessWidget {
   }
 }
 
-class _ChipCheckCorner extends StatelessWidget {
-  const _ChipCheckCorner();
+class _ChipCheckIcon extends StatelessWidget {
+  const _ChipCheckIcon();
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 14,
-      height: 14,
-      child: CustomPaint(painter: _ChipCheckPainter()),
+      width: 15,
+      height: 12,
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          bottomRight: Radius.circular(PostJobPageStyles.chipRadius),
+        ),
+        child: CustomPaint(painter: _ChipCheckIconPainter()),
+      ),
     );
   }
 }
 
-class _ChipCheckPainter extends CustomPainter {
+class _ChipCheckIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint trianglePaint = Paint()
+    final Paint fillPaint = Paint()
       ..color = PostJobPageStyles.primary
       ..style = PaintingStyle.fill;
 
-    final Path path = Path()
+    final Path cornerPath = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
-    canvas.drawPath(path, trianglePaint);
+    canvas.drawPath(cornerPath, fillPaint);
 
     final Paint checkPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
+      ..strokeWidth = 1
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final Path checkPath = Path()
-      ..moveTo(size.width * 0.33, size.height * 0.72)
-      ..lineTo(size.width * 0.5, size.height * 0.87)
-      ..lineTo(size.width * 0.82, size.height * 0.46);
-    canvas.drawPath(checkPath, checkPaint);
+    final Path iconPath = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.7)
+      ..lineTo(size.width * 0.65, size.height * 0.8)
+      ..lineTo(size.width * 0.85, size.height * 0.55);
+    canvas.drawPath(iconPath, checkPaint);
   }
 
   @override
