@@ -17,11 +17,11 @@ class CreateReviewBO {
 
   factory CreateReviewBO.fromJson(JsonMap json) {
     return CreateReviewBO(
-      orderId: (json['orderId'] as num?)?.toInt() ?? 0,
-      providerId: (json['providerId'] as num?)?.toInt() ?? 0,
-      rating: (json['rating'] as num?)?.toInt() ?? 0,
-      content: json['content'] as String? ?? '',
-      images: decodeStringList(json['images'] ?? const <dynamic>[]),
+      orderId: readInt(json, 'orderId'),
+      providerId: readInt(json, 'providerId'),
+      rating: readInt(json, 'rating'),
+      content: readString(json, 'content'),
+      images: readStringList(json, 'images'),
     );
   }
 

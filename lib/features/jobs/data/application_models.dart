@@ -19,12 +19,12 @@ class ApplicantVO {
 
   factory ApplicantVO.fromJson(JsonMap json) {
     return ApplicantVO(
-      userId: (json['userId'] as num?)?.toInt() ?? 0,
-      nickname: json['nickname'] as String? ?? '',
-      age: (json['age'] as num?)?.toInt() ?? 0,
-      gender: json['gender'] as String? ?? '',
-      experienceYears: (json['experienceYears'] as num?)?.toInt() ?? 0,
-      keyTags: decodeStringList(json['keyTags'] ?? const <dynamic>[]),
+      userId: readInt(json, 'userId'),
+      nickname: readString(json, 'nickname'),
+      age: readInt(json, 'age'),
+      gender: readString(json, 'gender'),
+      experienceYears: readInt(json, 'experienceYears'),
+      keyTags: readStringList(json, 'keyTags'),
     );
   }
 
@@ -63,20 +63,20 @@ class ApplicationVO {
 
   factory ApplicationVO.fromJson(JsonMap json) {
     return ApplicationVO(
-      applicationId: (json['applicationId'] as num?)?.toInt() ?? 0,
-      status: json['status'] as String? ?? '',
-      matchScore: (json['matchScore'] as num?)?.toInt() ?? 0,
+      applicationId: readInt(json, 'applicationId'),
+      status: readString(json, 'status'),
+      matchScore: readInt(json, 'matchScore'),
       job: JobSimpleVO.fromJson(
-        asJsonMap(json['job'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'job'),
       ),
       employer: EmployerSimpleVO.fromJson(
-        asJsonMap(json['employer'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'employer'),
       ),
       applicant: ApplicantVO.fromJson(
-        asJsonMap(json['applicant'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'applicant'),
       ),
-      submittedAt: json['submittedAt'] as String? ?? '',
-      updatedAt: json['updatedAt'] as String? ?? '',
+      submittedAt: readString(json, 'submittedAt'),
+      updatedAt: readString(json, 'updatedAt'),
     );
   }
 
@@ -100,7 +100,7 @@ class CreateApplicationBO {
   final int jobId;
 
   factory CreateApplicationBO.fromJson(JsonMap json) {
-    return CreateApplicationBO(jobId: (json['jobId'] as num?)?.toInt() ?? 0);
+    return CreateApplicationBO(jobId: readInt(json, 'jobId'));
   }
 
   JsonMap toJson() {
@@ -121,9 +121,9 @@ class EmployerSimpleVO {
 
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: (json['employerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
+      employerId: readInt(json, 'employerId'),
+      name: readString(json, 'name'),
+      logoUrl: readString(json, 'logoUrl'),
     );
   }
 
@@ -153,11 +153,11 @@ class JobSimpleVO {
 
   factory JobSimpleVO.fromJson(JsonMap json) {
     return JobSimpleVO(
-      jobId: (json['jobId'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
+      jobId: readInt(json, 'jobId'),
+      title: readString(json, 'title'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
     );
   }
 
@@ -180,8 +180,8 @@ class UpdateApplicationStatusBO {
 
   factory UpdateApplicationStatusBO.fromJson(JsonMap json) {
     return UpdateApplicationStatusBO(
-      status: json['status'] as String? ?? '',
-      remark: json['remark'] as String? ?? '',
+      status: readString(json, 'status'),
+      remark: readString(json, 'remark'),
     );
   }
 

@@ -34,10 +34,10 @@ class TagItemVO {
 
   factory TagItemVO.fromJson(JsonMap json) {
     return TagItemVO(
-      tagCode: json['tagCode'] as String? ?? '',
-      tagNameZh: json['tagNameZh'] as String? ?? '',
-      tagNameEn: json['tagNameEn'] as String? ?? '',
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      tagCode: readString(json, 'tagCode'),
+      tagNameZh: readString(json, 'tagNameZh'),
+      tagNameEn: readString(json, 'tagNameEn'),
+      sortOrder: readInt(json, 'sortOrder'),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../application/shell_role_provider.dart';
@@ -16,6 +17,7 @@ class MainShellPage extends ConsumerWidget {
   final ShellRole? role;
 
   @override
+  /// 构建主壳层，并在 Tab 切换时记录当前角色和目标索引。
   Widget build(BuildContext context, WidgetRef ref) {
     final ShellRole currentRole = role ?? ref.watch(shellRoleProvider);
 
@@ -27,6 +29,15 @@ class MainShellPage extends ConsumerWidget {
         role: currentRole,
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {
+          AppLogger.instance.info(
+            'SHELL',
+            '底部 Tab 切换',
+            context: <String, Object?>{
+              'role': currentRole.name,
+              'fromIndex': navigationShell.currentIndex,
+              'toIndex': index,
+            },
+          );
           // 切换分支时保留各 Tab 的导航栈，符合 Figma 对应业务场景的保活体验。
           navigationShell.goBranch(
             index,
@@ -51,8 +62,7 @@ class _BottomBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const Color _inactiveColor = Color(0xFF5B708E);
-  static const String _homeInactiveAsset =
-      'assets/images/home_inactive.svg';
+  static const String _homeInactiveAsset = 'assets/images/home_inactive.svg';
 
   static const Map<ShellRole, List<_BottomItem>> _itemsByRole =
       <ShellRole, List<_BottomItem>>{

@@ -150,6 +150,9 @@ class ApiClient {
       return _unwrap<T>(res.data, decode: decode);
     } on DioException catch (e) {
       throw _mapDioException(e);
+    } on ApiException {
+      // 关键保护：已完成分类的业务异常/解析异常直接透传，不再包成 unknown。
+      rethrow;
     } catch (e) {
       throw ApiException.unknown(e);
     }
@@ -172,6 +175,9 @@ class ApiClient {
       _unwrapVoid(res.data);
     } on DioException catch (e) {
       throw _mapDioException(e);
+    } on ApiException {
+      // 关键保护：已完成分类的业务异常/解析异常直接透传，不再包成 unknown。
+      rethrow;
     } catch (e) {
       throw ApiException.unknown(e);
     }

@@ -13,9 +13,9 @@ class ConfirmUploadBO {
 
   factory ConfirmUploadBO.fromJson(JsonMap json) {
     return ConfirmUploadBO(
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
-      objectKey: json['objectKey'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
+      fileId: readInt(json, 'fileId'),
+      objectKey: readString(json, 'objectKey'),
+      fileSize: readInt(json, 'fileSize'),
     );
   }
 
@@ -45,11 +45,11 @@ class FilePresignBO {
 
   factory FilePresignBO.fromJson(JsonMap json) {
     return FilePresignBO(
-      fileName: json['fileName'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
-      scene: json['scene'] as String? ?? '',
-      accessType: json['accessType'] as String? ?? '',
+      fileName: readString(json, 'fileName'),
+      fileType: readString(json, 'fileType'),
+      fileSize: readInt(json, 'fileSize'),
+      scene: readString(json, 'scene'),
+      accessType: readString(json, 'accessType'),
     );
   }
 
@@ -81,11 +81,11 @@ class FilePresignVO {
 
   factory FilePresignVO.fromJson(JsonMap json) {
     return FilePresignVO(
-      uploadUrl: json['uploadUrl'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      expireIn: (json['expireIn'] as num?)?.toInt() ?? 0,
-      objectKey: json['objectKey'] as String? ?? '',
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
+      uploadUrl: readString(json, 'uploadUrl'),
+      fileUrl: readString(json, 'fileUrl'),
+      expireIn: readInt(json, 'expireIn'),
+      objectKey: readString(json, 'objectKey'),
+      fileId: readInt(json, 'fileId'),
     );
   }
 

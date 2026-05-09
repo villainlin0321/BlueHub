@@ -15,10 +15,10 @@ class DocItemBO {
 
   factory DocItemBO.fromJson(JsonMap json) {
     return DocItemBO(
-      docType: json['docType'] as String? ?? '',
-      docName: json['docName'] as String? ?? '',
-      fileId: (json['fileId'] as num?)?.toInt() ?? 0,
-      fileUrl: json['fileUrl'] as String? ?? '',
+      docType: readString(json, 'docType'),
+      docName: readString(json, 'docName'),
+      fileId: readInt(json, 'fileId'),
+      fileUrl: readString(json, 'fileUrl'),
     );
   }
 
@@ -49,11 +49,11 @@ class MaterialVO {
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
-      materialName: json['materialName'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
-      uploadedAt: json['uploadedAt'] as String? ?? '',
+      materialName: readString(json, 'materialName'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileType: readString(json, 'fileType'),
+      fileSize: readInt(json, 'fileSize'),
+      uploadedAt: readString(json, 'uploadedAt'),
     );
   }
 
@@ -81,9 +81,9 @@ class PackageSimpleVO {
 
   factory PackageSimpleVO.fromJson(JsonMap json) {
     return PackageSimpleVO(
-      packageId: (json['packageId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      priceFrom: (json['priceFrom'] as num?)?.toDouble() ?? 0,
+      packageId: readInt(json, 'packageId'),
+      name: readString(json, 'name'),
+      priceFrom: readDouble(json, 'priceFrom'),
     );
   }
 
@@ -123,18 +123,16 @@ class ProviderVO {
 
   factory ProviderVO.fromJson(JsonMap json) {
     return ProviderVO(
-      providerId: (json['providerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
-      isVerified: json['isVerified'] as bool? ?? false,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      caseCount: (json['caseCount'] as num?)?.toInt() ?? 0,
-      servicePromise: json['servicePromise'] as String? ?? '',
-      brief: json['brief'] as String? ?? '',
-      serviceCountries: decodeStringList(
-        json['serviceCountries'] ?? const <dynamic>[],
-      ),
-      yearsOfService: (json['yearsOfService'] as num?)?.toInt() ?? 0,
+      providerId: readInt(json, 'providerId'),
+      name: readString(json, 'name'),
+      logoUrl: readString(json, 'logoUrl'),
+      isVerified: readBool(json, 'isVerified'),
+      rating: readDouble(json, 'rating'),
+      caseCount: readInt(json, 'caseCount'),
+      servicePromise: readString(json, 'servicePromise'),
+      brief: readString(json, 'brief'),
+      serviceCountries: readStringList(json, 'serviceCountries'),
+      yearsOfService: readInt(json, 'yearsOfService'),
     );
   }
 
@@ -175,15 +173,15 @@ class ReviewItemVO {
 
   factory ReviewItemVO.fromJson(JsonMap json) {
     return ReviewItemVO(
-      reviewId: (json['reviewId'] as num?)?.toInt() ?? 0,
+      reviewId: readInt(json, 'reviewId'),
       user: UserSimpleVO.fromJson(
-        asJsonMap(json['user'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'user'),
       ),
-      rating: (json['rating'] as num?)?.toInt() ?? 0,
-      content: json['content'] as String? ?? '',
-      images: decodeStringList(json['images'] ?? const <dynamic>[]),
-      createdAt: json['createdAt'] as String? ?? '',
-      isExpanded: json['isExpanded'] as bool? ?? false,
+      rating: readInt(json, 'rating'),
+      content: readString(json, 'content'),
+      images: readStringList(json, 'images'),
+      createdAt: readString(json, 'createdAt'),
+      isExpanded: readBool(json, 'isExpanded'),
     );
   }
 
@@ -209,12 +207,9 @@ class ReviewVO {
   factory ReviewVO.fromJson(JsonMap json) {
     return ReviewVO(
       summary: SummaryVO.fromJson(
-        asJsonMap(json['summary'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'summary'),
       ),
-      list: decodeModelList<ReviewItemVO>(
-        json['list'] ?? const <dynamic>[],
-        ReviewItemVO.fromJson,
-      ),
+      list: readModelList<ReviewItemVO>(json, 'list', ReviewItemVO.fromJson),
     );
   }
 
@@ -239,9 +234,9 @@ class SummaryVO {
 
   factory SummaryVO.fromJson(JsonMap json) {
     return SummaryVO(
-      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
-      totalCount: (json['totalCount'] as num?)?.toInt() ?? 0,
-      label: json['label'] as String? ?? '',
+      averageRating: readDouble(json, 'averageRating'),
+      totalCount: readInt(json, 'totalCount'),
+      label: readString(json, 'label'),
     );
   }
 
@@ -273,12 +268,12 @@ class TierVO {
 
   factory TierVO.fromJson(JsonMap json) {
     return TierVO(
-      tierId: (json['tierId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0,
-      services: decodeStringList(json['services'] ?? const <dynamic>[]),
-      description: json['description'] as String? ?? '',
-      soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
+      tierId: readInt(json, 'tierId'),
+      name: readString(json, 'name'),
+      price: readDouble(json, 'price'),
+      services: readStringList(json, 'services'),
+      description: readString(json, 'description'),
+      soldCount: readInt(json, 'soldCount'),
     );
   }
 
@@ -327,21 +322,19 @@ class UpdateVisaProviderBO {
 
   factory UpdateVisaProviderBO.fromJson(JsonMap json) {
     return UpdateVisaProviderBO(
-      companyName: json['companyName'] as String? ?? '',
-      unifiedCreditCode: json['unifiedCreditCode'] as String? ?? '',
-      legalPerson: json['legalPerson'] as String? ?? '',
-      contactPerson: json['contactPerson'] as String? ?? '',
-      contactPhone: json['contactPhone'] as String? ?? '',
-      contactEmail: json['contactEmail'] as String? ?? '',
-      website: json['website'] as String? ?? '',
-      yearsOfService: (json['yearsOfService'] as num?)?.toInt() ?? 0,
-      logoId: (json['logoId'] as num?)?.toInt() ?? 0,
-      logoUrl: json['logoUrl'] as String? ?? '',
-      brief: json['brief'] as String? ?? '',
-      servicePromise: json['servicePromise'] as String? ?? '',
-      serviceCountries: decodeStringList(
-        json['serviceCountries'] ?? const <dynamic>[],
-      ),
+      companyName: readString(json, 'companyName'),
+      unifiedCreditCode: readString(json, 'unifiedCreditCode'),
+      legalPerson: readString(json, 'legalPerson'),
+      contactPerson: readString(json, 'contactPerson'),
+      contactPhone: readString(json, 'contactPhone'),
+      contactEmail: readString(json, 'contactEmail'),
+      website: readString(json, 'website'),
+      yearsOfService: readInt(json, 'yearsOfService'),
+      logoId: readInt(json, 'logoId'),
+      logoUrl: readString(json, 'logoUrl'),
+      brief: readString(json, 'brief'),
+      servicePromise: readString(json, 'servicePromise'),
+      serviceCountries: readStringList(json, 'serviceCountries'),
     );
   }
 
@@ -371,10 +364,7 @@ class UploadQualificationDocsBO {
 
   factory UploadQualificationDocsBO.fromJson(JsonMap json) {
     return UploadQualificationDocsBO(
-      docs: decodeModelList<DocItemBO>(
-        json['docs'] ?? const <dynamic>[],
-        DocItemBO.fromJson,
-      ),
+      docs: readModelList<DocItemBO>(json, 'docs', DocItemBO.fromJson),
     );
   }
 
@@ -406,13 +396,13 @@ class UserSimpleVO {
 
   factory UserSimpleVO.fromJson(JsonMap json) {
     return UserSimpleVO(
-      userId: (json['userId'] as num?)?.toInt() ?? 0,
-      phone: json['phone'] as String? ?? '',
-      countryCode: json['countryCode'] as String? ?? '',
-      role: json['role'] as String? ?? '',
-      avatarUrl: json['avatarUrl'] as String? ?? '',
-      nickname: json['nickname'] as String? ?? '',
-      email: json['email'] as String? ?? '',
+      userId: readInt(json, 'userId'),
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      role: readString(json, 'role'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      nickname: readString(json, 'nickname'),
+      email: readString(json, 'email'),
     );
   }
 
@@ -452,20 +442,14 @@ class VisaPackageVO {
 
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
-      packageId: (json['packageId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      targetCountry: json['targetCountry'] as String? ?? '',
-      visaType: json['visaType'] as String? ?? '',
-      estimatedDays: (json['estimatedDays'] as num?)?.toInt() ?? 0,
-      coverImages: decodeStringList(json['coverImages'] ?? const <dynamic>[]),
-      tiers: decodeModelList<TierVO>(
-        json['tiers'] ?? const <dynamic>[],
-        TierVO.fromJson,
-      ),
-      requiredMaterials: decodeModelList<MaterialVO>(
-        json['requiredMaterials'] ?? const <dynamic>[],
-        MaterialVO.fromJson,
-      ),
+      packageId: readInt(json, 'packageId'),
+      name: readString(json, 'name'),
+      targetCountry: readString(json, 'targetCountry'),
+      visaType: readString(json, 'visaType'),
+      estimatedDays: readInt(json, 'estimatedDays'),
+      coverImages: readStringList(json, 'coverImages'),
+      tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
+      requiredMaterials: readModelList<MaterialVO>(json, 'requiredMaterials', MaterialVO.fromJson),
     );
   }
 
@@ -494,12 +478,9 @@ class VisaProviderDetailVO {
   factory VisaProviderDetailVO.fromJson(JsonMap json) {
     return VisaProviderDetailVO(
       provider: ProviderVO.fromJson(
-        asJsonMap(json['provider'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'provider'),
       ),
-      packages: decodeModelList<VisaPackageVO>(
-        json['packages'] ?? const <dynamic>[],
-        VisaPackageVO.fromJson,
-      ),
+      packages: readModelList<VisaPackageVO>(json, 'packages', VisaPackageVO.fromJson),
     );
   }
 
@@ -536,16 +517,16 @@ class VisaProviderListVO {
 
   factory VisaProviderListVO.fromJson(JsonMap json) {
     return VisaProviderListVO(
-      providerId: (json['providerId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
-      isVerified: json['isVerified'] as bool? ?? false,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      caseCount: (json['caseCount'] as num?)?.toInt() ?? 0,
-      tags: decodeStringList(json['tags'] ?? const <dynamic>[]),
-      brief: json['brief'] as String? ?? '',
+      providerId: readInt(json, 'providerId'),
+      name: readString(json, 'name'),
+      logoUrl: readString(json, 'logoUrl'),
+      isVerified: readBool(json, 'isVerified'),
+      rating: readDouble(json, 'rating'),
+      caseCount: readInt(json, 'caseCount'),
+      tags: readStringList(json, 'tags'),
+      brief: readString(json, 'brief'),
       latestPackage: PackageSimpleVO.fromJson(
-        asJsonMap(json['latestPackage'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'latestPackage'),
       ),
     );
   }

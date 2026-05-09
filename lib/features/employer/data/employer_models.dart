@@ -29,17 +29,17 @@ class EmployerProfileVO {
 
   factory EmployerProfileVO.fromJson(JsonMap json) {
     return EmployerProfileVO(
-      profileId: (json['profileId'] as num?)?.toInt() ?? 0,
-      companyName: json['companyName'] as String? ?? '',
-      industry: json['industry'] as String? ?? '',
-      companySize: json['companySize'] as String? ?? '',
-      logoUrl: json['logoUrl'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      website: json['website'] as String? ?? '',
-      foundedYear: (json['foundedYear'] as num?)?.toInt() ?? 0,
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      isVerified: json['isVerified'] as bool? ?? false,
+      profileId: readInt(json, 'profileId'),
+      companyName: readString(json, 'companyName'),
+      industry: readString(json, 'industry'),
+      companySize: readString(json, 'companySize'),
+      logoUrl: readString(json, 'logoUrl'),
+      description: readString(json, 'description'),
+      website: readString(json, 'website'),
+      foundedYear: readInt(json, 'foundedYear'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+      isVerified: readBool(json, 'isVerified'),
     );
   }
 
@@ -87,16 +87,16 @@ class UpdateEmployerBO {
 
   factory UpdateEmployerBO.fromJson(JsonMap json) {
     return UpdateEmployerBO(
-      companyName: json['companyName'] as String? ?? '',
-      industry: json['industry'] as String? ?? '',
-      companySize: json['companySize'] as String? ?? '',
-      logoId: (json['logoId'] as num?)?.toInt() ?? 0,
-      logoUrl: json['logoUrl'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      website: json['website'] as String? ?? '',
-      foundedYear: (json['foundedYear'] as num?)?.toInt() ?? 0,
-      country: json['country'] as String? ?? '',
-      city: json['city'] as String? ?? '',
+      companyName: readString(json, 'companyName'),
+      industry: readString(json, 'industry'),
+      companySize: readString(json, 'companySize'),
+      logoId: readInt(json, 'logoId'),
+      logoUrl: readString(json, 'logoUrl'),
+      description: readString(json, 'description'),
+      website: readString(json, 'website'),
+      foundedYear: readInt(json, 'foundedYear'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
     );
   }
 

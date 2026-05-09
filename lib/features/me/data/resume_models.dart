@@ -19,12 +19,12 @@ class BasicInfoVO {
 
   factory BasicInfoVO.fromJson(JsonMap json) {
     return BasicInfoVO(
-      realName: json['realName'] as String? ?? '',
-      gender: json['gender'] as String? ?? '',
-      age: (json['age'] as num?)?.toInt() ?? 0,
-      phone: json['phone'] as String? ?? '',
-      currentLocation: json['currentLocation'] as String? ?? '',
-      avatarUrl: json['avatarUrl'] as String? ?? '',
+      realName: readString(json, 'realName'),
+      gender: readString(json, 'gender'),
+      age: readInt(json, 'age'),
+      phone: readString(json, 'phone'),
+      currentLocation: readString(json, 'currentLocation'),
+      avatarUrl: readString(json, 'avatarUrl'),
     );
   }
 
@@ -61,13 +61,13 @@ class EducationBO {
 
   factory EducationBO.fromJson(JsonMap json) {
     return EducationBO(
-      eduId: (json['eduId'] as num?)?.toInt() ?? 0,
-      school: json['school'] as String? ?? '',
-      major: json['major'] as String? ?? '',
-      degree: json['degree'] as String? ?? '',
-      startYear: (json['startYear'] as num?)?.toInt() ?? 0,
-      endYear: (json['endYear'] as num?)?.toInt() ?? 0,
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      eduId: readInt(json, 'eduId'),
+      school: readString(json, 'school'),
+      major: readString(json, 'major'),
+      degree: readString(json, 'degree'),
+      startYear: readInt(json, 'startYear'),
+      endYear: readInt(json, 'endYear'),
+      sortOrder: readInt(json, 'sortOrder'),
     );
   }
 
@@ -103,12 +103,12 @@ class EducationVO {
 
   factory EducationVO.fromJson(JsonMap json) {
     return EducationVO(
-      eduId: (json['eduId'] as num?)?.toInt() ?? 0,
-      school: json['school'] as String? ?? '',
-      major: json['major'] as String? ?? '',
-      degree: json['degree'] as String? ?? '',
-      startYear: (json['startYear'] as num?)?.toInt() ?? 0,
-      endYear: (json['endYear'] as num?)?.toInt() ?? 0,
+      eduId: readInt(json, 'eduId'),
+      school: readString(json, 'school'),
+      major: readString(json, 'major'),
+      degree: readString(json, 'degree'),
+      startYear: readInt(json, 'startYear'),
+      endYear: readInt(json, 'endYear'),
     );
   }
 
@@ -141,11 +141,11 @@ class JobIntentionBO {
 
   factory JobIntentionBO.fromJson(JsonMap json) {
     return JobIntentionBO(
-      positions: decodeStringList(json['positions'] ?? const <dynamic>[]),
-      countries: decodeStringList(json['countries'] ?? const <dynamic>[]),
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
+      positions: readStringList(json, 'positions'),
+      countries: readStringList(json, 'countries'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
     );
   }
 
@@ -177,11 +177,11 @@ class JobIntentionVO {
 
   factory JobIntentionVO.fromJson(JsonMap json) {
     return JobIntentionVO(
-      positions: decodeStringList(json['positions'] ?? const <dynamic>[]),
-      countries: decodeStringList(json['countries'] ?? const <dynamic>[]),
-      salaryMin: (json['salaryMin'] as num?)?.toDouble() ?? 0,
-      salaryMax: (json['salaryMax'] as num?)?.toDouble() ?? 0,
-      salaryCurrency: json['salaryCurrency'] as String? ?? '',
+      positions: readStringList(json, 'positions'),
+      countries: readStringList(json, 'countries'),
+      salaryMin: readDouble(json, 'salaryMin'),
+      salaryMax: readDouble(json, 'salaryMax'),
+      salaryCurrency: readString(json, 'salaryCurrency'),
     );
   }
 
@@ -213,11 +213,11 @@ class LanguageAbilityBO {
 
   factory LanguageAbilityBO.fromJson(JsonMap json) {
     return LanguageAbilityBO(
-      langId: (json['langId'] as num?)?.toInt() ?? 0,
-      language: json['language'] as String? ?? '',
-      certificate: json['certificate'] as String? ?? '',
-      level: json['level'] as String? ?? '',
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      langId: readInt(json, 'langId'),
+      language: readString(json, 'language'),
+      certificate: readString(json, 'certificate'),
+      level: readString(json, 'level'),
+      sortOrder: readInt(json, 'sortOrder'),
     );
   }
 
@@ -247,10 +247,10 @@ class LanguageAbilityVO {
 
   factory LanguageAbilityVO.fromJson(JsonMap json) {
     return LanguageAbilityVO(
-      langId: (json['langId'] as num?)?.toInt() ?? 0,
-      language: json['language'] as String? ?? '',
-      certificate: json['certificate'] as String? ?? '',
-      level: json['level'] as String? ?? '',
+      langId: readInt(json, 'langId'),
+      language: readString(json, 'language'),
+      certificate: readString(json, 'certificate'),
+      level: readString(json, 'level'),
     );
   }
 
@@ -291,32 +291,20 @@ class ResumeVO {
 
   factory ResumeVO.fromJson(JsonMap json) {
     return ResumeVO(
-      resumeId: (json['resumeId'] as num?)?.toInt() ?? 0,
-      completeness: (json['completeness'] as num?)?.toInt() ?? 0,
+      resumeId: readInt(json, 'resumeId'),
+      completeness: readInt(json, 'completeness'),
       basicInfo: BasicInfoVO.fromJson(
-        asJsonMap(json['basicInfo'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'basicInfo'),
       ),
       jobIntention: JobIntentionVO.fromJson(
-        asJsonMap(json['jobIntention'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'jobIntention'),
       ),
-      workExperiences: decodeModelList<WorkExperienceVO>(
-        json['workExperiences'] ?? const <dynamic>[],
-        WorkExperienceVO.fromJson,
-      ),
-      languages: decodeModelList<LanguageAbilityVO>(
-        json['languages'] ?? const <dynamic>[],
-        LanguageAbilityVO.fromJson,
-      ),
-      skillCertificates: decodeModelList<SkillCertificateVO>(
-        json['skillCertificates'] ?? const <dynamic>[],
-        SkillCertificateVO.fromJson,
-      ),
-      educations: decodeModelList<EducationVO>(
-        json['educations'] ?? const <dynamic>[],
-        EducationVO.fromJson,
-      ),
-      selfEvaluation: json['selfEvaluation'] as String? ?? '',
-      updatedAt: json['updatedAt'] as String? ?? '',
+      workExperiences: readModelList<WorkExperienceVO>(json, 'workExperiences', WorkExperienceVO.fromJson),
+      languages: readModelList<LanguageAbilityVO>(json, 'languages', LanguageAbilityVO.fromJson),
+      skillCertificates: readModelList<SkillCertificateVO>(json, 'skillCertificates', SkillCertificateVO.fromJson),
+      educations: readModelList<EducationVO>(json, 'educations', EducationVO.fromJson),
+      selfEvaluation: readString(json, 'selfEvaluation'),
+      updatedAt: readString(json, 'updatedAt'),
     );
   }
 
@@ -366,26 +354,14 @@ class SaveResumeBO {
   factory SaveResumeBO.fromJson(JsonMap json) {
     return SaveResumeBO(
       jobIntention: JobIntentionBO.fromJson(
-        asJsonMap(json['jobIntention'] ?? const <String, dynamic>{}),
+        readJsonMap(json, 'jobIntention'),
       ),
-      workExperiences: decodeModelList<WorkExperienceBO>(
-        json['workExperiences'] ?? const <dynamic>[],
-        WorkExperienceBO.fromJson,
-      ),
-      languages: decodeModelList<LanguageAbilityBO>(
-        json['languages'] ?? const <dynamic>[],
-        LanguageAbilityBO.fromJson,
-      ),
-      skillCertificates: decodeModelList<SkillCertificateBO>(
-        json['skillCertificates'] ?? const <dynamic>[],
-        SkillCertificateBO.fromJson,
-      ),
-      educations: decodeModelList<EducationBO>(
-        json['educations'] ?? const <dynamic>[],
-        EducationBO.fromJson,
-      ),
-      selfEvaluation: json['selfEvaluation'] as String? ?? '',
-      isPublic: json['isPublic'] as bool? ?? false,
+      workExperiences: readModelList<WorkExperienceBO>(json, 'workExperiences', WorkExperienceBO.fromJson),
+      languages: readModelList<LanguageAbilityBO>(json, 'languages', LanguageAbilityBO.fromJson),
+      skillCertificates: readModelList<SkillCertificateBO>(json, 'skillCertificates', SkillCertificateBO.fromJson),
+      educations: readModelList<EducationBO>(json, 'educations', EducationBO.fromJson),
+      selfEvaluation: readString(json, 'selfEvaluation'),
+      isPublic: readBool(json, 'isPublic'),
     );
   }
 
@@ -431,13 +407,13 @@ class SkillCertificateBO {
 
   factory SkillCertificateBO.fromJson(JsonMap json) {
     return SkillCertificateBO(
-      certId: (json['certId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      level: json['level'] as String? ?? '',
-      issuer: json['issuer'] as String? ?? '',
-      issuedDate: json['issuedDate'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? '',
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      certId: readInt(json, 'certId'),
+      name: readString(json, 'name'),
+      level: readString(json, 'level'),
+      issuer: readString(json, 'issuer'),
+      issuedDate: readString(json, 'issuedDate'),
+      imageUrl: readString(json, 'imageUrl'),
+      sortOrder: readInt(json, 'sortOrder'),
     );
   }
 
@@ -473,12 +449,12 @@ class SkillCertificateVO {
 
   factory SkillCertificateVO.fromJson(JsonMap json) {
     return SkillCertificateVO(
-      certId: (json['certId'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      level: json['level'] as String? ?? '',
-      issuer: json['issuer'] as String? ?? '',
-      issuedDate: json['issuedDate'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? '',
+      certId: readInt(json, 'certId'),
+      name: readString(json, 'name'),
+      level: readString(json, 'level'),
+      issuer: readString(json, 'issuer'),
+      issuedDate: readString(json, 'issuedDate'),
+      imageUrl: readString(json, 'imageUrl'),
     );
   }
 
@@ -519,15 +495,15 @@ class WorkExperienceBO {
 
   factory WorkExperienceBO.fromJson(JsonMap json) {
     return WorkExperienceBO(
-      expId: (json['expId'] as num?)?.toInt() ?? 0,
-      company: json['company'] as String? ?? '',
-      department: json['department'] as String? ?? '',
-      position: json['position'] as String? ?? '',
-      startDate: json['startDate'] as String? ?? '',
-      endDate: json['endDate'] as String? ?? '',
-      isCurrent: json['isCurrent'] as bool? ?? false,
-      description: json['description'] as String? ?? '',
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      expId: readInt(json, 'expId'),
+      company: readString(json, 'company'),
+      department: readString(json, 'department'),
+      position: readString(json, 'position'),
+      startDate: readString(json, 'startDate'),
+      endDate: readString(json, 'endDate'),
+      isCurrent: readBool(json, 'isCurrent'),
+      description: readString(json, 'description'),
+      sortOrder: readInt(json, 'sortOrder'),
     );
   }
 
@@ -569,14 +545,14 @@ class WorkExperienceVO {
 
   factory WorkExperienceVO.fromJson(JsonMap json) {
     return WorkExperienceVO(
-      expId: (json['expId'] as num?)?.toInt() ?? 0,
-      company: json['company'] as String? ?? '',
-      department: json['department'] as String? ?? '',
-      position: json['position'] as String? ?? '',
-      startDate: json['startDate'] as String? ?? '',
-      endDate: json['endDate'] as String? ?? '',
-      isCurrent: json['isCurrent'] as bool? ?? false,
-      description: json['description'] as String? ?? '',
+      expId: readInt(json, 'expId'),
+      company: readString(json, 'company'),
+      department: readString(json, 'department'),
+      position: readString(json, 'position'),
+      startDate: readString(json, 'startDate'),
+      endDate: readString(json, 'endDate'),
+      isCurrent: readBool(json, 'isCurrent'),
+      description: readString(json, 'description'),
     );
   }
 

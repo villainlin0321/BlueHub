@@ -9,8 +9,8 @@ class RVoid {
 
   factory RVoid.fromJson(JsonMap json) {
     return RVoid(
-      code: (json['code'] as num?)?.toInt() ?? 0,
-      msg: json['msg'] as String? ?? '',
+      code: readInt(json, 'code'),
+      msg: readString(json, 'msg'),
       data: json['data'],
     );
   }

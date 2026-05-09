@@ -13,9 +13,9 @@ class AiChatBO {
 
   factory AiChatBO.fromJson(JsonMap json) {
     return AiChatBO(
-      sessionId: (json['sessionId'] as num?)?.toInt() ?? 0,
-      message: json['message'] as String? ?? '',
-      contextType: json['contextType'] as String? ?? '',
+      sessionId: readInt(json, 'sessionId'),
+      message: readString(json, 'message'),
+      contextType: readString(json, 'contextType'),
     );
   }
 
@@ -49,13 +49,13 @@ class AiMessage {
 
   factory AiMessage.fromJson(JsonMap json) {
     return AiMessage(
-      aiMsgId: (json['aiMsgId'] as num?)?.toInt() ?? 0,
-      sessionId: (json['sessionId'] as num?)?.toInt() ?? 0,
-      role: json['role'] as String? ?? '',
-      content: json['content'] as String? ?? '',
-      extraData: json['extraData'] as String? ?? '',
-      tokensUsed: (json['tokensUsed'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] as String? ?? '',
+      aiMsgId: readInt(json, 'aiMsgId'),
+      sessionId: readInt(json, 'sessionId'),
+      role: readString(json, 'role'),
+      content: readString(json, 'content'),
+      extraData: readString(json, 'extraData'),
+      tokensUsed: readInt(json, 'tokensUsed'),
+      createdAt: readString(json, 'createdAt'),
     );
   }
 

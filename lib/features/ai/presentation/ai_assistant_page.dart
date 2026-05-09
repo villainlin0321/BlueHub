@@ -399,6 +399,8 @@ class _Composer extends StatelessWidget {
               width: 44,
               height: 44,
               child: FloatingActionButton(
+                // 发送按钮不需要 Hero 动画，显式关闭以避免与其他 FAB 冲突。
+                heroTag: null,
                 onPressed: onSend,
                 backgroundColor: AppColors.brand,
                 child: const Icon(Icons.send, color: Colors.white),
