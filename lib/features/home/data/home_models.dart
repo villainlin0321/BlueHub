@@ -68,3 +68,81 @@ class HomeHotPackageVO {
     };
   }
 }
+
+class HomeDashboardStatsVO {
+  const HomeDashboardStatsVO({
+    this.todayConsultations,
+    this.inProgressOrders,
+    required this.monthlyIncome,
+    required this.incomeCurrency,
+    this.activeJobs,
+    this.receivedResumes,
+    this.pendingInterviews,
+    this.hired,
+  });
+
+  final int? todayConsultations;
+  final int? inProgressOrders;
+  final String monthlyIncome;
+  final String incomeCurrency;
+  final int? activeJobs;
+  final int? receivedResumes;
+  final int? pendingInterviews;
+  final int? hired;
+
+  factory HomeDashboardStatsVO.fromJson(JsonMap json) {
+    return HomeDashboardStatsVO(
+      todayConsultations: _readNullableInt(json['todayConsultations']),
+      inProgressOrders: _readNullableInt(json['inProgressOrders']),
+      monthlyIncome: readString(json, 'monthlyIncome', fallback: '0'),
+      incomeCurrency: readString(json, 'incomeCurrency', fallback: 'CNY'),
+      activeJobs: _readNullableInt(json['activeJobs']),
+      receivedResumes: _readNullableInt(json['receivedResumes']),
+      pendingInterviews: _readNullableInt(json['pendingInterviews']),
+      hired: _readNullableInt(json['hired']),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'todayConsultations': todayConsultations,
+      'inProgressOrders': inProgressOrders,
+      'monthlyIncome': monthlyIncome,
+      'incomeCurrency': incomeCurrency,
+      'activeJobs': activeJobs,
+      'receivedResumes': receivedResumes,
+      'pendingInterviews': pendingInterviews,
+      'hired': hired,
+    };
+  }
+
+  String get incomeCurrencySymbol {
+    return switch (incomeCurrency.trim().toUpperCase()) {
+      'CNY' || 'RMB' => '¥',
+      'EUR' => '€',
+      'USD' => '\$',
+      _ => incomeCurrency.trim().isEmpty ? '¥' : incomeCurrency.trim(),
+    };
+  }
+
+  String get monthlyIncomeDisplay {
+    final String value = monthlyIncome.trim();
+    return value.isEmpty ? '0' : value;
+  }
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}

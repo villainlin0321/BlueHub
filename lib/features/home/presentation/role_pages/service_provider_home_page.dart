@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../data/home_models.dart';
+import '../../data/home_providers.dart';
 
 /// 当前按需求承载服务商首页实现，后续如补企业端首页可再拆分。
 class ServiceProviderHomePage extends ConsumerWidget {
@@ -201,24 +203,42 @@ class _HeroGlow extends StatelessWidget {
   }
 }
 
-class _HeroStatsRow extends StatelessWidget {
+class _HeroStatsRow extends ConsumerWidget {
   const _HeroStatsRow();
 
   @override
-  Widget build(BuildContext context) {
-    return const Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final List<_HeroStatItem> items = stats == null
+        ? const <_HeroStatItem>[
+            _HeroStatItem(value: '24', label: '今日咨询'),
+            _HeroStatItem(value: '132', label: '进行中订单'),
+            _HeroStatItem(value: '12.34w', label: '本月收入(¥)'),
+          ]
+        : <_HeroStatItem>[
+            _HeroStatItem(
+              value: _formatProviderCount(stats.todayConsultations),
+              label: '今日咨询',
+            ),
+            _HeroStatItem(
+              value: _formatProviderCount(stats.inProgressOrders),
+              label: '进行中订单',
+            ),
+            _HeroStatItem(
+              value: stats.monthlyIncomeDisplay,
+              label: '本月收入(${stats.incomeCurrencySymbol})',
+            ),
+          ];
+
+    return Row(
       children: <Widget>[
-        Expanded(
-          child: _HeroStatItem(value: '24', label: '今日咨询'),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _HeroStatItem(value: '132', label: '进行中订单'),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _HeroStatItem(value: '12.34w', label: '本月收入(¥)'),
-        ),
+        for (int index = 0; index < items.length; index++) ...<Widget>[
+          Expanded(child: items[index]),
+          if (index != items.length - 1) const SizedBox(width: 12),
+        ],
       ],
     );
   }
@@ -832,3 +852,5 @@ class _PendingOrderItem {
   final String materialsText;
   final String priceText;
 }
+
+String _formatProviderCount(int? value) => (value ?? 0).toString();

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../home/data/home_models.dart';
+import '../../../home/data/home_providers.dart';
 
 /// 企业端我的页，按 Figma 设计图还原。
 class CompanyMePage extends StatelessWidget {
@@ -13,7 +16,7 @@ class CompanyMePage extends StatelessWidget {
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
 
   static const List<_StatData> _stats = <_StatData>[
-    _StatData(value: '88', label: '再招岗位'),
+    _StatData(value: '88', label: '在招岗位'),
     _StatData(value: '24', label: '收到简历'),
     _StatData(value: '1.2k', label: '待面试'),
     _StatData(value: '4.87', label: '已录用'),
@@ -353,11 +356,33 @@ class _CompanyBadge extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _StatCard extends ConsumerWidget {
   const _StatCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final List<_StatData> items = stats == null
+        ? CompanyMePage._stats
+        : <_StatData>[
+            _StatData(
+              value: _formatCompanyCount(stats.activeJobs),
+              label: '在招岗位',
+            ),
+            _StatData(
+              value: _formatCompanyCount(stats.receivedResumes),
+              label: '收到简历',
+            ),
+            _StatData(
+              value: _formatCompanyCount(stats.pendingInterviews),
+              label: '待面试',
+            ),
+            _StatData(value: _formatCompanyCount(stats.hired), label: '已录用'),
+          ];
+
     return Container(
       height: 88,
       padding: const EdgeInsets.fromLTRB(9, 20, 10, 20),
@@ -367,7 +392,7 @@ class _StatCard extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: CompanyMePage._stats
+        children: items
             .map(
               (_StatData item) => Expanded(
                 child: _StatItem(value: item.value, label: item.label),
@@ -534,6 +559,8 @@ class _StatData {
   final String value;
   final String label;
 }
+
+String _formatCompanyCount(int? value) => (value ?? 0).toString();
 
 class _MenuData {
   const _MenuData({

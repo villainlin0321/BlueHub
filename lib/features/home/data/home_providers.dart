@@ -1,4 +1,5 @@
 import 'package:bluehub_app/features/jobs/data/job_models.dart';
+import 'package:bluehub_app/features/shell/application/shell_role_provider.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,4 +23,12 @@ final homeHotVisaPackagesProvider =
     FutureProvider.autoDispose<List<HomeHotPackageVO>>((ref) async {
       final homeService = ref.watch(homeServiceProvider);
       return homeService.getHotVisaPackages(limit: 6);
+    });
+
+/// 首页统计 Provider，会在壳层角色切换时重新请求当前 activeRole 对应的统计数据。
+final homeDashboardStatsProvider =
+    FutureProvider.autoDispose<HomeDashboardStatsVO>((ref) async {
+      ref.watch(shellRoleProvider);
+      final homeService = ref.watch(homeServiceProvider);
+      return homeService.getDashboardStats();
     });

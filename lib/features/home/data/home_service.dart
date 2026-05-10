@@ -35,4 +35,13 @@ class HomeService {
     );
     return response;
   }
+
+  /// 获取当前角色首页统计数据，接口 data 结构会随 activeRole 变化。
+  Future<HomeDashboardStatsVO> getDashboardStats() async {
+    final response = await _apiClient.get<HomeDashboardStatsVO>(
+      '/home/stats',
+      decode: (data) => HomeDashboardStatsVO.fromJson(asJsonMap(data)),
+    );
+    return response;
+  }
 }

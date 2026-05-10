@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../data/home_models.dart';
+import '../../data/home_providers.dart';
 
 /// 企业首页。
 class CompanyHomePage extends ConsumerWidget {
@@ -319,7 +321,7 @@ class _HeroMessageButton extends StatelessWidget {
   }
 }
 
-class _CompanyHeroStatsRow extends StatelessWidget {
+class _CompanyHeroStatsRow extends ConsumerWidget {
   const _CompanyHeroStatsRow();
 
   static const List<_HeroStatItem> _items = <_HeroStatItem>[
@@ -330,9 +332,28 @@ class _CompanyHeroStatsRow extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final List<_HeroStatItem> items = stats == null
+        ? _items
+        : <_HeroStatItem>[
+            _HeroStatItem(value: _formatCount(stats.activeJobs), label: '在招岗位'),
+            _HeroStatItem(
+              value: _formatCount(stats.receivedResumes),
+              label: '收到简历',
+            ),
+            _HeroStatItem(
+              value: _formatCount(stats.pendingInterviews),
+              label: '待面试',
+            ),
+            _HeroStatItem(value: _formatCount(stats.hired), label: '已录用'),
+          ];
+
     return Row(
-      children: _items
+      children: items
           .map(
             (item) => Expanded(
               child: Column(
@@ -371,6 +392,8 @@ class _HeroStatItem {
   final String value;
   final String label;
 }
+
+String _formatCount(int? value) => (value ?? 0).toString();
 
 class _QuickActionRow extends StatelessWidget {
   const _QuickActionRow({required this.items});
