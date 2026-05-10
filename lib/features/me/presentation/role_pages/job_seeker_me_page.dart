@@ -66,7 +66,7 @@ class JobSeekerMePage extends ConsumerWidget {
             children: <Widget>[
               _Header(
                 onMessageTap: () => _showPlaceholderToast(context, '消息中心'),
-                onSettingsTap: () => _showPlaceholderToast(context, '设置'),
+                onSettingsTap: () => _handleSettingsTap(context),
               ),
               const SizedBox(height: 11),
               _ProfileCard(
@@ -101,6 +101,12 @@ class JobSeekerMePage extends ConsumerWidget {
       case '客服中心':
         _showPlaceholderToast(context, label);
     }
+  }
+
+  /// 打开设置页，复用“我的”模块已注册的路由入口。
+  void _handleSettingsTap(BuildContext context) {
+    // 关键交互：右上角设置按钮进入真实设置页，而不是占位提示。
+    context.push(RoutePaths.settings);
   }
 
   /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。

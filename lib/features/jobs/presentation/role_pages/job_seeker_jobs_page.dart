@@ -8,6 +8,8 @@ import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
+import '../../../me/data/collection_models.dart' show CollectionBO;
+import '../../../me/data/collection_providers.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import '../job_apply_helper.dart';
@@ -40,6 +42,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   final List<JobListVO> _jobs = <JobListVO>[];
   final Set<int> _submittingJobIds = <int>{};
   final Set<int> _appliedJobIds = <int>{};
+  final Set<int> _collectingJobIds = <int>{};
+  final Map<int, bool> _collectedOverrides = <int, bool>{};
   int _currentPage = 0;
   bool _hasNext = true;
   bool _isInitialLoading = true;
@@ -58,6 +62,9 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final AsyncValue<Set<int>> collectedJobIdsAsync = ref.watch(
+      collectedJobIdsProvider,
+    );
 
     return SafeArea(
       bottom: false,
@@ -102,11 +109,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               onRetry: _loadInitialJobs,
               applyingJobIds: _submittingJobIds,
               appliedJobIds: _appliedJobIds,
+              collectingJobIds: _collectingJobIds,
+              collectedJobIdsAsync: collectedJobIdsAsync,
               onApply: _handleApply,
+              onToggleCollection: _handleToggleCollection,
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: bottomPadding + 24),
-            ),
+            SliverToBoxAdapter(child: SizedBox(height: bottomPadding + 24)),
           ],
         ),
       ),
@@ -155,11 +163,13 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     }
 
     try {
-      final result = await ref.read(jobServiceProvider).listJobs(
-        page: reset ? 1 : _currentPage + 1,
-        pageSize: _pageSize,
-        sort: 'latest',
-      );
+      final result = await ref
+          .read(jobServiceProvider)
+          .listJobs(
+            page: reset ? 1 : _currentPage + 1,
+            pageSize: _pageSize,
+            sort: 'latest',
+          );
       if (!mounted) {
         return;
       }
@@ -205,7 +215,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 
   /// 提交岗位投递请求，并根据结果更新按钮状态与页面提示。
   Future<void> _handleApply(JobListVO job) async {
-    if (_submittingJobIds.contains(job.jobId) || _appliedJobIds.contains(job.jobId)) {
+    if (_submittingJobIds.contains(job.jobId) ||
+        _appliedJobIds.contains(job.jobId)) {
       return;
     }
 
@@ -236,6 +247,65 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         context,
       ).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
+  }
+
+  /// 切换列表页岗位收藏状态，并与收藏页、详情页保持同步。
+  Future<void> _handleToggleCollection(JobListVO job) async {
+    if (_collectingJobIds.contains(job.jobId)) {
+      return;
+    }
+
+    final Set<int>? collectedJobIds = ref
+        .read(collectedJobIdsProvider)
+        .asData
+        ?.value;
+    final bool isCollected =
+        _collectedOverrides[job.jobId] ??
+        collectedJobIds?.contains(job.jobId) ??
+        job.isCollected;
+
+    setState(() {
+      _collectingJobIds.add(job.jobId);
+    });
+
+    try {
+      final request = CollectionBO(targetType: 'job', targetId: job.jobId);
+      final service = ref.read(collectionServiceProvider);
+      if (isCollected) {
+        await service.removeCollection(request: request);
+      } else {
+        await service.addCollection(request: request);
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _collectingJobIds.remove(job.jobId);
+        _collectedOverrides[job.jobId] = !isCollected;
+      });
+      ref.read(collectionRefreshTickProvider.notifier).bump();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(isCollected ? '已取消收藏' : '收藏成功')));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _collectingJobIds.remove(job.jobId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_resolveCollectionErrorMessage(error))),
+      );
+    }
+  }
+
+  /// 提取列表收藏操作的错误文案。
+  String _resolveCollectionErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '收藏操作失败，请稍后重试';
   }
 }
 
@@ -419,7 +489,10 @@ class _JobsListSection extends StatelessWidget {
     required this.onRetry,
     required this.applyingJobIds,
     required this.appliedJobIds,
+    required this.collectingJobIds,
+    required this.collectedJobIdsAsync,
     required this.onApply,
+    required this.onToggleCollection,
   });
 
   final List<JobListVO> jobs;
@@ -428,7 +501,10 @@ class _JobsListSection extends StatelessWidget {
   final Future<void> Function() onRetry;
   final Set<int> applyingJobIds;
   final Set<int> appliedJobIds;
+  final Set<int> collectingJobIds;
+  final AsyncValue<Set<int>> collectedJobIdsAsync;
   final Future<void> Function(JobListVO job) onApply;
+  final Future<void> Function(JobListVO job) onToggleCollection;
 
   /// 根据列表状态切换首屏加载、错误、空态和正常卡片列表。
   @override
@@ -446,7 +522,10 @@ class _JobsListSection extends StatelessWidget {
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: _JobsErrorState(message: initialErrorMessage!, onRetry: onRetry),
+          child: _JobsErrorState(
+            message: initialErrorMessage!,
+            onRetry: onRetry,
+          ),
         ),
       );
     }
@@ -468,23 +547,38 @@ class _JobsListSection extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.only(bottom: index == jobs.length - 1 ? 0 : 12),
             child: JobPositionCard(
-              data: item.toCardData(),
+              data: item.toCardData(isCollected: _resolveCollectedState(item)),
               onTap: () => context.push(
                 RoutePaths.jobDetail,
                 extra: JobDetailPageArgs(jobId: item.jobId),
               ),
+              onFavoriteTap: () {
+                onToggleCollection(item);
+              },
               onApply: appliedJobIds.contains(item.jobId)
                   ? null
                   : () {
                       onApply(item);
                     },
               isApplying: applyingJobIds.contains(item.jobId),
-              applyButtonText: appliedJobIds.contains(item.jobId) ? '已投递' : '一键投递',
+              isCollecting: collectingJobIds.contains(item.jobId),
+              applyButtonText: appliedJobIds.contains(item.jobId)
+                  ? '已投递'
+                  : '一键投递',
             ),
           );
         }, childCount: jobs.length),
       ),
     );
+  }
+
+  /// 解析职位卡片当前的收藏态，优先使用收藏接口同步结果。
+  bool _resolveCollectedState(JobListVO item) {
+    final Set<int>? collectedJobIds = collectedJobIdsAsync.asData?.value;
+    if (collectedJobIds != null) {
+      return collectedJobIds.contains(item.jobId);
+    }
+    return item.isCollected;
   }
 }
 
@@ -572,7 +666,7 @@ class _JobsErrorState extends StatelessWidget {
 
 extension on JobListVO {
   /// 将接口返回的岗位列表项映射为职位卡片数据。
-  JobPositionCardData toCardData() {
+  JobPositionCardData toCardData({required bool isCollected}) {
     final List<String> tagLabels = tags
         .map((TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
@@ -581,9 +675,7 @@ extension on JobListVO {
       ...tagLabels.where((String label) => label != '急招'),
       if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) '急招',
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) '急招'];
 
     return JobPositionCardData(
       title: title,
@@ -593,6 +685,7 @@ extension on JobListVO {
       company: employer.name,
       location: _formatLocation(),
       showApplyButton: true,
+      isCollected: isCollected,
     );
   }
 
@@ -601,7 +694,9 @@ extension on JobListVO {
     final String currency = salaryCurrency.isEmpty ? '¥' : salaryCurrency;
     final String minText = _formatNumber(salaryMin);
     final String maxText = _formatNumber(salaryMax);
-    final String rangeText = salaryMax > 0 ? '$currency$minText~$maxText' : '$currency$minText';
+    final String rangeText = salaryMax > 0
+        ? '$currency$minText~$maxText'
+        : '$currency$minText';
     if (salaryPeriod.isEmpty) {
       return rangeText;
     }

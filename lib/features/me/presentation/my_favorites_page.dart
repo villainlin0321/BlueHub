@@ -317,6 +317,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
           (String id) => jobIdSet.contains(int.tryParse(id)),
         );
       });
+      ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(jobIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
     } catch (error) {
       if (!mounted) {
@@ -355,6 +356,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
           (String id) => packageIdSet.contains(int.tryParse(id)),
         );
       });
+      ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(packageIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
     } catch (error) {
       if (!mounted) {
@@ -381,6 +383,14 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(collectionRefreshTickProvider, (previous, next) {
+      if (previous == next) {
+        return;
+      }
+      _loadCollectedPackages();
+      _loadCollectedJobs();
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -721,7 +731,10 @@ class _FavoriteServiceCard extends StatelessWidget {
       data: item.toCardData(),
       onTap: () => context.push(
         RoutePaths.serviceDetail,
-        extra: ServiceDetailPageArgs(packageId: item.packageId),
+        extra: ServiceDetailPageArgs(
+          packageId: item.packageId,
+          initialIsCollected: true,
+        ),
       ),
     );
   }
@@ -988,6 +1001,7 @@ extension on collection_models.JobListVO {
       company: employer.name,
       location: parts.join('·'),
       showApplyButton: true,
+      isCollected: true,
       previewImageAssetPath: mapAssetPath,
     );
   }
@@ -1022,6 +1036,7 @@ extension on collection_models.VisaPackageVO {
                   ),
                 )
                 .toList(growable: false),
+      isCollected: true,
     );
   }
 

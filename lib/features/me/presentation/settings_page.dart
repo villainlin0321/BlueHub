@@ -196,28 +196,27 @@ class _SettingsHeader extends StatelessWidget {
   @override
   /// 构建顶部标题栏，保持与设计稿一致的返回位置和标题层级。
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          Positioned(
-            left: 4,
-            child: IconButton(
-              onPressed: onBackTap,
-              icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
-            ),
-          ),
-          const Text(
-            '设置',
-            style: TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
-          ),
-        ],
+    return AppBar(
+      toolbarHeight: 44,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: true,
+      automaticallyImplyLeading: false,
+      leadingWidth: 44,
+      titleSpacing: 0,
+      leading: IconButton(
+        onPressed: onBackTap,
+        icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
+      ),
+      title: const Text(
+        '设置',
+        style: TextStyle(
+          color: Color(0xFF262626),
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+          height: 24 / 17,
+        ),
       ),
     );
   }
