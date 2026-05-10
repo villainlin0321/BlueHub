@@ -153,7 +153,11 @@ class TierBO {
       description: readString(json, 'description'),
       showMaterials: readBool(json, 'showMaterials'),
       sortOrder: readInt(json, 'sortOrder'),
-      materials: readModelList<MaterialBO>(json, 'materials', MaterialBO.fromJson),
+      materials: readModelList<MaterialBO>(
+        json,
+        'materials',
+        MaterialBO.fromJson,
+      ),
     );
   }
 
@@ -235,6 +239,7 @@ class VisaPackageVO {
     required this.targetCountry,
     required this.visaType,
     required this.estimatedDays,
+    required this.currency,
     required this.coverImages,
     required this.tiers,
     required this.requiredMaterials,
@@ -245,10 +250,12 @@ class VisaPackageVO {
   final String targetCountry;
   final String visaType;
   final int estimatedDays;
+  final String currency;
   final List<String> coverImages;
   final List<TierVO> tiers;
   final List<MaterialVO> requiredMaterials;
 
+  /// 安全解析签证套餐详情，兼容后端返回币种和材料字段的类型波动。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
       packageId: readInt(json, 'packageId'),
@@ -256,9 +263,14 @@ class VisaPackageVO {
       targetCountry: readString(json, 'targetCountry'),
       visaType: readString(json, 'visaType'),
       estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
-      requiredMaterials: readModelList<MaterialVO>(json, 'requiredMaterials', MaterialVO.fromJson),
+      requiredMaterials: readModelList<MaterialVO>(
+        json,
+        'requiredMaterials',
+        MaterialVO.fromJson,
+      ),
     );
   }
 
@@ -269,6 +281,7 @@ class VisaPackageVO {
       'targetCountry': targetCountry,
       'visaType': visaType,
       'estimatedDays': estimatedDays,
+      'currency': currency,
       'coverImages': coverImages,
       'tiers': tiers.map((item) => item.toJson()).toList(growable: false),
       'requiredMaterials': requiredMaterials

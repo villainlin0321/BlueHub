@@ -157,7 +157,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceDetail,
-        builder: (context, state) => const ServiceDetailPage(),
+        builder: (context, state) =>
+            ServiceDetailPage(args: state.extra as ServiceDetailPageArgs?),
       ),
       GoRoute(
         path: RoutePaths.editVisaPackage,
