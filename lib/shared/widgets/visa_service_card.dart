@@ -14,6 +14,7 @@ class VisaServiceCardData {
     this.avatarUrl,
     this.verified = false,
     this.archived = false,
+    this.isCollected = false,
     this.statusText,
   });
 
@@ -27,6 +28,7 @@ class VisaServiceCardData {
   final List<VisaServicePackageData> packages;
   final bool verified;
   final bool archived;
+  final bool isCollected;
   final String? statusText;
 }
 
@@ -45,10 +47,18 @@ class VisaServicePackageData {
 }
 
 class VisaServiceCard extends StatelessWidget {
-  const VisaServiceCard({super.key, required this.data, this.onTap});
+  const VisaServiceCard({
+    super.key,
+    required this.data,
+    this.onTap,
+    this.onFavoriteTap,
+    this.isCollecting = false,
+  });
 
   final VisaServiceCardData data;
   final VoidCallback? onTap;
+  final VoidCallback? onFavoriteTap;
+  final bool isCollecting;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +117,12 @@ class VisaServiceCard extends StatelessWidget {
                                   ),
                                 ),
                               ],
+                              const SizedBox(width: 8),
+                              _VisaFavoriteButton(
+                                isCollected: data.isCollected,
+                                isLoading: isCollecting,
+                                onTap: onFavoriteTap,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -210,6 +226,46 @@ class VisaServiceCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: card,
+      ),
+    );
+  }
+}
+
+class _VisaFavoriteButton extends StatelessWidget {
+  const _VisaFavoriteButton({
+    required this.isCollected,
+    required this.isLoading,
+    this.onTap,
+  });
+
+  final bool isCollected;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  /// 渲染签证服务卡片收藏按钮，展示真实收藏初始态。
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  isCollected ? Icons.star_rounded : Icons.star_border_rounded,
+                  size: 20,
+                  color: isCollected
+                      ? const Color(0xFFFE5815)
+                      : const Color(0xFFBFBFBF),
+                ),
+        ),
       ),
     );
   }

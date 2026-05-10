@@ -8,6 +8,8 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../me/data/collection_models.dart' show CollectionBO;
+import '../../me/data/collection_providers.dart';
 import '../../visa/data/provider_models.dart'
     hide MaterialVO, TierVO, VisaPackageVO;
 import '../../visa/data/provider_providers.dart';
@@ -19,10 +21,15 @@ import 'service_detail_package_tab.dart';
 import 'service_detail_review_tab.dart';
 
 class ServiceDetailPageArgs {
-  const ServiceDetailPageArgs({required this.packageId, this.providerId});
+  const ServiceDetailPageArgs({
+    required this.packageId,
+    this.providerId,
+    this.initialIsCollected = false,
+  });
 
   final int packageId;
   final int? providerId;
+  final bool initialIsCollected;
 }
 
 /// 签证服务详情页：根据套餐和服务商参数加载真实详情数据。
@@ -49,8 +56,9 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       'assets/images/service_detail_consult_icon.svg';
 
   int _selectedPackageIndex = 0;
-  bool _isFavorited = false;
+  bool _isCollecting = false;
   bool _showCollapsedTitle = false;
+  bool? _isCollectedOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +77,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     final AsyncValue<ReviewVO>? reviewAsync = args.providerId == null
         ? null
         : ref.watch(visaProviderReviewsProvider(args.providerId!));
+
+    final bool isFavorited = _isCollected;
 
     return packageAsync.when(
       loading: () => const _ServiceDetailLoadingPage(),
@@ -162,15 +172,13 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                             shareAsset: _shareAsset,
                             collapsed: collapsed,
                             progress: progress,
-                            isFavorited: _isFavorited,
+                            isFavorited: isFavorited,
                             onBackTap: () {
                               if (Navigator.of(context).canPop()) {
                                 context.pop();
                               }
                             },
-                            onFavoriteTap: () {
-                              setState(() => _isFavorited = !_isFavorited);
-                            },
+                            onFavoriteTap: _toggleCollection,
                             onShareTap: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('分享功能开发中')),
@@ -238,6 +246,10 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     );
   }
 
+  /// 当前收藏状态，优先采用本地交互后的覆盖值。
+  bool get _isCollected =>
+      _isCollectedOverride ?? (widget.args?.initialIsCollected ?? false);
+
   /// 计算头图折叠阈值，统一控制标题显隐。
   double _collapseThreshold({required BuildContext context}) {
     return _expandedAppBarHeight -
@@ -291,6 +303,57 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       serviceTitle: serviceTitle,
       package: package,
     );
+  }
+
+  /// 切换签证详情收藏状态，并同步调用真实收藏接口。
+  Future<void> _toggleCollection() async {
+    final int? packageId = widget.args?.packageId;
+    if (_isCollecting || packageId == null || packageId <= 0) {
+      return;
+    }
+
+    setState(() {
+      _isCollecting = true;
+    });
+
+    final bool wasCollected = _isCollected;
+
+    try {
+      final service = ref.read(collectionServiceProvider);
+      final request = CollectionBO(
+        targetType: 'visa_package',
+        targetId: packageId,
+      );
+      if (wasCollected) {
+        await service.removeCollection(request: request);
+      } else {
+        await service.addCollection(request: request);
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isCollecting = false;
+        _isCollectedOverride = !wasCollected;
+      });
+      ref.read(collectionRefreshTickProvider.notifier).bump();
+      _showMessage(wasCollected ? '已取消收藏' : '收藏成功');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isCollecting = false;
+      });
+      _showMessage(_resolveErrorMessage(error, fallback: '收藏操作失败，请稍后重试'));
+    }
+  }
+
+  /// 统一展示签证详情页的提示消息。
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

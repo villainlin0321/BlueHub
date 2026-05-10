@@ -82,7 +82,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     });
 
     try {
-      final detail = await ref.read(jobServiceProvider).getJobDetail(jobId: jobId);
+      final detail = await ref
+          .read(jobServiceProvider)
+          .getJobDetail(jobId: jobId);
       if (!mounted) {
         return;
       }
@@ -111,7 +113,8 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   }
 
   /// 当前收藏状态，优先采用本地交互后的覆盖值。
-  bool get _isCollected => _isCollectedOverride ?? (_detail?.isCollected ?? false);
+  bool get _isCollected =>
+      _isCollectedOverride ?? (_detail?.isCollected ?? false);
 
   /// 切换岗位收藏状态，并同步调用收藏接口。
   Future<void> _toggleCollection() async {
@@ -124,10 +127,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       _isCollecting = true;
     });
 
+    final bool wasCollected = _isCollected;
+
     try {
       final service = ref.read(collectionServiceProvider);
       final request = CollectionBO(targetType: 'job', targetId: detail.jobId);
-      if (_isCollected) {
+      if (wasCollected) {
         await service.removeCollection(request: request);
       } else {
         await service.addCollection(request: request);
@@ -137,9 +142,10 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       }
       setState(() {
         _isCollecting = false;
-        _isCollectedOverride = !_isCollected;
+        _isCollectedOverride = !wasCollected;
       });
-      _showMessage(context, _isCollected ? '收藏成功' : '已取消收藏');
+      ref.read(collectionRefreshTickProvider.notifier).bump();
+      _showMessage(context, wasCollected ? '已取消收藏' : '收藏成功');
     } catch (error) {
       if (!mounted) {
         return;
@@ -167,12 +173,14 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     });
 
     try {
-      await ref.read(messageServiceProvider).createConversation(
-        request: CreateConversationBO(
-          targetUserId: detail.employer.employerId,
-          targetUserRole: 'employer',
-        ),
-      );
+      await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: detail.employer.employerId,
+              targetUserRole: 'employer',
+            ),
+          );
       if (!mounted) {
         return;
       }
@@ -253,12 +261,18 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         actions: <Widget>[
           IconButton(
-            onPressed: _isCollecting || _detail == null ? null : _toggleCollection,
+            onPressed: _isCollecting || _detail == null
+                ? null
+                : _toggleCollection,
             icon: AppSvgIcon(
               assetPath: 'assets/images/service_detail_favorite.svg',
-              fallback: _isCollected ? Icons.star_rounded : Icons.star_border_rounded,
+              fallback: _isCollected
+                  ? Icons.star_rounded
+                  : Icons.star_border_rounded,
               size: 20,
-              color: _isCollected ? const Color(0xFF096DD9) : const Color(0xFF262626),
+              color: _isCollected
+                  ? const Color(0xFF096DD9)
+                  : const Color(0xFF262626),
             ),
           ),
           IconButton(
@@ -317,10 +331,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         const SizedBox(height: 1),
         _JobDescriptionSection(detail: detail),
         const SizedBox(height: 1),
-        _LocationSection(
-          detail: detail,
-          mapAssetPath: _mapAsset,
-        ),
+        _LocationSection(detail: detail, mapAssetPath: _mapAsset),
       ],
     );
   }
@@ -517,20 +528,11 @@ class _JobDescriptionSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _DescriptionBlock(
-            title: '岗位职责：',
-            items: detail.responsibilities,
-          ),
+          _DescriptionBlock(title: '岗位职责：', items: detail.responsibilities),
           const SizedBox(height: 20),
-          _DescriptionBlock(
-            title: '任职要求：',
-            items: detail.requirements,
-          ),
+          _DescriptionBlock(title: '任职要求：', items: detail.requirements),
           const SizedBox(height: 20),
-          _DescriptionBlock(
-            title: '福利待遇：',
-            items: detail.benefits,
-          ),
+          _DescriptionBlock(title: '福利待遇：', items: detail.benefits),
         ],
       ),
     );
@@ -633,10 +635,7 @@ class _LocationSection extends StatelessWidget {
 }
 
 class _EmployerLogo extends StatelessWidget {
-  const _EmployerLogo({
-    required this.logoUrl,
-    required this.fallbackAssetPath,
-  });
+  const _EmployerLogo({required this.logoUrl, required this.fallbackAssetPath});
 
   final String logoUrl;
   final String fallbackAssetPath;
@@ -678,10 +677,7 @@ class _EmployerLogo extends StatelessWidget {
 }
 
 class _JobDetailErrorState extends StatelessWidget {
-  const _JobDetailErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _JobDetailErrorState({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -776,7 +772,10 @@ class _BottomActionBar extends StatelessWidget {
                   ),
                   backgroundColor: Colors.white,
                 ),
-                child: Text(isChatting ? '创建会话中...' : '立即沟通', style: secondaryStyle),
+                child: Text(
+                  isChatting ? '创建会话中...' : '立即沟通',
+                  style: secondaryStyle,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -811,7 +810,9 @@ extension on JobDetailVO {
     final String currency = salaryCurrency.isEmpty ? '¥' : salaryCurrency;
     final String minText = _formatNumber(salaryMin);
     final String maxText = salaryMax > 0 ? _formatNumber(salaryMax) : '';
-    final String range = maxText.isEmpty ? '$currency$minText' : '$currency$minText~$maxText';
+    final String range = maxText.isEmpty
+        ? '$currency$minText'
+        : '$currency$minText~$maxText';
     return salaryPeriod.isEmpty ? range : '$range/$salaryPeriod';
   }
 
@@ -827,7 +828,8 @@ extension on JobDetailVO {
     if (isUrgent && !labels.contains('急招')) {
       labels.insert(0, '急招');
     }
-    if (employmentType.trim().isNotEmpty && !labels.contains(employmentType.trim())) {
+    if (employmentType.trim().isNotEmpty &&
+        !labels.contains(employmentType.trim())) {
       labels.add(employmentType.trim());
     }
     return labels;

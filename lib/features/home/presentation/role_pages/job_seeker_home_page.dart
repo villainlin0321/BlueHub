@@ -950,6 +950,7 @@ extension on JobListVO {
       company: employer.name,
       location: _formatHomeLocation(),
       showApplyButton: true,
+      isCollected: isCollected,
     );
   }
 
