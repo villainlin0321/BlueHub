@@ -91,9 +91,7 @@ class JobListVO {
       city: readString(json, 'city'),
       tags: readModelList<TagVO>(json, 'tags', TagVO.fromJson),
       hasVisaSupport: readBool(json, 'hasVisaSupport'),
-      employer: EmployerSimpleVO.fromJson(
-        readJsonMap(json, 'employer'),
-      ),
+      employer: EmployerSimpleVO.fromJson(readJsonMap(json, 'employer')),
       isUrgent: readBool(json, 'isUrgent'),
       isCollected: readBool(json, 'isCollected'),
       publishedAt: readString(json, 'publishedAt'),
@@ -223,6 +221,7 @@ class VisaPackageVO {
     required this.targetCountry,
     required this.visaType,
     required this.estimatedDays,
+    required this.currency,
     required this.coverImages,
     required this.tiers,
     required this.requiredMaterials,
@@ -233,10 +232,12 @@ class VisaPackageVO {
   final String targetCountry;
   final String visaType;
   final int estimatedDays;
+  final String currency;
   final List<String> coverImages;
   final List<TierVO> tiers;
   final List<MaterialVO> requiredMaterials;
 
+  /// 安全解析收藏签证套餐，兼容后端币种字段缺失或类型漂移。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
       packageId: readInt(json, 'packageId'),
@@ -244,9 +245,14 @@ class VisaPackageVO {
       targetCountry: readString(json, 'targetCountry'),
       visaType: readString(json, 'visaType'),
       estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
-      requiredMaterials: readModelList<MaterialVO>(json, 'requiredMaterials', MaterialVO.fromJson),
+      requiredMaterials: readModelList<MaterialVO>(
+        json,
+        'requiredMaterials',
+        MaterialVO.fromJson,
+      ),
     );
   }
 
@@ -257,6 +263,7 @@ class VisaPackageVO {
       'targetCountry': targetCountry,
       'visaType': visaType,
       'estimatedDays': estimatedDays,
+      'currency': currency,
       'coverImages': coverImages,
       'tiers': tiers.map((item) => item.toJson()).toList(growable: false),
       'requiredMaterials': requiredMaterials

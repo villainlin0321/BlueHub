@@ -1,63 +1,57 @@
 import 'package:flutter/material.dart';
 
+import '../../visa/data/provider_models.dart';
+
 class ServiceDetailReviewTab extends StatefulWidget {
-  const ServiceDetailReviewTab({super.key});
+  const ServiceDetailReviewTab({
+    super.key,
+    required this.review,
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  final ReviewVO? review;
+  final bool isLoading;
+  final String? errorMessage;
 
   @override
   State<ServiceDetailReviewTab> createState() => _ServiceDetailReviewTabState();
 }
 
 class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
-  static const _reviewPhotoAssets = <String>[
-    'assets/images/service_detail_review_photo_1-56586a.png',
-    'assets/images/service_detail_review_photo_2-56586a.png',
-    'assets/images/service_detail_review_photo_3-56586a.png',
-  ];
-
-  static const _reviews = <_ReviewData>[
-    _ReviewData(
-      name: '王女士',
-      time: '2026.04.18',
-      content:
-          '老板服务真的很靠谱，全程专业又省心。顾问熟悉各国政策，会根据个人情况定制方案，材料审核细致，避免遗漏出错。沟通及时高效，有疑问也会第一时间解释清楚，整体办理体验非常顺畅。',
-      initials: '王',
-      photoAssetPaths: _reviewPhotoAssets,
-    ),
-    _ReviewData(
-      name: '陈先生',
-      time: '2026.04.05',
-      content:
-          '老师会帮忙逐项核对德语材料，面签前还做了模拟辅导，沟通体验比较安心，适合第一次申请的人。整个进度节点也会提前提醒，不会让人手忙脚乱。',
-      initials: '陈',
-    ),
-    _ReviewData(
-      name: 'Lina',
-      time: '2026.03.26',
-      content: '套餐价格透明，没有额外隐形收费。提交节点和反馈时间都比较准，整体服务比较规范，适合希望流程清晰、预算明确的人。',
-      initials: 'L',
-    ),
-  ];
-
   final Set<int> _expandedReviewIndexes = <int>{};
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isLoading && widget.review == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (widget.errorMessage != null && widget.review == null) {
+      return _ReviewPlaceholder(message: widget.errorMessage!);
+    }
+
+    final ReviewVO? review = widget.review;
+    if (review == null || review.list.isEmpty) {
+      return const _ReviewPlaceholder(message: '暂无评价数据');
+    }
+
     return ListView.builder(
       key: const PageStorageKey<String>('service-detail-review-tab'),
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 120),
-      itemCount: _reviews.length + 1,
+      itemCount: review.list.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _ReviewSummaryCard(),
+            child: _ReviewSummaryCard(summary: review.summary),
           );
         }
 
         final reviewIndex = index - 1;
-        final review = _reviews[reviewIndex];
+        final ReviewItemVO item = review.list[reviewIndex];
         return _ReviewCard(
-          review: review,
+          review: item,
           isExpanded: _expandedReviewIndexes.contains(reviewIndex),
           onExpand: () {
             setState(() {
@@ -71,17 +65,19 @@ class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
 }
 
 class _ReviewSummaryCard extends StatelessWidget {
-  const _ReviewSummaryCard();
+  const _ReviewSummaryCard({required this.summary});
+
+  final SummaryVO summary;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 37,
       child: Row(
-        children: const <Widget>[
-          _ReviewSummaryScore(),
-          Spacer(),
-          _ReviewSortSwitch(),
+        children: <Widget>[
+          _ReviewSummaryScore(summary: summary),
+          const Spacer(),
+          const _ReviewSortSwitch(),
         ],
       ),
     );
@@ -89,7 +85,9 @@ class _ReviewSummaryCard extends StatelessWidget {
 }
 
 class _ReviewSummaryScore extends StatelessWidget {
-  const _ReviewSummaryScore();
+  const _ReviewSummaryScore({required this.summary});
+
+  final SummaryVO summary;
 
   @override
   Widget build(BuildContext context) {
@@ -114,12 +112,18 @@ class _ReviewSummaryScore extends StatelessWidget {
           Positioned(
             left: 0,
             top: 0,
-            child: Text('4.9', style: scoreTextStyle),
+            child: Text(
+              summary.averageRating.toStringAsFixed(1),
+              style: scoreTextStyle,
+            ),
           ),
           Positioned(
             left: 62,
             top: 6,
-            child: Text('超棒', style: labelTextStyle),
+            child: Text(
+              summary.label.isEmpty ? '暂无标签' : summary.label,
+              style: labelTextStyle,
+            ),
           ),
           const Positioned(left: 60, top: 25, child: _ReviewSummaryStarRow()),
         ],
@@ -214,7 +218,7 @@ class _ReviewCard extends StatelessWidget {
     required this.onExpand,
   });
 
-  final _ReviewData review;
+  final ReviewItemVO review;
   final bool isExpanded;
   final VoidCallback onExpand;
 
@@ -238,9 +242,9 @@ class _ReviewCard extends StatelessWidget {
             isExpanded: isExpanded,
             onExpand: onExpand,
           ),
-          if (isExpanded && review.photoAssetPaths.isNotEmpty) ...<Widget>[
+          if (isExpanded && review.images.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
-            _ReviewPhotoRow(photoAssetPaths: review.photoAssetPaths),
+            _ReviewPhotoRow(photoAssetPaths: review.images),
           ],
         ],
       ),
@@ -251,7 +255,7 @@ class _ReviewCard extends StatelessWidget {
 class _ReviewHeader extends StatelessWidget {
   const _ReviewHeader({required this.review});
 
-  final _ReviewData review;
+  final ReviewItemVO review;
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +277,7 @@ class _ReviewHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _ReviewAvatar(initials: review.initials),
+          _ReviewAvatar(initials: _resolveReviewInitial(review)),
           const SizedBox(width: 10),
           Expanded(
             child: SizedBox(
@@ -285,14 +289,17 @@ class _ReviewHeader extends StatelessWidget {
                     height: 20,
                     child: Row(
                       children: <Widget>[
-                        Text(review.name, style: nameStyle),
+                        Text(_resolveReviewUserName(review), style: nameStyle),
                         const Spacer(),
-                        Text(review.time, style: timeStyle),
+                        Text(
+                          _formatReviewDate(review.createdAt),
+                          style: timeStyle,
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const _ReviewRatingStarRow(),
+                  _ReviewRatingStarRow(rating: review.rating),
                 ],
               ),
             ),
@@ -336,7 +343,9 @@ class _ReviewAvatar extends StatelessWidget {
 }
 
 class _ReviewRatingStarRow extends StatelessWidget {
-  const _ReviewRatingStarRow();
+  const _ReviewRatingStarRow({required this.rating});
+
+  final int rating;
 
   @override
   Widget build(BuildContext context) {
@@ -344,9 +353,11 @@ class _ReviewRatingStarRow extends StatelessWidget {
       children: List<Widget>.generate(5, (index) {
         return Padding(
           padding: EdgeInsets.only(right: index == 4 ? 0 : 2),
-          child: const Icon(
+          child: Icon(
             Icons.star_rounded,
-            color: Color(0xFFFE5815),
+            color: index < rating
+                ? const Color(0xFFFE5815)
+                : const Color(0xFFE5E5E5),
             size: 12,
           ),
         );
@@ -437,11 +448,23 @@ class _ReviewPhotoRow extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
+            child: Image.network(
               photoAssetPaths[index],
               width: 106,
               height: 106,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return Container(
+                  width: 106,
+                  height: 106,
+                  color: const Color(0xFFF5F5F5),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.image_not_supported_outlined,
+                    color: Color(0xFFBFBFBF),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -450,18 +473,55 @@ class _ReviewPhotoRow extends StatelessWidget {
   }
 }
 
-class _ReviewData {
-  const _ReviewData({
-    required this.name,
-    required this.time,
-    required this.content,
-    required this.initials,
-    this.photoAssetPaths = const <String>[],
-  });
+class _ReviewPlaceholder extends StatelessWidget {
+  const _ReviewPlaceholder({required this.message});
 
-  final String name;
-  final String time;
-  final String content;
-  final String initials;
-  final List<String> photoAssetPaths;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8C8C8C)),
+        ),
+      ),
+    );
+  }
+}
+
+/// 统一提取评价用户名，优先昵称，其次手机号和邮箱。
+String _resolveReviewUserName(ReviewItemVO review) {
+  final String nickname = review.user.nickname.trim();
+  if (nickname.isNotEmpty) {
+    return nickname;
+  }
+  final String phone = review.user.phone.trim();
+  if (phone.isNotEmpty) {
+    return phone;
+  }
+  final String email = review.user.email.trim();
+  return email.isEmpty ? '匿名用户' : email;
+}
+
+/// 提取评价头像占位字，优先取昵称首字，其次取手机号首字符。
+String _resolveReviewInitial(ReviewItemVO review) {
+  final String userName = _resolveReviewUserName(review);
+  return userName.isEmpty ? '?' : userName.characters.first;
+}
+
+/// 格式化评价时间，接口异常时回退原始字符串。
+String _formatReviewDate(String raw) {
+  final DateTime? parsed = DateTime.tryParse(raw);
+  if (parsed == null) {
+    return raw;
+  }
+  final String month = parsed.month.toString().padLeft(2, '0');
+  final String day = parsed.day.toString().padLeft(2, '0');
+  return '${parsed.year}.$month.$day';
 }

@@ -10,6 +10,7 @@ import '../../../shared/widgets/job_position_card.dart';
 import '../../../shared/widgets/visa_service_card.dart';
 import '../../jobs/presentation/job_apply_helper.dart';
 import '../../jobs/presentation/job_detail_page.dart';
+import '../../service_detail/presentation/service_detail_page.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
@@ -24,94 +25,31 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
   static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
-  static const String _chefAvatarAsset =
-      'assets/images/my_favorites_service_avatar_chef.png';
-  static const String _italyAvatarAsset =
-      'assets/images/my_favorites_service_avatar_italy.png';
-
   late final TabController _tabController = TabController(
     length: 2,
     vsync: this,
   )..addListener(_handleTabChanged);
 
-  late List<_FavoriteServiceItem> _serviceItems = List<_FavoriteServiceItem>.of(
-    _initialServiceItems,
-  );
+  List<collection_models.VisaPackageVO> _serviceItems =
+      <collection_models.VisaPackageVO>[];
   List<collection_models.JobListVO> _jobItems = <collection_models.JobListVO>[];
 
   bool _isManaging = false;
   FavoriteTabType _currentTab = FavoriteTabType.services;
+  bool _isServiceLoading = false;
   bool _isJobLoading = false;
+  String? _serviceErrorMessage;
   String? _jobErrorMessage;
   final Set<String> _selectedServiceIds = <String>{};
   final Set<String> _selectedJobIds = <String>{};
   final Set<String> _submittingJobIds = <String>{};
   final Set<String> _appliedJobIds = <String>{};
 
-  static const List<_FavoriteServiceItem> _initialServiceItems =
-      <_FavoriteServiceItem>[
-        _FavoriteServiceItem(
-          id: 'service-germany-chef',
-          title: '德国厨师专属工作签证',
-          avatarAssetPath: _chefAvatarAsset,
-          rating: '4.8',
-          cases: '服务案例1.2K',
-          tags: <String>['过签率高', '办理快'],
-          description: '专注德国、法国技术工签及厨师专签办理，专注德国、法国技术工签及厨师专签办理',
-          packages: <_FavoriteServicePackage>[
-            _FavoriteServicePackage(title: '德国厨师专签标准包', price: '¥15,000'),
-            _FavoriteServicePackage(title: '德国厨师专签尊享包', price: '¥15,000'),
-          ],
-          verified: true,
-        ),
-        _FavoriteServiceItem(
-          id: 'service-italy-center',
-          title: '意游签证中心',
-          avatarAssetPath: _italyAvatarAsset,
-          rating: '4.8',
-          cases: '服务案例1.2K',
-          tags: <String>['加急办理', '材料辅导'],
-          description: '意大利劳务签证、护理工定制签证服务',
-          packages: <_FavoriteServicePackage>[
-            _FavoriteServicePackage(
-              title: '意大利劳务普签',
-              price: '¥11,500',
-              priceHint: '已降价500',
-            ),
-          ],
-          verified: true,
-        ),
-        _FavoriteServiceItem(
-          id: 'service-france-personal',
-          title: '法签通个人服务',
-          rating: '4.8',
-          cases: '服务案例1.2K',
-          tags: <String>['工作签', '个人旅游'],
-          description: '提供法国工作签证、旅游签证办理，一对一指导',
-          packages: <_FavoriteServicePackage>[
-            _FavoriteServicePackage(title: '法国工作签加急', price: '¥18,000'),
-          ],
-        ),
-        _FavoriteServiceItem(
-          id: 'service-italy-center-offline',
-          title: '意游签证中心',
-          avatarAssetPath: _italyAvatarAsset,
-          rating: '4.8',
-          cases: '服务案例1.2K',
-          tags: <String>['加急办理', '材料辅导'],
-          description: '意大利劳务签证、护理工定制签证服务',
-          packages: <_FavoriteServicePackage>[
-            _FavoriteServicePackage(title: '意大利劳务普签', price: '¥11,500'),
-          ],
-          verified: true,
-          archived: true,
-        ),
-      ];
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCollectedPackages();
       _loadCollectedJobs();
     });
   }
@@ -173,6 +111,36 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     });
   }
 
+  /// 加载收藏签证套餐列表，成功后用于详情跳转与取消收藏。
+  Future<void> _loadCollectedPackages() async {
+    setState(() {
+      _isServiceLoading = true;
+      _serviceErrorMessage = null;
+    });
+
+    try {
+      final response = await ref
+          .read(collectionServiceProvider)
+          .listCollectedPackages(page: 1, pageSize: 50);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isServiceLoading = false;
+        _serviceItems = response.list;
+        _serviceErrorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isServiceLoading = false;
+        _serviceErrorMessage = _resolveServiceErrorMessage(error);
+      });
+    }
+  }
+
   /// 加载收藏岗位列表，成功后用于详情跳转与投递。
   Future<void> _loadCollectedJobs() async {
     setState(() {
@@ -181,10 +149,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     });
 
     try {
-      final response = await ref.read(collectionServiceProvider).listCollectedJobs(
-        page: 1,
-        pageSize: 50,
-      );
+      final response = await ref
+          .read(collectionServiceProvider)
+          .listCollectedJobs(page: 1, pageSize: 50);
       if (!mounted) {
         return;
       }
@@ -210,6 +177,14 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       return error.message;
     }
     return '收藏岗位加载失败，请稍后重试';
+  }
+
+  /// 统一提取收藏签证列表的错误文案。
+  String _resolveServiceErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '收藏签证加载失败，请稍后重试';
   }
 
   /// 处理收藏页岗位投递，真实岗位有 `jobId` 时直接调用接口。
@@ -259,7 +234,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   void _toggleSelectAll() {
     setState(() {
       if (_currentTab == FavoriteTabType.services) {
-        final ids = _serviceItems.map((item) => item.id).toSet();
+        final ids = _serviceItems
+            .map((item) => item.packageId.toString())
+            .toSet();
         if (_selectedServiceIds.length == ids.length) {
           _selectedServiceIds.clear();
         } else {
@@ -282,12 +259,11 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   Future<void> _deleteSelected() async {
     if (_currentTab == FavoriteTabType.services) {
-      setState(() {
-        _serviceItems = _serviceItems
-            .where((item) => !_selectedServiceIds.contains(item.id))
-            .toList();
-        _selectedServiceIds.clear();
-      });
+      final List<int> targetIds = _selectedServiceIds
+          .map(int.tryParse)
+          .whereType<int>()
+          .toList(growable: false);
+      await _removeCollectedPackages(targetIds);
       return;
     }
 
@@ -298,11 +274,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     await _removeCollectedJobs(targetIds);
   }
 
-  void _deleteServiceItem(String id) {
-    setState(() {
-      _serviceItems = _serviceItems.where((item) => item.id != id).toList();
-      _selectedServiceIds.remove(id);
-    });
+  Future<void> _deleteServiceItem(int packageId) async {
+    await _removeCollectedPackages(<int>[packageId]);
   }
 
   Future<void> _deleteJobItem(int jobId) async {
@@ -317,12 +290,14 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
     try {
       for (final int jobId in jobIds) {
-        await ref.read(collectionServiceProvider).removeCollection(
-          request: collection_models.CollectionBO(
-            targetType: 'job',
-            targetId: jobId,
-          ),
-        );
+        await ref
+            .read(collectionServiceProvider)
+            .removeCollection(
+              request: collection_models.CollectionBO(
+                targetType: 'job',
+                targetId: jobId,
+              ),
+            );
       }
       if (!mounted) {
         return;
@@ -332,9 +307,15 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         _jobItems = _jobItems
             .where((item) => !jobIdSet.contains(item.jobId))
             .toList();
-        _selectedJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
-        _submittingJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
-        _appliedJobIds.removeWhere((String id) => jobIdSet.contains(int.tryParse(id)));
+        _selectedJobIds.removeWhere(
+          (String id) => jobIdSet.contains(int.tryParse(id)),
+        );
+        _submittingJobIds.removeWhere(
+          (String id) => jobIdSet.contains(int.tryParse(id)),
+        );
+        _appliedJobIds.removeWhere(
+          (String id) => jobIdSet.contains(int.tryParse(id)),
+        );
       });
       _showMessage(jobIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
     } catch (error) {
@@ -342,6 +323,44 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         return;
       }
       _showMessage(_resolveJobErrorMessage(error));
+    }
+  }
+
+  /// 调用真实取消收藏接口，并同步刷新收藏签证列表。
+  Future<void> _removeCollectedPackages(List<int> packageIds) async {
+    if (packageIds.isEmpty) {
+      return;
+    }
+
+    try {
+      for (final int packageId in packageIds) {
+        await ref
+            .read(collectionServiceProvider)
+            .removeCollection(
+              request: collection_models.CollectionBO(
+                targetType: 'visa_package',
+                targetId: packageId,
+              ),
+            );
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        final Set<int> packageIdSet = packageIds.toSet();
+        _serviceItems = _serviceItems
+            .where((item) => !packageIdSet.contains(item.packageId))
+            .toList();
+        _selectedServiceIds.removeWhere(
+          (String id) => packageIdSet.contains(int.tryParse(id)),
+        );
+      });
+      _showMessage(packageIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveServiceErrorMessage(error));
     }
   }
 
@@ -449,16 +468,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: <Widget>[
-                _FavoriteServiceList(
-                  items: _serviceItems,
-                  isManaging: _isManaging,
-                  selectedIds: _selectedServiceIds,
-                  onItemSelectionToggle: _toggleServiceSelection,
-                  onDeleteItem: _deleteServiceItem,
-                ),
-                _buildJobTab(),
-              ],
+              children: <Widget>[_buildServiceTab(), _buildJobTab()],
             ),
           ),
         ],
@@ -492,6 +502,29 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       onDeleteItem: _deleteJobItem,
     );
   }
+
+  /// 根据收藏签证加载状态切换列表、空态和错误态。
+  Widget _buildServiceTab() {
+    if (_isServiceLoading && _serviceItems.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_serviceErrorMessage != null && _serviceItems.isEmpty) {
+      return _FavoriteServicesErrorState(
+        message: _serviceErrorMessage!,
+        onRetry: _loadCollectedPackages,
+      );
+    }
+    if (_serviceItems.isEmpty) {
+      return const _FavoriteServicesEmptyState();
+    }
+    return _FavoriteServiceList(
+      items: _serviceItems,
+      isManaging: _isManaging,
+      selectedIds: _selectedServiceIds,
+      onItemSelectionToggle: _toggleServiceSelection,
+      onDeleteItem: _deleteServiceItem,
+    );
+  }
 }
 
 enum FavoriteTabType { services, jobs }
@@ -505,11 +538,11 @@ class _FavoriteServiceList extends StatelessWidget {
     required this.onDeleteItem,
   });
 
-  final List<_FavoriteServiceItem> items;
+  final List<collection_models.VisaPackageVO> items;
   final bool isManaging;
   final Set<String> selectedIds;
   final ValueChanged<String> onItemSelectionToggle;
-  final ValueChanged<String> onDeleteItem;
+  final ValueChanged<int> onDeleteItem;
 
   @override
   Widget build(BuildContext context) {
@@ -520,11 +553,11 @@ class _FavoriteServiceList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         return _SelectableWrapper(
-          key: ValueKey<String>('service-${item.id}'),
+          key: ValueKey<String>('service-${item.packageId}'),
           isManaging: isManaging,
-          selected: selectedIds.contains(item.id),
-          onTap: () => onItemSelectionToggle(item.id),
-          onDelete: () => onDeleteItem(item.id),
+          selected: selectedIds.contains(item.packageId.toString()),
+          onTap: () => onItemSelectionToggle(item.packageId.toString()),
+          onDelete: () => onDeleteItem(item.packageId),
           child: _FavoriteServiceCard(item: item),
         );
       },
@@ -680,13 +713,16 @@ class _SelectionIcon extends StatelessWidget {
 class _FavoriteServiceCard extends StatelessWidget {
   const _FavoriteServiceCard({required this.item});
 
-  final _FavoriteServiceItem item;
+  final collection_models.VisaPackageVO item;
 
   @override
   Widget build(BuildContext context) {
     return VisaServiceCard(
-      data: item.cardData,
-      onTap: () => context.push(RoutePaths.serviceDetail),
+      data: item.toCardData(),
+      onTap: () => context.push(
+        RoutePaths.serviceDetail,
+        extra: ServiceDetailPageArgs(packageId: item.packageId),
+      ),
     );
   }
 }
@@ -725,6 +761,61 @@ class _FavoriteJobCard extends StatelessWidget {
   }
 }
 
+class _FavoriteServicesEmptyState extends StatelessWidget {
+  const _FavoriteServicesEmptyState();
+
+  /// 收藏签证为空时展示空态提示。
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        '还没有收藏签证服务',
+        style: TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteServicesErrorState extends StatelessWidget {
+  const _FavoriteServicesErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  /// 收藏签证加载失败时展示重试入口。
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FavoriteJobsEmptyState extends StatelessWidget {
   const _FavoriteJobsEmptyState();
 
@@ -745,10 +836,7 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
 }
 
 class _FavoriteJobsErrorState extends StatelessWidget {
-  const _FavoriteJobsErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _FavoriteJobsErrorState({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -762,7 +850,11 @@ class _FavoriteJobsErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.cloud_off_rounded, color: Color(0xFFBFBFBF), size: 32),
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: Color(0xFFBFBFBF),
+              size: 32,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
@@ -861,69 +953,6 @@ class _FavoritesManageBar extends StatelessWidget {
   }
 }
 
-class _FavoriteServiceItem {
-  const _FavoriteServiceItem({
-    required this.id,
-    required this.title,
-    required this.rating,
-    required this.cases,
-    required this.tags,
-    required this.description,
-    required this.packages,
-    this.avatarAssetPath,
-    this.verified = false,
-    this.archived = false,
-  });
-
-  final String id;
-  final String title;
-  final String? avatarAssetPath;
-  final String rating;
-  final String cases;
-  final List<String> tags;
-  final String description;
-  final List<_FavoriteServicePackage> packages;
-  final bool verified;
-  final bool archived;
-
-  VisaServiceCardData get cardData {
-    return VisaServiceCardData(
-      title: title,
-      avatarAssetPath: avatarAssetPath,
-      rating: rating,
-      cases: cases,
-      tags: tags,
-      description: description,
-      packages: packages
-          .map((package) => package.cardData)
-          .toList(growable: false),
-      verified: verified,
-      archived: archived,
-      statusText: archived ? '已下架' : null,
-    );
-  }
-}
-
-class _FavoriteServicePackage {
-  const _FavoriteServicePackage({
-    required this.title,
-    required this.price,
-    this.priceHint,
-  });
-
-  final String title;
-  final String price;
-  final String? priceHint;
-
-  VisaServicePackageData get cardData {
-    return VisaServicePackageData(
-      title: title,
-      price: price,
-      priceHint: priceHint,
-    );
-  }
-}
-
 extension on collection_models.JobListVO {
   /// 将收藏岗位接口返回的数据映射为职位卡片数据。
   JobPositionCardData toCardData({required String mapAssetPath}) {
@@ -935,9 +964,7 @@ extension on collection_models.JobListVO {
       ...tagLabels.where((String label) => label != '急招'),
       if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) '急招',
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) '急招'];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),
@@ -949,7 +976,9 @@ extension on collection_models.JobListVO {
     final String maxText = salaryMax % 1 == 0
         ? salaryMax.toInt().toString()
         : salaryMax.toStringAsFixed(1);
-    final String salary = salaryMax > 0 ? '$currency$minText~$maxText' : '$currency$minText';
+    final String salary = salaryMax > 0
+        ? '$currency$minText~$maxText'
+        : '$currency$minText';
 
     return JobPositionCardData(
       title: title,
@@ -962,4 +991,85 @@ extension on collection_models.JobListVO {
       previewImageAssetPath: mapAssetPath,
     );
   }
+}
+
+extension on collection_models.VisaPackageVO {
+  /// 将收藏签证接口数据映射为签证卡片展示数据。
+  VisaServiceCardData toCardData() {
+    final List<String> tags = <String>[
+      _formatFavoriteCountry(targetCountry),
+      _formatFavoriteVisaType(visaType),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+
+    return VisaServiceCardData(
+      title: name.trim().isEmpty ? '签证套餐' : name,
+      rating: '0.0',
+      cases: estimatedDays > 0 ? '预计$estimatedDays天' : '已收藏套餐',
+      tags: tags.isEmpty ? <String>['签证服务'] : tags,
+      description: _buildFavoriteDescription(),
+      packages: tiers.isEmpty
+          ? <VisaServicePackageData>[
+              VisaServicePackageData(
+                title: '默认档位',
+                price: _formatFavoritePrice(0, currency),
+              ),
+            ]
+          : tiers
+                .map(
+                  (collection_models.TierVO tier) => VisaServicePackageData(
+                    title: tier.name.trim().isEmpty ? '套餐档位' : tier.name,
+                    price: _formatFavoritePrice(tier.price, currency),
+                  ),
+                )
+                .toList(growable: false),
+    );
+  }
+
+  /// 拼装收藏签证卡片简介，优先展示材料数量和办理时长。
+  String _buildFavoriteDescription() {
+    final List<String> parts = <String>[
+      if (requiredMaterials.isNotEmpty) '所需材料${requiredMaterials.length}项',
+      if (estimatedDays > 0) '预计办理$estimatedDays天',
+    ];
+    if (parts.isEmpty) {
+      return '已收藏签证套餐，可进入详情查看完整服务说明';
+    }
+    return parts.join('，');
+  }
+}
+
+/// 格式化收藏签证价格。
+String _formatFavoritePrice(double price, String currency) {
+  final String prefix = switch (currency.trim().toUpperCase()) {
+    'CNY' || 'RMB' => '¥',
+    'EUR' => '€',
+    'USD' => '\$',
+    _ => currency.trim().isEmpty ? '¥' : '${currency.trim()} ',
+  };
+  final String value = price % 1 == 0
+      ? price.toInt().toString()
+      : price.toStringAsFixed(1);
+  return '$prefix$value';
+}
+
+/// 将收藏签证国家代码转为展示文案。
+String _formatFavoriteCountry(String country) {
+  return switch (country.trim().toUpperCase()) {
+    'DE' => '德国',
+    'FR' => '法国',
+    'IT' => '意大利',
+    _ => country.trim(),
+  };
+}
+
+/// 将收藏签证类型代码转为展示文案。
+String _formatFavoriteVisaType(String visaType) {
+  return switch (visaType.trim().toLowerCase()) {
+    'work' => '工作签',
+    'travel' => '旅游签',
+    'tech' => '技术签',
+    'nursing' => '护理签',
+    'study' => '留学签',
+    _ => visaType.trim(),
+  };
 }

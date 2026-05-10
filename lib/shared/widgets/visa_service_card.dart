@@ -11,6 +11,7 @@ class VisaServiceCardData {
     required this.description,
     required this.packages,
     this.avatarAssetPath,
+    this.avatarUrl,
     this.verified = false,
     this.archived = false,
     this.statusText,
@@ -18,6 +19,7 @@ class VisaServiceCardData {
 
   final String title;
   final String? avatarAssetPath;
+  final String? avatarUrl;
   final String rating;
   final String cases;
   final List<String> tags;
@@ -65,7 +67,10 @@ class VisaServiceCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _VisaServiceAvatar(assetPath: data.avatarAssetPath),
+                    _VisaServiceAvatar(
+                      assetPath: data.avatarAssetPath,
+                      avatarUrl: data.avatarUrl,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -211,9 +216,10 @@ class VisaServiceCard extends StatelessWidget {
 }
 
 class _VisaServiceAvatar extends StatelessWidget {
-  const _VisaServiceAvatar({this.assetPath});
+  const _VisaServiceAvatar({this.assetPath, this.avatarUrl});
 
   final String? assetPath;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -225,18 +231,34 @@ class _VisaServiceAvatar extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       clipBehavior: Clip.antiAlias,
-      child: assetPath == null
-          ? const Icon(Icons.person_outline, color: Color(0xFF8C8C8C))
-          : Image.asset(
-              assetPath!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return const Icon(
-                  Icons.person_outline,
-                  color: Color(0xFF8C8C8C),
-                );
-              },
-            ),
+      child: _buildAvatar(),
+    );
+  }
+
+  /// 优先展示网络头像，其次回退到本地资源，再回退默认图标。
+  Widget _buildAvatar() {
+    final String? trimmedUrl = avatarUrl?.trim();
+    if (trimmedUrl != null && trimmedUrl.isNotEmpty) {
+      return Image.network(
+        trimmedUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildAssetFallback(),
+      );
+    }
+    return _buildAssetFallback();
+  }
+
+  /// 渲染本地头像资源，资源缺失时回退默认图标。
+  Widget _buildAssetFallback() {
+    if (assetPath == null) {
+      return const Icon(Icons.person_outline, color: Color(0xFF8C8C8C));
+    }
+    return Image.asset(
+      assetPath!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) {
+        return const Icon(Icons.person_outline, color: Color(0xFF8C8C8C));
+      },
     );
   }
 }

@@ -174,9 +174,7 @@ class ReviewItemVO {
   factory ReviewItemVO.fromJson(JsonMap json) {
     return ReviewItemVO(
       reviewId: readInt(json, 'reviewId'),
-      user: UserSimpleVO.fromJson(
-        readJsonMap(json, 'user'),
-      ),
+      user: UserSimpleVO.fromJson(readJsonMap(json, 'user')),
       rating: readInt(json, 'rating'),
       content: readString(json, 'content'),
       images: readStringList(json, 'images'),
@@ -206,9 +204,7 @@ class ReviewVO {
 
   factory ReviewVO.fromJson(JsonMap json) {
     return ReviewVO(
-      summary: SummaryVO.fromJson(
-        readJsonMap(json, 'summary'),
-      ),
+      summary: SummaryVO.fromJson(readJsonMap(json, 'summary')),
       list: readModelList<ReviewItemVO>(json, 'list', ReviewItemVO.fromJson),
     );
   }
@@ -426,6 +422,7 @@ class VisaPackageVO {
     required this.targetCountry,
     required this.visaType,
     required this.estimatedDays,
+    required this.currency,
     required this.coverImages,
     required this.tiers,
     required this.requiredMaterials,
@@ -436,10 +433,12 @@ class VisaPackageVO {
   final String targetCountry;
   final String visaType;
   final int estimatedDays;
+  final String currency;
   final List<String> coverImages;
   final List<TierVO> tiers;
   final List<MaterialVO> requiredMaterials;
 
+  /// 安全解析服务商详情中的签证套餐，避免缺少币种时影响页面价格展示。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
       packageId: readInt(json, 'packageId'),
@@ -447,9 +446,14 @@ class VisaPackageVO {
       targetCountry: readString(json, 'targetCountry'),
       visaType: readString(json, 'visaType'),
       estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
-      requiredMaterials: readModelList<MaterialVO>(json, 'requiredMaterials', MaterialVO.fromJson),
+      requiredMaterials: readModelList<MaterialVO>(
+        json,
+        'requiredMaterials',
+        MaterialVO.fromJson,
+      ),
     );
   }
 
@@ -460,6 +464,7 @@ class VisaPackageVO {
       'targetCountry': targetCountry,
       'visaType': visaType,
       'estimatedDays': estimatedDays,
+      'currency': currency,
       'coverImages': coverImages,
       'tiers': tiers.map((item) => item.toJson()).toList(growable: false),
       'requiredMaterials': requiredMaterials
@@ -477,10 +482,12 @@ class VisaProviderDetailVO {
 
   factory VisaProviderDetailVO.fromJson(JsonMap json) {
     return VisaProviderDetailVO(
-      provider: ProviderVO.fromJson(
-        readJsonMap(json, 'provider'),
+      provider: ProviderVO.fromJson(readJsonMap(json, 'provider')),
+      packages: readModelList<VisaPackageVO>(
+        json,
+        'packages',
+        VisaPackageVO.fromJson,
       ),
-      packages: readModelList<VisaPackageVO>(json, 'packages', VisaPackageVO.fromJson),
     );
   }
 

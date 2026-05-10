@@ -1,30 +1,58 @@
 import 'package:flutter/material.dart';
 
+import '../../visa/data/provider_models.dart';
+
 class ServiceDetailMerchantTab extends StatelessWidget {
-  const ServiceDetailMerchantTab({super.key, required this.verifiedBadgeAsset});
+  const ServiceDetailMerchantTab({
+    super.key,
+    required this.verifiedBadgeAsset,
+    required this.provider,
+    this.isLoading = false,
+    this.errorMessage,
+  });
 
   final String verifiedBadgeAsset;
+  final ProviderVO? provider;
+  final bool isLoading;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading && provider == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errorMessage != null && provider == null) {
+      return _MerchantPlaceholder(message: errorMessage!);
+    }
+
+    if (provider == null) {
+      return const _MerchantPlaceholder(message: '暂无商家信息');
+    }
+
     return ListView(
       key: const PageStorageKey<String>('service-detail-merchant-tab'),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       children: <Widget>[
-        _MerchantHeaderCard(verifiedBadgeAsset: verifiedBadgeAsset),
+        _MerchantHeaderCard(
+          verifiedBadgeAsset: verifiedBadgeAsset,
+          provider: provider!,
+        ),
         const SizedBox(height: 16),
-        const _MerchantInfoPanel(),
+        _MerchantInfoPanel(provider: provider!),
       ],
     );
   }
 }
 
 class _MerchantHeaderCard extends StatelessWidget {
-  const _MerchantHeaderCard({required this.verifiedBadgeAsset});
+  const _MerchantHeaderCard({
+    required this.verifiedBadgeAsset,
+    required this.provider,
+  });
 
   final String verifiedBadgeAsset;
-  static const _merchantAvatarAsset =
-      'assets/images/service_detail_merchant_avatar-56586a.png';
+  final ProviderVO provider;
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +83,8 @@ class _MerchantHeaderCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFFC8C7C7), width: 0.5),
             ),
             child: ClipOval(
-              child: Image.asset(
-                _merchantAvatarAsset,
+              child: Image.network(
+                provider.logoUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -83,19 +111,31 @@ class _MerchantHeaderCard extends StatelessWidget {
                     height: 24,
                     child: Row(
                       children: <Widget>[
-                        Text('中欧出海签证服务', style: titleStyle),
-                        const SizedBox(width: 8),
-                        Image.asset(
-                          verifiedBadgeAsset,
-                          width: 47,
-                          height: 14,
-                          fit: BoxFit.contain,
+                        Flexible(
+                          child: Text(
+                            provider.name.isEmpty ? '签证服务商' : provider.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: titleStyle,
+                          ),
                         ),
+                        if (provider.isVerified) ...<Widget>[
+                          const SizedBox(width: 8),
+                          Image.asset(
+                            verifiedBadgeAsset,
+                            width: 47,
+                            height: 14,
+                            fit: BoxFit.contain,
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text('服务评分 4.9  累计服务 1,205', style: metaStyle),
+                  Text(
+                    '服务评分 ${provider.rating.toStringAsFixed(1)}  累计服务 ${provider.caseCount}',
+                    style: metaStyle,
+                  ),
                 ],
               ),
             ),
@@ -107,7 +147,9 @@ class _MerchantHeaderCard extends StatelessWidget {
 }
 
 class _MerchantInfoPanel extends StatelessWidget {
-  const _MerchantInfoPanel();
+  const _MerchantInfoPanel({required this.provider});
+
+  final ProviderVO provider;
 
   @override
   Widget build(BuildContext context) {
@@ -138,22 +180,33 @@ class _MerchantInfoPanel extends StatelessWidget {
         Text('简介', style: titleStyle),
         const SizedBox(height: 8),
         Text(
-          '专注德国、法国技术工签及厨师专签办理，专注德国、法国技术工签及厨师专签办理，专注德国、法国技术工签及，专注德国、法国技术工签及厨师专签办理，专注德国、法国技术工签及厨师专签办理，专注德国、法国技术工签及。',
+          provider.brief.trim().isEmpty ? '暂无商家简介' : provider.brief,
           style: contentStyle,
         ),
         const SizedBox(height: 24),
         Text('基础信息', style: titleStyle),
         const SizedBox(height: 12),
         _MerchantInfoRow(
-          label: '商家资质',
-          value: '已上传',
+          label: '服务国家',
+          value: provider.serviceCountries.isEmpty
+              ? '暂无'
+              : provider.serviceCountries.join(' / '),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),
         const SizedBox(height: 12),
         _MerchantInfoRow(
           label: '认证状态',
-          value: '已认证',
+          value: provider.isVerified ? '已认证' : '未认证',
+          labelStyle: infoLabelStyle,
+          valueStyle: infoValueStyle,
+        ),
+        const SizedBox(height: 12),
+        _MerchantInfoRow(
+          label: '服务年限',
+          value: provider.yearsOfService > 0
+              ? '${provider.yearsOfService}年'
+              : '暂无',
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),
@@ -161,10 +214,34 @@ class _MerchantInfoPanel extends StatelessWidget {
         Text('服务承诺', style: titleStyle),
         const SizedBox(height: 8),
         Text(
-          '本店郑重承诺：全程透明收费，无隐形消费；专业团队一对一服务，资料严格审核把关；及时同步办理进度，耐心解答各类疑问；严格保护客户隐私，确保信息安全。以专业、高效、诚信为宗旨，全力保障您的权益，让办理省心更放心。',
+          provider.servicePromise.trim().isEmpty
+              ? '暂无服务承诺说明'
+              : provider.servicePromise,
           style: contentStyle,
         ),
       ],
+    );
+  }
+}
+
+class _MerchantPlaceholder extends StatelessWidget {
+  const _MerchantPlaceholder({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8C8C8C)),
+        ),
+      ),
     );
   }
 }
