@@ -6,6 +6,7 @@ class CreateVisaPackageBO {
     required this.targetCountry,
     required this.visaType,
     required this.estimatedDays,
+    required this.currency,
     required this.coverImageIds,
     required this.coverImages,
     required this.tiers,
@@ -16,6 +17,7 @@ class CreateVisaPackageBO {
   final String targetCountry;
   final String visaType;
   final int estimatedDays;
+  final String currency;
   final List<int> coverImageIds;
   final List<String> coverImages;
   final List<TierBO> tiers;
@@ -27,6 +29,7 @@ class CreateVisaPackageBO {
       targetCountry: readString(json, 'targetCountry'),
       visaType: readString(json, 'visaType'),
       estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency'),
       coverImageIds: readIntList(json, 'coverImageIds'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierBO>(json, 'tiers', TierBO.fromJson),
@@ -40,6 +43,7 @@ class CreateVisaPackageBO {
       'targetCountry': targetCountry,
       'visaType': visaType,
       'estimatedDays': estimatedDays,
+      'currency': currency,
       'coverImageIds': coverImageIds,
       'coverImages': coverImages,
       'tiers': tiers.map((item) => item.toJson()).toList(growable: false),

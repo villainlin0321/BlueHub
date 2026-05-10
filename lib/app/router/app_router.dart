@@ -10,6 +10,7 @@ import '../../features/auth/presentation/qualification_certification_step_two_pa
 import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/jobs/presentation/company_application_management_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/jobs/presentation/post_job_page.dart';
@@ -203,6 +204,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myApplications,
         builder: (context, state) => const MyApplicationsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.companyApplications,
+        builder: (context, state) => const CompanyApplicationManagementPage(),
       ),
       GoRoute(
         path: RoutePaths.myResumeEditor,

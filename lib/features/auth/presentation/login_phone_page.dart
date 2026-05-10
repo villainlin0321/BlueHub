@@ -28,13 +28,16 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
 
   // worker
   // zhangwei@example.com
+  // zhaolei@example.com
   // employer
   // berlin.food@example.de
+  // munich.build@example.de
   // visa _provider
   // oulu@example.com
+  // zhongde@example.com
   // final _emailController = TextEditingController();
-  final _emailController = TextEditingController(text: 'zhangwei@example.com');
-  final _codeController = TextEditingController();
+  final _emailController = TextEditingController(text: 'berlin.food@example.de');
+  final _codeController = TextEditingController(text: '1234');
 
   @override
   void dispose() {
