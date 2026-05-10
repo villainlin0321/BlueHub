@@ -19,6 +19,7 @@ class RoutePaths {
   static const selfEvaluation = '/me/resume/editor/self-evaluation';
   static const addSkillCertificate = '/me/resume/editor/skill-certificate/add';
   static const myApplications = '/me/applications';
+  static const companyApplications = '/company/applications';
   static const serviceDetail = '/service-detail';
   static const editVisaPackage = '/visa/package/edit';
   static const serviceDetailReport = '/service-detail/report';

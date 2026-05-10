@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 
 /// 企业首页。
@@ -23,6 +25,7 @@ class CompanyHomePage extends ConsumerWidget {
       label: '应聘管理',
       assetPath: 'assets/images/mon6z4ru-nlqxve0.svg',
       fallback: Icons.assignment_ind_outlined,
+      routePath: RoutePaths.companyApplications,
     ),
     _QuickActionItem(
       label: '签证服务',
@@ -394,35 +397,41 @@ class _QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 72,
-      child: Column(
-        children: <Widget>[
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEBF4FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: AppSvgIcon(
-                assetPath: item.assetPath,
-                fallback: item.fallback,
-                size: 24,
-                color: const Color(0xFF262626),
+      child: InkWell(
+        onTap: item.routePath == null
+            ? null
+            : () => context.push(item.routePath!),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          children: <Widget>[
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEBF4FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: AppSvgIcon(
+                  assetPath: item.assetPath,
+                  fallback: item.fallback,
+                  size: 24,
+                  color: const Color(0xFF262626),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            item.label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 12,
-              height: 18 / 12,
+            const SizedBox(height: 6),
+            Text(
+              item.label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF171A1D),
+                fontSize: 12,
+                height: 18 / 12,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -759,11 +768,13 @@ class _QuickActionItem {
     required this.label,
     required this.assetPath,
     required this.fallback,
+    this.routePath,
   });
 
   final String label;
   final String assetPath;
   final IconData fallback;
+  final String? routePath;
 }
 
 class _ResumeCardItem {

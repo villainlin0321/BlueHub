@@ -61,7 +61,7 @@ class CompanyMePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String label) => _showPlaceholderToast(context, label),
+              onTap: (String label) => _handleMenuTap(context, label),
             ),
           ),
         ],
@@ -73,6 +73,14 @@ class CompanyMePage extends StatelessWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$label（占位）')));
+  }
+
+  void _handleMenuTap(BuildContext context, String label) {
+    if (label == '应聘管理') {
+      context.push(RoutePaths.companyApplications);
+      return;
+    }
+    _showPlaceholderToast(context, label);
   }
 }
 
@@ -251,11 +259,7 @@ class _CompanyProfileRow extends StatelessWidget {
           ),
           const Opacity(
             opacity: 0.8,
-            child: Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
           ),
         ],
       ),
