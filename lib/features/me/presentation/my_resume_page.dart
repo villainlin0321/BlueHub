@@ -12,9 +12,9 @@ import 'my_resume_editor_page.dart';
 ///
 /// 当前改为真实接口驱动：
 /// 1. 首屏调用 `getMyResume` 拉取当前用户简历；
-/// 2. 根据接口状态展示加载、错误、空态或内容态；
-/// 3. 仍保留原有编辑入口与管理态 UI；
-/// 4. 删除接口暂未接入，管理态下仅给出明确提示。
+/// 2. 管理态支持设为默认、删除，并在进入编辑前重新拉取详情；
+/// 3. 根据接口状态展示加载、错误、空态或内容态；
+/// 4. 仍保留原有编辑入口与管理态 UI。
 class MyResumePage extends ConsumerStatefulWidget {
   const MyResumePage({super.key});
 
@@ -26,6 +26,8 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   ResumeVO? _resume;
   bool _isLoading = true;
   bool _isSavingVisibility = false;
+  bool _isSettingDefault = false;
+  bool _isDeleting = false;
   bool _isManaging = false;
   bool _isResumeVisible = true;
   String? _errorMessage;
@@ -277,7 +279,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
             Row(
               children: <Widget>[
                 InkWell(
-                  onTap: () {},
+                  onTap: _isSettingDefault ? null : _setDefaultResume,
                   borderRadius: BorderRadius.circular(10),
                   child: const Row(
                     children: <Widget>[
@@ -335,42 +337,49 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   Widget _buildManageActions() {
     return Row(
       children: <Widget>[
-        const Row(
-          children: <Widget>[
-            Icon(
-              Icons.check_circle_rounded,
-              size: 20,
-              color: Color(0xFF096DD9),
-            ),
-            SizedBox(width: 7),
-            Text(
-              '已设默认',
-              style: TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
         InkWell(
-          onTap: _showDeleteUnavailableMessage,
+          onTap: _isSettingDefault ? null : _setDefaultResume,
           borderRadius: BorderRadius.circular(10),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 2),
             child: Row(
               children: <Widget>[
                 Icon(
+                  Icons.check_circle_rounded,
+                  size: 20,
+                  color: Color(0xFF096DD9),
+                ),
+                SizedBox(width: 7),
+                Text(
+                  '已设默认',
+                  style: TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Spacer(),
+        InkWell(
+          onTap: _isDeleting ? null : _deleteResume,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: <Widget>[
+                const Icon(
                   Icons.delete_outline_rounded,
                   size: 20,
                   color: Color(0xFFD9363E),
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
-                  '删除简历',
-                  style: TextStyle(
+                  _isDeleting ? '删除中...' : '删除简历',
+                  style: const TextStyle(
                     color: Color(0xFFD9363E),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -522,16 +531,37 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
   /// 进入编辑简历页，并把真实接口对象直接传给编辑页。
   Future<void> _openResumeEditor() async {
-    final ResumeVO? resume = _resume;
-    if (resume == null) {
+    final ResumeVO? currentResume = _resume;
+    if (currentResume == null) {
       return;
     }
-    final bool? didSave = await context.push<bool>(
-      RoutePaths.myResumeEditor,
-      extra: ResumeEditorArgs.edit(resume),
-    );
-    if (didSave == true && mounted) {
-      await _loadResume();
+
+    try {
+      final ResumeVO latestResume = await ref
+          .read(resumeServiceProvider)
+          .getResumeDetail(resumeId: currentResume.resumeId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resume = latestResume;
+        _isResumeVisible = latestResume.isPublic ?? _isResumeVisible;
+      });
+
+      final bool? didSave = await context.push<bool>(
+        RoutePaths.myResumeEditor,
+        extra: ResumeEditorArgs.edit(latestResume),
+      );
+      if (didSave == true && mounted) {
+        await _loadResume();
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
     }
   }
 
@@ -550,12 +580,16 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     try {
       await ref
           .read(resumeServiceProvider)
-          .saveResume(request: resume.toSaveResumeBO(isPublic: value));
+          .updateResume(
+            resumeId: resume.resumeId,
+            request: resume.toSaveResumeBO(isPublic: value),
+          );
       if (!mounted) {
         return;
       }
       setState(() {
         _isSavingVisibility = false;
+        _resume = resume.copyWith(isPublic: value);
       });
       ScaffoldMessenger.of(
         context,
@@ -574,11 +608,85 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     }
   }
 
-  /// 提示当前文档未提供删除简历接口，避免误导用户。
-  void _showDeleteUnavailableMessage() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('当前 API 文档未提供删除简历接口')));
+  /// 将当前简历设为默认简历，并在成功后刷新本地详情。
+  Future<void> _setDefaultResume() async {
+    final ResumeVO? resume = _resume;
+    if (_isSettingDefault || resume == null) {
+      return;
+    }
+
+    setState(() {
+      _isSettingDefault = true;
+    });
+
+    try {
+      final service = ref.read(resumeServiceProvider);
+      await service.setDefaultResume(resumeId: resume.resumeId);
+      final ResumeVO latestResume = await service.getResumeDetail(
+        resumeId: resume.resumeId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSettingDefault = false;
+        _resume = latestResume;
+        _isResumeVisible = latestResume.isPublic ?? _isResumeVisible;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已设为默认简历')));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSettingDefault = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+    }
+  }
+
+  /// 删除当前简历，并在成功后从本地移除卡片。
+  Future<void> _deleteResume() async {
+    final ResumeVO? resume = _resume;
+    if (_isDeleting || resume == null) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+    });
+
+    try {
+      await ref
+          .read(resumeServiceProvider)
+          .deleteResume(resumeId: resume.resumeId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDeleting = false;
+        _isManaging = false;
+        _resume = null;
+        _errorMessage = null;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('简历已删除')));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDeleting = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+    }
   }
 }
 
@@ -656,6 +764,22 @@ class _ResumeItemData {
 }
 
 extension on ResumeVO {
+  ResumeVO copyWith({bool? isPublic}) {
+    return ResumeVO(
+      resumeId: resumeId,
+      completeness: completeness,
+      basicInfo: basicInfo,
+      jobIntention: jobIntention,
+      workExperiences: workExperiences,
+      languages: languages,
+      skillCertificates: skillCertificates,
+      educations: educations,
+      selfEvaluation: selfEvaluation,
+      isPublic: isPublic ?? this.isPublic,
+      updatedAt: updatedAt,
+    );
+  }
+
   /// 将接口返回的简历映射为当前列表卡片展示数据。
   _ResumeItemData toResumeItemData() {
     final WorkExperienceVO? firstExperience = workExperiences.isEmpty

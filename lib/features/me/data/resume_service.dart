@@ -26,4 +26,27 @@ class ResumeService {
     );
     return response;
   }
+
+  Future<ResumeVO> getResumeDetail({required int resumeId}) async {
+    final response = await _apiClient.get<ResumeVO>(
+      '/resumes/$resumeId',
+      decode: (data) => ResumeVO.fromJson(asJsonMap(data)),
+    );
+    return response;
+  }
+
+  Future<void> updateResume({
+    required int resumeId,
+    required SaveResumeBO request,
+  }) async {
+    return _apiClient.putVoid('/resumes/$resumeId', data: request.toJson());
+  }
+
+  Future<void> deleteResume({required int resumeId}) async {
+    return _apiClient.deleteVoid('/resumes/$resumeId');
+  }
+
+  Future<void> setDefaultResume({required int resumeId}) async {
+    return _apiClient.putVoid('/resumes/$resumeId/default');
+  }
 }
