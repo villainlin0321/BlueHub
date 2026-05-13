@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/route_paths.dart';
 
 /// 服务商端个人中心，按 Figma 设计图还原。
 class ServiceProviderMePage extends StatelessWidget {
@@ -52,7 +55,7 @@ class ServiceProviderMePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String label) => _showPlaceholderToast(context, label),
+              onTap: (String label) => _handleMenuTap(context, label),
             ),
           ),
         ],
@@ -64,6 +67,14 @@ class ServiceProviderMePage extends StatelessWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$label（占位）')));
+  }
+
+  void _handleMenuTap(BuildContext context, String label) {
+    if (label == '订单管理') {
+      context.push(RoutePaths.orderManagement);
+      return;
+    }
+    _showPlaceholderToast(context, label);
   }
 }
 

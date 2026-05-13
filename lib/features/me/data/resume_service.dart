@@ -7,6 +7,7 @@ class ResumeService {
 
   final ApiClient _apiClient;
 
+  /// 获取当前登录用户的简历。
   Future<ResumeVO> getMyResume() async {
     final response = await _apiClient.get<ResumeVO>(
       '/resumes/me',
@@ -15,10 +16,12 @@ class ResumeService {
     return response;
   }
 
+  /// 保存当前登录用户的简历内容。
   Future<void> saveResume({required SaveResumeBO request}) async {
     return _apiClient.putVoid('/resumes/me', data: request.toJson());
   }
 
+  /// 根据用户 ID 获取简历详情。
   Future<ResumeVO> getResumeByUserId({required int userId}) async {
     final response = await _apiClient.get<ResumeVO>(
       '/resumes/$userId',
@@ -27,6 +30,7 @@ class ResumeService {
     return response;
   }
 
+  /// 获取指定简历的完整详情。
   Future<ResumeVO> getResumeDetail({required int resumeId}) async {
     final response = await _apiClient.get<ResumeVO>(
       '/resumes/$resumeId',
@@ -35,6 +39,7 @@ class ResumeService {
     return response;
   }
 
+  /// 全量更新指定简历内容。
   Future<void> updateResume({
     required int resumeId,
     required SaveResumeBO request,
@@ -42,10 +47,12 @@ class ResumeService {
     return _apiClient.putVoid('/resumes/$resumeId', data: request.toJson());
   }
 
+  /// 删除指定简历。
   Future<void> deleteResume({required int resumeId}) async {
     return _apiClient.deleteVoid('/resumes/$resumeId');
   }
 
+  /// 将指定简历设为默认简历。
   Future<void> setDefaultResume({required int resumeId}) async {
     return _apiClient.putVoid('/resumes/$resumeId/default');
   }

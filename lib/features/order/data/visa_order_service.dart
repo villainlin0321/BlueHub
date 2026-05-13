@@ -8,6 +8,7 @@ class VisaOrderService {
 
   final ApiClient _apiClient;
 
+  /// 创建签证订单，提交下单所需业务参数并返回最新订单信息。
   Future<VisaOrderVO> createOrder({required CreateVisaOrderBO request}) async {
     final response = await _apiClient.post<VisaOrderVO>(
       '/visa-orders',
@@ -17,6 +18,7 @@ class VisaOrderService {
     return response;
   }
 
+  /// 获取当前用户的订单列表，支持分页与按订单状态筛选。
   Future<PageResult<VisaOrderVO>> listMyOrders({
     int? page,
     int? pageSize,
@@ -38,6 +40,7 @@ class VisaOrderService {
     return response;
   }
 
+  /// 获取服务商视角的订单列表，支持分页、状态和国家维度筛选。
   Future<PageResult<VisaOrderVO>> listProviderOrders({
     int? page,
     int? pageSize,
@@ -61,6 +64,7 @@ class VisaOrderService {
     return response;
   }
 
+  /// 按订单 ID 获取订单详情。
   Future<VisaOrderVO> getOrderDetail({required int orderId}) async {
     final response = await _apiClient.get<VisaOrderVO>(
       '/visa-orders/$orderId',
@@ -69,6 +73,7 @@ class VisaOrderService {
     return response;
   }
 
+  /// 上传用户侧补件材料，通常用于订单材料提交流程。
   Future<void> uploadMaterials({
     required int orderId,
     required UploadOrderMaterialsBO request,
@@ -79,10 +84,12 @@ class VisaOrderService {
     );
   }
 
+  /// 触发订单支付。
   Future<void> payOrder({required int orderId}) async {
     return _apiClient.postVoid('/visa-orders/$orderId/pay');
   }
 
+  /// 提交服务商侧订单处理结果或处理动作。
   Future<void> processOrder({
     required int orderId,
     required ProcessOrderBO request,
@@ -93,6 +100,7 @@ class VisaOrderService {
     );
   }
 
+  /// 上传签证办理过程中产生的签证文件或出签材料。
   Future<void> uploadVisaDocuments({
     required int orderId,
     required UploadVisaDocumentsBO request,

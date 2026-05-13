@@ -302,6 +302,9 @@ class VisaOrderVO {
     required this.visaDocuments,
     required this.rejectReason,
     required this.isUrgent,
+    required this.nickname,
+    required this.avatarUrl,
+    required this.country,
     required this.createdAt,
     required this.updatedAt,
     required this.paymentUrl,
@@ -323,6 +326,9 @@ class VisaOrderVO {
   final List<VisaDocVO> visaDocuments;
   final String rejectReason;
   final bool isUrgent;
+  final String nickname;
+  final String avatarUrl;
+  final String country;
   final String createdAt;
   final String updatedAt;
   final String paymentUrl;
@@ -349,6 +355,9 @@ class VisaOrderVO {
       visaDocuments: readModelList<VisaDocVO>(json, 'visaDocuments', VisaDocVO.fromJson),
       rejectReason: readString(json, 'rejectReason'),
       isUrgent: readBool(json, 'isUrgent'),
+      nickname: readString(json, 'nickname'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      country: readString(json, 'country'),
       createdAt: readString(json, 'createdAt'),
       updatedAt: readString(json, 'updatedAt'),
       paymentUrl: readString(json, 'paymentUrl'),
@@ -377,6 +386,9 @@ class VisaOrderVO {
           .toList(growable: false),
       'rejectReason': rejectReason,
       'isUrgent': isUrgent,
+      'nickname': nickname,
+      'avatarUrl': avatarUrl,
+      'country': country,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'paymentUrl': paymentUrl,

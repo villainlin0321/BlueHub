@@ -26,6 +26,7 @@ class RoutePaths {
   static const appResult = '/result';
   static const myOrders = '/me/orders';
   static const myFavorites = '/me/favorites';
+  static const orderManagement = '/order/management';
   static const orderDetail = '/order/detail';
   static const orderReview = '/order/review';
 

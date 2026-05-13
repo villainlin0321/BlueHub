@@ -79,6 +79,14 @@ class CompanyMePage extends StatelessWidget {
   }
 
   void _handleMenuTap(BuildContext context, String label) {
+    if (label == '企业资质') {
+      context.push(RoutePaths.qualificationCertification);
+      return;
+    }
+    if (label == '订单管理') {
+      context.push(RoutePaths.orderManagement);
+      return;
+    }
     if (label == '应聘管理') {
       context.push(RoutePaths.companyApplications);
       return;
