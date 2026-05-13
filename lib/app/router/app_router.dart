@@ -220,11 +220,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.addWorkExperience,
-        builder: (context, state) => const AddWorkExperiencePage(),
+        builder: (context, state) => AddWorkExperiencePage(
+          args: state.extra as AddWorkExperiencePageArgs? ??
+              const AddWorkExperiencePageArgs(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.addEducationExperience,
-        builder: (context, state) => const AddEducationExperiencePage(),
+        builder: (context, state) => AddEducationExperiencePage(
+          args: state.extra as AddEducationExperiencePageArgs? ??
+              const AddEducationExperiencePageArgs(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.addEducationSchool,
@@ -233,7 +239,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.addSkillCertificate,
-        builder: (context, state) => const AddSkillCertificatePage(),
+        builder: (context, state) => AddSkillCertificatePage(
+          args: state.extra as AddSkillCertificatePageArgs? ??
+              const AddSkillCertificatePageArgs(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.selfEvaluation,

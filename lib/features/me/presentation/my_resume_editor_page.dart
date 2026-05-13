@@ -877,7 +877,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               index < _experiences.length;
               index++
             ) ...<Widget>[
-              _buildExperienceItem(_experiences[index]),
+              _buildExperienceItem(_experiences[index], index),
               if (index != _experiences.length - 1) const SizedBox(height: 24),
             ],
         ],
@@ -943,7 +943,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               index < _certificates.length;
               index++
             ) ...<Widget>[
-              _buildCertificateItem(_certificates[index]),
+              _buildCertificateItem(_certificates[index], index),
               if (index != _certificates.length - 1) const SizedBox(height: 20),
             ],
         ],
@@ -951,64 +951,68 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     );
   }
 
-  Widget _buildCertificateItem(_ResumeCertificate certificate) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCertificateItem(_ResumeCertificate certificate, int index) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openEditSkillCertificatePage(index),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      certificate.title,
+                      style: const TextStyle(
+                        color: Color(0xFF262626),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        height: 22 / 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      certificate.authority,
+                      style: const TextStyle(
+                        color: Color(0xFF595959),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 20 / 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Row(
                 children: <Widget>[
                   Text(
-                    certificate.title,
+                    certificate.issuedAt,
                     style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 22 / 16,
+                      color: Color(0xFF8C8C8C),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      height: 18 / 13,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    certificate.authority,
-                    style: const TextStyle(
-                      color: Color(0xFF595959),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: Color(0xFFBFBFBF),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Row(
-              children: <Widget>[
-                Text(
-                  certificate.issuedAt,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 13,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 12,
-                  color: Color(0xFFBFBFBF),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCertificatePreview(certificate),
-      ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildCertificatePreview(certificate),
+        ],
+      ),
     );
   }
 
@@ -1118,7 +1122,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               index < _educations.length;
               index++
             ) ...<Widget>[
-              _buildEducationItem(_educations[index]),
+              _buildEducationItem(_educations[index], index),
               if (index != _educations.length - 1) const SizedBox(height: 20),
             ],
         ],
@@ -1126,70 +1130,74 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     );
   }
 
-  Widget _buildEducationItem(_ResumeEducation item) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Image.asset(
-          _ResumeEditorAssets.educationLogo,
-          width: 40,
-          height: 40,
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildEducationItem(_ResumeEducation item, int index) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openEditEducationExperiencePage(index),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Image.asset(
+            _ResumeEditorAssets.educationLogo,
+            width: 40,
+            height: 40,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    item.school,
+                    style: const TextStyle(
+                      color: Color(0xFF262626),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 22 / 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF595959),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
               children: <Widget>[
                 Text(
-                  item.school,
+                  item.period,
                   style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 18 / 13,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  item.subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Color(0xFFBFBFBF),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Row(
-            children: <Widget>[
-              Text(
-                item.period,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  height: 18 / 13,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 12,
-                color: Color(0xFFBFBFBF),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1441,72 +1449,76 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   /// 构建单条工作经历内容。
-  Widget _buildExperienceItem(_ResumeExperience item) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                item.company,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
+  Widget _buildExperienceItem(_ResumeExperience item, int index) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openEditWorkExperiencePage(index),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  item.company,
+                  style: const TextStyle(
+                    color: Color(0xFF262626),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 22 / 16,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(
-                children: <Widget>[
-                  Text(
-                    item.period,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 13,
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Row(
+                  children: <Widget>[
+                    Text(
+                      item.period,
+                      style: const TextStyle(
+                        color: Color(0xFF8C8C8C),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        height: 18 / 13,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 12,
-                    color: Color(0xFFBFBFBF),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
+                      color: Color(0xFFBFBFBF),
+                    ),
+                  ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.roleLabel,
+            style: const TextStyle(
+              color: Color(0xFF595959),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 20 / 14,
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          item.roleLabel,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 20 / 14,
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          item.summary,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 22 / 14,
+          const SizedBox(height: 12),
+          Text(
+            item.summary,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF595959),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 22 / 14,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1931,24 +1943,51 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openAddSkillCertificatePage() async {
-    final ResumeCertificateFormResult? result = await context
-        .push<ResumeCertificateFormResult>(RoutePaths.addSkillCertificate);
+    final ResumeCertificatePageResult? result =
+        await context.push<ResumeCertificatePageResult>(
+          RoutePaths.addSkillCertificate,
+          extra: const AddSkillCertificatePageArgs(),
+        );
 
-    if (result == null) {
+    if (result == null || result.value == null) {
       return;
     }
 
     setState(() {
       _certificates.insert(
         0,
-        _ResumeCertificate(
-          certId: 0,
-          title: result.title,
-          level: '',
-          authority: '技能证书',
-          issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
-          previewFilePaths: result.imagePaths,
-        ),
+        _buildResumeCertificateFromFormResult(result.value!),
+      );
+    });
+  }
+
+  Future<void> _openEditSkillCertificatePage(int index) async {
+    final _ResumeCertificate current = _certificates[index];
+    final ResumeCertificatePageResult? result =
+        await context.push<ResumeCertificatePageResult>(
+          RoutePaths.addSkillCertificate,
+          extra: AddSkillCertificatePageArgs(
+            initialValue: _buildCertificateFormResult(current),
+          ),
+        );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      if (result.deleted) {
+        _certificates.removeAt(index);
+        return;
+      }
+      if (result.value == null) {
+        return;
+      }
+      _certificates[index] = _buildResumeCertificateFromFormResult(
+        result.value!,
+        certId: current.certId,
+        authority: current.authority,
+        level: current.level,
       );
     });
   }
@@ -1969,59 +2008,223 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openAddEducationExperiencePage() async {
-    final EducationExperienceFormResult? result = await context
-        .push<EducationExperienceFormResult>(RoutePaths.addEducationExperience);
+    final EducationExperiencePageResult? result =
+        await context.push<EducationExperiencePageResult>(
+          RoutePaths.addEducationExperience,
+          extra: const AddEducationExperiencePageArgs(),
+        );
+
+    if (result == null || result.value == null) {
+      return;
+    }
+
+    setState(() {
+      _educations.insert(0, _buildResumeEducationFromFormResult(result.value!));
+    });
+  }
+
+  Future<void> _openEditEducationExperiencePage(int index) async {
+    final _ResumeEducation current = _educations[index];
+    final EducationExperiencePageResult? result =
+        await context.push<EducationExperiencePageResult>(
+          RoutePaths.addEducationExperience,
+          extra: AddEducationExperiencePageArgs(
+            initialValue: _buildEducationFormResult(current),
+          ),
+        );
 
     if (result == null) {
       return;
     }
 
     setState(() {
-      _educations.insert(
-        0,
-        _ResumeEducation(
-          eduId: 0,
-          school: result.school,
-          major: result.major,
-          degree: result.degree,
-          startYear: result.period.startYear,
-          endYear: result.period.endYear ?? 0,
-        ),
+      if (result.deleted) {
+        _educations.removeAt(index);
+        return;
+      }
+      if (result.value == null) {
+        return;
+      }
+      _educations[index] = _buildResumeEducationFromFormResult(
+        result.value!,
+        eduId: current.eduId,
       );
     });
   }
 
   Future<void> _openAddWorkExperiencePage() async {
-    final WorkExperienceFormResult? result = await context
-        .push<WorkExperienceFormResult>(RoutePaths.addWorkExperience);
+    final WorkExperiencePageResult? result =
+        await context.push<WorkExperiencePageResult>(
+          RoutePaths.addWorkExperience,
+          extra: const AddWorkExperiencePageArgs(),
+        );
+
+    if (result == null || result.value == null) {
+      return;
+    }
+
+    setState(() {
+      _experiences.insert(0, _buildResumeExperienceFromFormResult(result.value!));
+    });
+  }
+
+  Future<void> _openEditWorkExperiencePage(int index) async {
+    final _ResumeExperience current = _experiences[index];
+    final WorkExperiencePageResult? result =
+        await context.push<WorkExperiencePageResult>(
+          RoutePaths.addWorkExperience,
+          extra: AddWorkExperiencePageArgs(
+            initialValue: _buildWorkExperienceFormResult(current),
+          ),
+        );
 
     if (result == null) {
       return;
     }
 
     setState(() {
-      _experiences.insert(
-        0,
-        _ResumeExperience(
-          expId: 0,
-          company: result.company,
-          department: result.department,
-          position: result.jobTitle,
-          startDate: _formatYearMonth(
-            result.period.startYear,
-            result.period.startMonth,
-          ),
-          endDate: result.period.isCurrent
-              ? ''
-              : _formatYearMonth(
-                  result.period.endYear ?? result.period.startYear,
-                  result.period.endMonth ?? result.period.startMonth,
-                ),
-          isCurrent: result.period.isCurrent,
-          summary: result.description.isEmpty ? '未填写工作内容' : result.description,
-        ),
+      if (result.deleted) {
+        _experiences.removeAt(index);
+        return;
+      }
+      if (result.value == null) {
+        return;
+      }
+      _experiences[index] = _buildResumeExperienceFromFormResult(
+        result.value!,
+        expId: current.expId,
       );
     });
+  }
+
+  ResumeCertificateFormResult _buildCertificateFormResult(
+    _ResumeCertificate item,
+  ) {
+    return ResumeCertificateFormResult(
+      title: item.title,
+      issuedAt: _parseSingleMonth(item.issuedAt),
+      localImagePaths: List<String>.of(item.previewFilePaths),
+      networkImageUrls: List<String>.of(item.previewImageUrls),
+    );
+  }
+
+  _ResumeCertificate _buildResumeCertificateFromFormResult(
+    ResumeCertificateFormResult result, {
+    int certId = 0,
+    String authority = '技能证书',
+    String level = '',
+  }) {
+    return _ResumeCertificate(
+      certId: certId,
+      title: result.title,
+      level: level,
+      authority: authority,
+      issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
+      previewFilePaths: List<String>.of(result.localImagePaths),
+      previewImageUrls: List<String>.of(result.networkImageUrls),
+    );
+  }
+
+  EducationExperienceFormResult _buildEducationFormResult(
+    _ResumeEducation item,
+  ) {
+    return EducationExperienceFormResult(
+      school: item.school,
+      degree: item.degree,
+      major: item.major,
+      period: ResumeTimePickerValue(
+        startYear: item.startYear,
+        startMonth: 1,
+        endYear: item.endYear <= 0 ? null : item.endYear,
+        endMonth: item.endYear <= 0 ? null : 12,
+      ),
+    );
+  }
+
+  _ResumeEducation _buildResumeEducationFromFormResult(
+    EducationExperienceFormResult result, {
+    int eduId = 0,
+  }) {
+    return _ResumeEducation(
+      eduId: eduId,
+      school: result.school,
+      major: result.major,
+      degree: result.degree,
+      startYear: result.period.startYear,
+      endYear: result.period.endYear ?? 0,
+    );
+  }
+
+  WorkExperienceFormResult _buildWorkExperienceFormResult(
+    _ResumeExperience item,
+  ) {
+    return WorkExperienceFormResult(
+      company: item.company,
+      period: _buildEmploymentPeriodValue(item),
+      jobTitle: item.position,
+      department: item.department,
+      description: item.summary == '未填写工作内容' ? '' : item.summary,
+    );
+  }
+
+  _ResumeExperience _buildResumeExperienceFromFormResult(
+    WorkExperienceFormResult result, {
+    int expId = 0,
+  }) {
+    return _ResumeExperience(
+      expId: expId,
+      company: result.company,
+      department: result.department,
+      position: result.jobTitle,
+      startDate: _formatYearMonth(
+        result.period.startYear,
+        result.period.startMonth,
+      ),
+      endDate: result.period.isCurrent
+          ? ''
+          : _formatYearMonth(
+              result.period.endYear ?? result.period.startYear,
+              result.period.endMonth ?? result.period.startMonth,
+            ),
+      isCurrent: result.period.isCurrent,
+      summary: result.description.isEmpty ? '未填写工作内容' : result.description,
+    );
+  }
+
+  EmploymentPeriodValue _buildEmploymentPeriodValue(_ResumeExperience item) {
+    final List<int> start = _parseYearMonth(item.startDate);
+    final List<int>? end = item.isCurrent ? null : _tryParseYearMonth(item.endDate);
+    return EmploymentPeriodValue(
+      startYear: start[0],
+      startMonth: start[1],
+      endYear: end?[0],
+      endMonth: end?[1],
+    ).normalized();
+  }
+
+  ResumeTimePickerValue _parseSingleMonth(String value) {
+    final List<int> parts = _parseYearMonth(value);
+    return ResumeTimePickerValue(
+      startYear: parts[0],
+      startMonth: parts[1],
+      endYear: parts[0],
+      endMonth: parts[1],
+    );
+  }
+
+  List<int> _parseYearMonth(String value) {
+    return _tryParseYearMonth(value) ?? <int>[DateTime.now().year, 1];
+  }
+
+  List<int>? _tryParseYearMonth(String value) {
+    final RegExpMatch? match = RegExp(r'^(\d{4})\.(\d{2})$').firstMatch(value);
+    if (match == null) {
+      return null;
+    }
+    return <int>[
+      int.parse(match.group(1)!),
+      int.parse(match.group(2)!),
+    ];
   }
 
   /// 将年月组装成接口兼容的 `yyyy.MM` 字符串。
