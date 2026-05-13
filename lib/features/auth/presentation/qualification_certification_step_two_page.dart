@@ -1,19 +1,135 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../utils/upload_picker_utils.dart';
+import '../application/qualification_upload_helper.dart';
+import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-class QualificationCertificationStepTwoPage extends StatelessWidget {
-  const QualificationCertificationStepTwoPage({super.key});
+class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
+  const QualificationCertificationStepTwoPage({
+    super.key,
+    required this.args,
+  });
+
+  final QualificationCertificationPageArgs args;
+
+  @override
+  ConsumerState<QualificationCertificationStepTwoPage> createState() =>
+      _QualificationCertificationStepTwoPageState();
+}
+
+class _QualificationCertificationStepTwoPageState
+    extends ConsumerState<QualificationCertificationStepTwoPage> {
 
   static const List<String> _steps = <String>[
     '基本信息',
     '资质证明',
     '服务信息',
   ];
+
+  PickedUploadFile? _businessLicenseImage;
+  PickedUploadFile? _specialPermitImage;
+  bool _isUploadingBusinessLicense = false;
+  bool _isUploadingSpecialPermit = false;
+
+  QualificationCertificationDraft get _draft => widget.args.draft;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_draft.businessLicenseDoc != null) {
+      _businessLicenseImage = PickedUploadFile(
+        id: 'qualification-business-license',
+        name: _draft.businessLicenseDoc!.docName,
+        path: _draft.businessLicenseDoc!.localPath,
+        sourceType: UploadSourceType.gallery,
+        state: UploadItemState.success,
+        isImage: true,
+        sizeLabel: '',
+      );
+    }
+    if (_draft.specialPermitDoc != null) {
+      _specialPermitImage = PickedUploadFile(
+        id: 'qualification-special-permit',
+        name: _draft.specialPermitDoc!.docName,
+        path: _draft.specialPermitDoc!.localPath,
+        sourceType: UploadSourceType.gallery,
+        state: UploadItemState.success,
+        isImage: true,
+        sizeLabel: '',
+      );
+    }
+  }
+
+  Future<void> _pickQualificationImage({
+    required QualificationDocType docType,
+  }) async {
+    final List<PickedUploadFile> files =
+        await UploadPickerUtils.pickImagesWithSourceSheet(
+          context: context,
+          title: '选择图片',
+        );
+    if (!mounted || files.isEmpty) {
+      return;
+    }
+
+    final PickedUploadFile pickedFile = files.firstWhere(
+      (PickedUploadFile file) => file.isImage,
+      orElse: () => files.first,
+    );
+    setState(() {
+      if (docType == QualificationDocType.businessLicense) {
+        _isUploadingBusinessLicense = true;
+      } else {
+        _isUploadingSpecialPermit = true;
+      }
+    });
+    try {
+      final UploadedQualificationDoc uploadedDoc =
+          await QualificationUploadHelper.uploadQualificationImage(
+            ref: ref,
+            file: pickedFile,
+            docType: docType,
+            docName: docType.defaultDocName,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        if (docType == QualificationDocType.businessLicense) {
+          _businessLicenseImage = pickedFile;
+          _draft.businessLicenseDoc = uploadedDoc;
+        } else {
+          _specialPermitImage = pickedFile;
+          _draft.specialPermitDoc = uploadedDoc;
+        }
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('上传失败，请稍后重试')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (docType == QualificationDocType.businessLicense) {
+            _isUploadingBusinessLicense = false;
+          } else {
+            _isUploadingSpecialPermit = false;
+          }
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,17 +193,27 @@ class QualificationCertificationStepTwoPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _LicenseUploadSection(
                       title: '营业执照',
                       isRequired: true,
+                      pickedFile: _businessLicenseImage,
+                      isUploading: _isUploadingBusinessLicense,
+                      onTap: () => _pickQualificationImage(
+                        docType: QualificationDocType.businessLicense,
+                      ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _LicenseUploadSection(
                       title: '特许经验许可',
                       optionalLabel: '(选填)',
+                      pickedFile: _specialPermitImage,
+                      isUploading: _isUploadingSpecialPermit,
+                      onTap: () => _pickQualificationImage(
+                        docType: QualificationDocType.specialPermit,
+                      ),
                     ),
                   ],
                 ),
@@ -136,8 +262,10 @@ class QualificationCertificationStepTwoPage extends StatelessWidget {
                 child: SizedBox(
                   height: 44,
                   child: FilledButton(
-                    onPressed: () =>
-                        context.push(RoutePaths.qualificationCertificationStepThree),
+                    onPressed: () => context.push(
+                      RoutePaths.qualificationCertificationStepThree,
+                      extra: widget.args,
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF096DD9),
                       shape: RoundedRectangleBorder(
@@ -168,11 +296,17 @@ class QualificationCertificationStepTwoPage extends StatelessWidget {
 class _LicenseUploadSection extends StatelessWidget {
   const _LicenseUploadSection({
     required this.title,
+    required this.onTap,
+    this.pickedFile,
+    this.isUploading = false,
     this.isRequired = false,
     this.optionalLabel,
   });
 
   final String title;
+  final VoidCallback onTap;
+  final PickedUploadFile? pickedFile;
+  final bool isUploading;
   final bool isRequired;
   final String? optionalLabel;
 
@@ -240,11 +374,9 @@ class _LicenseUploadSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _UploadPlaceholder(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('上传$title（占位）')),
-            );
-          },
+          pickedFile: pickedFile,
+          isUploading: isUploading,
+          onTap: onTap,
         ),
       ],
     );
@@ -254,14 +386,18 @@ class _LicenseUploadSection extends StatelessWidget {
 class _UploadPlaceholder extends StatelessWidget {
   const _UploadPlaceholder({
     required this.onTap,
+    this.pickedFile,
+    this.isUploading = false,
   });
 
   final VoidCallback onTap;
+  final PickedUploadFile? pickedFile;
+  final bool isUploading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         height: 180,
@@ -276,30 +412,57 @@ class _UploadPlaceholder extends StatelessWidget {
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/qualification_license_placeholder.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Center(
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0x80000000),
-                shape: BoxShape.circle,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: pickedFile == null
+                      ? const AssetImage(
+                              'assets/images/qualification_license_placeholder.png',
+                            )
+                            as ImageProvider
+                      : FileImage(File(pickedFile!.path)),
+                  fit: BoxFit.cover,
+                ),
               ),
-              alignment: Alignment.center,
-              child: SvgPicture.asset(
-                'assets/images/qualification_camera.svg',
-                width: 24,
-                height: 24,
+              child: Center(
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0x80000000),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: SvgPicture.asset(
+                    'assets/images/qualification_camera.svg',
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
               ),
             ),
-          ),
+            if (isUploading)
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0x66000000),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'permission_utils.dart';
@@ -65,6 +66,56 @@ class UploadPickerUtils {
   UploadPickerUtils._();
 
   static final ImagePicker _imagePicker = ImagePicker();
+
+  /// 弹出通用图片来源选择面板，并返回用户最终选择的图片结果。
+  static Future<List<PickedUploadFile>> pickImagesWithSourceSheet({
+    required BuildContext context,
+    String title = '选择图片',
+    String cameraErrorMessage = '打开相机失败，请稍后重试',
+    String galleryErrorMessage = '打开相册失败，请稍后重试',
+  }) async {
+    final _ImageSourceOption? source = await showModalBottomSheet<_ImageSourceOption>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (BuildContext sheetContext) {
+        return _UploadImageSourceBottomSheet(
+          title: title,
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () {
+            Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
+          },
+          onGalleryTap: () {
+            Navigator.of(sheetContext).pop(_ImageSourceOption.gallery);
+          },
+        );
+      },
+    );
+
+    if (source == null) {
+      return const <PickedUploadFile>[];
+    }
+
+    try {
+      switch (source) {
+        case _ImageSourceOption.camera:
+          return await pickFromCamera();
+        case _ImageSourceOption.gallery:
+          return await pickFromGallery();
+      }
+    } catch (_) {
+      if (!context.mounted) {
+        return const <PickedUploadFile>[];
+      }
+      final String message = source == _ImageSourceOption.camera
+          ? cameraErrorMessage
+          : galleryErrorMessage;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return const <PickedUploadFile>[];
+    }
+  }
 
   static Future<List<PickedUploadFile>> pickFromCamera() async {
     final bool granted = await PermissionUtils.requestCameraPermission();
@@ -188,5 +239,102 @@ class UploadPickerUtils {
     }
     final double mb = bytes / (1024 * 1024);
     return '${mb.toStringAsFixed(mb >= 100 ? 0 : 1)}MB';
+  }
+}
+
+enum _ImageSourceOption { camera, gallery }
+
+class _UploadImageSourceBottomSheet extends StatelessWidget {
+  const _UploadImageSourceBottomSheet({
+    required this.title,
+    required this.onClose,
+    required this.onCameraTap,
+    required this.onGalleryTap,
+  });
+
+  final String title;
+  final VoidCallback onClose;
+  final VoidCallback onCameraTap;
+  final VoidCallback onGalleryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              height: 52,
+              child: Row(
+                children: <Widget>[
+                  const SizedBox(width: 36),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xFF171A1D),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          height: 25 / 17,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onClose,
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF171A1D),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _BottomSheetActionItem(label: '拍照', onTap: onCameraTap),
+            _BottomSheetActionItem(label: '从相册选择', onTap: onGalleryTap),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomSheetActionItem extends StatelessWidget {
+  const _BottomSheetActionItem({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 52,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF171A1D),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            height: 22 / 16,
+          ),
+        ),
+      ),
+    );
   }
 }

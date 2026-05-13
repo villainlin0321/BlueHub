@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
 
@@ -80,7 +81,12 @@ class CompanyMePage extends StatelessWidget {
 
   void _handleMenuTap(BuildContext context, String label) {
     if (label == '企业资质') {
-      context.push(RoutePaths.qualificationCertification);
+      context.push(
+        RoutePaths.qualificationCertification,
+        extra: QualificationCertificationPageArgs(
+          role: QualificationCertificationRole.company,
+        ),
+      );
       return;
     }
     if (label == '订单管理') {

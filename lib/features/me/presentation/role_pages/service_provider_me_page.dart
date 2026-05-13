@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../auth/presentation/qualification_certification_flow.dart';
 
 /// 服务商端个人中心，按 Figma 设计图还原。
 class ServiceProviderMePage extends StatelessWidget {
@@ -70,6 +71,15 @@ class ServiceProviderMePage extends StatelessWidget {
   }
 
   void _handleMenuTap(BuildContext context, String label) {
+    if (label == '资质管理') {
+      context.push(
+        RoutePaths.qualificationCertification,
+        extra: QualificationCertificationPageArgs(
+          role: QualificationCertificationRole.serviceProvider,
+        ),
+      );
+      return;
+    }
     if (label == '订单管理') {
       context.push(RoutePaths.orderManagement);
       return;

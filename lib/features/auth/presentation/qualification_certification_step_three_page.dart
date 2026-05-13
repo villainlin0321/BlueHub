@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,19 +7,27 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../employer/data/employer_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
+import '../../visa/data/provider_providers.dart';
+import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-class QualificationCertificationStepThreePage extends StatefulWidget {
-  const QualificationCertificationStepThreePage({super.key});
+class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
+  const QualificationCertificationStepThreePage({
+    super.key,
+    required this.args,
+  });
+
+  final QualificationCertificationPageArgs args;
 
   @override
-  State<QualificationCertificationStepThreePage> createState() =>
+  ConsumerState<QualificationCertificationStepThreePage> createState() =>
       _QualificationCertificationStepThreePageState();
 }
 
 class _QualificationCertificationStepThreePageState
-    extends State<QualificationCertificationStepThreePage> {
+    extends ConsumerState<QualificationCertificationStepThreePage> {
   static const List<String> _steps = <String>[
     '基本信息',
     '资质证明',
@@ -41,9 +50,22 @@ class _QualificationCertificationStepThreePageState
       ];
 
   final TextEditingController _experienceController = TextEditingController();
-  late final List<String> _selectedCountries = List<String>.of(
-    _fallbackSelectedCountries,
-  );
+  late final List<String> _selectedCountries;
+  bool _isSubmitting = false;
+
+  QualificationCertificationRole get _role => widget.args.role;
+  QualificationCertificationDraft get _draft => widget.args.draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCountries = _draft.serviceCountryLabels.isEmpty
+        ? List<String>.of(_fallbackSelectedCountries)
+        : List<String>.of(_draft.serviceCountryLabels);
+    if (_draft.yearsOfService > 0) {
+      _experienceController.text = _draft.yearsOfService.toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -54,7 +76,7 @@ class _QualificationCertificationStepThreePageState
   Future<void> _openExpectedCountrySheet() async {
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '期望国家/地区',
+      title: qualificationCountryLabel(_role),
       options: _countrySheetOptions,
       initialSelectedValues: _selectedCountries,
     );
@@ -76,17 +98,58 @@ class _QualificationCertificationStepThreePageState
     });
   }
 
-  void _handleSubmit() {
-    context.push(
-      RoutePaths.appResult,
-      extra: const AppResultPageArgs(
-        pageTitle: '资质认证',
-        resultTitle: '信息已提交',
-        tipText: '预计1-3个工作日完成审核，5s后进入首页',
-        actionLabel: '进入首页',
-        action: AppResultAction.go(RoutePaths.home),
-      ),
+  Future<void> _handleSubmit() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    _draft.serviceCountryLabels = List<String>.of(_selectedCountries);
+    _draft.serviceCountryCodes = qualificationCountryCodesFromLabels(
+      _selectedCountries,
     );
+    _draft.yearsOfService =
+        int.tryParse(_experienceController.text.trim()) ?? 0;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      if (_role == QualificationCertificationRole.company) {
+        await ref
+            .read(employerServiceProvider)
+            .updateEmployerProfile(request: _draft.toEmployerUpdateRequest());
+      } else {
+        await ref
+            .read(providerServiceProvider)
+            .updateMyProfile(request: _draft.toProviderUpdateRequest());
+      }
+      if (!mounted) {
+        return;
+      }
+      context.push(
+        RoutePaths.appResult,
+        extra: const AppResultPageArgs(
+          pageTitle: '资质认证',
+          resultTitle: '信息已提交',
+          tipText: '预计1-3个工作日完成审核，5s后进入首页',
+          actionLabel: '进入首页',
+          action: AppResultAction.go(RoutePaths.home),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('提交失败，请稍后重试')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -158,8 +221,8 @@ class _QualificationCertificationStepThreePageState
                     children: <Widget>[
                       Row(
                         children: <Widget>[
-                          const Text(
-                            '期望国家/地区',
+                          Text(
+                            qualificationCountryLabel(_role),
                             style: TextStyle(
                               color: Color(0xFF262626),
                               fontSize: 14,
@@ -342,9 +405,10 @@ class _QualificationCertificationStepThreePageState
                 child: SizedBox(
                   height: 44,
                   child: FilledButton(
-                    onPressed: _handleSubmit,
+                    onPressed: _isSubmitting ? null : _handleSubmit,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF096DD9),
+                      disabledBackgroundColor: const Color(0xFFD9D9D9),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

@@ -106,72 +106,39 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
   }
 
   Future<void> _openImageSourceSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (BuildContext sheetContext) {
-        return _ImageSourceBottomSheet(
-          onClose: () => Navigator.of(sheetContext).pop(),
-          onCameraTap: () async {
-            Navigator.of(sheetContext).pop();
-            await _pickImage(
-              picker: UploadPickerUtils.pickFromCamera,
-              errorMessage: '打开相机失败，请稍后重试',
-            );
-          },
-          onGalleryTap: () async {
-            Navigator.of(sheetContext).pop();
-            await _pickImage(
-              picker: UploadPickerUtils.pickFromGallery,
-              errorMessage: '打开相册失败，请稍后重试',
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _pickImage({
-    required Future<List<PickedUploadFile>> Function() picker,
-    required String errorMessage,
-  }) async {
     if (_selectedImages.length >= _maxAttachments) {
       _showMessage('最多只能选择$_maxAttachments张');
       return;
     }
 
-    try {
-      final List<PickedUploadFile> files = await picker();
-      if (!mounted || files.isEmpty) {
-        return;
-      }
+    final List<PickedUploadFile> files =
+        await UploadPickerUtils.pickImagesWithSourceSheet(
+          context: context,
+          title: '选择图片',
+        );
+    if (!mounted || files.isEmpty) {
+      return;
+    }
 
-      final List<PickedUploadFile> images = files
-          .where((PickedUploadFile item) => item.isImage)
-          .toList();
-      final List<PickedUploadFile> candidates = images.isEmpty ? files : images;
-      final int availableCount = _maxAttachments - _selectedImages.length;
-      final List<PickedUploadFile> acceptedFiles = candidates
-          .take(availableCount)
-          .toList();
-      if (acceptedFiles.isEmpty) {
-        _showMessage('最多只能选择$_maxAttachments张');
-        return;
-      }
+    final List<PickedUploadFile> images = files
+        .where((PickedUploadFile item) => item.isImage)
+        .toList();
+    final List<PickedUploadFile> candidates = images.isEmpty ? files : images;
+    final int availableCount = _maxAttachments - _selectedImages.length;
+    final List<PickedUploadFile> acceptedFiles = candidates
+        .take(availableCount)
+        .toList();
+    if (acceptedFiles.isEmpty) {
+      _showMessage('最多只能选择$_maxAttachments张');
+      return;
+    }
 
-      setState(() {
-        _selectedImages.addAll(acceptedFiles);
-      });
+    setState(() {
+      _selectedImages.addAll(acceptedFiles);
+    });
 
-      if (acceptedFiles.length < candidates.length) {
-        _showMessage('最多只能选择$_maxAttachments张');
-      }
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      _showMessage(errorMessage);
+    if (acceptedFiles.length < candidates.length) {
+      _showMessage('最多只能选择$_maxAttachments张');
     }
   }
 
@@ -594,99 +561,6 @@ class _CertificateImageGrid extends StatelessWidget {
           onDeleteTap: () => onDeleteTap(file),
         );
       },
-    );
-  }
-}
-
-class _ImageSourceBottomSheet extends StatelessWidget {
-  const _ImageSourceBottomSheet({
-    required this.onClose,
-    required this.onCameraTap,
-    required this.onGalleryTap,
-  });
-
-  final VoidCallback onClose;
-  final VoidCallback onCameraTap;
-  final VoidCallback onGalleryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              height: 52,
-              child: Row(
-                children: <Widget>[
-                  const SizedBox(width: 36),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        '选择图片',
-                        style: TextStyle(
-                          color: Color(0xFF171A1D),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w400,
-                          height: 25 / 17,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: onClose,
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Color(0xFF171A1D),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _BottomSheetActionItem(label: '拍照', onTap: onCameraTap),
-            _BottomSheetActionItem(label: '从相册选择', onTap: onGalleryTap),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomSheetActionItem extends StatelessWidget {
-  const _BottomSheetActionItem({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5)),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF171A1D),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            height: 22 / 16,
-          ),
-        ),
-      ),
     );
   }
 }

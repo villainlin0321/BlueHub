@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_session_provider.dart';
 import '../../features/auth/presentation/login_phone_page.dart';
+import '../../features/auth/presentation/qualification_certification_flow.dart';
 import '../../features/auth/presentation/qualification_certification_page.dart';
 import '../../features/auth/presentation/qualification_certification_step_three_page.dart';
 import '../../features/auth/presentation/qualification_certification_step_two_page.dart';
@@ -121,17 +122,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.qualificationCertification,
-        builder: (context, state) => const QualificationCertificationPage(),
+        builder: (context, state) => QualificationCertificationPage(
+          args: state.extra as QualificationCertificationPageArgs? ??
+              QualificationCertificationPageArgs(
+                role: QualificationCertificationRole.serviceProvider,
+              ),
+        ),
       ),
       GoRoute(
         path: RoutePaths.qualificationCertificationStepTwo,
-        builder: (context, state) =>
-            const QualificationCertificationStepTwoPage(),
+        builder: (context, state) => QualificationCertificationStepTwoPage(
+          args: state.extra as QualificationCertificationPageArgs? ??
+              QualificationCertificationPageArgs(
+                role: QualificationCertificationRole.serviceProvider,
+              ),
+        ),
       ),
       GoRoute(
         path: RoutePaths.qualificationCertificationStepThree,
-        builder: (context, state) =>
-            const QualificationCertificationStepThreePage(),
+        builder: (context, state) => QualificationCertificationStepThreePage(
+          args: state.extra as QualificationCertificationPageArgs? ??
+              QualificationCertificationPageArgs(
+                role: QualificationCertificationRole.serviceProvider,
+              ),
+        ),
       ),
       GoRoute(
         path: RoutePaths.selectRole,
