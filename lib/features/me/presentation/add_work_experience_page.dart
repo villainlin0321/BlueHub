@@ -5,7 +5,12 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class AddWorkExperiencePage extends StatefulWidget {
-  const AddWorkExperiencePage({super.key});
+  const AddWorkExperiencePage({
+    super.key,
+    this.args,
+  });
+
+  final AddWorkExperiencePageArgs? args;
 
   @override
   State<AddWorkExperiencePage> createState() => _AddWorkExperiencePageState();
@@ -17,11 +22,24 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
 
+  AddWorkExperiencePageArgs get _resolvedArgs =>
+      widget.args ?? const AddWorkExperiencePageArgs();
+
   EmploymentPeriodValue? _selectedPeriod;
+
+  bool get _isEditMode => _resolvedArgs.initialValue != null;
 
   @override
   void initState() {
     super.initState();
+    final WorkExperienceFormResult? initialValue = _resolvedArgs.initialValue;
+    if (initialValue != null) {
+      _companyController.text = initialValue.company;
+      _jobTitleController.text = initialValue.jobTitle;
+      _departmentController.text = initialValue.department;
+      _contentController.text = initialValue.description;
+      _selectedPeriod = initialValue.period;
+    }
     _contentController.addListener(_handleContentChanged);
   }
 
@@ -73,14 +91,20 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
     }
 
     context.pop(
-      WorkExperienceFormResult(
-        company: company,
-        period: _selectedPeriod!,
-        jobTitle: jobTitle,
-        department: _departmentController.text.trim(),
-        description: _contentController.text.trim(),
+      WorkExperiencePageResult.saved(
+        WorkExperienceFormResult(
+          company: company,
+          period: _selectedPeriod!,
+          jobTitle: jobTitle,
+          department: _departmentController.text.trim(),
+          description: _contentController.text.trim(),
+        ),
       ),
     );
+  }
+
+  void _handleDelete() {
+    context.pop(const WorkExperiencePageResult.deleted());
   }
 
   void _showMessage(String message) {
@@ -110,7 +134,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
           ),
         ),
         title: const Text(
-          '添加工作经历',
+          '工作经历',
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -158,34 +182,91 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Padding(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+          ),
           padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset > 0 ? 12 : 16),
-          child: SizedBox(
-            height: 44,
-            child: FilledButton(
-              onPressed: _handleSave,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF096DD9),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          child: Row(
+            children: <Widget>[
+              if (_isEditMode) ...<Widget>[
+                Expanded(
+                  flex: 110,
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: _handleDelete,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFEBEB),
+                        foregroundColor: const Color(0xFFD9363E),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '删除',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 22 / 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                flex: _isEditMode ? 221 : 1,
+                child: SizedBox(
+                  height: 44,
+                  child: FilledButton(
+                    onPressed: _handleSave,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF096DD9),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      '保存',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 22 / 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                '保存',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+
+class AddWorkExperiencePageArgs {
+  const AddWorkExperiencePageArgs({this.initialValue});
+
+  final WorkExperienceFormResult? initialValue;
+}
+
+class WorkExperiencePageResult {
+  const WorkExperiencePageResult.saved(this.value) : deleted = false;
+
+  const WorkExperiencePageResult.deleted()
+    : value = null,
+      deleted = true;
+
+  final WorkExperienceFormResult? value;
+  final bool deleted;
 }
 
 class WorkExperienceFormResult {

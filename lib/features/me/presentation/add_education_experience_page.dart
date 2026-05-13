@@ -7,7 +7,12 @@ import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class AddEducationExperiencePage extends StatefulWidget {
-  const AddEducationExperiencePage({super.key});
+  const AddEducationExperiencePage({
+    super.key,
+    this.args,
+  });
+
+  final AddEducationExperiencePageArgs? args;
 
   @override
   State<AddEducationExperiencePage> createState() =>
@@ -26,9 +31,27 @@ class _AddEducationExperiencePageState extends State<AddEducationExperiencePage>
 
   final TextEditingController _majorController = TextEditingController();
 
+  AddEducationExperiencePageArgs get _resolvedArgs =>
+      widget.args ?? const AddEducationExperiencePageArgs();
+
   String? _selectedSchool;
   String? _selectedDegree;
   ResumeTimePickerValue? _selectedPeriod;
+
+  bool get _isEditMode => _resolvedArgs.initialValue != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final EducationExperienceFormResult? initialValue =
+        _resolvedArgs.initialValue;
+    if (initialValue != null) {
+      _selectedSchool = initialValue.school;
+      _selectedDegree = initialValue.degree;
+      _majorController.text = initialValue.major;
+      _selectedPeriod = initialValue.period;
+    }
+  }
 
   @override
   void dispose() {
@@ -116,13 +139,19 @@ class _AddEducationExperiencePageState extends State<AddEducationExperiencePage>
     }
 
     context.pop(
-      EducationExperienceFormResult(
-        school: _selectedSchool!,
-        degree: _selectedDegree!,
-        major: major,
-        period: _selectedPeriod!,
+      EducationExperiencePageResult.saved(
+        EducationExperienceFormResult(
+          school: _selectedSchool!,
+          degree: _selectedDegree!,
+          major: major,
+          period: _selectedPeriod!,
+        ),
       ),
     );
+  }
+
+  void _handleDelete() {
+    context.pop(const EducationExperiencePageResult.deleted());
   }
 
   void _showMessage(String message) {
@@ -152,7 +181,7 @@ class _AddEducationExperiencePageState extends State<AddEducationExperiencePage>
           ),
         ),
         title: const Text(
-          '添加教育经历',
+          '教育经历',
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -197,34 +226,90 @@ class _AddEducationExperiencePageState extends State<AddEducationExperiencePage>
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Padding(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+          ),
           padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset > 0 ? 12 : 16),
-          child: SizedBox(
-            height: 44,
-            child: FilledButton(
-              onPressed: _handleSave,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF096DD9),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          child: Row(
+            children: <Widget>[
+              if (_isEditMode) ...<Widget>[
+                Expanded(
+                  flex: 110,
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: _handleDelete,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFEBEB),
+                        foregroundColor: const Color(0xFFD9363E),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '删除',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 22 / 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                flex: _isEditMode ? 221 : 1,
+                child: SizedBox(
+                  height: 44,
+                  child: FilledButton(
+                    onPressed: _handleSave,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF096DD9),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      '保存',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 22 / 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                '保存',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+class AddEducationExperiencePageArgs {
+  const AddEducationExperiencePageArgs({this.initialValue});
+
+  final EducationExperienceFormResult? initialValue;
+}
+
+class EducationExperiencePageResult {
+  const EducationExperiencePageResult.saved(this.value) : deleted = false;
+
+  const EducationExperiencePageResult.deleted()
+    : value = null,
+      deleted = true;
+
+  final EducationExperienceFormResult? value;
+  final bool deleted;
 }
 
 class EducationExperienceFormResult {

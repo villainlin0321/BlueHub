@@ -9,7 +9,12 @@ import '../../../shared/widgets/upload_placeholder_tile.dart';
 import '../../../utils/upload_picker_utils.dart';
 
 class AddSkillCertificatePage extends StatefulWidget {
-  const AddSkillCertificatePage({super.key});
+  const AddSkillCertificatePage({
+    super.key,
+    this.args,
+  });
+
+  final AddSkillCertificatePageArgs? args;
 
   @override
   State<AddSkillCertificatePage> createState() =>
@@ -33,6 +38,33 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
   String? _certificateName;
   ResumeTimePickerValue? _issuedAt;
   final List<PickedUploadFile> _selectedImages = <PickedUploadFile>[];
+
+  AddSkillCertificatePageArgs get _resolvedArgs =>
+      widget.args ?? const AddSkillCertificatePageArgs();
+
+  bool get _isEditMode => _resolvedArgs.initialValue != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final ResumeCertificateFormResult? initialValue =
+        _resolvedArgs.initialValue;
+    if (initialValue == null) {
+      return;
+    }
+    _certificateName = initialValue.title;
+    _issuedAt = initialValue.issuedAt;
+    _selectedImages.addAll(
+      <PickedUploadFile>[
+        ...initialValue.localImagePaths.map(
+          (String path) => _buildInitialImage(path),
+        ),
+        ...initialValue.networkImageUrls.map(
+          (String path) => _buildInitialImage(path),
+        ),
+      ],
+    );
+  }
 
   Future<void> _openCertificateSheet() async {
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
@@ -164,14 +196,40 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
     }
 
     context.pop(
-      ResumeCertificateFormResult(
-        title: _certificateName!,
-        issuedAt: _issuedAt!,
-        imagePaths: _selectedImages
-            .map((PickedUploadFile file) => file.path)
-            .toList(growable: false),
+      ResumeCertificatePageResult.saved(
+        ResumeCertificateFormResult(
+          title: _certificateName!,
+          issuedAt: _issuedAt!,
+          localImagePaths: _selectedImages
+              .where((PickedUploadFile file) => !_isNetworkPath(file.path))
+              .map((PickedUploadFile file) => file.path)
+              .toList(growable: false),
+          networkImageUrls: _selectedImages
+              .where((PickedUploadFile file) => _isNetworkPath(file.path))
+              .map((PickedUploadFile file) => file.path)
+              .toList(growable: false),
+        ),
       ),
     );
+  }
+
+  void _handleDelete() {
+    context.pop(const ResumeCertificatePageResult.deleted());
+  }
+
+  PickedUploadFile _buildInitialImage(String path) {
+    return PickedUploadFile(
+      id: '${DateTime.now().microsecondsSinceEpoch}_${path.hashCode}',
+      name: path.split('/').last,
+      path: path,
+      sourceType: UploadSourceType.gallery,
+      state: UploadItemState.success,
+      isImage: true,
+    );
+  }
+
+  bool _isNetworkPath(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
 
   @override
@@ -193,7 +251,7 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
           ),
         ),
         title: const Text(
-          '添加技能证书',
+          '技能证书',
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -256,28 +314,62 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              SizedBox(
-                height: 44,
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _handleSave,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF096DD9),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              Row(
+                children: <Widget>[
+                  if (_isEditMode) ...<Widget>[
+                    Expanded(
+                      flex: 110,
+                      child: SizedBox(
+                        height: 44,
+                        child: FilledButton(
+                          onPressed: _handleDelete,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFEBEB),
+                            foregroundColor: const Color(0xFFD9363E),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            '删除',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              height: 22 / 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    flex: _isEditMode ? 221 : 1,
+                    child: SizedBox(
+                      height: 44,
+                      child: FilledButton(
+                        onPressed: _handleSave,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF096DD9),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          '保存',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            height: 22 / 16,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    '保存',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 22 / 16,
-                    ),
-                  ),
-                ),
+                ],
               ),
               const SizedBox(height: 33)
             ],
@@ -292,12 +384,31 @@ class ResumeCertificateFormResult {
   const ResumeCertificateFormResult({
     required this.title,
     required this.issuedAt,
-    required this.imagePaths,
+    this.localImagePaths = const <String>[],
+    this.networkImageUrls = const <String>[],
   });
 
   final String title;
   final ResumeTimePickerValue issuedAt;
-  final List<String> imagePaths;
+  final List<String> localImagePaths;
+  final List<String> networkImageUrls;
+}
+
+class AddSkillCertificatePageArgs {
+  const AddSkillCertificatePageArgs({this.initialValue});
+
+  final ResumeCertificateFormResult? initialValue;
+}
+
+class ResumeCertificatePageResult {
+  const ResumeCertificatePageResult.saved(this.value) : deleted = false;
+
+  const ResumeCertificatePageResult.deleted()
+    : value = null,
+      deleted = true;
+
+  final ResumeCertificateFormResult? value;
+  final bool deleted;
 }
 
 class _CertificateSelectorField extends StatelessWidget {
@@ -390,13 +501,21 @@ class _CertificateImagePreviewTile extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.file(
-                File(file.path),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return const ColoredBox(color: Color(0xFFF5F7FA));
-                },
-              ),
+              child: _isNetworkPath(file.path)
+                  ? Image.network(
+                      file.path,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return const ColoredBox(color: Color(0xFFF5F7FA));
+                      },
+                    )
+                  : Image.file(
+                      File(file.path),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return const ColoredBox(color: Color(0xFFF5F7FA));
+                      },
+                    ),
             ),
           ),
         ),
@@ -424,6 +543,10 @@ class _CertificateImagePreviewTile extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  bool _isNetworkPath(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
 }
 
