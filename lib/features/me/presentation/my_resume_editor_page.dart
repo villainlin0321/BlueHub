@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -186,14 +187,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   late final List<_ResumeExperience> _experiences;
   late final List<_ResumeCertificate> _certificates;
   late final List<_ResumeEducation> _educations;
-  late final String _salaryValue;
-  late final String _salaryMaxValue;
+  late final TextEditingController _salaryValueController;
+  late final TextEditingController _salaryMaxValueController;
   late String _selfEvaluation;
   bool _isSaving = false;
   bool _didSave = false;
 
   /// 当前页面是否为创建模式。
   bool get _isCreateMode => widget.args.mode == ResumeEditorMode.create;
+
+  String get _salaryValue => _salaryValueController.text.trim();
+
+  String get _salaryMaxValue => _salaryMaxValueController.text.trim();
 
   /// 当前页面展示服务端返回的简历完整度，创建模式默认 0。
   int get _completionRate {
@@ -218,9 +223,20 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     _experiences = _buildExperiences(_resume);
     _certificates = _buildCertificates(_resume);
     _educations = _buildEducations(_resume);
-    _salaryValue = _extractSalaryValue(_draft.salary);
-    _salaryMaxValue = _extractSalaryMaxValue(_draft.salary);
+    _salaryValueController = TextEditingController(
+      text: _extractSalaryValue(_draft.salary),
+    );
+    _salaryMaxValueController = TextEditingController(
+      text: _extractSalaryMaxValue(_draft.salary),
+    );
     _selfEvaluation = _draft.summary;
+  }
+
+  @override
+  void dispose() {
+    _salaryValueController.dispose();
+    _salaryMaxValueController.dispose();
+    super.dispose();
   }
 
   @override
@@ -228,25 +244,29 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: _buildAppBar(context),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          _buildCompletionSection(),
-          const SizedBox(height: 2),
-          _buildBasicInfoSection(),
-          const SizedBox(height: 2),
-          _buildJobIntentionSection(),
-          const SizedBox(height: 2),
-          _buildWorkExperienceSection(),
-          const SizedBox(height: 2),
-          _buildLanguageSection(),
-          const SizedBox(height: 2),
-          _buildCertificateSection(),
-          const SizedBox(height: 2),
-          _buildEducationSection(),
-          const SizedBox(height: 2),
-          _buildSelfEvaluationSection(),
-        ],
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            _buildCompletionSection(),
+            const SizedBox(height: 2),
+            _buildBasicInfoSection(),
+            const SizedBox(height: 2),
+            _buildJobIntentionSection(),
+            const SizedBox(height: 2),
+            _buildWorkExperienceSection(),
+            const SizedBox(height: 2),
+            _buildLanguageSection(),
+            const SizedBox(height: 2),
+            _buildCertificateSection(),
+            const SizedBox(height: 2),
+            _buildEducationSection(),
+            const SizedBox(height: 2),
+            _buildSelfEvaluationSection(),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomAction(context),
     );
@@ -765,26 +785,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           Row(
             children: <Widget>[
               Expanded(
-                child: Container(
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _salaryValue.isEmpty ? '最低期望' : _salaryValue,
-                    style: TextStyle(
-                      color: _salaryValue.isEmpty
-                          ? const Color(0xFFBFBFBF)
-                          : const Color(0xFF171A1D),
-                      fontSize: 16,
-                      fontWeight: _salaryValue.isEmpty
-                          ? FontWeight.w400
-                          : FontWeight.w500,
-                      height: 18 / 16,
-                    ),
-                  ),
+                child: _buildSalaryInputField(
+                  controller: _salaryValueController,
+                  hintText: '最低期望',
                 ),
               ),
               const SizedBox(width: 12),
@@ -799,31 +802,53 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Container(
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _salaryMaxValue.isEmpty ? '最高期望' : _salaryMaxValue,
-                    style: TextStyle(
-                      color: _salaryMaxValue.isEmpty
-                          ? const Color(0xFFBFBFBF)
-                          : const Color(0xFF171A1D),
-                      fontSize: 16,
-                      fontWeight: _salaryMaxValue.isEmpty
-                          ? FontWeight.w400
-                          : FontWeight.w500,
-                      height: 18 / 16,
-                    ),
-                  ),
+                child: _buildSalaryInputField(
+                  controller: _salaryMaxValueController,
+                  hintText: '最高期望',
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSalaryInputField({
+    required TextEditingController controller,
+    required String hintText,
+  }) {
+    return Container(
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Color(0xFF171A1D),
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          height: 18 / 16,
+        ),
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        ],
+        decoration: InputDecoration(
+          isCollapsed: true,
+          border: InputBorder.none,
+          hintText: hintText,
+          hintStyle: const TextStyle(
+            color: Color(0xFFBFBFBF),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            height: 18 / 16,
+          ),
+        ),
       ),
     );
   }
