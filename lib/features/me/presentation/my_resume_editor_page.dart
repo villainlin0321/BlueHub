@@ -333,7 +333,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             level: item.level,
           ),
         )
-        .toList(growable: false);
+        .toList();
   }
 
   /// 构建真实工作经历列表，避免继续混入本地示例内容。
@@ -351,7 +351,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             summary: item.description,
           ),
         )
-        .toList(growable: false);
+        .toList();
   }
 
   /// 构建真实技能证书列表，图片按本地路径或网络地址分类。
@@ -373,7 +373,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 : const <String>[],
           ),
         )
-        .toList(growable: false);
+        .toList();
   }
 
   /// 构建真实教育经历列表，保留专业、学历与年份。
@@ -389,7 +389,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             endYear: item.endYear,
           ),
         )
-        .toList(growable: false);
+        .toList();
   }
 
   /// 只保留薪资左侧输入值，以匹配当前页面布局。

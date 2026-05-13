@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'permission_utils.dart';
+
 enum UploadSourceType { camera, gallery, file }
 
 enum UploadItemState { uploading, success, failure }
@@ -65,6 +67,10 @@ class UploadPickerUtils {
   static final ImagePicker _imagePicker = ImagePicker();
 
   static Future<List<PickedUploadFile>> pickFromCamera() async {
+    final bool granted = await PermissionUtils.requestCameraPermission();
+    if (!granted) {
+      return const <PickedUploadFile>[];
+    }
     final XFile? image = await _imagePicker.pickImage(
       source: ImageSource.camera,
       imageQuality: 90,
@@ -82,6 +88,10 @@ class UploadPickerUtils {
   }
 
   static Future<List<PickedUploadFile>> pickFromGallery() async {
+    final bool granted = await PermissionUtils.requestGalleryPermission();
+    if (!granted) {
+      return const <PickedUploadFile>[];
+    }
     final List<XFile> images = await _imagePicker.pickMultiImage(
       imageQuality: 90,
     );
