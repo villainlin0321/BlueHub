@@ -1,25 +1,27 @@
 import '../../employer/data/employer_models.dart';
+import '../../files/data/file_models.dart';
 import '../../visa/data/provider_models.dart';
 
 enum QualificationCertificationRole { serviceProvider, company }
 
 enum QualificationDocType {
-  businessLicense('business_license', '营业执照', 'cert'),
-  specialPermit('special_permit', '特许经验许可', 'cert'),
-  idCard('id_card', '身份证', 'id_card');
+  businessLicense('business_license', '营业执照', FileScene.cert),
+  specialPermit('special_permit', '特许经验许可', FileScene.cert),
+  idCard('id_card', '身份证', FileScene.idCard);
 
-  const QualificationDocType(this.apiValue, this.defaultDocName, this.uploadScene);
+  const QualificationDocType(
+    this.apiValue,
+    this.defaultDocName,
+    this.uploadScene,
+  );
 
   final String apiValue;
   final String defaultDocName;
-  final String uploadScene;
+  final FileScene uploadScene;
 }
 
 class QualificationCountryOption {
-  const QualificationCountryOption({
-    required this.code,
-    required this.label,
-  });
+  const QualificationCountryOption({required this.code, required this.label});
 
   final String code;
   final String label;
@@ -37,9 +39,7 @@ const List<QualificationCountryOption> qualificationCountryOptions =
     ];
 
 String qualificationCountryLabel(QualificationCertificationRole role) {
-  return role == QualificationCertificationRole.company
-      ? '主营国家'
-      : '期望国家/地区';
+  return role == QualificationCertificationRole.company ? '主营国家' : '期望国家/地区';
 }
 
 String qualificationCountryCodeFromLabel(String label) {
@@ -68,9 +68,7 @@ List<String> qualificationCountryCodesFromLabels(Iterable<String> labels) {
 }
 
 List<String> qualificationCountryLabelsFromCodes(Iterable<String> codes) {
-  return codes
-      .map(qualificationCountryLabelFromCode)
-      .toList(growable: false);
+  return codes.map(qualificationCountryLabelFromCode).toList(growable: false);
 }
 
 class UploadedQualificationDoc {

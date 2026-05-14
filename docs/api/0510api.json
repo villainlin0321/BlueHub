@@ -22,6 +22,10 @@
   ],
   "tags": [
     {
+      "name": "人才中心模块",
+      "description": "企业/服务商浏览公开简历，支持关键字/国家/岗位筛选"
+    },
+    {
       "name": "简历模块",
       "description": "简历 CRUD，支持多份简历管理，雇主查看他人默认简历"
     },
@@ -40,6 +44,10 @@
     {
       "name": "岗位模块",
       "description": "岗位发布/查询/管理，求职者端列表/详情，雇主端 CRUD"
+    },
+    {
+      "name": "职位字典模块",
+      "description": "两级职位树：分类（餐饮/医护等） → 具体职位；支持中英文关键字搜索"
     },
     {
       "name": "用户模块",
@@ -80,6 +88,14 @@
     {
       "name": "系统配置模块",
       "description": "标签字典等系统配置查询"
+    },
+    {
+      "name": "国家字典模块",
+      "description": "国家/地区搜索，支持中英文关键字，返回 ISO 2位代码及双语名称"
+    },
+    {
+      "name": "学校字典模块",
+      "description": "毕业院校搜索，支持国内外多语言学校名称"
     },
     {
       "name": "签证订单模块",
@@ -4336,7 +4352,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "状态：all / pending / invited / rejected",
+            "description": "状态过滤：all（全部）/ pending（待处理，等同 submitted）/ invited（已邀面，等同 interview）/ rejected / hired",
             "required": false,
             "schema": {
               "type": "string",
@@ -5045,7 +5061,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "状态过滤",
+            "description": "订单状态过滤，传 all 或不传返回全部：\n· all              — 全部订单\n· pending_payment  — 待支付\n· pending_upload   — 待申请人上传材料\n· reviewing        — 材料审核中\n· rejected         — 材料被驳回\n· embassy_submitted— 已递交使馆\n· completed        — 出签完成\n· cancelled        — 已取消\n· refunded         — 已退款\n",
             "required": false,
             "schema": {
               "type": "string",
@@ -5055,7 +5071,7 @@
           {
             "name": "country",
             "in": "query",
-            "description": "国家过滤",
+            "description": "目标国家过滤（ISO 代码，如 DE / FR），不传则不过滤",
             "required": false,
             "schema": {
               "type": "string"
@@ -5205,6 +5221,223 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultPageResultVisaOrderVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/talents": {
+      "get": {
+        "tags": [
+          "人才中心模块"
+        ],
+        "summary": "分页浏览公开简历（人才中心）。\n\n ",
+        "description": "分页浏览公开简历（人才中心）。\n\n <p>仅 employer 和 visa_provider 角色可访问；\n 返回已公开（is_public=true）且设为默认（is_default=true）的简历，\n 展示年龄、性别、工作年限、期望职位/国家等核心字段，电话等隐私信息不返回。</p><br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listTalents",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键字（匹配自我评价或期望职位）",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "目标国家 ISO 2 码，如 DE / FR",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "description": "期望职位，如 中餐厨师",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页条数，最大 50",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "分页人才 VO 列表",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultTalentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schools": {
+      "get": {
+        "tags": [
+          "学校字典模块"
+        ],
+        "summary": "搜索毕业学校。\n\n ",
+        "description": "搜索毕业学校。\n\n <p>关键字可匹配中文名（如\"北京大学\"）、英文名（如\"Peking University\"）、\n 本地语言名（如\"Technische Universität München\"）或简称（如\"THU\"、\"TUM\"）。\n 结果按知名度权重降序排列，每页默认返回 20 条，最多 50 条。</p><br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键字",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "国家 ISO 代码，如 CN / DE / FR",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页条数，最大 50",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "分页学校列表",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultSchoolVO"
                 }
               }
             }
@@ -5465,6 +5698,79 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/positions": {
+      "get": {
+        "tags": [
+          "职位字典模块"
+        ],
+        "summary": "获取职位两级树（含可选关键字搜索）。\n\n ",
+        "description": "获取职位两级树（含可选关键字搜索）。\n\n <p>无关键字时返回全部分类及其下所有职位；\n 有关键字时仅返回职位名称（中/英文）匹配的条目，无匹配职位的分类自动隐藏。</p><br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listTree",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键字（匹配中文名或英文名）",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "分类列表，每项包含该分类下的职位列表",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultListPositionCategoryVO"
                 }
               }
             }
@@ -5845,6 +6151,101 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/countries": {
+      "get": {
+        "tags": [
+          "国家字典模块"
+        ],
+        "summary": "搜索国家/地区。\n\n ",
+        "description": "搜索国家/地区。\n\n <p>关键字可匹配中文名（如\"德国\"）或英文名（如\"Germany\"）；\n 未传关键字时按权重降序返回全部启用国家。</p><br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "search_1",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键字",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页条数，最大 100",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "分页国家列表",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultCountryVO"
                 }
               }
             }
@@ -9358,6 +9759,239 @@
           }
         }
       },
+      "AppResultPageResultTalentVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultTalentVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PageResultTalentVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/TalentVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
+      "TalentVO": {
+        "type": "object",
+        "description": "人才中心——公开简历展示 VO。\n\n <p>仅展示对企业/服务商有用的字段，电话、身份证等隐私信息不返回，\n 联系方式通过站内消息功能承载。</p>",
+        "properties": {
+          "resume_id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "简历 ID"
+          },
+          "user_id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户 ID"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "昵称"
+          },
+          "avatar_url": {
+            "type": "string",
+            "description": "头像 URL"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别：male / female / unknown"
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32",
+            "description": "年龄（由生日实时计算，未填生日时为 null）"
+          },
+          "completeness": {
+            "type": "integer",
+            "format": "int32",
+            "description": "简历完整度（0-100）"
+          },
+          "years_of_experience": {
+            "type": "integer",
+            "format": "int32",
+            "description": "工作年限（年，由工作经历自动计算）"
+          },
+          "target_positions": {
+            "type": "array",
+            "description": "期望职位列表",
+            "items": {
+              "type": "string"
+            }
+          },
+          "target_countries": {
+            "type": "array",
+            "description": "期望工作国家列表（ISO 2码）",
+            "items": {
+              "type": "string"
+            }
+          },
+          "self_evaluation": {
+            "type": "string",
+            "description": "自我评价"
+          },
+          "salary_min": {
+            "type": "number",
+            "description": "期望最低月薪"
+          },
+          "salary_max": {
+            "type": "number",
+            "description": "期望最高月薪"
+          },
+          "salary_currency": {
+            "type": "string",
+            "description": "薪资货币单位（默认 EUR）"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "简历最后更新时间"
+          }
+        }
+      },
+      "AppResultPageResultSchoolVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultSchoolVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PageResultSchoolVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/SchoolVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
+      "SchoolVO": {
+        "type": "object",
+        "description": "学校信息",
+        "properties": {
+          "schoolId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "学校 ID"
+          },
+          "nameZh": {
+            "type": "string",
+            "description": "中文名称",
+            "example": "慕尼黑工业大学"
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "英文名称",
+            "example": "Technical University of Munich"
+          },
+          "nameLocal": {
+            "type": "string",
+            "description": "本地语言名称（非英语地区），国内学校为 null",
+            "example": "Technische Universität München"
+          },
+          "shortName": {
+            "type": "string",
+            "description": "常用简称",
+            "example": "TUM"
+          },
+          "country": {
+            "type": "string",
+            "description": "国家 ISO 代码",
+            "example": "DE"
+          },
+          "city": {
+            "type": "string",
+            "description": "城市",
+            "example": "慕尼黑"
+          },
+          "schoolType": {
+            "type": "string",
+            "description": "学校类型：university / college / vocational"
+          },
+          "is985": {
+            "type": "boolean",
+            "description": "是否国内 985"
+          },
+          "is211": {
+            "type": "boolean",
+            "description": "是否国内 211"
+          },
+          "isDoubleFirstClass": {
+            "type": "boolean",
+            "description": "是否双一流"
+          }
+        }
+      },
       "AppResultResumeVO": {
         "type": "object",
         "description": "统一响应体",
@@ -9724,6 +10358,84 @@
             "type": "string"
           },
           "data": {}
+        }
+      },
+      "AppResultListPositionCategoryVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "array",
+            "description": "响应数据",
+            "items": {
+              "$ref": "#/components/schemas/PositionCategoryVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PositionCategoryVO": {
+        "type": "object",
+        "description": "职位分类 VO（第一层级），包含该分类下所有启用职位。\n\n <p>由 <code>GET /positions</code> 接口以列表形式返回，\n 构成两级职位选择树：分类 → 职位。</p>",
+        "properties": {
+          "category_code": {
+            "type": "string",
+            "description": "分类代码（如：food_service）"
+          },
+          "name_zh": {
+            "type": "string",
+            "description": "分类中文名称（如：餐饮类）"
+          },
+          "name_en": {
+            "type": "string",
+            "description": "分类英文名称（如：Food & Beverage）"
+          },
+          "positions": {
+            "type": "array",
+            "description": "该分类下的职位列表（第二层级）",
+            "items": {
+              "$ref": "#/components/schemas/PositionVO"
+            }
+          }
+        }
+      },
+      "PositionVO": {
+        "type": "object",
+        "description": "期望职位字典 VO。",
+        "properties": {
+          "position_code": {
+            "type": "string",
+            "description": "职位代码（如：chef_chinese）"
+          },
+          "name_zh": {
+            "type": "string",
+            "description": "中文名称"
+          },
+          "name_en": {
+            "type": "string",
+            "description": "英文名称"
+          }
         }
       },
       "AppResultPageResultJobListVO": {
@@ -10387,6 +11099,73 @@
           "isVerified": {
             "type": "boolean",
             "description": "是否已认证"
+          }
+        }
+      },
+      "AppResultPageResultCountryVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultCountryVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "CountryVO": {
+        "type": "object",
+        "description": "国家/地区字典 VO。",
+        "properties": {
+          "country_code": {
+            "type": "string",
+            "description": "国家/地区代码（ISO 3166-1 alpha-2，如 DE）"
+          },
+          "name_zh": {
+            "type": "string",
+            "description": "中文名称"
+          },
+          "name_en": {
+            "type": "string",
+            "description": "英文名称"
+          }
+        }
+      },
+      "PageResultCountryVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/CountryVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
           }
         }
       },

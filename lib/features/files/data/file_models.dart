@@ -1,5 +1,28 @@
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
+enum FileScene {
+  avatar('avatar'),
+  material('material'),
+  cert('cert'),
+  review('review'),
+  chat('chat'),
+  packageCover('package_cover'),
+  idCard('id_card'),
+  visaDoc('visa_doc');
+
+  const FileScene(this.value);
+
+  final String value;
+
+  static FileScene fromValue(String value) {
+    return FileScene.values.firstWhere(
+      (FileScene scene) => scene.value == value,
+      orElse: () =>
+          throw ArgumentError.value(value, 'scene', 'Unsupported file scene'),
+    );
+  }
+}
+
 class ConfirmUploadBO {
   const ConfirmUploadBO({
     required this.fileId,
@@ -40,7 +63,7 @@ class FilePresignBO {
   final String fileName;
   final String fileType;
   final int fileSize;
-  final String scene;
+  final FileScene scene;
   final String accessType;
 
   factory FilePresignBO.fromJson(JsonMap json) {
@@ -48,7 +71,7 @@ class FilePresignBO {
       fileName: readString(json, 'fileName'),
       fileType: readString(json, 'fileType'),
       fileSize: readInt(json, 'fileSize'),
-      scene: readString(json, 'scene'),
+      scene: FileScene.fromValue(readString(json, 'scene')),
       accessType: readString(json, 'accessType'),
     );
   }
@@ -58,7 +81,7 @@ class FilePresignBO {
       'fileName': fileName,
       'fileType': fileType,
       'fileSize': fileSize,
-      'scene': scene,
+      'scene': scene.value,
       'accessType': accessType,
     };
   }
