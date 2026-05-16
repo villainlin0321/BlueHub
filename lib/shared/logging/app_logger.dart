@@ -23,8 +23,15 @@ class AppLogger {
   Future<void>? _initTask;
   Future<void> _writeQueue = Future<void>.value();
   late final logger.Logger _logger = logger.Logger(
-    printer: _AppLogPrinter(_sanitizeValue, _truncate),
-    output: _AppLogOutput(_writeLine),
+    printer: logger.PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 8,
+      lineLength: 100,
+      colors: true,
+      printEmojis: false,
+      dateTimeFormat: logger.DateTimeFormat.onlyTimeAndSinceStart,
+    ),
+    output: _DebugPrintOutput(_writeConsoleLine),
     filter: _AllowAllLogFilter(),
     level: logger.Level.trace,
   );
@@ -167,11 +174,16 @@ class AppLogger {
     StackTrace? stackTrace,
     Map<String, Object?>? context,
   }) {
-    final payload = <String, Object?>{
-      'tag': tag,
-      'message': message,
-      if (context != null && context.isNotEmpty) 'context': context,
-    };
+    final payload = _buildConsolePayload(tag, message, context: context);
+
+    final structuredLine = _buildStructuredLine(
+      level: level,
+      tag: tag,
+      message: message,
+      context: context,
+      error: error,
+      stackTrace: stackTrace,
+    );
 
     switch (level) {
       case AppLogLevel.debug:
@@ -190,12 +202,50 @@ class AppLogger {
         _logger.f(payload, error: error, stackTrace: stackTrace);
         break;
     }
+
+    _writeFileLine(structuredLine);
   }
 
-  /// 串行写入日志行，避免并发场景下输出顺序错乱。
-  void _writeLine(String line) {
-    debugPrint(line);
+  Map<String, Object?> _buildConsolePayload(
+    String tag,
+    String message, {
+    Map<String, Object?>? context,
+  }) {
+    return <String, Object?>{
+      'tag': tag,
+      'message': message,
+      if (context != null && context.isNotEmpty)
+        'context': _sanitizeValue(context),
+    };
+  }
 
+  String _buildStructuredLine({
+    required AppLogLevel level,
+    required String tag,
+    required String message,
+    Map<String, Object?>? context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    return jsonEncode(<String, Object?>{
+      'time': DateTime.now().toIso8601String(),
+      'level': level.name.toUpperCase(),
+      'tag': tag,
+      'message': message,
+      if (context != null && context.isNotEmpty)
+        'context': _sanitizeValue(context),
+      if (error != null) 'error': _truncate(error.toString()),
+      if (stackTrace != null) 'stackTrace': _truncate(stackTrace.toString()),
+    });
+  }
+
+  /// 控制台输出改用逐行 `debugPrint`，避免长行被截断。
+  void _writeConsoleLine(String line) {
+    debugPrint(line);
+  }
+
+  /// 串行写入日志文件，避免并发场景下输出顺序错乱。
+  void _writeFileLine(String line) {
     final sink = _sink;
     if (sink == null) {
       return;
@@ -273,41 +323,9 @@ class AppLogger {
   }
 }
 
-/// 自定义日志打印器：统一把第三方日志事件转换为单行 JSON 文本。
-class _AppLogPrinter extends logger.LogPrinter {
-  _AppLogPrinter(this._sanitizeValue, this._truncate);
-
-  final Object? Function(Object? value, {String? key}) _sanitizeValue;
-  final String Function(String text) _truncate;
-
-  @override
-  List<String> log(logger.LogEvent event) {
-    final payload = event.message is Map<String, Object?>
-        ? Map<String, Object?>.from(event.message as Map<String, Object?>)
-        : <String, Object?>{'message': event.message.toString()};
-
-    final tag = payload.remove('tag')?.toString() ?? 'APP';
-    final message = payload.remove('message')?.toString() ?? '';
-    final context = payload.remove('context');
-
-    final line = jsonEncode(<String, Object?>{
-      'time': DateTime.now().toIso8601String(),
-      'level': event.level.name.toUpperCase(),
-      'tag': tag,
-      'message': message,
-      if (context != null) 'context': _sanitizeValue(context),
-      if (event.error != null) 'error': _truncate(event.error.toString()),
-      if (event.stackTrace != null)
-        'stackTrace': _truncate(event.stackTrace.toString()),
-    });
-
-    return <String>[line];
-  }
-}
-
-/// 自定义输出器：把格式化后的日志同时交给控制台和文件落盘链路。
-class _AppLogOutput extends logger.LogOutput {
-  _AppLogOutput(this._writer);
+/// 控制台输出器：逐行交给 `debugPrint`，保留 PrettyPrinter 的多行与颜色。
+class _DebugPrintOutput extends logger.LogOutput {
+  _DebugPrintOutput(this._writer);
 
   final void Function(String line) _writer;
 

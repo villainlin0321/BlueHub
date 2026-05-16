@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/network/api_exception.dart';
@@ -14,6 +11,15 @@ import '../presentation/qualification_certification_flow.dart';
 class QualificationUploadHelper {
   QualificationUploadHelper._();
 
+  static const Duration _initialQualificationSyncDelay = Duration(
+    milliseconds: 300,
+  );
+  static const List<Duration> _qualificationRetryDelays = <Duration>[
+    Duration(milliseconds: 500),
+    Duration(seconds: 1),
+    Duration(milliseconds: 1500),
+  ];
+
   /// 上传资质图片：先走文件预签名上传，再回调资质接口登记文档信息。
   static Future<UploadedQualificationDoc> uploadQualificationImage({
     required WidgetRef ref,
@@ -22,38 +28,12 @@ class QualificationUploadHelper {
     String? docName,
   }) async {
     final String path = file.path;
-    final File localFile = File(path);
-    if (!localFile.existsSync()) {
-      throw ApiException.unknown('qualification file not found');
-    }
-
-    final List<int> bytes = await localFile.readAsBytes();
-    final String mimeType = _resolveMimeType(path);
     final FilePresignVO presign = await ref
         .read(fileServiceProvider)
-        .presign(
-          request: FilePresignBO(
-            fileName: UploadPickerUtils.basename(path),
-            fileType: mimeType,
-            fileSize: bytes.length,
-            scene: docType.uploadScene,
-            accessType: 'PUBLIC',
-          ),
-        );
-
-    await _putFileToPresignedUrl(
-      uploadUrl: presign.uploadUrl,
-      bytes: bytes,
-      mimeType: mimeType,
-    );
-    await ref
-        .read(fileServiceProvider)
-        .confirmUpload(
-          request: ConfirmUploadBO(
-            fileId: presign.fileId,
-            objectKey: presign.objectKey,
-            fileSize: bytes.length,
-          ),
+        .uploadFile(
+          path: path,
+          scene: docType.uploadScene,
+          errorMessage: '文件上传失败，请稍后重试',
         );
 
     final UploadedQualificationDoc uploadedDoc = UploadedQualificationDoc(
@@ -65,72 +45,58 @@ class QualificationUploadHelper {
       fileUrl: presign.fileUrl,
       localPath: path,
     );
-    await ref
-        .read(providerServiceProvider)
-        .uploadQualifications(
-          request: UploadQualificationDocsBO(
-            docs: <DocItemBO>[uploadedDoc.toDocItemBO()],
-          ),
-        );
+
+    await _uploadQualificationsWithRetry(
+      ref: ref,
+      request: UploadQualificationDocsBO(
+        docs: <DocItemBO>[uploadedDoc.toDocItemBO()],
+      ),
+    );
     return uploadedDoc;
   }
 
-  static Future<void> _putFileToPresignedUrl({
-    required String uploadUrl,
-    required List<int> bytes,
-    required String mimeType,
+  /// 规避文件确认后立即登记资质时的短暂一致性窗口，失败时做有限重试。
+  static Future<void> _uploadQualificationsWithRetry({
+    required WidgetRef ref,
+    required UploadQualificationDocsBO request,
   }) async {
-    final Dio uploadDio = Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 20),
-        sendTimeout: const Duration(seconds: 20),
-      ),
-    );
-    try {
-      final Response<dynamic> response = await uploadDio.put<dynamic>(
-        uploadUrl,
-        data: bytes,
-        options: Options(
-          headers: <String, Object>{
-            Headers.contentTypeHeader: mimeType,
-            Headers.contentLengthHeader: bytes.length,
-          },
-          responseType: ResponseType.plain,
-          validateStatus: (int? status) =>
-              status != null && status >= 200 && status < 300,
-        ),
-      );
-      if ((response.statusCode ?? 0) < 200 ||
-          (response.statusCode ?? 0) >= 300) {
-        throw ApiException.http(
-          statusCode: response.statusCode,
-          message: '文件上传失败，请稍后重试',
-        );
+    await Future.delayed(_initialQualificationSyncDelay);
+
+    Object? lastError;
+    for (
+      int attempt = 0;
+      attempt <= _qualificationRetryDelays.length;
+      attempt++
+    ) {
+      try {
+        await ref
+            .read(providerServiceProvider)
+            .uploadQualifications(request: request);
+        return;
+      } catch (error) {
+        lastError = error;
+        if (!_shouldRetryQualificationUpload(error) ||
+            attempt >= _qualificationRetryDelays.length) {
+          rethrow;
+        }
+        await Future.delayed(_qualificationRetryDelays[attempt]);
       }
-    } on DioException catch (error) {
-      throw ApiException.http(
-        statusCode: error.response?.statusCode,
-        message: '文件上传失败，请稍后重试',
-        original: error,
-      );
-    } finally {
-      uploadDio.close(force: true);
+    }
+
+    if (lastError != null) {
+      throw lastError;
     }
   }
 
-  static String _resolveMimeType(String path) {
-    final String extension = path.split('.').last.toLowerCase();
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      default:
-        return 'application/octet-stream';
+  static bool _shouldRetryQualificationUpload(Object error) {
+    if (error is! ApiException) {
+      return false;
     }
+    if (error.type == ApiExceptionType.network ||
+        error.type == ApiExceptionType.unknown) {
+      return true;
+    }
+    return error.type == ApiExceptionType.http &&
+        (error.statusCode == null || error.statusCode! >= 500);
   }
 }

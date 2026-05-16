@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -288,85 +285,14 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 根据文件接口完成头像上传，返回可用于 `updateMe` 的文件 ID。
   Future<int> _uploadAvatar(String path) async {
-    final File file = File(path);
-    if (!file.existsSync()) {
-      throw ApiException.unknown('avatar file not found');
-    }
-
-    final List<int> bytes = await file.readAsBytes();
-    final String mimeType = _resolveMimeType(path);
     final FilePresignVO presign = await ref
         .read(fileServiceProvider)
-        .presign(
-          request: FilePresignBO(
-            fileName: UploadPickerUtils.basename(path),
-            fileType: mimeType,
-            fileSize: bytes.length,
-            scene: 'avatar',
-            accessType: 'PUBLIC',
-          ),
-        );
-
-    await _putFileToPresignedUrl(
-      uploadUrl: presign.uploadUrl,
-      bytes: bytes,
-      mimeType: mimeType,
-    );
-    await ref
-        .read(fileServiceProvider)
-        .confirmUpload(
-          request: ConfirmUploadBO(
-            fileId: presign.fileId,
-            objectKey: presign.objectKey,
-            fileSize: bytes.length,
-          ),
+        .uploadFile(
+          path: path,
+          scene: FileScene.avatar,
+          errorMessage: '头像上传失败，请稍后重试',
         );
     return presign.fileId;
-  }
-
-  /// 使用预签名 URL 直传头像文件，失败时抛出友好的业务异常。
-  Future<void> _putFileToPresignedUrl({
-    required String uploadUrl,
-    required List<int> bytes,
-    required String mimeType,
-  }) async {
-    final Dio uploadDio = Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 20),
-        sendTimeout: const Duration(seconds: 20),
-      ),
-    );
-    try {
-      final Response<dynamic> response = await uploadDio.put<dynamic>(
-        uploadUrl,
-        data: bytes,
-        options: Options(
-          headers: <String, Object>{
-            Headers.contentTypeHeader: mimeType,
-            Headers.contentLengthHeader: bytes.length,
-          },
-          responseType: ResponseType.plain,
-          validateStatus: (int? status) =>
-              status != null && status >= 200 && status < 300,
-        ),
-      );
-      if ((response.statusCode ?? 0) < 200 ||
-          (response.statusCode ?? 0) >= 300) {
-        throw ApiException.http(
-          statusCode: response.statusCode,
-          message: '头像上传失败，请稍后重试',
-        );
-      }
-    } on DioException catch (error) {
-      throw ApiException.http(
-        statusCode: error.response?.statusCode,
-        message: '头像上传失败，请稍后重试',
-        original: error,
-      );
-    } finally {
-      uploadDio.close(force: true);
-    }
   }
 
   /// 将服务端生日值解析为可用于日期选择器的 `DateTime`。
@@ -419,27 +345,6 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
       default:
         return 'unknown';
     }
-  }
-
-  /// 根据文件后缀推导头像上传需要的 MIME 类型。
-  String _resolveMimeType(String path) {
-    final String normalized = path.toLowerCase();
-    if (normalized.endsWith('.png')) {
-      return 'image/png';
-    }
-    if (normalized.endsWith('.webp')) {
-      return 'image/webp';
-    }
-    if (normalized.endsWith('.gif')) {
-      return 'image/gif';
-    }
-    if (normalized.endsWith('.heic')) {
-      return 'image/heic';
-    }
-    if (normalized.endsWith('.heif')) {
-      return 'image/heif';
-    }
-    return 'image/jpeg';
   }
 
   /// 把接口异常转换成可直接展示给用户的提示文案。
