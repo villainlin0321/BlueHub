@@ -3,7 +3,7 @@ import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
 import 'package:bluehub_app/shared/network/sse_client.dart';
 import 'package:bluehub_app/shared/network/sse_models.dart';
-import 'message_models.dart';
+import '../../../features/messages/data/message_models.dart';
 
 class MessageService {
   MessageService({required ApiClient apiClient, required SseClient sseClient})

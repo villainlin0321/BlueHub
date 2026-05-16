@@ -1,6 +1,6 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'resume_models.dart';
+import '../../../features/me/data/resume_models.dart';
 
 class ResumeService {
   ResumeService({required ApiClient apiClient}) : _apiClient = apiClient;

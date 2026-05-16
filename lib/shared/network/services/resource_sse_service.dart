@@ -2,7 +2,7 @@ import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/sse_client.dart';
 import 'package:bluehub_app/shared/network/sse_models.dart';
-import 'resource_sse_models.dart';
+import '../../../features/sse/data/resource_sse_models.dart';
 
 class ResourceSseService {
   ResourceSseService({

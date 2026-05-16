@@ -2,7 +2,7 @@ import 'package:bluehub_app/features/jobs/data/job_models.dart';
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
-import 'home_models.dart';
+import '../../../features/home/data/home_models.dart';
 
 class HomeService {
   HomeService({required ApiClient apiClient}) : _apiClient = apiClient;

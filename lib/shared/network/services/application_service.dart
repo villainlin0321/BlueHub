@@ -1,7 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
-import 'application_models.dart';
+import '../../../features/jobs/data/application_models.dart';
 
 class ApplicationService {
   ApplicationService({required ApiClient apiClient}) : _apiClient = apiClient;

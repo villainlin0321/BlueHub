@@ -1,6 +1,6 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'file_models.dart';
+import '../../../features/files/data/file_models.dart';
 
 class FileService {
   FileService({required ApiClient apiClient}) : _apiClient = apiClient;

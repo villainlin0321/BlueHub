@@ -4,7 +4,7 @@ import 'package:bluehub_app/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'home_models.dart';
-import 'home_service.dart';
+import '../../../shared/network/services/home_service.dart';
 
 final homeServiceProvider = Provider<HomeService>((ref) {
   return HomeService(apiClient: ref.watch(apiClientProvider));

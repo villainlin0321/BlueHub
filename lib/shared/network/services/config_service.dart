@@ -1,6 +1,6 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'config_models.dart';
+import '../../../features/config/data/config_models.dart';
 
 enum TagCategory {
   highlight('highlight'),

@@ -1,5 +1,5 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
-import 'review_models.dart';
+import '../../../features/visa/data/review_models.dart';
 
 class ReviewService {
   ReviewService({required ApiClient apiClient}) : _apiClient = apiClient;

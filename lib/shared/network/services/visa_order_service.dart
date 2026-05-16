@@ -1,7 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
-import 'visa_order_models.dart';
+import '../../../features/order/data/visa_order_models.dart';
 
 class VisaOrderService {
   VisaOrderService({required ApiClient apiClient}) : _apiClient = apiClient;

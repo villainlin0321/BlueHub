@@ -1,7 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
-import 'collection_models.dart';
+import '../../../features/me/data/collection_models.dart';
 
 class CollectionService {
   CollectionService({required ApiClient apiClient}) : _apiClient = apiClient;

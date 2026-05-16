@@ -3,7 +3,7 @@ import 'package:bluehub_app/shared/network/providers.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
 
 import 'provider_models.dart';
-import 'provider_service.dart';
+import '../../../shared/network/services/provider_service.dart';
 
 final providerServiceProvider = Provider<ProviderService>((ref) {
   return ProviderService(apiClient: ref.watch(apiClientProvider));

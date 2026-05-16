@@ -1,7 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
-import 'provider_models.dart';
+import '../../../features/visa/data/provider_models.dart';
 
 class ProviderService {
   ProviderService({required ApiClient apiClient}) : _apiClient = apiClient;

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
-import '../../../config/data/config_service.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/logging/app_logger.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';

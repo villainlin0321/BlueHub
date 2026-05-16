@@ -1,7 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/auth/token_store.dart';
-import 'auth_models.dart';
+import '../../../features/auth/data/auth_models.dart';
 
 class AuthService {
   AuthService({required ApiClient apiClient, required TokenStore tokenStore})

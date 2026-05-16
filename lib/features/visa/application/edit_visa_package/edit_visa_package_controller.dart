@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
-import '../../../config/data/config_service.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../data/visa_package_models.dart';
 import '../../data/visa_package_providers.dart';
 import 'edit_visa_package_state.dart';

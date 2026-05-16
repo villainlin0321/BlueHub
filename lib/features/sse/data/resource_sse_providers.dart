@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
-import 'resource_sse_service.dart';
+import '../../../shared/network/services/resource_sse_service.dart';
 
 final resourceSseServiceProvider = Provider<ResourceSseService>((ref) {
   return ResourceSseService(

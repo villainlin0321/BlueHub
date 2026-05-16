@@ -1,6 +1,6 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'employer_models.dart';
+import '../../../features/employer/data/employer_models.dart';
 
 class EmployerService {
   EmployerService({required ApiClient apiClient}) : _apiClient = apiClient;
