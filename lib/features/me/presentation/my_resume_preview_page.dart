@@ -1,20 +1,41 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../data/resume_models.dart';
+import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
 
 /// 简历预览页，仅展示编辑页传入的真实数据快照。
-class MyResumePreviewPage extends StatelessWidget {
-  const MyResumePreviewPage({super.key, this.args});
+class MyResumePreviewPage extends ConsumerStatefulWidget {
+  const MyResumePreviewPage({
+    super.key,
+    this.args,
+    this.userId,
+    this.title = '预览',
+  });
 
   final ResumePreviewArgs? args;
+  final int? userId;
+  final String title;
+
+  @override
+  ConsumerState<MyResumePreviewPage> createState() =>
+      _MyResumePreviewPageState();
+}
+
+class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
+  ResumePreviewArgs? _remoteArgs;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   /// 空入参时提供一个纯空白快照，避免页面崩溃。
   ResumePreviewArgs get _resolvedArgs {
-    return args ??
+    return widget.args ??
+        _remoteArgs ??
         const ResumePreviewArgs(
           draft: ResumeDraft(),
           avatarUrl: '',
@@ -81,6 +102,238 @@ class MyResumePreviewPage extends StatelessWidget {
     return '${_draft.salaryCurrency} ${_draft.salary.trim()}';
   }
 
+  bool get _shouldLoadByUserId => widget.args == null && widget.userId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_shouldLoadByUserId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _loadResumeDetail();
+      });
+    }
+  }
+
+  Future<void> _loadResumeDetail() async {
+    final int? userId = widget.userId;
+    if (userId == null || _isLoading) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final ResumeVO resume = await ref
+          .read(resumeServiceProvider)
+          .getResumeByUserId(userId: userId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _remoteArgs = _mapResumeToPreviewArgs(resume);
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _errorMessage = _normalizeError(error);
+      });
+    }
+  }
+
+  String _normalizeError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '简历加载失败，请稍后重试' : message;
+  }
+
+  ResumePreviewArgs _mapResumeToPreviewArgs(ResumeVO resume) {
+    return ResumePreviewArgs(
+      draft: ResumeDraft(
+        name: resume.basicInfo.realName,
+        region: resume.basicInfo.currentLocation,
+        age: resume.basicInfo.age > 0 ? resume.basicInfo.age.toString() : '',
+        gender: resume.basicInfo.gender,
+        phone: resume.basicInfo.phone,
+        salary: _formatSalaryRange(
+          resume.jobIntention.salaryMin,
+          resume.jobIntention.salaryMax,
+        ),
+        salaryCurrency: resume.jobIntention.salaryCurrency,
+        jobTitle: _joinNonEmpty(resume.jobIntention.positions),
+        summary: resume.selfEvaluation,
+        isPublic: resume.isPublic ?? true,
+      ),
+      avatarUrl: resume.basicInfo.avatarUrl,
+      positions: _cleanList(resume.jobIntention.positions),
+      countries: _cleanList(resume.jobIntention.countries),
+      languages: resume.languages
+          .map(_formatLanguageLabel)
+          .where((String item) => item.isNotEmpty)
+          .toList(growable: false),
+      experiences: resume.workExperiences
+          .map(
+            (WorkExperienceVO item) => ResumePreviewExperience(
+              company: item.company.trim(),
+              period: _formatExperiencePeriod(
+                item.startDate,
+                item.endDate,
+                item.isCurrent,
+              ),
+              role: _formatExperienceRole(item.department, item.position),
+              summary: item.description.trim(),
+            ),
+          )
+          .toList(growable: false),
+      certificates: resume.skillCertificates
+          .map(
+            (SkillCertificateVO item) => ResumePreviewCertificate(
+              title: _formatCertificateTitle(item.name, item.level),
+              period: item.issuedDate.trim(),
+              issuer: item.issuer.trim(),
+              networkImageUrls: item.imageUrl.trim().isEmpty
+                  ? const <String>[]
+                  : <String>[item.imageUrl.trim()],
+            ),
+          )
+          .toList(growable: false),
+      educations: resume.educations
+          .map(
+            (EducationVO item) => ResumePreviewEducation(
+              school: item.school.trim(),
+              period: _formatEducationPeriod(item.startYear, item.endYear),
+              major: _formatEducationMajor(item.major, item.degree),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  List<String> _cleanList(List<String> values) {
+    return values
+        .map((String item) => item.trim())
+        .where((String item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  String _joinNonEmpty(List<String> values) {
+    return _cleanList(values).join('·');
+  }
+
+  String _formatSalaryRange(double min, double max) {
+    final String minText = _formatAmount(min);
+    final String maxText = _formatAmount(max);
+    if (minText.isEmpty && maxText.isEmpty) {
+      return '';
+    }
+    if (minText.isEmpty) {
+      return maxText;
+    }
+    if (maxText.isEmpty || minText == maxText) {
+      return minText;
+    }
+    return '$minText-$maxText';
+  }
+
+  String _formatAmount(double value) {
+    if (value <= 0) {
+      return '';
+    }
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
+  }
+
+  String _formatLanguageLabel(LanguageAbilityVO item) {
+    final List<String> parts = <String>[
+      item.language.trim(),
+      item.certificate.trim(),
+      item.level.trim(),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+    return parts.join(' · ');
+  }
+
+  String _formatExperienceRole(String department, String position) {
+    final List<String> parts = <String>[
+      department.trim(),
+      position.trim(),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+    return parts.join(' · ');
+  }
+
+  String _formatExperiencePeriod(
+    String startDate,
+    String endDate,
+    bool isCurrent,
+  ) {
+    final String start = startDate.trim();
+    final String end = isCurrent ? '至今' : endDate.trim();
+    if (start.isEmpty && end.isEmpty) {
+      return '';
+    }
+    if (start.isEmpty) {
+      return end;
+    }
+    if (end.isEmpty) {
+      return start;
+    }
+    return '$start - $end';
+  }
+
+  String _formatCertificateTitle(String name, String level) {
+    final List<String> parts = <String>[
+      name.trim(),
+      level.trim(),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+    return parts.join(' · ');
+  }
+
+  String _formatEducationPeriod(int startYear, int endYear) {
+    final String start = startYear > 0 ? startYear.toString() : '';
+    final String end = endYear > 0 ? endYear.toString() : '';
+    if (start.isEmpty && end.isEmpty) {
+      return '';
+    }
+    if (start.isEmpty) {
+      return end;
+    }
+    if (end.isEmpty) {
+      return start;
+    }
+    return '$start - $end';
+  }
+
+  String _formatEducationMajor(String major, String degree) {
+    final List<String> parts = <String>[
+      major.trim(),
+      degree.trim(),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+    return parts.join(' · ');
+  }
+
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(
+      widget.userId != null ? RoutePaths.home : RoutePaths.myResumeEditor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final EdgeInsets viewPadding = MediaQuery.paddingOf(context);
@@ -95,21 +348,15 @@ class MyResumePreviewPage extends StatelessWidget {
         centerTitle: true,
         leadingWidth: 44,
         leading: IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-              return;
-            }
-            context.go(RoutePaths.myResumeEditor);
-          },
+          onPressed: () => _handleBack(context),
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 18,
             color: Color(0xFF262626),
           ),
         ),
-        title: const Text(
-          '预览',
+        title: Text(
+          widget.title,
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -117,23 +364,54 @@ class MyResumePreviewPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
-        padding: EdgeInsets.only(bottom: 16 + viewPadding.bottom),
-        children: <Widget>[
-          _buildProfileSection(),
-          const SizedBox(height: 2),
-          _buildIntentionSection(),
-          const SizedBox(height: 2),
-          _buildWorkExperienceSection(),
-          const SizedBox(height: 2),
-          _buildLanguageSection(),
-          const SizedBox(height: 2),
-          _buildCertificateSection(),
-          const SizedBox(height: 2),
-          _buildEducationSection(),
-          const SizedBox(height: 2),
-          _buildSelfEvaluationSection(),
-        ],
+      body: _shouldLoadByUserId && _isLoading && _remoteArgs == null
+          ? const Center(child: CircularProgressIndicator())
+          : _shouldLoadByUserId && _errorMessage != null && _remoteArgs == null
+          ? _buildLoadErrorState()
+          : ListView(
+              padding: EdgeInsets.only(bottom: 16 + viewPadding.bottom),
+              children: <Widget>[
+                _buildProfileSection(),
+                const SizedBox(height: 2),
+                _buildIntentionSection(),
+                const SizedBox(height: 2),
+                _buildWorkExperienceSection(),
+                const SizedBox(height: 2),
+                _buildLanguageSection(),
+                const SizedBox(height: 2),
+                _buildCertificateSection(),
+                const SizedBox(height: 2),
+                _buildEducationSection(),
+                const SizedBox(height: 2),
+                _buildSelfEvaluationSection(),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildLoadErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              _errorMessage ?? '简历加载失败，请稍后重试',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                height: 20 / 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _loadResumeDetail,
+              child: const Text('重新加载'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,12 +4,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../jobs/application/company_applications/company_application_list_state.dart';
+import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
+import '../../../jobs/data/application_models.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
 /// 企业首页。
-class CompanyHomePage extends ConsumerWidget {
+class CompanyHomePage extends ConsumerStatefulWidget {
   const CompanyHomePage({super.key});
 
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
@@ -36,28 +39,118 @@ class CompanyHomePage extends ConsumerWidget {
     ),
   ];
 
-  static const List<_ResumeCardItem> _resumeItems = <_ResumeCardItem>[
-    _ResumeCardItem(
-      name: '万先生',
-      ageGender: '32岁·男',
-      appliedJob: '应聘：中餐厨师',
-      matchPercent: '85%',
-      tags: <String>['5年经验', '高级厨师证', '随时到岗'],
-      deliveryTime: '昨日14:40投递',
-    ),
-    _ResumeCardItem(
-      name: '万先生',
-      ageGender: '32岁·男',
-      appliedJob: '应聘：中餐厨师',
-      matchPercent: '85%',
-      tags: <String>['5年经验', '高级厨师证', '随时到岗'],
-      deliveryTime: '昨日14:40投递',
-    ),
-  ];
+  @override
+  ConsumerState<CompanyHomePage> createState() => _CompanyHomePageState();
+}
+
+class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
+  static final String _pendingStatus =
+      EmployerApplicationFilterStatus.pending.value;
+  static const int _previewItemCount = 2;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .loadInitial(status: _pendingStatus);
+    });
+  }
+
+  Future<void> _reloadPendingApplications() async {
+    await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .loadInitial(status: _pendingStatus, force: true);
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: isError ? const Color(0xFFD9363E) : null,
+          content: Text(message),
+        ),
+      );
+  }
+
+  Future<void> _openResumePreview(int userId) async {
+    await context.push(RoutePaths.myResumePreview, extra: userId);
+  }
+
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    final TextEditingController controller = TextEditingController();
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text('$actionLabel备注'),
+          content: TextField(
+            controller: controller,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: '请输入备注（选填）',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text.trim()),
+              child: const Text('确认'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    return result;
+  }
+
+  Future<void> _handleApplicationAction(
+    _ResumeCardItem item,
+    EmployerApplicationUpdateStatus nextStatus,
+  ) async {
+    final String? remark = await _showRemarkDialog(nextStatus.label);
+    if (remark == null) {
+      return;
+    }
+
+    final ApplicationStatusUpdateResult result = await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .updateApplicationStatus(
+          sourceStatus: _pendingStatus,
+          applicationId: item.applicationId,
+          nextStatus: nextStatus,
+          remark: remark,
+        );
+    _showMessage(result.message, isError: !result.success);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final CompanyApplicationListState pendingState = ref.watch(
+      companyApplicationListsControllerProvider.select(
+        (Map<String, CompanyApplicationListState> states) =>
+            states[_pendingStatus] ?? const CompanyApplicationListState(),
+      ),
+    );
+    final List<_ResumeCardItem> resumeItems = pendingState.applications
+        .take(_previewItemCount)
+        .map(_mapResumeCardItem)
+        .toList(growable: false);
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: bottomPadding + 94),
@@ -68,7 +161,7 @@ class CompanyHomePage extends ConsumerWidget {
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: _QuickActionRow(items: _quickActions),
+            child: _QuickActionRow(items: CompanyHomePage._quickActions),
           ),
           const SizedBox(height: 20),
           const Padding(
@@ -83,21 +176,194 @@ class CompanyHomePage extends ConsumerWidget {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _resumeItems.length,
-              padding: EdgeInsets.zero,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int index) {
-                final _ResumeCardItem item = _resumeItems[index];
-                return _ResumeCard(item: item);
-              },
+            child: _buildPendingResumeSection(
+              pendingState: pendingState,
+              resumeItems: resumeItems,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPendingResumeSection({
+    required CompanyApplicationListState pendingState,
+    required List<_ResumeCardItem> resumeItems,
+  }) {
+    if (pendingState.isInitialLoading && !pendingState.hasLoadedOnce) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (resumeItems.isEmpty) {
+      return _ResumeStateCard(
+        message: pendingState.errorMessage ?? '暂无待处理应聘',
+        buttonLabel: pendingState.errorMessage == null ? null : '重试',
+        onTap: pendingState.errorMessage == null
+            ? null
+            : _reloadPendingApplications,
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: resumeItems.length,
+      padding: EdgeInsets.zero,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (BuildContext context, int index) {
+        final _ResumeCardItem item = resumeItems[index];
+        final EmployerApplicationUpdateStatus? processingAction =
+            pendingState.processingActions[item.applicationId];
+        return _ResumeCard(
+          item: item,
+          onViewResumeTap: () => _openResumePreview(item.userId),
+          onRejectTap:
+              item.status == EmployerApplicationFilterStatus.pending.value
+              ? () => _handleApplicationAction(
+                  item,
+                  EmployerApplicationUpdateStatus.rejected,
+                )
+              : null,
+          onInviteTap:
+              item.status == EmployerApplicationFilterStatus.pending.value
+              ? () => _handleApplicationAction(
+                  item,
+                  EmployerApplicationUpdateStatus.interview,
+                )
+              : null,
+          processingAction: processingAction,
+        );
+      },
+    );
+  }
+
+  _ResumeCardItem _mapResumeCardItem(ApplicationVO item) {
+    final String name = item.applicant.nickname.trim().isEmpty
+        ? '匿名候选人'
+        : item.applicant.nickname;
+    final String title = item.job.title.trim().isEmpty
+        ? '待定岗位'
+        : item.job.title;
+    return _ResumeCardItem(
+      applicationId: item.applicationId,
+      userId: item.applicant.userId,
+      status: item.status,
+      name: name,
+      ageGender: _formatAgeGender(item.applicant.age, item.applicant.gender),
+      appliedJob: '应聘：$title',
+      matchPercent: '${item.matchScore.clamp(0, 100)}%',
+      tags: _buildTags(item.applicant),
+      deliveryTime: _formatSubmittedText(item.submittedAt),
+    );
+  }
+
+  List<String> _buildTags(ApplicantVO applicant) {
+    final List<String> tags = <String>[];
+
+    void addTag(String value) {
+      final String tag = value.trim();
+      if (tag.isEmpty || tags.contains(tag)) {
+        return;
+      }
+      tags.add(tag);
+    }
+
+    for (final String tag in applicant.keyTags) {
+      addTag(tag);
+      if (tags.length >= 3) {
+        return tags;
+      }
+    }
+
+    if (applicant.experienceYears > 0) {
+      addTag('${applicant.experienceYears}年经验');
+    }
+
+    if (tags.isEmpty) {
+      addTag('信息待完善');
+    }
+
+    return tags.take(3).toList(growable: false);
+  }
+
+  String _formatAgeGender(int age, String gender) {
+    final List<String> parts = <String>[];
+    if (age > 0) {
+      parts.add('$age岁');
+    }
+
+    final String normalizedGender = _normalizeGender(gender);
+    if (normalizedGender.isNotEmpty) {
+      parts.add(normalizedGender);
+    }
+
+    return parts.join('·');
+  }
+
+  String _normalizeGender(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'male':
+      case 'man':
+      case 'm':
+      case '男':
+        return '男';
+      case 'female':
+      case 'woman':
+      case 'f':
+      case '女':
+        return '女';
+      default:
+        return value.trim();
+    }
+  }
+
+  String _formatSubmittedText(String raw) {
+    final String trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return '刚刚投递';
+    }
+
+    final DateTime? submittedAt = DateTime.tryParse(trimmed)?.toLocal();
+    if (submittedAt == null) {
+      return trimmed;
+    }
+
+    final DateTime now = DateTime.now();
+    final Duration difference = now.difference(submittedAt);
+
+    if (difference.inMinutes < 1) {
+      return '刚刚投递';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前投递';
+    }
+    if (_isSameDay(now, submittedAt)) {
+      return '${difference.inHours}小时前投递';
+    }
+
+    final DateTime yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 1));
+    if (_isSameDay(yesterday, submittedAt)) {
+      return '昨日${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+    }
+
+    return '${_twoDigits(submittedAt.month)}-${_twoDigits(submittedAt.day)} ${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+  }
+
+  bool _isSameDay(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  String _twoDigits(int value) {
+    return value < 10 ? '0$value' : value.toString();
   }
 }
 
@@ -565,29 +831,82 @@ class _ResumeSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        const Text(
-          '全部',
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            height: 20 / 14,
+        InkWell(
+          onTap: () => context.push(RoutePaths.companyApplications),
+          borderRadius: BorderRadius.circular(12),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  '全部',
+                  style: TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    height: 20 / 14,
+                  ),
+                ),
+                SizedBox(width: 2),
+                Icon(Icons.keyboard_arrow_right, size: 18),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 2),
-        Image.asset(
-          'assets/images/mon6z4rt-eqk5cki.png',
-          width: 16,
-          height: 16,
         ),
       ],
     );
   }
 }
 
+class _ResumeStateCard extends StatelessWidget {
+  const _ResumeStateCard({required this.message, this.buttonLabel, this.onTap});
+
+  final String message;
+  final String? buttonLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: <Widget>[
+          Text(
+            message,
+            style: const TextStyle(
+              color: Color(0xFF8C8C8C),
+              fontSize: 13,
+              height: 20 / 13,
+            ),
+          ),
+          if (buttonLabel != null && onTap != null) ...<Widget>[
+            const SizedBox(height: 12),
+            TextButton(onPressed: onTap, child: Text(buttonLabel!)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _ResumeCard extends StatelessWidget {
-  const _ResumeCard({required this.item});
+  const _ResumeCard({
+    required this.item,
+    required this.onViewResumeTap,
+    this.onRejectTap,
+    this.onInviteTap,
+    this.processingAction,
+  });
 
   final _ResumeCardItem item;
+  final VoidCallback onViewResumeTap;
+  final VoidCallback? onRejectTap;
+  final VoidCallback? onInviteTap;
+  final EmployerApplicationUpdateStatus? processingAction;
 
   @override
   Widget build(BuildContext context) {
@@ -693,11 +1012,42 @@ class _ResumeCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const _GhostActionButton(label: '查看简历'),
-                const SizedBox(width: 8),
-                const _PrimaryActionButton(label: '邀约面试'),
+                _GhostActionButton(label: '查看简历', onTap: onViewResumeTap),
               ],
             ),
+            if (item.status ==
+                EmployerApplicationFilterStatus.pending.value) ...<Widget>[
+              const SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: 109,
+                    child: _ApplicationStatusActionButton(
+                      label: '不合适',
+                      backgroundColor: const Color(0xFFFFEBEB),
+                      borderColor: const Color(0x99FF4D4F),
+                      textColor: const Color(0xFFD9363E),
+                      onTap: processingAction == null ? onRejectTap : null,
+                      isLoading:
+                          processingAction ==
+                          EmployerApplicationUpdateStatus.rejected,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ApplicationStatusActionButton(
+                      label: '邀约面试',
+                      backgroundColor: const Color(0xFF096DD9),
+                      textColor: Colors.white,
+                      onTap: processingAction == null ? onInviteTap : null,
+                      isLoading:
+                          processingAction ==
+                          EmployerApplicationUpdateStatus.interview,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -731,55 +1081,92 @@ class _SkillTag extends StatelessWidget {
 }
 
 class _GhostActionButton extends StatelessWidget {
-  const _GhostActionButton({required this.label});
+  const _GhostActionButton({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD9D9D9)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD9D9D9)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF262626),
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({required this.label});
+class _ApplicationStatusActionButton extends StatelessWidget {
+  const _ApplicationStatusActionButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    this.borderColor,
+    this.onTap,
+    this.isLoading = false,
+  });
 
   final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final Color? borderColor;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF096DD9),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: borderColor == null
+                ? null
+                : Border.all(color: borderColor!),
+          ),
+          alignment: Alignment.center,
+          child: isLoading
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    height: 22 / 16,
+                  ),
+                ),
         ),
       ),
     );
@@ -802,6 +1189,9 @@ class _QuickActionItem {
 
 class _ResumeCardItem {
   const _ResumeCardItem({
+    required this.applicationId,
+    required this.userId,
+    required this.status,
     required this.name,
     required this.ageGender,
     required this.appliedJob,
@@ -810,6 +1200,9 @@ class _ResumeCardItem {
     required this.deliveryTime,
   });
 
+  final int applicationId;
+  final int userId;
+  final String status;
   final String name;
   final String ageGender;
   final String appliedJob;

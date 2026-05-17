@@ -1,5 +1,47 @@
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
+enum EmployerApplicationFilterStatus {
+  all('all'),
+  pending('pending'),
+  invited('invited'),
+  rejected('rejected'),
+  hired('hired');
+
+  const EmployerApplicationFilterStatus(this.value);
+
+  final String value;
+}
+
+enum EmployerApplicationUpdateStatus {
+  viewed('viewed', label: '标记已查看'),
+  interview(
+    'interview',
+    label: '邀约面试',
+    targetListStatus: EmployerApplicationFilterStatus.invited,
+  ),
+  rejected(
+    'rejected',
+    label: '不合适',
+    targetListStatus: EmployerApplicationFilterStatus.rejected,
+  ),
+  withdrawn('withdrawn', label: '已撤回'),
+  hired(
+    'hired',
+    label: '已录用',
+    targetListStatus: EmployerApplicationFilterStatus.hired,
+  );
+
+  const EmployerApplicationUpdateStatus(
+    this.value, {
+    required this.label,
+    this.targetListStatus,
+  });
+
+  final String value;
+  final String label;
+  final EmployerApplicationFilterStatus? targetListStatus;
+}
+
 class ApplicantVO {
   const ApplicantVO({
     required this.userId,
@@ -66,15 +108,9 @@ class ApplicationVO {
       applicationId: readInt(json, 'applicationId'),
       status: readString(json, 'status'),
       matchScore: readInt(json, 'matchScore'),
-      job: JobSimpleVO.fromJson(
-        readJsonMap(json, 'job'),
-      ),
-      employer: EmployerSimpleVO.fromJson(
-        readJsonMap(json, 'employer'),
-      ),
-      applicant: ApplicantVO.fromJson(
-        readJsonMap(json, 'applicant'),
-      ),
+      job: JobSimpleVO.fromJson(readJsonMap(json, 'job')),
+      employer: EmployerSimpleVO.fromJson(readJsonMap(json, 'employer')),
+      applicant: ApplicantVO.fromJson(readJsonMap(json, 'applicant')),
       submittedAt: readString(json, 'submittedAt'),
       updatedAt: readString(json, 'updatedAt'),
     );
@@ -177,6 +213,13 @@ class UpdateApplicationStatusBO {
 
   final String status;
   final String remark;
+
+  factory UpdateApplicationStatusBO.fromStatus({
+    required EmployerApplicationUpdateStatus status,
+    String remark = '',
+  }) {
+    return UpdateApplicationStatusBO(status: status.value, remark: remark);
+  }
 
   factory UpdateApplicationStatusBO.fromJson(JsonMap json) {
     return UpdateApplicationStatusBO(

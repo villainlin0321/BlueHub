@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
-import '../../../shared/network/page_result.dart';
+import '../application/company_applications/company_application_list_state.dart';
+import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
-import '../data/application_providers.dart';
 import 'company_application_management_styles.dart';
 import 'widgets/company_application_management_widgets.dart';
 
@@ -115,20 +115,10 @@ class _CompanyApplicationTabView extends ConsumerStatefulWidget {
 class _CompanyApplicationTabViewState
     extends ConsumerState<_CompanyApplicationTabView>
     with AutomaticKeepAliveClientMixin<_CompanyApplicationTabView> {
-  static const int _pageSize = 10;
-
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
     controlFinishLoad: true,
   );
-
-  List<ApplicationVO> _applications = const <ApplicationVO>[];
-  bool _isInitialLoading = false;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  bool _hasLoadedOnce = false;
-  int _nextPage = 1;
-  String? _errorMessage;
 
   @override
   bool get wantKeepAlive => true;
@@ -136,7 +126,14 @@ class _CompanyApplicationTabViewState
   @override
   void initState() {
     super.initState();
-    _loadInitial();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .loadInitial(status: widget.tab.status);
+    });
   }
 
   @override
@@ -146,140 +143,61 @@ class _CompanyApplicationTabViewState
   }
 
   Future<void> _loadInitial() async {
-    if (_isInitialLoading) {
-      return;
-    }
-
-    setState(() {
-      _isInitialLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final PageResult<ApplicationVO> response = await ref
-          .read(applicationServiceProvider)
-          .listJobApplications(
-            page: 1,
-            pageSize: _pageSize,
-            status: widget.tab.status,
-          );
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _applications = response.list;
-        _nextPage = response.pagination.page + 1;
-        _hasMore = response.pagination.hasNext;
-        _isInitialLoading = false;
-        _isLoadingMore = false;
-        _hasLoadedOnce = true;
-        _errorMessage = null;
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isInitialLoading = false;
-        _hasLoadedOnce = true;
-        _errorMessage = _normalizeError(error);
-      });
-    }
+    await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .loadInitial(status: widget.tab.status, force: true);
   }
 
   Future<void> _onRefresh() async {
-    try {
-      final PageResult<ApplicationVO> response = await ref
-          .read(applicationServiceProvider)
-          .listJobApplications(
-            page: 1,
-            pageSize: _pageSize,
-            status: widget.tab.status,
-          );
-      if (!mounted) {
-        return;
-      }
+    final bool success = await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .refresh(status: widget.tab.status);
+    if (!mounted) {
+      return;
+    }
 
-      setState(() {
-        _applications = response.list;
-        _nextPage = response.pagination.page + 1;
-        _hasMore = response.pagination.hasNext;
-        _hasLoadedOnce = true;
-        _errorMessage = null;
-      });
+    if (success) {
       _refreshController.finishRefresh();
       _refreshController.resetFooter();
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _errorMessage = _normalizeError(error);
-      });
+    } else {
       _refreshController.finishRefresh(IndicatorResult.fail);
     }
   }
 
   Future<void> _onLoadMore() async {
-    if (_isInitialLoading || _isLoadingMore || !_hasMore) {
+    final bool success = await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .loadMore(status: widget.tab.status);
+    if (!mounted) {
       return;
     }
 
-    setState(() {
-      _isLoadingMore = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final PageResult<ApplicationVO> response = await ref
-          .read(applicationServiceProvider)
-          .listJobApplications(
-            page: _nextPage,
-            pageSize: _pageSize,
-            status: widget.tab.status,
-          );
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _applications = <ApplicationVO>[..._applications, ...response.list];
-        _nextPage = response.pagination.page + 1;
-        _hasMore = response.pagination.hasNext;
-        _isLoadingMore = false;
-      });
+    final CompanyApplicationListState latestState = ref.read(
+      companyApplicationListsControllerProvider.select(
+        (Map<String, CompanyApplicationListState> states) =>
+            states[widget.tab.status] ?? const CompanyApplicationListState(),
+      ),
+    );
+    if (success) {
       _refreshController.finishLoad(
-        _hasMore ? IndicatorResult.success : IndicatorResult.noMore,
+        latestState.hasMore ? IndicatorResult.success : IndicatorResult.noMore,
       );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoadingMore = false;
-        _errorMessage = _normalizeError(error);
-      });
+    } else {
       _refreshController.finishLoad(IndicatorResult.fail);
     }
-  }
-
-  String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '加载失败，请稍后重试' : message;
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final CompanyApplicationListState listState = ref.watch(
+      companyApplicationListsControllerProvider.select(
+        (Map<String, CompanyApplicationListState> states) =>
+            states[widget.tab.status] ?? const CompanyApplicationListState(),
+      ),
+    );
 
-    if (_isInitialLoading && !_hasLoadedOnce) {
+    if (listState.isInitialLoading && !listState.hasLoadedOnce) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -288,15 +206,15 @@ class _CompanyApplicationTabViewState
       header: const ClassicHeader(),
       footer: const ClassicFooter(),
       onRefresh: _onRefresh,
-      onLoad: _hasMore ? _onLoadMore : null,
-      child: _applications.isEmpty
+      onLoad: listState.hasMore ? _onLoadMore : null,
+      child: listState.applications.isEmpty
           ? CompanyApplicationListStateView(
-              message: _errorMessage ?? widget.tab.emptyText,
-              icon: _errorMessage == null
+              message: listState.errorMessage ?? widget.tab.emptyText,
+              icon: listState.errorMessage == null
                   ? Icons.assignment_outlined
                   : Icons.error_outline_rounded,
-              buttonLabel: _errorMessage == null ? null : '重新加载',
-              onTap: _errorMessage == null ? null : _loadInitial,
+              buttonLabel: listState.errorMessage == null ? null : '重新加载',
+              onTap: listState.errorMessage == null ? null : _loadInitial,
             )
           : ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -306,10 +224,10 @@ class _CompanyApplicationTabViewState
                 CompanyApplicationManagementStyles.pageHorizontalPadding,
                 MediaQuery.paddingOf(context).bottom + 24,
               ),
-              itemCount: _applications.length,
+              itemCount: listState.applications.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (BuildContext context, int index) {
-                final ApplicationVO item = _applications[index];
+                final ApplicationVO item = listState.applications[index];
                 return CompanyApplicationCard(
                   data: _buildCardData(item, index),
                   onViewResumeTap: () =>

@@ -123,7 +123,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.qualificationCertification,
         builder: (context, state) => QualificationCertificationPage(
-          args: state.extra as QualificationCertificationPageArgs? ??
+          args:
+              state.extra as QualificationCertificationPageArgs? ??
               QualificationCertificationPageArgs(
                 role: QualificationCertificationRole.serviceProvider,
               ),
@@ -132,7 +133,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.qualificationCertificationStepTwo,
         builder: (context, state) => QualificationCertificationStepTwoPage(
-          args: state.extra as QualificationCertificationPageArgs? ??
+          args:
+              state.extra as QualificationCertificationPageArgs? ??
               QualificationCertificationPageArgs(
                 role: QualificationCertificationRole.serviceProvider,
               ),
@@ -141,7 +143,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.qualificationCertificationStepThree,
         builder: (context, state) => QualificationCertificationStepThreePage(
-          args: state.extra as QualificationCertificationPageArgs? ??
+          args:
+              state.extra as QualificationCertificationPageArgs? ??
               QualificationCertificationPageArgs(
                 role: QualificationCertificationRole.serviceProvider,
               ),
@@ -217,8 +220,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.myResumePreview,
-        builder: (context, state) =>
-            MyResumePreviewPage(args: state.extra as ResumePreviewArgs?),
+        builder: (context, state) {
+          final Object? extra = state.extra;
+          if (extra is ResumePreviewArgs) {
+            return MyResumePreviewPage(args: extra);
+          }
+          if (extra is int) {
+            return MyResumePreviewPage(userId: extra, title: '简历详情');
+          }
+          return const MyResumePreviewPage();
+        },
       ),
       GoRoute(
         path: RoutePaths.myApplications,
@@ -240,14 +251,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.addWorkExperience,
         builder: (context, state) => AddWorkExperiencePage(
-          args: state.extra as AddWorkExperiencePageArgs? ??
+          args:
+              state.extra as AddWorkExperiencePageArgs? ??
               const AddWorkExperiencePageArgs(),
         ),
       ),
       GoRoute(
         path: RoutePaths.addEducationExperience,
         builder: (context, state) => AddEducationExperiencePage(
-          args: state.extra as AddEducationExperiencePageArgs? ??
+          args:
+              state.extra as AddEducationExperiencePageArgs? ??
               const AddEducationExperiencePageArgs(),
         ),
       ),
@@ -259,7 +272,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.addSkillCertificate,
         builder: (context, state) => AddSkillCertificatePage(
-          args: state.extra as AddSkillCertificatePageArgs? ??
+          args:
+              state.extra as AddSkillCertificatePageArgs? ??
               const AddSkillCertificatePageArgs(),
         ),
       ),
