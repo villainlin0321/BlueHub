@@ -1,9 +1,12 @@
+import 'package:bluehub_app/shared/network/models/dictionary_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/dictionary_providers.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
-class AddEducationSchoolPage extends StatefulWidget {
+class AddEducationSchoolPage extends ConsumerStatefulWidget {
   const AddEducationSchoolPage({
     super.key,
     this.initialSchool,
@@ -12,19 +15,11 @@ class AddEducationSchoolPage extends StatefulWidget {
   final String? initialSchool;
 
   @override
-  State<AddEducationSchoolPage> createState() => _AddEducationSchoolPageState();
+  ConsumerState<AddEducationSchoolPage> createState() =>
+      _AddEducationSchoolPageState();
 }
 
-class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
-  static const List<String> _schoolOptions = <String>[
-    '南京大学金陵学院',
-    '南京工业大学',
-    '南京财经大学',
-    '南京师范大学',
-    '南京理工大学',
-    '南京林业大学',
-  ];
-
+class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage> {
   late final TextEditingController _searchController = TextEditingController(
     text: _initialKeyword(widget.initialSchool),
   )..addListener(_handleSearchChanged);
@@ -56,28 +51,28 @@ class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
   void _handleSearchChanged() {
     setState(() {
       if (_selectedSchool != null &&
-          !_selectedSchool!.contains(_searchController.text.trim())) {
+          !_selectedSchool!.contains(_keyword)) {
         _selectedSchool = null;
       }
     });
   }
 
-  List<String> get _filteredSchools {
-    final String keyword = _searchController.text.trim();
-    if (keyword.isEmpty) {
-      return _schoolOptions;
-    }
-    return _schoolOptions
-        .where((String school) => school.contains(keyword))
-        .toList(growable: false);
-  }
+  String get _keyword => _searchController.text.trim();
 
-  void _handleConfirm() {
-    final String keyword = _searchController.text.trim();
-    final List<String> filtered = _filteredSchools;
+  SchoolSearchQuery get _query => SchoolSearchQuery(
+    keyword: _keyword.isEmpty ? null : _keyword,
+    page: 1,
+    pageSize: 20,
+  );
+
+  void _handleConfirm(List<SchoolVO> schools) {
+    final List<String> schoolNames = schools
+        .map(_resolveSchoolName)
+        .where((String name) => name.isNotEmpty)
+        .toList(growable: false);
     final String? result = _selectedSchool ??
-        (filtered.contains(keyword) ? keyword : null) ??
-        (filtered.length == 1 ? filtered.first : null);
+        (schoolNames.contains(_keyword) ? _keyword : null) ??
+        (schoolNames.length == 1 ? schoolNames.first : null);
 
     if (result == null) {
       ScaffoldMessenger.of(
@@ -91,7 +86,8 @@ class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> schools = _filteredSchools;
+    final schoolsAsync = ref.watch(schoolSearchProvider(_query));
+    final List<SchoolVO> schools = schoolsAsync.asData?.value.list ?? <SchoolVO>[];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -120,7 +116,7 @@ class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: _handleConfirm,
+            onPressed: () => _handleConfirm(schools),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF262626),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -179,37 +175,80 @@ class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
                 ),
               ),
               Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  itemCount: schools.length,
-                  separatorBuilder: (_, __) => const Divider(
-                    height: 0.5,
-                    thickness: 0.5,
-                    indent: 16,
-                    color: Color(0xFFF0F0F0),
-                  ),
-                  itemBuilder: (BuildContext context, int index) {
-                    final String school = schools[index];
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedSchool = school;
-                        });
-                      },
-                      child: Container(
-                        height: 52,
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        alignment: Alignment.centerLeft,
-                        child: RichText(
-                          text: _buildHighlightedText(
-                            school,
-                            _searchController.text.trim(),
+                child: schoolsAsync.when(
+                  data: (pageResult) {
+                    if (pageResult.list.isEmpty) {
+                      return Center(
+                        child: Text(
+                          _keyword.isEmpty ? '暂无学校数据' : '未找到相关学校',
+                          style: const TextStyle(
+                            color: Color(0xFF8C8C8C),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: pageResult.list.length,
+                      separatorBuilder: (_, __) => const Divider(
+                        height: 0.5,
+                        thickness: 0.5,
+                        indent: 16,
+                        color: Color(0xFFF0F0F0),
                       ),
+                      itemBuilder: (BuildContext context, int index) {
+                        final SchoolVO school = pageResult.list[index];
+                        final String schoolName = _resolveSchoolName(school);
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedSchool = schoolName;
+                            });
+                          },
+                          child: Container(
+                            height: 52,
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            alignment: Alignment.centerLeft,
+                            child: RichText(
+                              text: _buildHighlightedText(schoolName, _keyword),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
+                  loading: () => const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  error: (_, __) => Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Text(
+                          '学校加载失败',
+                          style: TextStyle(
+                            color: Color(0xFF8C8C8C),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () {
+                            ref.invalidate(schoolSearchProvider(_query));
+                          },
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -217,6 +256,22 @@ class _AddEducationSchoolPageState extends State<AddEducationSchoolPage> {
         ),
       ),
     );
+  }
+
+  String _resolveSchoolName(SchoolVO school) {
+    if (school.nameZh.trim().isNotEmpty) {
+      return school.nameZh.trim();
+    }
+    if (school.nameEn.trim().isNotEmpty) {
+      return school.nameEn.trim();
+    }
+    if ((school.nameLocal ?? '').trim().isNotEmpty) {
+      return school.nameLocal!.trim();
+    }
+    if ((school.shortName ?? '').trim().isNotEmpty) {
+      return school.shortName!.trim();
+    }
+    return '';
   }
 
   TextSpan _buildHighlightedText(String school, String keyword) {

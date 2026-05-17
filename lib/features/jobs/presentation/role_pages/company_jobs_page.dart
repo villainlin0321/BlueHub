@@ -1,59 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../data/talent_providers.dart';
+import '../../../../shared/network/models/talent_models.dart';
+
 /// 企业招聘页：按 Figma「人才中心」实现。
-class CompanyJobsPage extends StatefulWidget {
+class CompanyJobsPage extends ConsumerStatefulWidget {
   const CompanyJobsPage({super.key});
 
   @override
-  State<CompanyJobsPage> createState() => _CompanyJobsPageState();
+  ConsumerState<CompanyJobsPage> createState() => _CompanyJobsPageState();
 }
 
-class _CompanyJobsPageState extends State<CompanyJobsPage> {
+class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   int _selectedTabIndex = 0;
 
   static const List<String> _tabs = <String>['全部人才', '近期活跃', '高匹配度', '厨师岗位'];
 
-  static const List<_CandidateCardData> _candidates = <_CandidateCardData>[
-    _CandidateCardData(
-      avatarAssetPath: 'assets/images/mou52cw6-js17mxu.png',
-      name: '万先生',
-      ageGender: '32岁·男',
-      intention: '意向：德国/中餐厨师',
-      matchRate: '92%',
-      tags: <String>['3年经验', '厨师证高级', '随时到岗'],
-      activeText: '2小时前活跃',
-    ),
-    _CandidateCardData(
-      avatarAssetPath: 'assets/images/mou52cw6-js17mxu.png',
-      name: '万先生',
-      ageGender: '32岁·男',
-      intention: '意向：德国·柏林/中餐厨师',
-      matchRate: '92%',
-      tags: <String>['3年经验', '厨师证高级', '随时到岗'],
-      activeText: '2小时前活跃',
-    ),
-    _CandidateCardData(
-      avatarAssetPath: 'assets/images/mou52cw6-js17mxu.png',
-      name: '万先生',
-      ageGender: '32岁·男',
-      intention: '意向：德国·柏林/中餐厨师',
-      matchRate: '92%',
-      tags: <String>['3年经验', '厨师证高级', '随时到岗'],
-      activeText: '2小时前活跃',
-    ),
-  ];
+  late final TextEditingController _searchController = TextEditingController()
+    ..addListener(_handleSearchChanged);
+
+  String? get _keyword {
+    final String value = _searchController.text.trim();
+    return value.isEmpty ? null : value;
+  }
+
+  String? get _selectedPosition =>
+      _selectedTabIndex == 3 ? '中餐厨师' : null;
+
+  TalentListQuery get _query => TalentListQuery(
+    keyword: _keyword,
+    position: _selectedPosition,
+    page: 1,
+    pageSize: 20,
+  );
+
+  void _handleSearchChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final talentsAsync = ref.watch(talentListProvider(_query));
 
     return ListView(
       padding: EdgeInsets.only(bottom: bottomPadding + 24),
       children: <Widget>[
         _Header(topPadding: topPadding),
-        const _SearchBar(),
+        _SearchBar(controller: _searchController),
         _TabBarSection(
           selectedIndex: _selectedTabIndex,
           onTap: (int index) {
@@ -65,15 +70,39 @@ class _CompanyJobsPageState extends State<CompanyJobsPage> {
         const _AiBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(11, 12, 14, 0),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _candidates.length,
-            padding: EdgeInsets.zero,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (BuildContext context, int index) {
-              return _CandidateCard(data: _candidates[index]);
+          child: talentsAsync.when(
+            data: (pageResult) {
+              if (pageResult.list.isEmpty) {
+                return const _TalentsEmptyState();
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pageResult.list.length,
+                padding: EdgeInsets.zero,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (BuildContext context, int index) {
+                  return _CandidateCard(
+                    data: _CandidateCardData.fromTalent(pageResult.list[index]),
+                  );
+                },
+              );
             },
+            loading: () => const Padding(
+              padding: EdgeInsets.only(top: 48),
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (_, __) => _TalentLoadError(
+              onRetry: () {
+                ref.invalidate(talentListProvider(_query));
+              },
+            ),
           ),
         ),
       ],
@@ -123,7 +152,9 @@ class _Header extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar();
+  const _SearchBar({required this.controller});
+
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -145,16 +176,25 @@ class _SearchBar extends StatelessWidget {
               height: 16,
             ),
             const SizedBox(width: 8),
-            const Expanded(
-              child: Text(
-                '搜索岗位/技能/经验',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFFBFBFBF),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                style: const TextStyle(
+                  color: Color(0xFF262626),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   height: 20 / 14,
+                ),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  hintText: '搜索岗位/技能/经验',
+                  hintStyle: TextStyle(
+                    color: Color(0xFFBFBFBF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
                 ),
               ),
             ),
@@ -351,7 +391,7 @@ class _CandidateCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Image.asset(data.avatarAssetPath, width: 40, height: 40),
+                _CandidateAvatar(avatarUrl: data.avatarUrl),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -397,7 +437,7 @@ class _CandidateCard extends StatelessWidget {
                 Column(
                   children: <Widget>[
                     Text(
-                      data.matchRate,
+                      data.scoreText,
                       style: const TextStyle(
                         color: Color(0xFF096DD9),
                         fontSize: 16,
@@ -406,9 +446,9 @@ class _CandidateCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
-                      '匹配',
-                      style: TextStyle(
+                    Text(
+                      data.scoreLabel,
+                      style: const TextStyle(
                         color: Color(0xFF096DD9),
                         fontSize: 10,
                         fontWeight: FontWeight.w400,
@@ -431,7 +471,7 @@ class _CandidateCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Text(
-                  data.activeText,
+                  data.updatedText,
                   style: const TextStyle(
                     color: Color(0xFF8C8C8C),
                     fontSize: 12,
@@ -513,20 +553,176 @@ class _ResumeActionButton extends StatelessWidget {
 
 class _CandidateCardData {
   const _CandidateCardData({
-    required this.avatarAssetPath,
+    required this.avatarUrl,
     required this.name,
     required this.ageGender,
     required this.intention,
-    required this.matchRate,
+    required this.scoreText,
+    required this.scoreLabel,
     required this.tags,
-    required this.activeText,
+    required this.updatedText,
   });
 
-  final String avatarAssetPath;
+  final String avatarUrl;
   final String name;
   final String ageGender;
   final String intention;
-  final String matchRate;
+  final String scoreText;
+  final String scoreLabel;
   final List<String> tags;
-  final String activeText;
+  final String updatedText;
+
+  factory _CandidateCardData.fromTalent(TalentVO talent) {
+    return _CandidateCardData(
+      avatarUrl: talent.avatarUrl,
+      name: talent.nickname.isEmpty ? '未命名用户' : talent.nickname,
+      ageGender: _buildAgeGender(talent),
+      intention: _buildIntention(talent),
+      scoreText: '${talent.completeness}%',
+      scoreLabel: '完整度',
+      tags: _buildTags(talent),
+      updatedText: _buildUpdatedText(talent.updatedAt),
+    );
+  }
+
+  static String _buildAgeGender(TalentVO talent) {
+    final List<String> parts = <String>[];
+    if (talent.age != null) {
+      parts.add('${talent.age}岁');
+    }
+    final String genderText = switch (talent.gender.trim().toLowerCase()) {
+      'male' => '男',
+      'female' => '女',
+      _ => '',
+    };
+    if (genderText.isNotEmpty) {
+      parts.add(genderText);
+    }
+    return parts.isEmpty ? '信息待完善' : parts.join('·');
+  }
+
+  static String _buildIntention(TalentVO talent) {
+    final String countries = talent.targetCountries.join(' / ');
+    final String positions = talent.targetPositions.join(' / ');
+    if (countries.isEmpty && positions.isEmpty) {
+      return '意向：待完善';
+    }
+    if (countries.isEmpty) {
+      return '意向：$positions';
+    }
+    if (positions.isEmpty) {
+      return '意向：$countries';
+    }
+    return '意向：$countries / $positions';
+  }
+
+  static List<String> _buildTags(TalentVO talent) {
+    final List<String> tags = <String>[];
+    if (talent.yearsOfExperience > 0) {
+      tags.add('${talent.yearsOfExperience}年经验');
+    }
+    if (talent.targetPositions.isNotEmpty) {
+      tags.add(talent.targetPositions.first);
+    }
+    if (talent.targetCountries.isNotEmpty) {
+      tags.add(talent.targetCountries.first);
+    }
+    if (tags.isEmpty && talent.selfEvaluation.trim().isNotEmpty) {
+      tags.add('有自我评价');
+    }
+    return tags;
+  }
+
+  static String _buildUpdatedText(String updatedAt) {
+    final DateTime? parsed = DateTime.tryParse(updatedAt);
+    if (parsed == null) {
+      return updatedAt.isEmpty ? '更新时间未知' : updatedAt;
+    }
+    final String month = parsed.month.toString().padLeft(2, '0');
+    final String day = parsed.day.toString().padLeft(2, '0');
+    return '$month-$day 更新';
+  }
+}
+
+class _CandidateAvatar extends StatelessWidget {
+  const _CandidateAvatar({required this.avatarUrl});
+
+  final String avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget fallback = ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.asset(
+        'assets/images/mou52cw6-js17mxu.png',
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+      ),
+    );
+    if (avatarUrl.isEmpty) {
+      return fallback;
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.network(
+        avatarUrl,
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      ),
+    );
+  }
+}
+
+class _TalentsEmptyState extends StatelessWidget {
+  const _TalentsEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(top: 48),
+      child: Center(
+        child: Text(
+          '暂无人才数据',
+          style: TextStyle(
+            color: Color(0xFF8C8C8C),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TalentLoadError extends StatelessWidget {
+  const _TalentLoadError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Text(
+              '人才列表加载失败',
+              style: TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onRetry, child: const Text('重试')),
+          ],
+        ),
+      ),
+    );
+  }
 }

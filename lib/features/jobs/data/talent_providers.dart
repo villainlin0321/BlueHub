@@ -1,0 +1,56 @@
+import 'package:bluehub_app/shared/network/models/talent_models.dart';
+import 'package:bluehub_app/shared/network/page_result.dart';
+import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/network/services/talent_service.dart';
+
+final talentServiceProvider = Provider<TalentService>((ref) {
+  return TalentService(apiClient: ref.watch(apiClientProvider));
+});
+
+final talentListProvider =
+    FutureProvider.autoDispose.family<PageResult<TalentVO>, TalentListQuery>((
+      ref,
+      query,
+    ) async {
+      final service = ref.watch(talentServiceProvider);
+      return service.listTalents(
+        keyword: query.keyword,
+        country: query.country,
+        position: query.position,
+        page: query.page,
+        pageSize: query.pageSize,
+      );
+    });
+
+class TalentListQuery {
+  const TalentListQuery({
+    this.keyword,
+    this.country,
+    this.position,
+    this.page = 1,
+    this.pageSize = 20,
+  });
+
+  final String? keyword;
+  final String? country;
+  final String? position;
+  final int page;
+  final int pageSize;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is TalentListQuery &&
+            runtimeType == other.runtimeType &&
+            keyword == other.keyword &&
+            country == other.country &&
+            position == other.position &&
+            page == other.page &&
+            pageSize == other.pageSize;
+  }
+
+  @override
+  int get hashCode => Object.hash(keyword, country, position, page, pageSize);
+}

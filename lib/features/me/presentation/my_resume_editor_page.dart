@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/models/dictionary_models.dart';
 import '../data/resume_models.dart';
+import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
 import 'add_education_experience_page.dart';
 import 'add_skill_certificate_page.dart';
@@ -142,24 +144,6 @@ class MyResumeEditorPage extends ConsumerStatefulWidget {
 }
 
 class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
-  static const List<String> _expectedJobOptions = <String>[
-    '中餐厨师',
-    '中餐面点',
-    '高级电工',
-    '护理员',
-    '中级电工',
-    '中餐主厨',
-  ];
-  static const List<SelectableSheetOption<String>> _expectedJobSheetOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '中餐厨师', label: '中餐厨师'),
-        SelectableSheetOption<String>(value: '中餐面点', label: '中餐面点'),
-        SelectableSheetOption<String>(value: '高级电工', label: '高级电工'),
-        SelectableSheetOption<String>(value: '护理员', label: '护理员'),
-        SelectableSheetOption<String>(value: '中级电工', label: '中级电工'),
-        SelectableSheetOption<String>(value: '中餐主厨', label: '中餐主厨'),
-      ];
-
   static const List<SelectableSheetOption<String>> _countrySheetOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: '德国', label: '德国'),
@@ -1864,14 +1848,44 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openExpectedJobSheet() async {
+    final List<SelectableSheetOption<String>> positionOptions;
+    try {
+      final categories = await ref.read(positionTreeProvider(null).future);
+      positionOptions = _buildPositionSheetOptions(categories);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('职位字典加载失败')));
+      return;
+    }
+
+    if (positionOptions.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('暂无可选职位')));
+      return;
+    }
+
+    final Set<String> validValues = positionOptions
+        .map((SelectableSheetOption<String> item) => item.value)
+        .toSet();
     final List<String> currentSelected = _jobTags
-        .where(_expectedJobOptions.contains)
+        .where(validValues.contains)
         .toList(growable: false);
 
+    if (!mounted) {
+      return;
+    }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '期望职位',
-      options: _expectedJobSheetOptions,
+      options: positionOptions,
       initialSelectedValues: currentSelected,
     );
 
@@ -1884,6 +1898,24 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         ..clear()
         ..addAll(result);
     });
+  }
+
+  List<SelectableSheetOption<String>> _buildPositionSheetOptions(
+    List<PositionCategoryVO> categories,
+  ) {
+    final Set<String> seen = <String>{};
+    final List<SelectableSheetOption<String>> result =
+        <SelectableSheetOption<String>>[];
+    for (final PositionCategoryVO item in categories) {
+      for (final PositionVO position in item.positions) {
+        final String value = position.nameZh.trim();
+        if (value.isEmpty || !seen.add(value)) {
+          continue;
+        }
+        result.add(SelectableSheetOption<String>(value: value, label: value));
+      }
+    }
+    return result;
   }
 
   Future<void> _openExpectedCountrySheet() async {
