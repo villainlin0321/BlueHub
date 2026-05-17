@@ -373,6 +373,7 @@ class _MyInfoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 44,
+      width: double.infinity,
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[

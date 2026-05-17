@@ -8,6 +8,9 @@ class ApplicationService {
 
   final ApiClient _apiClient;
 
+  /// 雇主端分页查询岗位收到的应聘列表。
+  ///
+  /// 可按岗位 `jobId`、分页参数和应聘状态 `status` 过滤。
   Future<PageResult<ApplicationVO>> listJobApplications({
     int? jobId,
     int? page,
@@ -31,6 +34,9 @@ class ApplicationService {
     return response;
   }
 
+  /// 求职者投递岗位。
+  ///
+  /// 请求体使用 `CreateApplicationBO`，当前只需要传 `jobId`。
   Future<Map<String, dynamic>> apply({
     required CreateApplicationBO request,
   }) async {
@@ -45,6 +51,9 @@ class ApplicationService {
     return response;
   }
 
+  /// 求职者分页查询自己的投递记录。
+  ///
+  /// 支持按分页参数和投递状态 `status` 过滤。
   Future<PageResult<ApplicationVO>> listMyApplications({
     int? page,
     int? pageSize,
@@ -66,6 +75,9 @@ class ApplicationService {
     return response;
   }
 
+  /// 雇主端更新应聘状态。
+  ///
+  /// 常用于把待处理应聘更新为 `interview`、`rejected`、`hired` 等状态。
   Future<void> updateStatus({
     required int applicationId,
     required UpdateApplicationStatusBO request,
@@ -76,6 +88,7 @@ class ApplicationService {
     );
   }
 
+  /// 求职者撤回自己的投递。
   Future<void> withdraw({required int applicationId}) async {
     return _apiClient.putVoid('/applications/$applicationId/withdraw');
   }

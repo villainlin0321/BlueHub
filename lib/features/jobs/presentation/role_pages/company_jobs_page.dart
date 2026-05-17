@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../data/talent_providers.dart';
+import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
+import '../../../../shared/network/page_result.dart';
+import '../../application/company_applications/company_application_list_state.dart';
+import '../../application/company_applications/company_application_lists_controller.dart';
+import '../../data/application_models.dart';
+import '../../data/application_providers.dart';
+import '../../data/talent_providers.dart';
 
 /// 企业招聘页：按 Figma「人才中心」实现。
 class CompanyJobsPage extends ConsumerStatefulWidget {
@@ -14,7 +21,10 @@ class CompanyJobsPage extends ConsumerStatefulWidget {
 }
 
 class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
+  static final String _pendingStatus =
+      EmployerApplicationFilterStatus.pending.value;
   int _selectedTabIndex = 0;
+  final Set<int> _processingInviteUserIds = <int>{};
 
   static const List<String> _tabs = <String>['全部人才', '近期活跃', '高匹配度', '厨师岗位'];
 
@@ -26,8 +36,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     return value.isEmpty ? null : value;
   }
 
-  String? get _selectedPosition =>
-      _selectedTabIndex == 3 ? '中餐厨师' : null;
+  String? get _selectedPosition => _selectedTabIndex == 3 ? '中餐厨师' : null;
 
   TalentListQuery get _query => TalentListQuery(
     keyword: _keyword,
@@ -38,6 +47,99 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
 
   void _handleSearchChanged() {
     setState(() {});
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: isError ? const Color(0xFFD9363E) : null,
+          content: Text(message),
+        ),
+      );
+  }
+
+  Future<void> _openResumePreview(int userId) async {
+    await context.push(RoutePaths.myResumePreview, extra: userId);
+  }
+
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return _RemarkDialog(actionLabel: actionLabel);
+      },
+    );
+  }
+
+  Future<int?> _findPendingApplicationId(int userId) async {
+    final Map<String, CompanyApplicationListState> states = ref.read(
+      companyApplicationListsControllerProvider,
+    );
+    final CompanyApplicationListState pendingState =
+        states[_pendingStatus] ?? const CompanyApplicationListState();
+    for (final ApplicationVO item in pendingState.applications) {
+      if (item.applicant.userId == userId) {
+        return item.applicationId;
+      }
+    }
+
+    final PageResult<ApplicationVO> response = await ref
+        .read(applicationServiceProvider)
+        .listJobApplications(page: 1, pageSize: 100, status: _pendingStatus);
+    for (final ApplicationVO item in response.list) {
+      if (item.applicant.userId == userId) {
+        return item.applicationId;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handleInviteInterview(_CandidateCardData data) async {
+    if (_processingInviteUserIds.contains(data.userId)) {
+      return;
+    }
+
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.interview.label,
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _processingInviteUserIds.add(data.userId);
+    });
+
+    try {
+      final int? applicationId = await _findPendingApplicationId(data.userId);
+      if (applicationId == null) {
+        _showMessage('未找到待处理应聘记录', isError: true);
+        return;
+      }
+
+      final ApplicationStatusUpdateResult result = await ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .updateApplicationStatus(
+            sourceStatus: _pendingStatus,
+            applicationId: applicationId,
+            nextStatus: EmployerApplicationUpdateStatus.interview,
+            remark: remark,
+          );
+      _showMessage(result.message, isError: !result.success);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingInviteUserIds.remove(data.userId);
+        });
+      }
+    }
   }
 
   @override
@@ -84,6 +186,14 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
                 itemBuilder: (BuildContext context, int index) {
                   return _CandidateCard(
                     data: _CandidateCardData.fromTalent(pageResult.list[index]),
+                    onViewResumeTap: () =>
+                        _openResumePreview(pageResult.list[index].userId),
+                    onInviteTap: () => _handleInviteInterview(
+                      _CandidateCardData.fromTalent(pageResult.list[index]),
+                    ),
+                    isInviteLoading: _processingInviteUserIds.contains(
+                      pageResult.list[index].userId,
+                    ),
                   );
                 },
               );
@@ -104,6 +214,50 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
               },
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RemarkDialog extends StatefulWidget {
+  const _RemarkDialog({required this.actionLabel});
+
+  final String actionLabel;
+
+  @override
+  State<_RemarkDialog> createState() => _RemarkDialogState();
+}
+
+class _RemarkDialogState extends State<_RemarkDialog> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${widget.actionLabel}备注'),
+      content: TextField(
+        controller: _controller,
+        maxLines: 4,
+        decoration: const InputDecoration(
+          hintText: '请输入备注（选填）',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          child: const Text('确认'),
         ),
       ],
     );
@@ -372,9 +526,17 @@ class _BannerAction extends StatelessWidget {
 }
 
 class _CandidateCard extends StatelessWidget {
-  const _CandidateCard({required this.data});
+  const _CandidateCard({
+    required this.data,
+    required this.onViewResumeTap,
+    required this.onInviteTap,
+    this.isInviteLoading = false,
+  });
 
   final _CandidateCardData data;
+  final VoidCallback onViewResumeTap;
+  final VoidCallback onInviteTap;
+  final bool isInviteLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +545,7 @@ class _CandidateCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child:           Padding(
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,9 +642,18 @@ class _CandidateCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const _ResumeActionButton(label: '查看简历', primary: false),
+                _ResumeActionButton(
+                  label: '查看简历',
+                  primary: false,
+                  onTap: onViewResumeTap,
+                ),
                 const SizedBox(width: 8),
-                const _ResumeActionButton(label: '邀约面试', primary: true),
+                _ResumeActionButton(
+                  label: '邀约面试',
+                  primary: true,
+                  onTap: isInviteLoading ? null : onInviteTap,
+                  isLoading: isInviteLoading,
+                ),
               ],
             ),
           ],
@@ -519,32 +690,57 @@ class _CandidateTag extends StatelessWidget {
 }
 
 class _ResumeActionButton extends StatelessWidget {
-  const _ResumeActionButton({required this.label, required this.primary});
+  const _ResumeActionButton({
+    required this.label,
+    required this.primary,
+    this.onTap,
+    this.isLoading = false,
+  });
 
   final String label;
   final bool primary;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: primary ? const Color(0xFF096DD9) : Colors.transparent,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
         borderRadius: BorderRadius.circular(14),
-        border: primary
-            ? null
-            : Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: primary ? Colors.white : const Color(0xFF262626),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: primary ? const Color(0xFF096DD9) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: primary
+                ? null
+                : Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
+          ),
+          child: isLoading
+              ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      primary ? Colors.white : const Color(0xFF262626),
+                    ),
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    color: primary ? Colors.white : const Color(0xFF262626),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 12 / 12,
+                    letterSpacing: 0.2,
+                  ),
+                ),
         ),
       ),
     );
@@ -553,6 +749,7 @@ class _ResumeActionButton extends StatelessWidget {
 
 class _CandidateCardData {
   const _CandidateCardData({
+    required this.userId,
     required this.avatarUrl,
     required this.name,
     required this.ageGender,
@@ -563,6 +760,7 @@ class _CandidateCardData {
     required this.updatedText,
   });
 
+  final int userId;
   final String avatarUrl;
   final String name;
   final String ageGender;
@@ -574,6 +772,7 @@ class _CandidateCardData {
 
   factory _CandidateCardData.fromTalent(TalentVO talent) {
     return _CandidateCardData(
+      userId: talent.userId,
       avatarUrl: talent.avatarUrl,
       name: talent.nickname.isEmpty ? '未命名用户' : talent.nickname,
       ageGender: _buildAgeGender(talent),
