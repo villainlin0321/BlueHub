@@ -163,7 +163,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.postJob,
         name: RoutePaths.postJob,
-        builder: (context, state) => const PostJobPage(),
+        builder: (context, state) => PostJobPage(
+          args:
+              state.extra as PostJobPageArgs? ?? const PostJobPageArgs.create(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.orderManagement,

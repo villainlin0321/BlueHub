@@ -252,9 +252,7 @@ class JobDetailVO {
       benefits: readStringList(json, 'benefits'),
       description: readString(json, 'description'),
       status: readString(json, 'status'),
-      employer: EmployerInfoVO.fromJson(
-        readJsonMap(json, 'employer'),
-      ),
+      employer: EmployerInfoVO.fromJson(readJsonMap(json, 'employer')),
       viewCount: readInt(json, 'viewCount'),
       applyCount: readInt(json, 'applyCount'),
       isCollected: readBool(json, 'isCollected'),
@@ -340,9 +338,7 @@ class JobListVO {
       city: readString(json, 'city'),
       tags: readModelList<TagVO>(json, 'tags', TagVO.fromJson),
       hasVisaSupport: readBool(json, 'hasVisaSupport'),
-      employer: EmployerSimpleVO.fromJson(
-        readJsonMap(json, 'employer'),
-      ),
+      employer: EmployerSimpleVO.fromJson(readJsonMap(json, 'employer')),
       isUrgent: readBool(json, 'isUrgent'),
       isCollected: readBool(json, 'isCollected'),
       publishedAt: readString(json, 'publishedAt'),
@@ -390,10 +386,24 @@ class TagVO {
   }
 }
 
+enum JobManageStatus {
+  active('active'),
+  inactive('inactive'),
+  draft('draft');
+
+  const JobManageStatus(this.value);
+
+  final String value;
+}
+
 class UpdateJobStatusBO {
   const UpdateJobStatusBO({required this.status});
 
   final String status;
+
+  factory UpdateJobStatusBO.fromStatus(JobManageStatus status) {
+    return UpdateJobStatusBO(status: status.value);
+  }
 
   /// 安全解析更新岗位状态请求，兼容后端把状态字段返回为非字符串的情况。
   factory UpdateJobStatusBO.fromJson(JsonMap json) {

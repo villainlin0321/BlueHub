@@ -31,6 +31,24 @@ class PostJobFormDraft {
   final String description;
 }
 
+class PostJobEditInitialData {
+  const PostJobEditInitialData({
+    required this.title,
+    required this.countryOrCity,
+    required this.headcount,
+    required this.minSalary,
+    required this.maxSalary,
+    required this.description,
+  });
+
+  final String title;
+  final String countryOrCity;
+  final String headcount;
+  final String minSalary;
+  final String maxSalary;
+  final String description;
+}
+
 class PostJobController extends Notifier<PostJobState> {
   static const Map<String, String> _employmentTypeMap = <String, String>{
     '不限': 'any',
@@ -57,6 +75,15 @@ class PostJobController extends Notifier<PostJobState> {
     '捷克': 'CZ',
     '匈牙利': 'HU',
   };
+  static final Map<String, String> _employmentTypeReverseMap =
+      _employmentTypeMap.map(
+        (String key, String value) => MapEntry<String, String>(value, key),
+      );
+  static final Map<String, String> _salaryPeriodReverseMap = _salaryPeriodMap
+      .map((String key, String value) => MapEntry<String, String>(value, key));
+  static final Map<String, String> _countryNameMap = _countryCodeMap.map(
+    (String key, String value) => MapEntry<String, String>(value, key),
+  );
 
   @override
   PostJobState build() {
@@ -164,6 +191,17 @@ class PostJobController extends Notifier<PostJobState> {
     }
   }
 
+  void preloadRequirementTags(List<TagItemVO> tags) {
+    final List<TagItemVO> sortedTags = List<TagItemVO>.from(tags)
+      ..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+    state = state.copyWith(
+      requirementTags: sortedTags,
+      hasLoadedRequirementTags: true,
+      isLoadingRequirementTags: false,
+      requirementTagsError: null,
+    );
+  }
+
   void setJobType(String value) {
     state = state.copyWith(selectedJobType: value);
   }
@@ -195,7 +233,9 @@ class PostJobController extends Notifier<PostJobState> {
       return;
     }
 
-    state = state.copyWith(customTags: <String>[...state.customTags, customTag]);
+    state = state.copyWith(
+      customTags: <String>[...state.customTags, customTag],
+    );
   }
 
   void removeCustomTag(String tag) {
@@ -214,7 +254,7 @@ class PostJobController extends Notifier<PostJobState> {
     state = state.copyWith(feedbackMessage: null);
   }
 
-  Future<void> publish(PostJobFormDraft draft) async {
+  Future<void> publish(PostJobFormDraft draft, {int? editingJobId}) async {
     if (state.isPublishing) {
       return;
     }
@@ -227,16 +267,95 @@ class PostJobController extends Notifier<PostJobState> {
     state = state.copyWith(isPublishing: true);
 
     try {
-      await ref.read(jobServiceProvider).createJob(request: request);
+      if (editingJobId == null) {
+        await ref.read(jobServiceProvider).createJob(request: request);
+      } else {
+        await ref
+            .read(jobServiceProvider)
+            .updateJob(jobId: editingJobId, request: request);
+      }
       state = state.copyWith(
         isPublishing: false,
         publishSuccessId: state.publishSuccessId + 1,
       );
-      _emitFeedback('岗位发布成功');
+      _emitFeedback(editingJobId == null ? '岗位发布成功' : '岗位更新成功');
     } catch (_) {
       state = state.copyWith(isPublishing: false);
-      _emitFeedback('岗位发布失败，请稍后重试', isError: true);
+      _emitFeedback(
+        editingJobId == null ? '岗位发布失败，请稍后重试' : '岗位更新失败，请稍后重试',
+        isError: true,
+      );
     }
+  }
+
+  Future<PostJobEditInitialData?> loadEditInitialData({
+    required int jobId,
+  }) async {
+    try {
+      if (!state.hasLoadedRequirementTags) {
+        await loadRequirementTags();
+      }
+
+      final JobDetailVO detail = await ref
+          .read(jobServiceProvider)
+          .getJobDetail(jobId: jobId);
+      return buildEditInitialData(detail);
+    } catch (error, stackTrace) {
+      AppLogger.instance.error(
+        'POST_JOB',
+        '岗位详情加载失败',
+        error: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{'jobId': jobId},
+      );
+      _emitFeedback('岗位详情加载失败，请稍后重试', isError: true);
+      return null;
+    }
+  }
+
+  PostJobEditInitialData buildEditInitialData(JobDetailVO detail) {
+    final Set<String> selectedCodes = <String>{};
+    final List<String> knownLabels = <String>[];
+    final Set<String> detailLabels = <String>{
+      ...detail.requirements.map((String item) => item.trim()),
+      ...detail.tags.map((TagVO item) => item.label.trim()),
+    }..removeWhere((String item) => item.isEmpty);
+
+    for (final TagItemVO tag in state.requirementTags) {
+      final String label = tagLabel(tag);
+      if (detailLabels.contains(label)) {
+        selectedCodes.add(tag.tagCode);
+        knownLabels.add(label);
+      }
+    }
+
+    final Set<String> knownLabelSet = knownLabels.toSet();
+    final List<String> customTags = detail.requirements
+        .map((String item) => item.trim())
+        .where(
+          (String item) => item.isNotEmpty && !knownLabelSet.contains(item),
+        )
+        .toList(growable: false);
+
+    state = state.copyWith(
+      selectedJobType:
+          _employmentTypeReverseMap[detail.employmentType] ??
+          state.selectedJobType,
+      selectedSalaryUnit:
+          _salaryPeriodReverseMap[detail.salaryPeriod] ??
+          state.selectedSalaryUnit,
+      selectedRequirementTagCodes: selectedCodes,
+      customTags: customTags,
+    );
+
+    return PostJobEditInitialData(
+      title: detail.title,
+      countryOrCity: _composeLocation(detail),
+      headcount: detail.headcount > 0 ? detail.headcount.toString() : '',
+      minSalary: _formatNumber(detail.salaryMin),
+      maxSalary: _formatNumber(detail.salaryMax),
+      description: detail.description,
+    );
   }
 
   String tagLabel(TagItemVO tag) {
@@ -328,6 +447,28 @@ class PostJobController extends Notifier<PostJobState> {
     }
 
     return _countryCodeMap[input] ?? '';
+  }
+
+  String _composeLocation(JobDetailVO detail) {
+    if (detail.address.trim().isNotEmpty) {
+      return detail.address.trim();
+    }
+    final String country = _countryNameMap[detail.country] ?? detail.country;
+    final List<String> parts = <String>[
+      country.trim(),
+      detail.city.trim(),
+    ].where((String item) => item.isNotEmpty).toList(growable: false);
+    return parts.join('·');
+  }
+
+  String _formatNumber(double value) {
+    if (value <= 0) {
+      return '';
+    }
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
   }
 
   _JobLocationDraft _parseLocation(String value) {

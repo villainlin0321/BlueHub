@@ -3,13 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../config/data/config_models.dart';
 import '../../../shared/logging/app_logger.dart';
+import '../data/job_models.dart';
 import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
 
+enum PostJobPageMode { create, edit }
+
+class PostJobPageArgs {
+  const PostJobPageArgs.create()
+    : mode = PostJobPageMode.create,
+      jobId = null,
+      prefetchedRequirementTags = null,
+      prefetchedJobDetail = null;
+
+  const PostJobPageArgs.edit({
+    required this.jobId,
+    this.prefetchedRequirementTags,
+    this.prefetchedJobDetail,
+  }) : mode = PostJobPageMode.edit;
+
+  final PostJobPageMode mode;
+  final int? jobId;
+  final List<TagItemVO>? prefetchedRequirementTags;
+  final JobDetailVO? prefetchedJobDetail;
+
+  bool get isEdit => mode == PostJobPageMode.edit && jobId != null;
+}
+
 class PostJobPage extends ConsumerStatefulWidget {
-  const PostJobPage({super.key});
+  const PostJobPage({super.key, this.args = const PostJobPageArgs.create()});
+
+  final PostJobPageArgs args;
 
   @override
   ConsumerState<PostJobPage> createState() => _PostJobPageState();
@@ -26,6 +53,9 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   final TextEditingController _maxSalaryController = TextEditingController();
   final TextEditingController _customTagController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  bool _isLoadingEditData = false;
+  bool _hasHydratedEditData = false;
+  String? _editLoadError;
 
   @override
   void initState() {
@@ -45,8 +75,23 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
         return;
       }
       AppLogger.instance.info('POST_JOB', '首帧完成，开始触发标签加载');
-      ref.read(postJobControllerProvider.notifier).loadRequirementTags();
+      _bootstrapPage();
     });
+  }
+
+  Future<void> _bootstrapPage() async {
+    final PostJobController controller = ref.read(
+      postJobControllerProvider.notifier,
+    );
+    if (widget.args.prefetchedRequirementTags case final List<TagItemVO> tags) {
+      controller.preloadRequirementTags(tags);
+    } else {
+      await controller.loadRequirementTags();
+    }
+    if (!widget.args.isEdit || _hasHydratedEditData) {
+      return;
+    }
+    await _loadEditJob();
   }
 
   @override
@@ -67,10 +112,57 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _loadEditJob() async {
+    final int? jobId = widget.args.jobId;
+    if (jobId == null || _isLoadingEditData) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingEditData = true;
+      _editLoadError = null;
+    });
+
+    final PostJobEditInitialData? initialData =
+        widget.args.prefetchedJobDetail != null
+        ? ref
+              .read(postJobControllerProvider.notifier)
+              .buildEditInitialData(widget.args.prefetchedJobDetail!)
+        : await ref
+              .read(postJobControllerProvider.notifier)
+              .loadEditInitialData(jobId: jobId);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (initialData == null) {
+      setState(() {
+        _isLoadingEditData = false;
+        _editLoadError = '岗位详情加载失败，请稍后重试';
+      });
+      return;
+    }
+
+    _packageNameController.text = initialData.title;
+    _countryController.text = initialData.countryOrCity;
+    _headcountController.text = initialData.headcount;
+    _minSalaryController.text = initialData.minSalary;
+    _maxSalaryController.text = initialData.maxSalary;
+    _descriptionController.text = initialData.description;
+    _customTagController.clear();
+
+    setState(() {
+      _isLoadingEditData = false;
+      _hasHydratedEditData = true;
+      _editLoadError = null;
+    });
+  }
+
   void _submitCustomTag() {
-    ref.read(postJobControllerProvider.notifier).addCustomTag(
-      _customTagController.text,
-    );
+    ref
+        .read(postJobControllerProvider.notifier)
+        .addCustomTag(_customTagController.text);
     _customTagController.clear();
   }
 
@@ -88,7 +180,9 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
     _submitCustomTag();
-    await ref.read(postJobControllerProvider.notifier).publish(_buildFormDraft());
+    await ref
+        .read(postJobControllerProvider.notifier)
+        .publish(_buildFormDraft(), editingJobId: widget.args.jobId);
   }
 
   @override
@@ -118,7 +212,60 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       postJobControllerProvider.notifier,
     );
 
+    if (widget.args.isEdit && _isLoadingEditData && !_hasHydratedEditData) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: const Text('编辑岗位'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (widget.args.isEdit && _editLoadError != null && !_hasHydratedEditData) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: const Text('编辑岗位'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _editLoadError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    height: 20 / 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loadEditJob,
+                  child: const Text('重新加载'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return PostJobPageView(
+      title: widget.args.isEdit ? '编辑岗位' : '发布岗位',
+      publishButtonLabel: '立即发布',
       packageNameController: _packageNameController,
       countryController: _countryController,
       headcountController: _headcountController,

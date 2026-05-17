@@ -91,6 +91,12 @@ class JobService {
     return _apiClient.putVoid('/jobs/$jobId', data: request.toJson());
   }
 
+  /// 更新岗位状态。
+  ///
+  /// `request.status` 支持：
+  /// - `active`：上线
+  /// - `inactive`：下线
+  /// - `draft`：草稿
   Future<void> updateJobStatus({
     required int jobId,
     required UpdateJobStatusBO request,

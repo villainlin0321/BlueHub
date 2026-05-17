@@ -9,6 +9,8 @@ import 'post_job_form_widgets.dart';
 class PostJobPageView extends StatelessWidget {
   const PostJobPageView({
     super.key,
+    required this.title,
+    required this.publishButtonLabel,
     required this.packageNameController,
     required this.countryController,
     required this.headcountController,
@@ -38,6 +40,8 @@ class PostJobPageView extends StatelessWidget {
     required this.tagLabelBuilder,
   });
 
+  final String title;
+  final String publishButtonLabel;
   final TextEditingController packageNameController;
   final TextEditingController countryController;
   final TextEditingController headcountController;
@@ -89,7 +93,7 @@ class PostJobPageView extends StatelessWidget {
             ),
           ),
         ),
-        title: const Text('发布岗位', style: PostJobPageStyles.navTitle),
+        title: Text(title, style: PostJobPageStyles.navTitle),
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -180,7 +184,8 @@ class PostJobPageView extends StatelessWidget {
                                         .map(
                                           (String item) => PostJobRadioOption(
                                             label: item,
-                                            selected: item == selectedSalaryUnit,
+                                            selected:
+                                                item == selectedSalaryUnit,
                                             onTap: () =>
                                                 onSalaryUnitChanged(item),
                                           ),
@@ -230,7 +235,8 @@ class PostJobPageView extends StatelessWidget {
                               requirementTags: requirementTags,
                               selectedRequirementTagCodes:
                                   selectedRequirementTagCodes,
-                              isLoadingRequirementTags: isLoadingRequirementTags,
+                              isLoadingRequirementTags:
+                                  isLoadingRequirementTags,
                               requirementTagsError: requirementTagsError,
                               onRetryLoadRequirementTags:
                                   onRetryLoadRequirementTags,
@@ -246,8 +252,7 @@ class PostJobPageView extends StatelessWidget {
                                     .map(
                                       (String tag) => _CustomTagChip(
                                         tag: tag,
-                                        onRemove: () =>
-                                            onRemoveCustomTag(tag),
+                                        onRemove: () => onRemoveCustomTag(tag),
                                       ),
                                     )
                                     .toList(growable: false),
@@ -374,8 +379,8 @@ class PostJobPageView extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              '立即发布',
+                          : Text(
+                              publishButtonLabel,
                               style: PostJobPageStyles.buttonText,
                             ),
                     ),

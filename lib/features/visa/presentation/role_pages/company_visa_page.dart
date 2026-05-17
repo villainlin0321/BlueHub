@@ -2,12 +2,30 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
+import '../../../jobs/presentation/post_job_page.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/network/page_result.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+
+final companyJobListRefreshTickProvider =
+    NotifierProvider<_CompanyJobListRefreshTickNotifier, int>(
+      _CompanyJobListRefreshTickNotifier.new,
+    );
+
+class _CompanyJobListRefreshTickNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void notifyChanged() {
+    state++;
+  }
+}
 
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
@@ -29,9 +47,9 @@ class _CompanyVisaPageState extends ConsumerState<CompanyVisaPage> {
         child: Column(
           children: <Widget>[
             _CompanyVisaHeader(
-            topPadding: topPadding,
-            onPublishTap: () => context.push(RoutePaths.postJob),
-          ),
+              topPadding: topPadding,
+              onPublishTap: () => context.push(RoutePaths.postJob),
+            ),
             const _CompanyVisaTabBar(),
             Expanded(
               child: TabBarView(
@@ -167,6 +185,8 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
   );
 
   List<JobDetailVO> _jobs = const <JobDetailVO>[];
+  final Set<int> _deletingJobIds = <int>{};
+  final Set<int> _updatingStatusJobIds = <int>{};
   bool _isInitialLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -305,9 +325,166 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
     return message.isEmpty ? '加载失败，请稍后重试' : message;
   }
 
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: isError ? const Color(0xFFD9363E) : null,
+          content: Text(message),
+        ),
+      );
+  }
+
+  Future<bool> _confirmDeleteJob(JobDetailVO job) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('删除岗位'),
+          content: Text('确认删除“${job.title}”吗？删除后不可恢复。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed ?? false;
+  }
+
+  Future<void> _deleteJob(JobDetailVO job) async {
+    if (_deletingJobIds.contains(job.jobId) ||
+        _updatingStatusJobIds.contains(job.jobId)) {
+      return;
+    }
+
+    final bool confirmed = await _confirmDeleteJob(job);
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _deletingJobIds.add(job.jobId);
+    });
+
+    try {
+      await ref.read(jobServiceProvider).deleteJob(jobId: job.jobId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _deletingJobIds.remove(job.jobId);
+        _jobs = _jobs
+            .where((JobDetailVO item) => item.jobId != job.jobId)
+            .toList(growable: false);
+      });
+      _showMessage('岗位已删除');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _deletingJobIds.remove(job.jobId);
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
+
+  Future<void> _toggleJobStatus(JobDetailVO job) async {
+    if (_deletingJobIds.contains(job.jobId) ||
+        _updatingStatusJobIds.contains(job.jobId)) {
+      return;
+    }
+
+    final JobManageStatus nextStatus = widget.tab.isOffline
+        ? JobManageStatus.active
+        : JobManageStatus.inactive;
+    final String successMessage = widget.tab.isOffline ? '岗位已发布' : '岗位已下线';
+
+    setState(() {
+      _updatingStatusJobIds.add(job.jobId);
+    });
+
+    try {
+      await ref
+          .read(jobServiceProvider)
+          .updateJobStatus(
+            jobId: job.jobId,
+            request: UpdateJobStatusBO.fromStatus(nextStatus),
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _updatingStatusJobIds.remove(job.jobId);
+        _jobs = _jobs
+            .where((JobDetailVO item) => item.jobId != job.jobId)
+            .toList(growable: false);
+      });
+      ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
+      _showMessage(successMessage);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _updatingStatusJobIds.remove(job.jobId);
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
+
+  Future<void> _editJob(JobDetailVO job) async {
+    List<TagItemVO>? prefetchedRequirementTags;
+    JobDetailVO? prefetchedJobDetail;
+
+    try {
+      final TagDictVO tagDict = await ref.read(configServiceProvider).getTags();
+      final List<TagItemVO> tags = List<TagItemVO>.from(
+        tagDict.tags[TagCategory.requirement.value] ?? const <TagItemVO>[],
+      )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+      prefetchedRequirementTags = tags;
+      prefetchedJobDetail = await ref
+          .read(jobServiceProvider)
+          .getJobDetail(jobId: job.jobId);
+    } catch (_) {
+      // 预取失败时仍允许进入编辑页，交由编辑页自己的重试兜底。
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    final Object? result = await context.push(
+      RoutePaths.postJob,
+      extra: PostJobPageArgs.edit(
+        jobId: job.jobId,
+        prefetchedRequirementTags: prefetchedRequirementTags,
+        prefetchedJobDetail: prefetchedJobDetail,
+      ),
+    );
+    if (!mounted || result != true) {
+      return;
+    }
+    ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.listen<int>(companyJobListRefreshTickProvider, (previous, next) {
+      if (previous == next || !_hasLoadedOnce || !mounted) {
+        return;
+      }
+      _loadInitial();
+    });
 
     if (_isInitialLoading && !_hasLoadedOnce) {
       return const Center(child: CircularProgressIndicator());
@@ -336,9 +513,15 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
               itemCount: _jobs.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (BuildContext context, int index) {
+                final JobDetailVO job = _jobs[index];
                 return _JobManageCard(
-                  job: _jobs[index],
+                  job: job,
                   isOffline: widget.tab.isOffline,
+                  isDeleting: _deletingJobIds.contains(job.jobId),
+                  isUpdatingStatus: _updatingStatusJobIds.contains(job.jobId),
+                  onDeleteTap: () => _deleteJob(job),
+                  onToggleStatusTap: () => _toggleJobStatus(job),
+                  onEditTap: () => _editJob(job),
                 );
               },
             ),
@@ -404,10 +587,23 @@ class _CompanyJobEmptyState extends StatelessWidget {
 }
 
 class _JobManageCard extends StatelessWidget {
-  const _JobManageCard({required this.job, required this.isOffline});
+  const _JobManageCard({
+    required this.job,
+    required this.isOffline,
+    required this.isDeleting,
+    required this.isUpdatingStatus,
+    required this.onDeleteTap,
+    required this.onToggleStatusTap,
+    required this.onEditTap,
+  });
 
   final JobDetailVO job;
   final bool isOffline;
+  final bool isDeleting;
+  final bool isUpdatingStatus;
+  final VoidCallback onDeleteTap;
+  final VoidCallback onToggleStatusTap;
+  final VoidCallback onEditTap;
 
   @override
   Widget build(BuildContext context) {
@@ -497,11 +693,20 @@ class _JobManageCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
-                const _DeleteActionButton(),
+                _DeleteActionButton(
+                  onTap: isDeleting || isUpdatingStatus ? null : onDeleteTap,
+                  isLoading: isDeleting,
+                ),
                 const Spacer(),
-                _BorderActionButton(label: isOffline ? '发布' : '下线'),
+                _BorderActionButton(
+                  label: isOffline ? '发布' : '下线',
+                  onTap: isDeleting || isUpdatingStatus
+                      ? null
+                      : onToggleStatusTap,
+                  isLoading: isUpdatingStatus,
+                ),
                 const SizedBox(width: 8),
-                const _PrimaryActionButton(label: '编辑'),
+                _PrimaryActionButton(label: '编辑', onTap: onEditTap),
               ],
             ),
           ],
@@ -623,53 +828,98 @@ class _MoreActionIcon extends StatelessWidget {
 }
 
 class _DeleteActionButton extends StatelessWidget {
-  const _DeleteActionButton();
+  const _DeleteActionButton({this.onTap, this.isLoading = false});
+
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFFF4D4F)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        '删除',
-        style: TextStyle(
-          color: Color(0xFFD9363E),
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
-        ),
-      ),
+    return _BorderActionChip(
+      borderColor: const Color(0xFFFF4D4F),
+      textColor: const Color(0xFFD9363E),
+      label: '删除',
+      onTap: onTap,
+      isLoading: isLoading,
+      loadingColor: const Color(0xFFD9363E),
     );
   }
 }
 
 class _BorderActionButton extends StatelessWidget {
-  const _BorderActionButton({required this.label});
+  const _BorderActionButton({
+    required this.label,
+    this.onTap,
+    this.isLoading = false,
+  });
 
   final String label;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD9D9D9)),
+    return _BorderActionChip(
+      borderColor: const Color(0xFFD9D9D9),
+      textColor: const Color(0xFF262626),
+      label: label,
+      onTap: onTap,
+      isLoading: isLoading,
+      loadingColor: const Color(0xFF262626),
+    );
+  }
+}
+
+class _BorderActionChip extends StatelessWidget {
+  const _BorderActionChip({
+    required this.borderColor,
+    required this.textColor,
+    required this.label,
+    required this.loadingColor,
+    this.onTap,
+    this.isLoading = false,
+  });
+
+  final Color borderColor;
+  final Color textColor;
+  final String label;
+  final Color loadingColor;
+  final VoidCallback? onTap;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 26),
+          decoration: BoxDecoration(
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: isLoading
+              ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 12,
+                    height: 12 / 12,
+                    letterSpacing: 0.2,
+                  ),
+                ),
         ),
       ),
     );
@@ -677,27 +927,35 @@ class _BorderActionButton extends StatelessWidget {
 }
 
 class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({required this.label});
+  const _PrimaryActionButton({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      decoration: BoxDecoration(
-        color: const Color(0xFF096DD9),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 26),
+          decoration: BoxDecoration(
+            color: const Color(0xFF096DD9),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );
