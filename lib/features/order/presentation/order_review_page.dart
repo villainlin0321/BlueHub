@@ -1,22 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../visa/data/review_models.dart';
+import '../../visa/data/review_providers.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
-class OrderReviewPage extends StatefulWidget {
-  const OrderReviewPage({super.key});
+class OrderReviewPageArgs {
+  const OrderReviewPageArgs({
+    required this.orderId,
+    required this.providerId,
+    required this.title,
+    required this.price,
+    required this.providerName,
+    required this.packageType,
+    required this.orderNo,
+  });
 
-  @override
-  State<OrderReviewPage> createState() => _OrderReviewPageState();
+  final int orderId;
+  final int providerId;
+  final String title;
+  final String price;
+  final String providerName;
+  final String packageType;
+  final String orderNo;
 }
 
-class _OrderReviewPageState extends State<OrderReviewPage> {
+class OrderReviewPage extends ConsumerStatefulWidget {
+  const OrderReviewPage({super.key, required this.args});
+
+  final OrderReviewPageArgs args;
+
+  @override
+  ConsumerState<OrderReviewPage> createState() => _OrderReviewPageState();
+}
+
+class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   final TextEditingController _commentController = TextEditingController();
 
   double _rating = 1.5;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -41,7 +67,51 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   }
 
   void _showPlaceholder(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _handlePublish() async {
+    if (!_canPublish || _isSubmitting) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await ref
+          .read(reviewServiceProvider)
+          .createReview(
+            request: CreateReviewBO(
+              orderId: widget.args.orderId,
+              providerId: widget.args.providerId,
+              rating: _rating.round().clamp(1, 5),
+              content: _commentController.text.trim(),
+              images: const <String>[],
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      context.pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showPlaceholder(_normalizeError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _normalizeError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '评价发布失败，请稍后重试' : message;
   }
 
   @override
@@ -82,7 +152,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
           children: <Widget>[
-            const _ReviewOrderCard(),
+            _ReviewOrderCard(args: widget.args),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
@@ -182,11 +252,12 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                           const SizedBox(height: 4),
                           Text(
                             '上传图片',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF595959),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: const Color(0xFF595959),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
                           ),
                         ],
                       ),
@@ -211,13 +282,10 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
               ),
             ),
             child: Opacity(
-              opacity: _canPublish ? 1 : 0.3,
+              opacity: _canPublish && !_isSubmitting ? 1 : 0.3,
               child: IgnorePointer(
-                ignoring: !_canPublish,
-                child: PrimaryButton(
-                  label: '发布',
-                  onPressed: () => _showPlaceholder('发布评价（占位）'),
-                ),
+                ignoring: !_canPublish || _isSubmitting,
+                child: PrimaryButton(label: '发布', onPressed: _handlePublish),
               ),
             ),
           ),
@@ -228,7 +296,9 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
 }
 
 class _ReviewOrderCard extends StatelessWidget {
-  const _ReviewOrderCard();
+  const _ReviewOrderCard({required this.args});
+
+  final OrderReviewPageArgs args;
 
   @override
   Widget build(BuildContext context) {
@@ -239,14 +309,14 @@ class _ReviewOrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        children: const <Widget>[
-          _ReviewTitleRow(title: '法签通个人服务', price: '¥9,000.00'),
-          SizedBox(height: 12),
-          _ReviewInfoRow(label: '服务商', value: '中欧出海签证服务有限公司'),
-          SizedBox(height: 4),
-          _ReviewInfoRow(label: '套餐类型', value: '基础套餐'),
-          SizedBox(height: 4),
-          _ReviewInfoRow(label: '订单号', value: 'CLSKJ98793120238'),
+        children: <Widget>[
+          _ReviewTitleRow(title: args.title, price: args.price),
+          const SizedBox(height: 12),
+          _ReviewInfoRow(label: '服务商', value: args.providerName),
+          const SizedBox(height: 4),
+          _ReviewInfoRow(label: '套餐类型', value: args.packageType),
+          const SizedBox(height: 4),
+          _ReviewInfoRow(label: '订单号', value: args.orderNo),
         ],
       ),
     );

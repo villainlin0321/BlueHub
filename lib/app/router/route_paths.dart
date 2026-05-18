@@ -74,7 +74,7 @@ class RoutePaths {
   /// 通用结果页。
   static const appResult = '/result';
 
-  /// 我的订单页。
+  /// 我的订单页。(求职者)
   static const myOrders = '/me/orders';
 
   /// 我的收藏页。
