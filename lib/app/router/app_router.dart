@@ -27,6 +27,7 @@ import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
 import '../../features/me/presentation/settings_page.dart';
+import '../../features/message/presentation/message_center_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_management_page.dart';
 import '../../features/order/presentation/order_review_page.dart';
@@ -228,6 +229,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myFavorites,
         builder: (context, state) => const MyFavoritesPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.messageCenter,
+        builder: (context, state) => const MessageCenterPage(),
       ),
       GoRoute(
         path: RoutePaths.myResume,

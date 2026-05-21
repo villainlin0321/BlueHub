@@ -65,7 +65,7 @@ class JobSeekerMePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _Header(
-                onMessageTap: () => _showPlaceholderToast(context, '消息中心'),
+                onMessageTap: () => context.push(RoutePaths.messageCenter),
                 onSettingsTap: () => _handleSettingsTap(context),
               ),
               const SizedBox(height: 11),

@@ -192,7 +192,7 @@ class _HeaderActions extends StatelessWidget {
         _TopIconButton(
           assetPath: CompanyMePage._messageAsset,
           fallbackIcon: Icons.chat_bubble_outline,
-          onTap: () => _showPlaceholderToast(context, '消息中心'),
+          onTap: () => context.push(RoutePaths.messageCenter),
         ),
         const SizedBox(width: 16),
         _TopIconButton(
@@ -202,12 +202,6 @@ class _HeaderActions extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label（占位）')));
   }
 }
 

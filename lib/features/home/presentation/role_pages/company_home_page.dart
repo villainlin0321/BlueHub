@@ -8,6 +8,7 @@ import '../../../jobs/application/company_applications/company_application_list_
 import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
 import '../../../jobs/data/application_models.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
@@ -519,7 +520,7 @@ class _CompanyHeroTopRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const _HeroMessageButton(),
+        const MessageCenterIconButton(),
       ],
     );
   }
@@ -546,42 +547,6 @@ class _EnterpriseBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           height: 1,
         ),
-      ),
-    );
-  }
-}
-
-class _HeroMessageButton extends StatelessWidget {
-  const _HeroMessageButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          const Positioned.fill(
-            child: Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 20,
-              color: Colors.white,
-            ),
-          ),
-          Positioned(
-            top: 1,
-            right: -1,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF24C3D),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
