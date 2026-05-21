@@ -19,14 +19,6 @@ class MePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // 关键保护：Shell 多分支会同时保活，必须为 FAB 指定唯一 heroTag。
-        heroTag: 'me_switch_role_fab',
-        onPressed: () {
-          context.pushNamed(RoutePaths.selectRoleName);
-        },
-        child: const Text('切换\n角色'),
-      ),
       body: switch (currentRole) {
         ShellRole.jobSeeker => const JobSeekerMePage(),
         ShellRole.company => const CompanyMePage(),

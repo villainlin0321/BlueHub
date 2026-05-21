@@ -8,8 +8,11 @@ import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
+import '../../../auth/application/auth_session_provider.dart';
+import '../../../auth/application/auth_user.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/presentation/job_detail_page.dart';
+import '../../../me/presentation/current_user_view_data.dart';
 import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
@@ -192,21 +195,46 @@ class _ShortcutRow extends StatelessWidget {
   }
 }
 
-class _HeaderProfileRow extends StatelessWidget {
+class _HeaderProfileRow extends ConsumerWidget {
   const _HeaderProfileRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AuthUser? currentUser = ref.watch(authSessionProvider).user;
+    final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
+      currentUser,
+    );
+    final Widget fallbackAvatar = Image.asset(
+      'assets/images/mon5bjog-wv3qvoa.png',
+      width: 32,
+      height: 32,
+      fit: BoxFit.cover,
+    );
+
     return Row(
       children: <Widget>[
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Image.asset(
-            'assets/images/mon5bjog-wv3qvoa.png',
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-          ),
+          child: userViewData.avatarUrl.isEmpty
+              ? fallbackAvatar
+              : Image.network(
+                  userViewData.avatarUrl,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => fallbackAvatar,
+                  loadingBuilder:
+                      (
+                        BuildContext context,
+                        Widget child,
+                        ImageChunkEvent? event,
+                      ) {
+                        if (event == null) {
+                          return child;
+                        }
+                        return fallbackAvatar;
+                      },
+                ),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -214,7 +242,7 @@ class _HeaderProfileRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                '早上好，程先生',
+                '早上好，${userViewData.nickname}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: const Color(0xFF262626),
                   fontWeight: FontWeight.w500,
