@@ -12,6 +12,7 @@ import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
 import '../../../jobs/data/job_models.dart';
+import '../../../jobs/presentation/job_apply_helper.dart';
 import '../../../jobs/presentation/job_detail_page.dart';
 import '../../../me/presentation/current_user_view_data.dart';
 import '../../../service_detail/presentation/service_detail_page.dart';
@@ -523,6 +524,20 @@ class _HomeLatestJobsSection extends StatelessWidget {
   final AsyncValue<List<JobListVO>> jobsAsync;
   final VoidCallback onRetry;
 
+  /// 处理首页岗位投递，并透传统一的成功/失败提示文案。
+  Future<void> _handleApply(BuildContext context, JobListVO job) async {
+    final String? errorMessage = await submitJobApplication(
+      context,
+      jobId: job.jobId,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(errorMessage ?? '投递成功')),
+    );
+  }
+
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
   @override
   Widget build(BuildContext context) {
@@ -548,7 +563,7 @@ class _HomeLatestJobsSection extends StatelessWidget {
                     RoutePaths.jobDetail,
                     extra: JobDetailPageArgs(jobId: jobs[index].jobId),
                   ),
-                  onApply: () {},
+                  onApply: () => _handleApply(context, jobs[index]),
                 ),
               );
             }),
