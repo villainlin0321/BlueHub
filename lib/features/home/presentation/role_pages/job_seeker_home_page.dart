@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
@@ -205,37 +206,13 @@ class _HeaderProfileRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       currentUser,
     );
-    final Widget fallbackAvatar = Image.asset(
-      'assets/images/mon5bjog-wv3qvoa.png',
-      width: 32,
-      height: 32,
-      fit: BoxFit.cover,
-    );
 
     return Row(
       children: <Widget>[
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: userViewData.avatarUrl.isEmpty
-              ? fallbackAvatar
-              : Image.network(
-                  userViewData.avatarUrl,
-                  width: 32,
-                  height: 32,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => fallbackAvatar,
-                  loadingBuilder:
-                      (
-                        BuildContext context,
-                        Widget child,
-                        ImageChunkEvent? event,
-                      ) {
-                        if (event == null) {
-                          return child;
-                        }
-                        return fallbackAvatar;
-                      },
-                ),
+        AppUserAvatar(
+          imageUrl: userViewData.avatarUrl,
+          size: 32,
+          placeholderAssetPath: 'assets/images/mon5bjog-wv3qvoa.png',
         ),
         const SizedBox(width: 10),
         Expanded(
