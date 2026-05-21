@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../messages/data/message_models.dart';
+import '../../messages/data/message_providers.dart';
+import '../../../shared/network/page_result.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
+
 /// 消息中心页，按 Figma 设计稿还原顶部导航、Tab 及系统通知列表。
-class MessageCenterPage extends StatefulWidget {
+class MessageCenterPage extends ConsumerStatefulWidget {
   const MessageCenterPage({super.key});
 
   @override
-  State<MessageCenterPage> createState() => _MessageCenterPageState();
+  ConsumerState<MessageCenterPage> createState() => _MessageCenterPageState();
 }
 
-class _MessageCenterPageState extends State<MessageCenterPage>
+class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     with SingleTickerProviderStateMixin {
   static const Color _pageBackground = Color(0xFFF5F7FA);
   static const Color _primaryBlue = Color(0xFF096DD9);
@@ -31,13 +37,16 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   late final TabController _tabController;
   late List<_ChatMessageItem> _chatItems;
   late List<_SystemNoticeItem> _systemItems;
+  bool _isLoadingChat = true;
+  String? _chatError;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
-    _chatItems = _buildInitialChatItems();
+    _chatItems = const <_ChatMessageItem>[];
     _systemItems = _buildInitialSystemItems();
+    _loadConversations();
   }
 
   @override
@@ -50,23 +59,74 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   bool get _hasUnreadSystem => _systemItems.any((item) => item.isUnread);
 
   void _markAllAsRead() {
+    final List<int> unreadConversationIds = _chatItems
+        .where((item) => item.isUnread)
+        .map((item) => item.conversationId)
+        .toList(growable: false);
     setState(() {
       _chatItems = _chatItems
-          .map((item) => item.copyWith(isUnread: false))
+          .map((item) => item.copyWith(unreadCount: 0))
           .toList(growable: false);
       _systemItems = _systemItems
           .map((item) => item.copyWith(isUnread: false))
           .toList(growable: false);
     });
+    _markChatListAsRead(unreadConversationIds);
   }
 
-  void _markChatAsRead(int index) {
+  Future<void> _loadConversations() async {
+    setState(() {
+      _isLoadingChat = true;
+      _chatError = null;
+    });
+
+    try {
+      final PageResult<ConversationVO> response = await ref
+          .read(messageServiceProvider)
+          .listConversations(page: 1, pageSize: 50);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _chatItems = response.list
+            .map(_ChatMessageItem.fromConversation)
+            .toList(growable: false);
+        _isLoadingChat = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingChat = false;
+        _chatError = '消息加载失败，请稍后重试';
+      });
+    }
+  }
+
+  Future<void> _markChatAsRead(int index) async {
     if (!_chatItems[index].isUnread) {
       return;
     }
+    final int conversationId = _chatItems[index].conversationId;
+    final int previousUnreadCount = _chatItems[index].unreadCount;
     setState(() {
-      _chatItems[index] = _chatItems[index].copyWith(isUnread: false);
+      _chatItems[index] = _chatItems[index].copyWith(unreadCount: 0);
     });
+    try {
+      await ref
+          .read(messageServiceProvider)
+          .markRead(conversationId: conversationId);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _chatItems[index] = _chatItems[index].copyWith(
+          unreadCount: previousUnreadCount,
+        );
+      });
+    }
   }
 
   void _markSystemAsRead(int index) {
@@ -78,31 +138,19 @@ class _MessageCenterPageState extends State<MessageCenterPage>
     });
   }
 
-  List<_ChatMessageItem> _buildInitialChatItems() {
-    return const <_ChatMessageItem>[
-      _ChatMessageItem(
-        name: 'BlueHub 官方客服',
-        time: '10:41',
-        preview: '您好，您提交的企业资料已进入审核流程，请耐心等待结果通知。',
-        avatarLabel: '官',
-        avatarColor: Color(0xFF3C8DFF),
-        isUnread: true,
-      ),
-      _ChatMessageItem(
-        name: '招聘顾问',
-        time: '昨天',
-        preview: '新的岗位套餐已准备完成，您可以前往发布页继续操作。',
-        avatarLabel: '顾',
-        avatarColor: Color(0xFF3FB27F),
-      ),
-      _ChatMessageItem(
-        name: '面试通知',
-        time: '周二',
-        preview: '候选人已确认面试时间，请及时查看详情并做好安排。',
-        avatarLabel: '面',
-        avatarColor: Color(0xFFF5A623),
-      ),
-    ];
+  Future<void> _markChatListAsRead(List<int> conversationIds) async {
+    if (conversationIds.isEmpty) {
+      return;
+    }
+    for (final int conversationId in conversationIds) {
+      try {
+        await ref
+            .read(messageServiceProvider)
+            .markRead(conversationId: conversationId);
+      } catch (_) {
+        // 忽略单个会话的已读同步失败，避免打断当前页面交互。
+      }
+    }
   }
 
   List<_SystemNoticeItem> _buildInitialSystemItems() {
@@ -164,7 +212,10 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                     _ChatTabView(
                       scale: scale,
                       items: _chatItems,
+                      isLoading: _isLoadingChat,
+                      errorText: _chatError,
                       onTapItem: _markChatAsRead,
+                      onRetry: _loadConversations,
                     ),
                     _SystemTabView(
                       scale: scale,
@@ -375,118 +426,262 @@ class _ChatTabView extends StatelessWidget {
   const _ChatTabView({
     required this.scale,
     required this.items,
+    required this.isLoading,
+    required this.errorText,
     required this.onTapItem,
+    required this.onRetry,
   });
 
   final double scale;
   final List<_ChatMessageItem> items;
-  final ValueChanged<int> onTapItem;
+  final bool isLoading;
+  final String? errorText;
+  final Future<void> Function(int index) onTapItem;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: EdgeInsets.fromLTRB(
-        12 * scale,
-        12 * scale,
-        12 * scale,
-        MediaQuery.paddingOf(context).bottom + 24 * scale,
-      ),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => SizedBox(height: 12 * scale),
-      itemBuilder: (BuildContext context, int index) {
-        final _ChatMessageItem item = items[index];
-        return Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16 * scale),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16 * scale),
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+    }
+
+    if (errorText != null) {
+      return _ChatStatusView(
+        message: errorText!,
+        actionLabel: '重新加载',
+        onAction: onRetry,
+      );
+    }
+
+    if (items.isEmpty) {
+      return const _ChatStatusView(message: '暂无聊天消息');
+    }
+
+    return ColoredBox(
+      color: Colors.white,
+      child: ListView.separated(
+        padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox.shrink(),
+        itemBuilder: (BuildContext context, int index) {
+          final _ChatMessageItem item = items[index];
+          return _ChatConversationTile(
+            item: item,
+            scale: scale,
             onTap: () => onTapItem(index),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14 * scale,
-                vertical: 14 * scale,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ChatConversationTile extends StatelessWidget {
+  const _ChatConversationTile({
+    required this.item,
+    required this.scale,
+    required this.onTap,
+  });
+
+  final _ChatMessageItem item;
+  final double scale;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 72 * scale,
+          child: Stack(
+            children: <Widget>[
+              Positioned(
+                left: 72 * scale,
+                right: 0,
+                bottom: 0,
+                child: Container(height: 0.5, color: const Color(0xFFF0F0F0)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: <Widget>[
-                      CircleAvatar(
-                        radius: 20 * scale,
-                        backgroundColor: item.avatarColor,
-                        child: Text(
-                          item.avatarLabel,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14 * scale,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+              Padding(
+                padding: EdgeInsets.only(left: 16 * scale),
+                child: Row(
+                  children: <Widget>[
+                    AppUserAvatar(
+                      imageUrl: item.avatarUrl,
+                      size: 44 * scale,
+                      backgroundColor: const Color(0xFF487BFE),
+                      borderRadius: BorderRadius.circular(22 * scale),
+                      placeholder: _AvatarFallbackText(
+                        text: item.avatarFallbackText,
+                        scale: scale,
                       ),
-                      if (item.isUnread)
-                        Positioned(
-                          top: -1 * scale,
-                          right: -1 * scale,
-                          child: Container(
-                            width: 8 * scale,
-                            height: 8 * scale,
-                            decoration: const BoxDecoration(
-                              color: _MessageCenterPageState._dangerDot,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          12 * scale,
+                          13 * scale,
+                          16 * scale,
+                          13 * scale,
                         ),
-                    ],
-                  ),
-                  SizedBox(width: 12 * scale),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                item.name,
-                                style: TextStyle(
-                                  color: _MessageCenterPageState._titleColor,
-                                  fontSize: 15 * scale,
-                                  fontWeight: FontWeight.w500,
-                                  height: 20 / 15,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    item.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color:
+                                          _MessageCenterPageState._titleColor,
+                                      fontSize: 16 * scale,
+                                      height: 22 / 16,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                SizedBox(width: 8 * scale),
+                                Text(
+                                  item.time,
+                                  style: TextStyle(
+                                    color: const Color(0xFFBFBFBF),
+                                    fontSize: 12 * scale,
+                                    height: 18 / 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              item.time,
-                              style: TextStyle(
-                                color: _MessageCenterPageState._hintText,
-                                fontSize: 12 * scale,
-                                height: 18 / 12,
-                              ),
+                            SizedBox(height: 6 * scale),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    item.preview,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: _MessageCenterPageState._hintText,
+                                      fontSize: 14 * scale,
+                                      height: 18 / 14,
+                                    ),
+                                  ),
+                                ),
+                                if (item.isUnread) ...<Widget>[
+                                  SizedBox(width: 8 * scale),
+                                  _UnreadBadge(
+                                    count: item.unreadCount,
+                                    scale: scale,
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),
-                        SizedBox(height: 8 * scale),
-                        Text(
-                          item.preview,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _MessageCenterPageState._secondaryText,
-                            fontSize: 13 * scale,
-                            height: 18 / 13,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarFallbackText extends StatelessWidget {
+  const _AvatarFallbackText({required this.text, required this.scale});
+
+  final String text;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 14 * scale,
+          height: 20 / 14,
+        ),
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({required this.count, required this.scale});
+
+  final int count;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final String text = count > 99 ? '99+' : '$count';
+    return Container(
+      constraints: BoxConstraints(minWidth: 18 * scale, minHeight: 18 * scale),
+      padding: EdgeInsets.symmetric(horizontal: 5 * scale, vertical: 2 * scale),
+      decoration: BoxDecoration(
+        color: _MessageCenterPageState._dangerDot,
+        borderRadius: BorderRadius.circular(9 * scale),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12 * scale,
+          height: 14 / 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatStatusView extends StatelessWidget {
+  const _ChatStatusView({
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String message;
+  final String? actionLabel;
+  final Future<void> Function()? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: _MessageCenterPageState._hintText,
+                fontSize: 14,
+                height: 20 / 14,
               ),
             ),
-          ),
-        );
-      },
+            if (actionLabel != null && onAction != null) ...<Widget>[
+              const SizedBox(height: 12),
+              TextButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -696,32 +891,102 @@ class _FixedWidthUnderlinePainter extends BoxPainter {
 
 class _ChatMessageItem {
   const _ChatMessageItem({
+    required this.conversationId,
     required this.name,
     required this.time,
     required this.preview,
-    required this.avatarLabel,
-    required this.avatarColor,
-    this.isUnread = false,
+    required this.avatarUrl,
+    required this.avatarFallbackText,
+    required this.unreadCount,
   });
 
+  factory _ChatMessageItem.fromConversation(ConversationVO conversation) {
+    final String nickname = conversation.targetUser.nickname.trim().isEmpty
+        ? '未命名用户'
+        : conversation.targetUser.nickname.trim();
+    return _ChatMessageItem(
+      conversationId: conversation.conversationId,
+      name: nickname,
+      time: _formatConversationTime(conversation.lastMessage.sentAt),
+      preview: _buildConversationPreview(conversation.lastMessage),
+      avatarUrl: conversation.targetUser.avatarUrl,
+      avatarFallbackText: _buildAvatarFallbackText(nickname),
+      unreadCount: conversation.unreadCount,
+    );
+  }
+
+  final int conversationId;
   final String name;
   final String time;
   final String preview;
-  final String avatarLabel;
-  final Color avatarColor;
-  final bool isUnread;
+  final String avatarUrl;
+  final String avatarFallbackText;
+  final int unreadCount;
 
-  _ChatMessageItem copyWith({bool? isUnread}) {
+  bool get isUnread => unreadCount > 0;
+
+  _ChatMessageItem copyWith({int? unreadCount}) {
     return _ChatMessageItem(
+      conversationId: conversationId,
       name: name,
       time: time,
       preview: preview,
-      avatarLabel: avatarLabel,
-      avatarColor: avatarColor,
-      isUnread: isUnread ?? this.isUnread,
+      avatarUrl: avatarUrl,
+      avatarFallbackText: avatarFallbackText,
+      unreadCount: unreadCount ?? this.unreadCount,
     );
   }
 }
+
+String _buildConversationPreview(LastMessageVO message) {
+  final String content = message.content.trim();
+  if (content.isNotEmpty) {
+    return content;
+  }
+
+  switch (message.type) {
+    case 'image':
+      return '[图片]';
+    case 'file':
+      return '[文件]';
+    default:
+      return '[暂无内容]';
+  }
+}
+
+String _formatConversationTime(String sentAt) {
+  final DateTime? dateTime = DateTime.tryParse(sentAt);
+  if (dateTime != null) {
+    return '${_twoDigits(dateTime.month)}-${_twoDigits(dateTime.day)}';
+  }
+
+  final RegExp matchDate = RegExp(r'(\d{2})[-/](\d{2})');
+  final RegExpMatch? match = matchDate.firstMatch(sentAt);
+  if (match != null) {
+    return '${match.group(1)}-${match.group(2)}';
+  }
+
+  return sentAt.trim();
+}
+
+String _buildAvatarFallbackText(String nickname) {
+  final String trimmed = nickname.trim();
+  if (trimmed.isEmpty) {
+    return '用户';
+  }
+
+  final String compact = trimmed.replaceAll(' ', '');
+  final RegExp englishOrNumber = RegExp(r'^[A-Za-z0-9]+$');
+  if (englishOrNumber.hasMatch(compact)) {
+    final int end = compact.length >= 2 ? 2 : compact.length;
+    return compact.substring(0, end).toUpperCase();
+  }
+
+  final List<int> runes = compact.runes.take(2).toList(growable: false);
+  return String.fromCharCodes(runes);
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _SystemNoticeItem {
   const _SystemNoticeItem({
