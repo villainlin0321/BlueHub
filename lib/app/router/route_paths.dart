@@ -80,6 +80,9 @@ class RoutePaths {
   /// 我的收藏页。
   static const myFavorites = '/me/favorites';
 
+  /// 消息中心页。
+  static const messageCenter = '/message-center';
+
   /// 订单管理页。
   static const orderManagement = '/order/management';
 

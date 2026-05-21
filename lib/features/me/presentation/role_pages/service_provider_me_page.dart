@@ -142,7 +142,7 @@ class _HeaderActions extends StatelessWidget {
         _TopIconButton(
           assetPath: ServiceProviderMePage._messageAsset,
           fallbackIcon: Icons.chat_bubble_outline,
-          onTap: () => _showPlaceholderToast(context, '消息中心'),
+          onTap: () => context.push(RoutePaths.messageCenter),
         ),
         const SizedBox(width: 16),
         _TopIconButton(
@@ -234,11 +234,7 @@ class _ProviderProfileRow extends StatelessWidget {
           ),
           const Opacity(
             opacity: 0.7,
-            child: Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
           ),
         ],
       ),

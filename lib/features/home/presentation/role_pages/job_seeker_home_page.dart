@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
 import '../../../jobs/data/job_models.dart';
@@ -249,48 +250,8 @@ class _HeaderProfileRow extends ConsumerWidget {
             ],
           ),
         ),
-        const _MessageButton(),
+        const MessageCenterIconButton(),
       ],
-    );
-  }
-}
-
-class _MessageButton extends StatelessWidget {
-  const _MessageButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 28,
-      height: 24,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          const Positioned.fill(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AppSvgIcon(
-                assetPath: 'assets/images/mon5bjog-vgesd2k.svg',
-                fallback: Icons.chat_bubble_outline_rounded,
-                size: 24,
-                color: Color(0xFF171A1D),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF24C3D),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

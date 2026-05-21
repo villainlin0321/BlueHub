@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
@@ -330,7 +331,7 @@ class _ProviderInfoRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const _MessageActionButton(),
+        const MessageCenterIconButton(),
       ],
     );
   }
@@ -387,43 +388,6 @@ class _CertificationBadge extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MessageActionButton extends StatelessWidget {
-  const _MessageActionButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          const Positioned.fill(
-            child: AppSvgIcon(
-              assetPath: 'assets/images/mon6azmx-xwxov19.svg',
-              fallback: Icons.chat_bubble_outline_rounded,
-              size: 24,
-              color: Colors.white,
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: -1,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF24C3D),
-                shape: BoxShape.circle,
-              ),
             ),
           ),
         ],
