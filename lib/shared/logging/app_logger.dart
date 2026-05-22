@@ -27,7 +27,7 @@ class AppLogger {
       methodCount: 0,
       errorMethodCount: 8,
       lineLength: 100,
-      colors: true,
+      colors: false,
       printEmojis: false,
       dateTimeFormat: logger.DateTimeFormat.onlyTimeAndSinceStart,
     ),
@@ -323,7 +323,7 @@ class AppLogger {
   }
 }
 
-/// 控制台输出器：逐行交给 `debugPrint`，保留 PrettyPrinter 的多行与颜色。
+/// 控制台输出器：逐行交给 `debugPrint`，保留 PrettyPrinter 的多行格式。
 class _DebugPrintOutput extends logger.LogOutput {
   _DebugPrintOutput(this._writer);
 
