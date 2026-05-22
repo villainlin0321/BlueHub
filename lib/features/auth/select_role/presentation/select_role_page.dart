@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../application/auth_session_provider.dart';
 import '../../application/auth_role_mapper.dart';
 import '../application/select_role_controller.dart';
 import '../../presentation/widgets/auth_language_switch.dart';
@@ -20,7 +21,19 @@ class SelectRolePage extends ConsumerStatefulWidget {
 class _SelectRolePageState extends ConsumerState<SelectRolePage> {
   bool _isChineseSelected = true;
 
-  void _handleBack() {
+  Future<void> _handleBack() async {
+    final authSession = ref.read(authSessionProvider);
+    if (authSession.needSelectRole) {
+      await ref
+          .read(authSessionProvider.notifier)
+          .clearSession(reason: 'select_role_back_to_login');
+      if (!mounted) {
+        return;
+      }
+      context.goNamed(RoutePaths.loginPhoneName);
+      return;
+    }
+
     if (context.canPop()) {
       context.pop();
       return;
