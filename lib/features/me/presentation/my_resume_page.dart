@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../../shared/network/services/resume_service.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
@@ -12,7 +11,7 @@ import 'my_resume_editor_page.dart';
 /// 我的简历页。
 ///
 /// 当前改为真实接口驱动：
-/// 1. 首屏调用 `listMyResumes` 拉取当前用户简历列表，并取当前展示简历；
+/// 1. 首屏调用 `getMyResume` 拉取当前用户简历；
 /// 2. 管理态支持设为默认、删除，并在进入编辑前重新拉取详情；
 /// 3. 根据接口状态展示加载、错误、空态或内容态；
 /// 4. 仍保留原有编辑入口与管理态 UI。
@@ -51,7 +50,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     );
   }
 
-  /// 拉取当前登录用户的简历列表，并加载当前展示简历详情。
+  /// 拉取当前登录用户的简历，并切换页面状态。
   Future<void> _loadResume() async {
     setState(() {
       _isLoading = true;
@@ -59,24 +58,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     });
 
     try {
-      final ResumeService service = ref.read(resumeServiceProvider);
-      final List<ResumeListItemVO> resumes = await service.listMyResumes();
-      if (!mounted) {
-        return;
-      }
-      if (resumes.isEmpty) {
-        setState(() {
-          _resume = null;
-          _isLoading = false;
-          _errorMessage = null;
-        });
-        return;
-      }
-
-      final ResumeListItemVO currentResume = resumes.first;
-      final ResumeVO resume = await service.getResumeDetail(
-        resumeId: currentResume.resumeId,
-      );
+      final ResumeVO resume = await ref
+          .read(resumeServiceProvider)
+          .getMyResume();
       if (!mounted) {
         return;
       }
@@ -84,7 +68,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         _resume = resume;
         _isLoading = false;
         _errorMessage = null;
-        _isResumeVisible = currentResume.isPublic;
+        _isResumeVisible = resume.isPublic ?? _isResumeVisible;
       });
     } catch (error) {
       if (!mounted) {
