@@ -7,6 +7,20 @@ class ResumeService {
 
   final ApiClient _apiClient;
 
+  /// 创建一份新的空白简历。
+  ///
+  /// 返回值通常包含后端生成的新简历 ID 等字段。
+  Future<Map<String, dynamic>> createResume() async {
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/resumes',
+      decode: (data) => decodeMapValues<dynamic>(
+        data ?? const <String, dynamic>{},
+        (value) => value,
+      ),
+    );
+    return response;
+  }
+
   /// 获取当前登录用户的简历。
   Future<ResumeVO> getMyResume() async {
     final response = await _apiClient.get<ResumeVO>(
@@ -21,10 +35,22 @@ class ResumeService {
     return _apiClient.putVoid('/resumes/me', data: request.toJson());
   }
 
+  /// 获取当前用户的简历列表摘要。
+  ///
+  /// 列表按默认简历优先、更新时间倒序返回，可用于“我的简历”列表页。
+  Future<List<ResumeListItemVO>> listMyResumes() async {
+    final response = await _apiClient.get<List<ResumeListItemVO>>(
+      '/resumes/mine',
+      decode: (data) =>
+          decodeModelList<ResumeListItemVO>(data, ResumeListItemVO.fromJson),
+    );
+    return response;
+  }
+
   /// 根据用户 ID 获取简历详情。
   Future<ResumeVO> getResumeByUserId({required int userId}) async {
     final response = await _apiClient.get<ResumeVO>(
-      '/resumes/$userId',
+      '/resumes/user/$userId',
       decode: (data) => ResumeVO.fromJson(asJsonMap(data)),
     );
     return response;

@@ -16,7 +16,11 @@ class AiService {
   ///
   /// 服务端会通过事件流持续返回回复内容与中间状态。
   Stream<SseEvent> chat({required AiChatBO request}) {
-    return _sseClient.connect('/ai/chat');
+    return _sseClient.connect(
+      '/ai/chat',
+      method: 'POST',
+      data: request.toJson(),
+    );
   }
 
   /// 获取指定 AI 会话的历史消息。

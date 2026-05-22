@@ -68,11 +68,13 @@ class SseClient {
     String path, {
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    String method = 'GET',
+    Object? data,
   }) async* {
     final httpClient = HttpClient();
     final uri = _buildUri(path, queryParameters: queryParameters);
     try {
-      final request = await httpClient.getUrl(uri);
+      final request = await httpClient.openUrl(method, uri);
       request.headers.set(HttpHeaders.acceptHeader, 'text/event-stream');
       request.headers.set(HttpHeaders.cacheControlHeader, 'no-cache');
 
@@ -81,6 +83,14 @@ class SseClient {
         request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       }
       headers?.forEach(request.headers.set);
+
+      if (data != null) {
+        request.headers.set(
+          HttpHeaders.contentTypeHeader,
+          'application/json; charset=utf-8',
+        );
+        request.add(utf8.encode(jsonEncode(data)));
+      }
 
       final response = await request.close();
       if (response.statusCode >= 400) {
