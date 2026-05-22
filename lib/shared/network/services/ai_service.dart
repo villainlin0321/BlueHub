@@ -12,10 +12,16 @@ class AiService {
   final ApiClient _apiClient;
   final SseClient _sseClient;
 
+  /// 建立 AI 对话的 SSE 流式连接。
+  ///
+  /// 服务端会通过事件流持续返回回复内容与中间状态。
   Stream<SseEvent> chat({required AiChatBO request}) {
     return _sseClient.connect('/ai/chat');
   }
 
+  /// 获取指定 AI 会话的历史消息。
+  ///
+  /// `sessionId` 为会话主键，`limit` 用于控制单次返回条数。
   Future<List<AiMessage>> getChatHistory({
     required int sessionId,
     int? limit,
@@ -32,6 +38,9 @@ class AiService {
     return response;
   }
 
+  /// 获取岗位对应的 AI 人才推荐结果。
+  ///
+  /// `jobId` 为岗位主键，`limit` 用于控制推荐数量。
   Future<dynamic> talentRecommend({required int jobId, int? limit}) async {
     final queryParameters = <String, dynamic>{
       'job_id': jobId,

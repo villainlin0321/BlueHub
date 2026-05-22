@@ -7,6 +7,7 @@ class EmployerService {
 
   final ApiClient _apiClient;
 
+  /// 获取当前登录雇主的企业资料。
   Future<EmployerProfileVO> getEmployerProfile() async {
     final response = await _apiClient.get<EmployerProfileVO>(
       '/employer/me',
@@ -15,6 +16,7 @@ class EmployerService {
     return response;
   }
 
+  /// 更新当前登录雇主的企业资料与联系人信息。
   Future<void> updateEmployerProfile({
     required UpdateEmployerBO request,
   }) async {

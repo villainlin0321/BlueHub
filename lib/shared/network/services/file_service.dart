@@ -13,10 +13,16 @@ class FileService {
 
   final ApiClient _apiClient;
 
+  /// 确认文件上传完成。
+  ///
+  /// 在文件成功上传到对象存储后调用该接口完成业务落库。
   Future<void> confirmUpload({required ConfirmUploadBO request}) async {
     return _apiClient.postVoid('/files/confirm', data: request.toJson());
   }
 
+  /// 申请文件上传预签名信息。
+  ///
+  /// 返回文件 ID、对象键以及直传所需的上传地址。
   Future<FilePresignVO> presign({required FilePresignBO request}) async {
     final response = await _apiClient.post<FilePresignVO>(
       '/files/presign',
@@ -26,6 +32,9 @@ class FileService {
     return response;
   }
 
+  /// 执行完整的文件上传流程。
+  ///
+  /// 包含读取本地文件、申请预签名、直传对象存储以及确认上传四个步骤。
   Future<FilePresignVO> uploadFile({
     required String path,
     required FileScene scene,
@@ -65,6 +74,9 @@ class FileService {
     return response;
   }
 
+  /// 将二进制文件内容上传到预签名地址。
+  ///
+  /// 上传失败时会统一抛出带业务提示语的 `ApiException`。
   Future<void> putToUploadUrl({
     required String uploadUrl,
     required List<int> bytes,
@@ -110,6 +122,9 @@ class FileService {
     }
   }
 
+  /// 根据文件路径推断 MIME 类型。
+  ///
+  /// 未识别的扩展名会回退为 `application/octet-stream`。
   static String resolveMimeType(String path) {
     final String extension = path.split('.').last.toLowerCase();
     switch (extension) {
@@ -154,6 +169,7 @@ class FileService {
     }
   }
 
+  /// 获取文件的可访问地址。
   Future<String> getFileUrl({required int fileId}) async {
     final response = await _apiClient.get<String>(
       '/files/$fileId/url',

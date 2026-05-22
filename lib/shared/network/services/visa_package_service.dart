@@ -8,6 +8,9 @@ class VisaPackageService {
 
   final ApiClient _apiClient;
 
+  /// 创建签证套餐。
+  ///
+  /// 提交套餐基础信息、标签和价格配置后，返回接口原始结果。
   Future<Map<String, dynamic>> createPackage({
     required CreateVisaPackageBO request,
   }) async {
@@ -22,6 +25,9 @@ class VisaPackageService {
     return response;
   }
 
+  /// 分页查询当前服务商发布的签证套餐列表。
+  ///
+  /// 可按分页参数和套餐状态 `status` 过滤。
   Future<PageResult<VisaPackageVO>> listMyPackages({
     int? page,
     int? pageSize,
@@ -43,10 +49,12 @@ class VisaPackageService {
     return response;
   }
 
+  /// 删除指定签证套餐。
   Future<void> deletePackage({required int packageId}) async {
     return _apiClient.deleteVoid('/visa-packages/$packageId');
   }
 
+  /// 获取指定签证套餐的详情。
   Future<VisaPackageVO> getPackageDetail({required int packageId}) async {
     final response = await _apiClient.get<VisaPackageVO>(
       '/visa-packages/$packageId',
@@ -55,6 +63,7 @@ class VisaPackageService {
     return response;
   }
 
+  /// 更新指定签证套餐的完整信息。
   Future<void> updatePackage({
     required int packageId,
     required CreateVisaPackageBO request,
@@ -65,6 +74,9 @@ class VisaPackageService {
     );
   }
 
+  /// 更新签证套餐状态。
+  ///
+  /// 常用于上架、下架或草稿等状态切换。
   Future<void> updatePackageStatus({
     required int packageId,
     required UpdatePackageStatusBO request,

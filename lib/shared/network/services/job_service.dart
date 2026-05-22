@@ -8,6 +8,9 @@ class JobService {
 
   final ApiClient _apiClient;
 
+  /// 分页查询岗位列表。
+  ///
+  /// 支持按国家、关键字、薪资区间、是否支持签证以及排序方式筛选。
   Future<PageResult<JobListVO>> listJobs({
     int? page,
     int? pageSize,
@@ -39,6 +42,9 @@ class JobService {
     return response;
   }
 
+  /// 创建岗位。
+  ///
+  /// 提交 `request` 中的岗位信息后，返回接口原始结果，通常包含新岗位 ID 等字段。
   Future<Map<String, dynamic>> createJob({required CreateJobBO request}) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/jobs',
@@ -51,6 +57,9 @@ class JobService {
     return response;
   }
 
+  /// 分页查询当前雇主发布的岗位列表。
+  ///
+  /// 可按分页参数和岗位状态 `status` 过滤。
   Future<PageResult<JobDetailVO>> listMyJobs({
     int? page,
     int? pageSize,
@@ -72,10 +81,12 @@ class JobService {
     return response;
   }
 
+  /// 删除指定岗位。
   Future<void> deleteJob({required int jobId}) async {
     return _apiClient.deleteVoid('/jobs/$jobId');
   }
 
+  /// 获取指定岗位的完整详情。
   Future<JobDetailVO> getJobDetail({required int jobId}) async {
     final response = await _apiClient.get<JobDetailVO>(
       '/jobs/$jobId',
@@ -84,6 +95,9 @@ class JobService {
     return response;
   }
 
+  /// 更新指定岗位的基础信息。
+  ///
+  /// 使用 `CreateJobBO` 作为请求体，按后端约定提交完整岗位内容。
   Future<void> updateJob({
     required int jobId,
     required CreateJobBO request,

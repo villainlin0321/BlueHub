@@ -6,6 +6,9 @@ class ReviewService {
 
   final ApiClient _apiClient;
 
+  /// 创建服务评价。
+  ///
+  /// 提交订单或服务相关的评分、标签与文本内容。
   Future<void> createReview({required CreateReviewBO request}) async {
     return _apiClient.postVoid('/reviews', data: request.toJson());
   }

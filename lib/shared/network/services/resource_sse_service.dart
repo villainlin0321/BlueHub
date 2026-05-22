@@ -14,10 +14,14 @@ class ResourceSseService {
   final ApiClient _apiClient;
   final SseClient _sseClient;
 
+  /// 建立资源模块的 SSE 实时连接。
+  ///
+  /// 用于接收资源处理、上传或解析等异步事件通知。
   Stream<SseEvent> connectResourceStream() {
     return _sseClient.connect('/resource/sse');
   }
 
+  /// 关闭资源模块的 SSE 长连接。
   Future<RVoid> closeResourceStream() async {
     final response = await _apiClient.get<RVoid>(
       '/resource/sse/close',

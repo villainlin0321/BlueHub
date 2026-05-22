@@ -8,14 +8,21 @@ class CollectionService {
 
   final ApiClient _apiClient;
 
+  /// 取消收藏指定业务对象。
+  ///
+  /// `request` 中需携带收藏类型和目标对象 ID。
   Future<void> removeCollection({required CollectionBO request}) async {
     return _apiClient.deleteVoid('/collections', data: request.toJson());
   }
 
+  /// 收藏指定业务对象。
+  ///
+  /// 支持岗位、签证套餐等可收藏实体。
   Future<void> addCollection({required CollectionBO request}) async {
     return _apiClient.postVoid('/collections', data: request.toJson());
   }
 
+  /// 分页获取当前用户收藏的岗位列表。
   Future<PageResult<JobListVO>> listCollectedJobs({
     int? page,
     int? pageSize,
@@ -35,6 +42,7 @@ class CollectionService {
     return response;
   }
 
+  /// 分页获取当前用户收藏的签证套餐列表。
   Future<PageResult<VisaPackageVO>> listCollectedPackages({
     int? page,
     int? pageSize,
