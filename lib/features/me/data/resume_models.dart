@@ -264,6 +264,50 @@ class LanguageAbilityVO {
   }
 }
 
+class ResumeListItemVO {
+  const ResumeListItemVO({
+    required this.resumeId,
+    required this.isDefault,
+    required this.completeness,
+    required this.targetPositions,
+    required this.targetCountries,
+    required this.isPublic,
+    required this.updatedAt,
+  });
+
+  final int resumeId;
+  final bool isDefault;
+  final int completeness;
+  final List<String> targetPositions;
+  final List<String> targetCountries;
+  final bool isPublic;
+  final String updatedAt;
+
+  factory ResumeListItemVO.fromJson(JsonMap json) {
+    return ResumeListItemVO(
+      resumeId: readInt(json, 'resumeId'),
+      isDefault: readBool(json, 'isDefault'),
+      completeness: readInt(json, 'completeness'),
+      targetPositions: readStringList(json, 'targetPositions'),
+      targetCountries: readStringList(json, 'targetCountries'),
+      isPublic: readBool(json, 'isPublic'),
+      updatedAt: readString(json, 'updatedAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'resumeId': resumeId,
+      'isDefault': isDefault,
+      'completeness': completeness,
+      'targetPositions': targetPositions,
+      'targetCountries': targetCountries,
+      'isPublic': isPublic,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
 class ResumeVO {
   const ResumeVO({
     required this.resumeId,
@@ -296,18 +340,32 @@ class ResumeVO {
     return ResumeVO(
       resumeId: readInt(json, 'resumeId'),
       completeness: readInt(json, 'completeness'),
-      basicInfo: BasicInfoVO.fromJson(
-        readJsonMap(json, 'basicInfo'),
+      basicInfo: BasicInfoVO.fromJson(readJsonMap(json, 'basicInfo')),
+      jobIntention: JobIntentionVO.fromJson(readJsonMap(json, 'jobIntention')),
+      workExperiences: readModelList<WorkExperienceVO>(
+        json,
+        'workExperiences',
+        WorkExperienceVO.fromJson,
       ),
-      jobIntention: JobIntentionVO.fromJson(
-        readJsonMap(json, 'jobIntention'),
+      languages: readModelList<LanguageAbilityVO>(
+        json,
+        'languages',
+        LanguageAbilityVO.fromJson,
       ),
-      workExperiences: readModelList<WorkExperienceVO>(json, 'workExperiences', WorkExperienceVO.fromJson),
-      languages: readModelList<LanguageAbilityVO>(json, 'languages', LanguageAbilityVO.fromJson),
-      skillCertificates: readModelList<SkillCertificateVO>(json, 'skillCertificates', SkillCertificateVO.fromJson),
-      educations: readModelList<EducationVO>(json, 'educations', EducationVO.fromJson),
+      skillCertificates: readModelList<SkillCertificateVO>(
+        json,
+        'skillCertificates',
+        SkillCertificateVO.fromJson,
+      ),
+      educations: readModelList<EducationVO>(
+        json,
+        'educations',
+        EducationVO.fromJson,
+      ),
       selfEvaluation: readString(json, 'selfEvaluation'),
-      isPublic: json.containsKey('isPublic') ? readBool(json, 'isPublic') : null,
+      isPublic: json.containsKey('isPublic')
+          ? readBool(json, 'isPublic')
+          : null,
       updatedAt: readString(json, 'updatedAt'),
     );
   }
@@ -358,13 +416,27 @@ class SaveResumeBO {
 
   factory SaveResumeBO.fromJson(JsonMap json) {
     return SaveResumeBO(
-      jobIntention: JobIntentionBO.fromJson(
-        readJsonMap(json, 'jobIntention'),
+      jobIntention: JobIntentionBO.fromJson(readJsonMap(json, 'jobIntention')),
+      workExperiences: readModelList<WorkExperienceBO>(
+        json,
+        'workExperiences',
+        WorkExperienceBO.fromJson,
       ),
-      workExperiences: readModelList<WorkExperienceBO>(json, 'workExperiences', WorkExperienceBO.fromJson),
-      languages: readModelList<LanguageAbilityBO>(json, 'languages', LanguageAbilityBO.fromJson),
-      skillCertificates: readModelList<SkillCertificateBO>(json, 'skillCertificates', SkillCertificateBO.fromJson),
-      educations: readModelList<EducationBO>(json, 'educations', EducationBO.fromJson),
+      languages: readModelList<LanguageAbilityBO>(
+        json,
+        'languages',
+        LanguageAbilityBO.fromJson,
+      ),
+      skillCertificates: readModelList<SkillCertificateBO>(
+        json,
+        'skillCertificates',
+        SkillCertificateBO.fromJson,
+      ),
+      educations: readModelList<EducationBO>(
+        json,
+        'educations',
+        EducationBO.fromJson,
+      ),
       selfEvaluation: readString(json, 'selfEvaluation'),
       isPublic: readBool(json, 'isPublic'),
     );
