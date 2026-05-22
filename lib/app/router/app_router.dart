@@ -27,6 +27,8 @@ import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
 import '../../features/me/presentation/settings_page.dart';
+import '../../features/message/application/chat/chat_page_args.dart';
+import '../../features/message/presentation/chat_page.dart';
 import '../../features/message/presentation/message_center_page.dart';
 import '../../features/order/presentation/order_detail_page.dart';
 import '../../features/order/presentation/order_management_page.dart';
@@ -233,6 +235,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.messageCenter,
         builder: (context, state) => const MessageCenterPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.chat,
+        builder: (context, state) {
+          final ChatPageArgs? args = state.extra as ChatPageArgs?;
+          return ChatPage(
+            args:
+                args ??
+                const ChatPageArgs(
+                  targetUserId: 0,
+                  targetUserRole: '',
+                  nickname: '聊天',
+                  avatarUrl: '',
+                ),
+          );
+        },
       ),
       GoRoute(
         path: RoutePaths.myResume,

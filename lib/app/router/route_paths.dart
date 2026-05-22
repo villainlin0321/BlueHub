@@ -83,6 +83,9 @@ class RoutePaths {
   /// 消息中心页。
   static const messageCenter = '/message-center';
 
+  /// 单聊会话页。
+  static const chat = '/message-center/chat';
+
   /// 订单管理页。
   static const orderManagement = '/order/management';
 
