@@ -862,14 +862,15 @@ class _ChatMessageItem {
     final String nickname = conversation.targetUser.nickname.trim().isEmpty
         ? '未命名用户'
         : conversation.targetUser.nickname.trim();
+    final RelatedOrderVO? relatedOrder = conversation.relatedOrder;
     return _ChatMessageItem(
       conversationId: conversation.conversationId,
       targetUserId: conversation.targetUser.userId,
       targetUserRole: conversation.targetUser.role,
       isOnline: conversation.targetUser.isOnline,
-      relatedOrderId: conversation.relatedOrder.orderId,
-      packageName: conversation.relatedOrder.packageName,
-      orderStatus: conversation.relatedOrder.status,
+      relatedOrderId: relatedOrder?.orderId ?? 0,
+      packageName: relatedOrder?.packageName ?? '',
+      orderStatus: relatedOrder?.status ?? '',
       name: nickname,
       time: _formatConversationTime(conversation.lastMessage.sentAt),
       preview: _buildConversationPreview(conversation.lastMessage),

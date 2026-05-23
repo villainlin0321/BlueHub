@@ -11,7 +11,7 @@ class ConversationVO {
 
   final int conversationId;
   final TargetUserVO targetUser;
-  final RelatedOrderVO relatedOrder;
+  final RelatedOrderVO? relatedOrder;
   final LastMessageVO lastMessage;
   final int unreadCount;
 
@@ -21,9 +21,10 @@ class ConversationVO {
       targetUser: TargetUserVO.fromJson(
         readJsonMap(json, 'targetUser'),
       ),
-      relatedOrder: RelatedOrderVO.fromJson(
-        readJsonMap(json, 'relatedOrder'),
-      ),
+      // 0510 接口文档标注该字段可能为 null，需避免强解析导致列表页崩溃。
+      relatedOrder: json['relatedOrder'] == null
+          ? null
+          : RelatedOrderVO.fromJson(readJsonMap(json, 'relatedOrder')),
       lastMessage: LastMessageVO.fromJson(
         readJsonMap(json, 'lastMessage'),
       ),
@@ -35,7 +36,7 @@ class ConversationVO {
     return <String, dynamic>{
       'conversationId': conversationId,
       'targetUser': targetUser.toJson(),
-      'relatedOrder': relatedOrder.toJson(),
+      'relatedOrder': relatedOrder?.toJson(),
       'lastMessage': lastMessage.toJson(),
       'unreadCount': unreadCount,
     };

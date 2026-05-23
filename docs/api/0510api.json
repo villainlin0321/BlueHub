@@ -3259,7 +3259,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppResultVoid"
+                  "$ref": "#/components/schemas/AppResultString"
                 }
               }
             }
@@ -8492,6 +8492,38 @@
           "objectKey"
         ]
       },
+      "AppResultString": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "string",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
       "CreateConversationBO": {
         "type": "object",
         "description": "创建会话请求",
@@ -10303,46 +10335,113 @@
           }
         }
       },
+      "LatestExperienceVO": {
+        "type": "object",
+        "description": "工作经历摘要",
+        "properties": {
+          "company": {
+            "type": "string",
+            "description": "公司名称"
+          },
+          "position": {
+            "type": "string",
+            "description": "职位"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "开始年月（YYYY-MM）"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "结束年月，在职时为 null"
+          },
+          "is_current": {
+            "type": "boolean",
+            "description": "是否当前在职"
+          },
+          "description": {
+            "type": "string",
+            "description": "工作描述摘要（最多 100 字）"
+          }
+        }
+      },
       "ResumeListItemVO": {
         "type": "object",
         "description": "简历列表项",
         "properties": {
-          "resumeId": {
+          "resume_id": {
             "type": "integer",
             "format": "int64",
             "description": "简历 ID"
           },
-          "isDefault": {
+          "is_default": {
             "type": "boolean",
             "description": "是否为默认简历"
+          },
+          "is_public": {
+            "type": "boolean",
+            "description": "是否公开给雇主/服务商"
           },
           "completeness": {
             "type": "integer",
             "format": "int32",
             "description": "简历完整度（0-100）"
           },
-          "targetPositions": {
+          "target_positions": {
             "type": "array",
             "description": "期望职位列表",
             "items": {
               "type": "string"
             }
           },
-          "targetCountries": {
+          "target_countries": {
             "type": "array",
-            "description": "期望工作国家列表",
+            "description": "期望工作国家列表（ISO 2码）",
             "items": {
               "type": "string"
             }
           },
-          "isPublic": {
-            "type": "boolean",
-            "description": "是否公开给雇主/服务商"
-          },
-          "updatedAt": {
+          "updated_at": {
             "type": "string",
             "format": "date-time",
             "description": "最后更新时间"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "昵称"
+          },
+          "avatar_url": {
+            "type": "string",
+            "description": "头像 URL"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别：male / female / unknown"
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32",
+            "description": "年龄（未填生日时为 null）"
+          },
+          "current_location": {
+            "type": "string",
+            "description": "当前所在地（ISO 国家代码，如 DE）"
+          },
+          "salary_min": {
+            "type": "number",
+            "description": "期望最低月薪"
+          },
+          "salary_max": {
+            "type": "number",
+            "description": "期望最高月薪"
+          },
+          "salary_currency": {
+            "type": "string",
+            "description": "薪资货币单位"
+          },
+          "latest_experience": {
+            "$ref": "#/components/schemas/LatestExperienceVO",
+            "description": "最近一条工作经历摘要，无经历时为 null"
           }
         }
       },
@@ -10983,38 +11082,6 @@
           "description": {
             "type": "string",
             "description": "套餐服务描述"
-          }
-        }
-      },
-      "AppResultString": {
-        "type": "object",
-        "description": "统一响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "业务状态码，0=成功",
-            "example": 0
-          },
-          "message": {
-            "type": "string",
-            "description": "状态描述",
-            "example": "success"
-          },
-          "data": {
-            "type": "string",
-            "description": "响应数据"
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64",
-            "description": "服务器时间戳（毫秒）",
-            "example": 1713542400000
-          },
-          "requestId": {
-            "type": "string",
-            "description": "请求追踪ID",
-            "example": "req_abc123xyz"
           }
         }
       },

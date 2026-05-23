@@ -134,9 +134,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
         _replaceEntry(
           entryId,
           entry.copyWith(
-            previewPath: uploaded.fileUrl,
             uploadedUrl: uploaded.fileUrl,
-            localPath: null,
             isUploading: false,
           ),
         );
@@ -392,11 +390,6 @@ class _UploadImagePreview extends StatelessWidget {
         fit: BoxFit.cover,
         errorWidget: (BuildContext context, String url, Object error) =>
             const _UploadImageFallback(),
-      );
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const _UploadImageFallback(),
       );
     }
 
