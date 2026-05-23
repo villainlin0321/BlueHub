@@ -29,6 +29,7 @@ class LoginPhoneView extends StatelessWidget {
     required this.onCodeChanged,
     required this.onSendCode,
     required this.onLogin,
+    required this.onDirectEmailLogin,
     required this.onAgreementChanged,
   });
 
@@ -44,6 +45,7 @@ class LoginPhoneView extends StatelessWidget {
   final ValueChanged<String> onCodeChanged;
   final VoidCallback onSendCode;
   final VoidCallback onLogin;
+  final VoidCallback onDirectEmailLogin;
   final ValueChanged<bool> onAgreementChanged;
 
   @override
@@ -103,6 +105,12 @@ class LoginPhoneView extends StatelessWidget {
                     isSending: state.isSendingCode,
                     onChanged: onCodeChanged,
                     onGetCode: onSendCode,
+                  ),
+                  const SizedBox(height: 48),
+                  _LoginButton(
+                    label: '登录-Test',
+                    enabled: !state.isSendingCode && !state.isSubmitting,
+                    onPressed: onDirectEmailLogin,
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(

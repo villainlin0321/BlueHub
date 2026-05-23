@@ -4,9 +4,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../employer/data/employer_models.dart';
+import '../../../employer/data/employer_providers.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
+
+final _currentEmployerProfileProvider =
+    FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
+      final service = ref.watch(employerServiceProvider);
+      return service.getEmployerProfile();
+    });
 
 /// 企业端我的页，按 Figma 设计图还原。
 class CompanyMePage extends StatelessWidget {
@@ -238,11 +246,17 @@ class _TopIconButton extends StatelessWidget {
   }
 }
 
-class _CompanyProfileRow extends StatelessWidget {
+class _CompanyProfileRow extends ConsumerWidget {
   const _CompanyProfileRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final EmployerProfileVO? profile = ref
+        .watch(_currentEmployerProfileProvider)
+        .asData
+        ?.value;
+    final bool isVerified = profile?.isVerified ?? true;
+
     return InkWell(
       onTap: () {
         ScaffoldMessenger.of(
@@ -259,12 +273,14 @@ class _CompanyProfileRow extends StatelessWidget {
             fit: BoxFit.cover,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Row(
               children: <Widget>[
-                Expanded(child: _CompanyInfo()),
-                SizedBox(width: 12),
-                _CompanyBadge(),
+                Expanded(child: _CompanyInfo(profile: profile)),
+                if (isVerified) ...<Widget>[
+                  const SizedBox(width: 12),
+                  const _CompanyBadge(),
+                ],
               ],
             ),
           ),
@@ -279,50 +295,76 @@ class _CompanyProfileRow extends StatelessWidget {
 }
 
 class _CompanyInfo extends StatelessWidget {
-  const _CompanyInfo();
+  const _CompanyInfo({this.profile});
+
+  final EmployerProfileVO? profile;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final String companyName = _buildCompanyName(profile);
+    final String industry = _buildIndustry(profile);
+    final String location = _buildLocation(profile);
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          '柏林老四川餐厅',
+          companyName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 17,
             fontWeight: FontWeight.w600,
             height: 20 / 17,
           ),
         ),
-        SizedBox(height: 6),
+        const SizedBox(height: 6),
         Row(
           children: <Widget>[
             Text(
-              '餐饮行业',
-              style: TextStyle(
+              industry,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
                 height: 14 / 11,
               ),
             ),
-            SizedBox(width: 8),
-            _VerticalDivider(),
-            SizedBox(width: 8),
-            Text(
-              '德国·柏林',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                height: 14 / 11,
+            if (location.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 8),
+              const _VerticalDivider(),
+              const SizedBox(width: 8),
+              Text(
+                location,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  height: 14 / 11,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ],
     );
+  }
+
+  String _buildCompanyName(EmployerProfileVO? profile) {
+    final String name = profile?.companyName.trim() ?? '';
+    return name.isEmpty ? '企业名称待完善' : name;
+  }
+
+  String _buildIndustry(EmployerProfileVO? profile) {
+    final String industry = profile?.industry.trim() ?? '';
+    return industry.isEmpty ? '行业待完善' : industry;
+  }
+
+  String _buildLocation(EmployerProfileVO? profile) {
+    final List<String> parts = <String>[
+      profile?.country.trim() ?? '',
+      profile?.city.trim() ?? '',
+    ].where((String item) => item.isNotEmpty).toList(growable: false);
+    return parts.join('·');
   }
 }
 

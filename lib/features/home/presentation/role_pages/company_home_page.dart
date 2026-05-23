@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../features/employer/data/employer_models.dart';
+import '../../../../features/employer/data/employer_providers.dart';
 import '../../../jobs/application/company_applications/company_application_list_state.dart';
 import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
 import '../../../jobs/data/application_models.dart';
@@ -11,6 +13,12 @@ import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
+
+final _currentEmployerProfileProvider =
+    FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
+      final service = ref.watch(employerServiceProvider);
+      return service.getEmployerProfile();
+    });
 
 /// 企业首页。
 class CompanyHomePage extends ConsumerStatefulWidget {
@@ -142,6 +150,10 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final EmployerProfileVO? employerProfile = ref
+        .watch(_currentEmployerProfileProvider)
+        .asData
+        ?.value;
     final CompanyApplicationListState pendingState = ref.watch(
       companyApplicationListsControllerProvider.select(
         (Map<String, CompanyApplicationListState> states) =>
@@ -158,7 +170,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const _HeroSection(),
+          _HeroSection(profile: employerProfile),
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -369,7 +381,9 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 }
 
 class _HeroSection extends StatelessWidget {
-  const _HeroSection();
+  const _HeroSection({this.profile});
+
+  final EmployerProfileVO? profile;
 
   @override
   Widget build(BuildContext context) {
@@ -421,10 +435,10 @@ class _HeroSection extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(14, topPadding + 10, 14, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const <Widget>[
-                _CompanyHeroTopRow(),
-                SizedBox(height: 18),
-                _CompanyHeroStatsRow(),
+              children: <Widget>[
+                _CompanyHeroTopRow(profile: profile),
+                const SizedBox(height: 18),
+                const _CompanyHeroStatsRow(),
               ],
             ),
           ),
@@ -435,10 +449,17 @@ class _HeroSection extends StatelessWidget {
 }
 
 class _CompanyHeroTopRow extends StatelessWidget {
-  const _CompanyHeroTopRow();
+  const _CompanyHeroTopRow({this.profile});
+
+  final EmployerProfileVO? profile;
 
   @override
   Widget build(BuildContext context) {
+    final String companyName = _buildCompanyName(profile);
+    final String industry = _buildIndustry(profile);
+    final String location = _buildLocation(profile);
+    final bool isVerified = profile?.isVerified ?? true;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
@@ -471,7 +492,7 @@ class _CompanyHeroTopRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -479,10 +500,10 @@ class _CompanyHeroTopRow extends StatelessWidget {
                 children: <Widget>[
                   Flexible(
                     child: Text(
-                      '柏林老四川餐厅',
+                      companyName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
@@ -490,30 +511,34 @@ class _CompanyHeroTopRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 6),
-                  _EnterpriseBadge(),
+                  if (isVerified) ...<Widget>[
+                    const SizedBox(width: 6),
+                    const _EnterpriseBadge(),
+                  ],
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 children: <Widget>[
                   Text(
-                    '餐饮行业',
-                    style: TextStyle(
+                    industry,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       height: 14 / 11,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Text(
-                    '德国·柏林',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      height: 14 / 11,
+                  if (location.isNotEmpty) ...<Widget>[
+                    const SizedBox(width: 6),
+                    Text(
+                      location,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        height: 14 / 11,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],
@@ -523,6 +548,24 @@ class _CompanyHeroTopRow extends StatelessWidget {
         const MessageCenterIconButton(),
       ],
     );
+  }
+
+  String _buildCompanyName(EmployerProfileVO? profile) {
+    final String name = profile?.companyName.trim() ?? '';
+    return name.isEmpty ? '企业名称待完善' : name;
+  }
+
+  String _buildIndustry(EmployerProfileVO? profile) {
+    final String industry = profile?.industry.trim() ?? '';
+    return industry.isEmpty ? '行业待完善' : industry;
+  }
+
+  String _buildLocation(EmployerProfileVO? profile) {
+    final List<String> parts = <String>[
+      profile?.country.trim() ?? '',
+      profile?.city.trim() ?? '',
+    ].where((String item) => item.isNotEmpty).toList(growable: false);
+    return parts.join('·');
   }
 }
 
