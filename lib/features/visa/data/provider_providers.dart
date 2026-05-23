@@ -30,7 +30,40 @@ final visaProviderReviewsProvider = FutureProvider.autoDispose
 
 /// 根据签证列表页选中的标签获取服务商列表。
 final visaProviderListProvider = FutureProvider.autoDispose
-    .family<PageResult<VisaProviderListVO>, String?>((ref, tab) async {
+    .family<PageResult<VisaProviderListVO>, VisaProviderListQuery>((ref, query) async {
       final service = ref.watch(providerServiceProvider);
-      return service.listProviders(page: 1, pageSize: 50, tab: tab);
+      return service.listProviders(
+        page: query.page,
+        pageSize: query.pageSize,
+        tab: query.tab,
+        keyword: query.keyword,
+      );
     });
+
+class VisaProviderListQuery {
+  const VisaProviderListQuery({
+    this.page = 1,
+    this.pageSize = 50,
+    this.tab,
+    this.keyword,
+  });
+
+  final int page;
+  final int pageSize;
+  final String? tab;
+  final String? keyword;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is VisaProviderListQuery &&
+            runtimeType == other.runtimeType &&
+            page == other.page &&
+            pageSize == other.pageSize &&
+            tab == other.tab &&
+            keyword == other.keyword;
+  }
+
+  @override
+  int get hashCode => Object.hash(page, pageSize, tab, keyword);
+}

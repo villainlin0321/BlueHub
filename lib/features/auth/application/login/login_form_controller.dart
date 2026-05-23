@@ -122,6 +122,36 @@ class LoginFormController extends Notifier<LoginFormState> {
     }
   }
 
+  Future<LoginVO?> submitEmailLoginWithoutValidation({
+    required String email,
+    required String code,
+  }) async {
+    state = state.copyWith(
+      isPhoneLogin: false,
+      email: email,
+      code: code,
+      isSubmitting: true,
+    );
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final login = await authService.emailLogin(
+        request: EmailLoginBO(
+          email: email.trim(),
+          password: '',
+          code: code.trim(),
+        ),
+      );
+      await ref.read(authSessionProvider.notifier).handleLoginResult(login);
+      return login;
+    } catch (_) {
+      _emitFeedback('登录失败，请检查验证码后重试', isError: true);
+      return null;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
   String? _validateBeforeSendingCode() {
     if (!state.agreed) {
       return '请先同意用户协议与隐私政策';

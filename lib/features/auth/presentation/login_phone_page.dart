@@ -36,7 +36,7 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   // oulu@example.com
   // zhongde@example.com
   // final _emailController = TextEditingController();
-  final _emailController = TextEditingController(text: 'oulu@example.com');
+  final _emailController = TextEditingController(text: 'berlin.food@example.de');
   final _codeController = TextEditingController(text: '1234');
 
   @override
@@ -68,6 +68,25 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
     final login = await ref
         .read(loginFormControllerProvider.notifier)
         .submitLogin();
+    if (!mounted || login == null) {
+      return;
+    }
+
+    if (login.needSelectRole) {
+      context.goNamed(RoutePaths.selectRoleName);
+      return;
+    }
+
+    context.goNamed(RoutePaths.homeName);
+  }
+
+  Future<void> _handleDirectEmailLogin() async {
+    final login = await ref
+        .read(loginFormControllerProvider.notifier)
+        .submitEmailLoginWithoutValidation(
+          email: _emailController.text,
+          code: _codeController.text,
+        );
     if (!mounted || login == null) {
       return;
     }
@@ -132,6 +151,7 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
                     ref.read(loginFormControllerProvider.notifier).sendCode();
                   },
                   onLogin: _handleLogin,
+                  onDirectEmailLogin: _handleDirectEmailLogin,
                   onAgreementChanged: (agreed) {
                     ref
                         .read(loginFormControllerProvider.notifier)
