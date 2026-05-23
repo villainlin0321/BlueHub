@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../visa/data/review_models.dart';
 import '../../visa/data/review_providers.dart';
+import '../../files/data/file_models.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../../shared/widgets/upload_image_grid.dart';
 
 class OrderReviewPageArgs {
   const OrderReviewPageArgs({
@@ -43,6 +45,8 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
 
   double _rating = 1.5;
   bool _isSubmitting = false;
+  bool _isUploadingImages = false;
+  List<String> _uploadedImageUrls = const <String>[];
 
   @override
   void initState() {
@@ -56,7 +60,8 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     super.dispose();
   }
 
-  bool get _canPublish => _commentController.text.trim().isNotEmpty;
+  bool get _canPublish =>
+      _commentController.text.trim().isNotEmpty && !_isUploadingImages;
 
   String get _ratingLabel {
     if (_rating <= 1.5) return '很差';
@@ -87,7 +92,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               providerId: widget.args.providerId,
               rating: _rating.round().clamp(1, 5),
               content: _commentController.text.trim(),
-              images: const <String>[],
+              images: _uploadedImageUrls,
             ),
           );
       if (!mounted) {
@@ -231,36 +236,18 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () => _showPlaceholder('上传图片（占位）'),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 106,
-                      height: 106,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.photo_camera_outlined,
-                            size: 24,
-                            color: Color(0xFF595959),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '上传图片',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: const Color(0xFF595959),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                          ),
-                        ],
-                      ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: UploadImageGrid(
+                      scene: FileScene.review,
+                      onChanged: (List<String> imageUrls) {
+                        _uploadedImageUrls = imageUrls;
+                      },
+                      onUploadingChanged: (bool isUploading) {
+                        setState(() {
+                          _isUploadingImages = isUploading;
+                        });
+                      },
                     ),
                   ),
                 ],

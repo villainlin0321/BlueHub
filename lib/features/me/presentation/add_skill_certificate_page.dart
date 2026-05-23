@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../files/data/file_models.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
-import '../../../shared/widgets/upload_placeholder_tile.dart';
-import '../../../utils/upload_picker_utils.dart';
+import '../../../shared/widgets/upload_image_grid.dart';
 
 class AddSkillCertificatePage extends StatefulWidget {
   const AddSkillCertificatePage({
@@ -37,7 +35,8 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
 
   String? _certificateName;
   ResumeTimePickerValue? _issuedAt;
-  final List<PickedUploadFile> _selectedImages = <PickedUploadFile>[];
+  List<String> _uploadedImageUrls = const <String>[];
+  bool _isUploadingImages = false;
 
   AddSkillCertificatePageArgs get _resolvedArgs =>
       widget.args ?? const AddSkillCertificatePageArgs();
@@ -54,16 +53,11 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
     }
     _certificateName = initialValue.title;
     _issuedAt = initialValue.issuedAt;
-    _selectedImages.addAll(
-      <PickedUploadFile>[
-        ...initialValue.localImagePaths.map(
-          (String path) => _buildInitialImage(path),
-        ),
-        ...initialValue.networkImageUrls.map(
-          (String path) => _buildInitialImage(path),
-        ),
-      ],
+    _uploadedImageUrls = List<String>.from(
+      initialValue.networkImageUrls,
+      growable: false,
     );
+    _isUploadingImages = initialValue.localImagePaths.isNotEmpty;
   }
 
   Future<void> _openCertificateSheet() async {
@@ -105,43 +99,6 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
     });
   }
 
-  Future<void> _openImageSourceSheet() async {
-    if (_selectedImages.length >= _maxAttachments) {
-      _showMessage('最多只能选择$_maxAttachments张');
-      return;
-    }
-
-    final List<PickedUploadFile> files =
-        await UploadPickerUtils.pickImagesWithSourceSheet(
-          context: context,
-          title: '选择图片',
-        );
-    if (!mounted || files.isEmpty) {
-      return;
-    }
-
-    final List<PickedUploadFile> images = files
-        .where((PickedUploadFile item) => item.isImage)
-        .toList();
-    final List<PickedUploadFile> candidates = images.isEmpty ? files : images;
-    final int availableCount = _maxAttachments - _selectedImages.length;
-    final List<PickedUploadFile> acceptedFiles = candidates
-        .take(availableCount)
-        .toList();
-    if (acceptedFiles.isEmpty) {
-      _showMessage('最多只能选择$_maxAttachments张');
-      return;
-    }
-
-    setState(() {
-      _selectedImages.addAll(acceptedFiles);
-    });
-
-    if (acceptedFiles.length < candidates.length) {
-      _showMessage('最多只能选择$_maxAttachments张');
-    }
-  }
-
   void _showMessage(String message) {
     ScaffoldMessenger.of(
       context,
@@ -149,6 +106,10 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
   }
 
   void _handleSave() {
+    if (_isUploadingImages) {
+      _showMessage('图片上传中，请稍候');
+      return;
+    }
     if (_certificateName == null) {
       _showMessage('请选择技能证书');
       return;
@@ -157,7 +118,7 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
       _showMessage('请选择获得时间');
       return;
     }
-    if (_selectedImages.isEmpty) {
+    if (_uploadedImageUrls.isEmpty) {
       _showMessage('请上传证书图片');
       return;
     }
@@ -167,14 +128,8 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
         ResumeCertificateFormResult(
           title: _certificateName!,
           issuedAt: _issuedAt!,
-          localImagePaths: _selectedImages
-              .where((PickedUploadFile file) => !_isNetworkPath(file.path))
-              .map((PickedUploadFile file) => file.path)
-              .toList(growable: false),
-          networkImageUrls: _selectedImages
-              .where((PickedUploadFile file) => _isNetworkPath(file.path))
-              .map((PickedUploadFile file) => file.path)
-              .toList(growable: false),
+          localImagePaths: const <String>[],
+          networkImageUrls: _uploadedImageUrls,
         ),
       ),
     );
@@ -182,21 +137,6 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
 
   void _handleDelete() {
     context.pop(const ResumeCertificatePageResult.deleted());
-  }
-
-  PickedUploadFile _buildInitialImage(String path) {
-    return PickedUploadFile(
-      id: '${DateTime.now().microsecondsSinceEpoch}_${path.hashCode}',
-      name: path.split('/').last,
-      path: path,
-      sourceType: UploadSourceType.gallery,
-      state: UploadItemState.success,
-      isImage: true,
-    );
-  }
-
-  bool _isNetworkPath(String path) {
-    return path.startsWith('http://') || path.startsWith('https://');
   }
 
   @override
@@ -254,16 +194,22 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
               ),
             ),
             const SizedBox(height: 12),
-            _CertificateImageGrid(
-              attachments: _selectedImages,
-              maxAttachments: _maxAttachments,
+            UploadImageGrid(
+              scene: FileScene.cert,
+              maxImages: _maxAttachments,
               uploadAssetPath: _uploadAsset,
-              onAddTap: _openImageSourceSheet,
-              onDeleteTap: (PickedUploadFile file) {
+              initialImagePaths: <String>[
+                ..._resolvedArgs.initialValue?.localImagePaths ??
+                    const <String>[],
+                ..._resolvedArgs.initialValue?.networkImageUrls ??
+                    const <String>[],
+              ],
+              onChanged: (List<String> imageUrls) {
+                _uploadedImageUrls = imageUrls;
+              },
+              onUploadingChanged: (bool isUploading) {
                 setState(() {
-                  _selectedImages.removeWhere(
-                    (PickedUploadFile item) => item.id == file.id,
-                  );
+                  _isUploadingImages = isUploading;
                 });
               },
             ),
@@ -442,125 +388,6 @@ class _CertificateSelectorField extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CertificateImagePreviewTile extends StatelessWidget {
-  const _CertificateImagePreviewTile({
-    required this.file,
-    required this.onDeleteTap,
-  });
-
-  final PickedUploadFile file;
-  final VoidCallback onDeleteTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: _isNetworkPath(file.path)
-                  ? Image.network(
-                      file.path,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return const ColoredBox(color: Color(0xFFF5F7FA));
-                      },
-                    )
-                  : Image.file(
-                      File(file.path),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return const ColoredBox(color: Color(0xFFF5F7FA));
-                      },
-                    ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: InkWell(
-            onTap: onDeleteTap,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.close_rounded,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  bool _isNetworkPath(String path) {
-    return path.startsWith('http://') || path.startsWith('https://');
-  }
-}
-
-class _CertificateImageGrid extends StatelessWidget {
-  const _CertificateImageGrid({
-    required this.attachments,
-    required this.maxAttachments,
-    required this.uploadAssetPath,
-    required this.onAddTap,
-    required this.onDeleteTap,
-  });
-
-  final List<PickedUploadFile> attachments;
-  final int maxAttachments;
-  final String uploadAssetPath;
-  final VoidCallback onAddTap;
-  final ValueChanged<PickedUploadFile> onDeleteTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool showAddTile = attachments.length < maxAttachments;
-    final int itemCount = attachments.length + (showAddTile ? 1 : 0);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: itemCount,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 4,
-        childAspectRatio: 1,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        if (index >= attachments.length) {
-          return UploadPlaceholderTile(
-            assetPath: uploadAssetPath,
-            onTap: onAddTap,
-          );
-        }
-
-        final PickedUploadFile file = attachments[index];
-        return _CertificateImagePreviewTile(
-          file: file,
-          onDeleteTap: () => onDeleteTap(file),
-        );
-      },
     );
   }
 }

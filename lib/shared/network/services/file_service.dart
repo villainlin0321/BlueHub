@@ -34,7 +34,7 @@ class FileService {
 
   /// 执行完整的文件上传流程。
   ///
-  /// 包含读取本地文件、申请预签名、直传对象存储以及确认上传四个步骤。
+  /// 包含读取本地文件、申请预签名、直传对象存储、确认上传以及获取真实访问地址五个步骤。
   Future<FilePresignVO> uploadFile({
     required String path,
     required FileScene scene,
@@ -71,7 +71,14 @@ class FileService {
         fileSize: bytes.length,
       ),
     );
-    return response;
+    final String fileUrl = await getFileUrl(fileId: response.fileId);
+    return FilePresignVO(
+      uploadUrl: response.uploadUrl,
+      fileUrl: fileUrl,
+      expireIn: response.expireIn,
+      objectKey: response.objectKey,
+      fileId: response.fileId,
+    );
   }
 
   /// 将二进制文件内容上传到预签名地址。
