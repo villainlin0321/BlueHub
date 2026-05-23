@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
 
+import '../../../shared/network/page_result.dart';
 import 'visa_package_models.dart';
 import '../../../shared/network/services/visa_package_service.dart';
 
@@ -13,4 +14,14 @@ final visaPackageDetailProvider = FutureProvider.autoDispose
     .family<VisaPackageVO, int>((ref, packageId) async {
       final service = ref.watch(visaPackageServiceProvider);
       return service.getPackageDetail(packageId: packageId);
+    });
+
+/// 根据服务商套餐状态获取我的套餐列表。
+final myVisaPackageListProvider =
+    FutureProvider.family<PageResult<VisaPackageVO>, String>((
+      ref,
+      status,
+    ) async {
+      final service = ref.watch(visaPackageServiceProvider);
+      return service.listMyPackages(page: 1, pageSize: 20, status: status);
     });

@@ -1,91 +1,174 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/network/page_result.dart';
+import '../../../visa/data/visa_package_models.dart';
+import '../../../visa/data/visa_package_providers.dart';
 
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
-class ServiceProviderJobsPage extends StatefulWidget {
+class ServiceProviderJobsPage extends ConsumerStatefulWidget {
   const ServiceProviderJobsPage({super.key});
 
   @override
-  State<ServiceProviderJobsPage> createState() =>
+  ConsumerState<ServiceProviderJobsPage> createState() =>
       _ServiceProviderJobsPageState();
 }
 
-class _ServiceProviderJobsPageState extends State<ServiceProviderJobsPage> {
+class _ServiceProviderJobsPageState
+    extends ConsumerState<ServiceProviderJobsPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController = TabController(
+    length: _PackageTab.values.length,
+    vsync: this,
+  )..addListener(_handleTabChanged);
+
   int _selectedTabIndex = 0;
 
-  static const List<String> _tabs = <String>['已上架', '已下架', '已驳回'];
+  void _handleTabChanged() {
+    if (!mounted || _tabController.indexIsChanging) {
+      return;
+    }
+    if (_selectedTabIndex == _tabController.index) {
+      return;
+    }
+    setState(() {
+      _selectedTabIndex = _tabController.index;
+    });
+  }
 
-  static const List<_PackageCardData> _cards = <_PackageCardData>[
-    _PackageCardData(
-      title: '德国厨师专属工作签证',
-      previewCountText: '浏览 342',
-      tags: <String>['德国', '工作签'],
-      packages: <_PackagePriceItem>[
-        _PackagePriceItem(name: '基础套餐', price: '¥15,000', soldCount: 12),
-        _PackagePriceItem(name: '标准套餐', price: '¥25,000', soldCount: 24),
-        _PackagePriceItem(name: '尊享套餐', price: '¥36,000', soldCount: 33),
-      ],
-    ),
-    _PackageCardData(
-      title: '法国高级技术人才签',
-      previewCountText: '浏览 342',
-      headerPreviewCount: '342',
-      tags: <String>['法国', '技术签'],
-      packages: <_PackagePriceItem>[
-        _PackagePriceItem(name: '特惠套餐', price: '¥15,000', soldCount: 12),
-        _PackagePriceItem(name: '标准套餐', price: '¥25,000', soldCount: 24),
-      ],
-      showPreviewIcon: true,
-    ),
-    _PackageCardData(
-      title: '意大利护理工定制套餐',
-      previewCountText: '浏览 342',
-      tags: <String>['意大利', '工作签'],
-      packages: <_PackagePriceItem>[
-        _PackagePriceItem(name: '基础套餐', price: '¥15,000', soldCount: 12),
-        _PackagePriceItem(name: '基础套餐', price: '¥25,000', soldCount: 24),
-        _PackagePriceItem(name: '基础套餐', price: '¥36,000', soldCount: 33),
-      ],
-    ),
-  ];
+  @override
+  void dispose() {
+    _tabController
+      ..removeListener(_handleTabChanged)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
-    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return ListView(
-      padding: EdgeInsets.only(bottom: bottomPadding + 8),
+    return Column(
       children: <Widget>[
         _PageHeader(
           topPadding: topPadding,
           onPublishTap: () => context.push(RoutePaths.editVisaPackage),
         ),
         _PageTabBar(
+          tabs: _PackageTab.values
+              .map((tab) => tab.label)
+              .toList(growable: false),
           selectedIndex: _selectedTabIndex,
           onTap: (int index) {
+            _tabController.animateTo(index);
             setState(() {
               _selectedTabIndex = index;
             });
           },
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _cards.length,
-            padding: EdgeInsets.zero,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (BuildContext context, int index) {
-              return _PackageCard(data: _cards[index]);
-            },
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: _PackageTab.values
+                .map(
+                  (_PackageTab tab) => _PackageTabView(
+                    key: PageStorageKey<String>(
+                      'service-provider-jobs-${tab.name}',
+                    ),
+                    tab: tab,
+                  ),
+                )
+                .toList(growable: false),
           ),
         ),
       ],
+    );
+  }
+}
+
+enum _PackageTab {
+  active(
+    label: '已上架',
+    status: 'active',
+    emptyText: '暂无已上架套餐',
+    secondaryActionLabel: '下架',
+  ),
+  inactive(
+    label: '已下架',
+    status: 'inactive',
+    emptyText: '暂无已下架套餐',
+    secondaryActionLabel: '上架',
+  ),
+  draft(label: '已驳回', status: 'draft', emptyText: '暂无已驳回套餐');
+
+  const _PackageTab({
+    required this.label,
+    required this.status,
+    required this.emptyText,
+    this.secondaryActionLabel,
+  });
+
+  final String label;
+  final String status;
+  final String emptyText;
+  final String? secondaryActionLabel;
+}
+
+class _PackageTabView extends ConsumerWidget {
+  const _PackageTabView({super.key, required this.tab});
+
+  final _PackageTab tab;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final AsyncValue<PageResult<VisaPackageVO>> packagesAsync = ref.watch(
+      myVisaPackageListProvider(tab.status),
+    );
+
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.refresh(myVisaPackageListProvider(tab.status).future),
+      child: packagesAsync.when(
+        data: (PageResult<VisaPackageVO> pageResult) {
+          if (pageResult.list.isEmpty) {
+            return _PackageEmptyState(
+              key: PageStorageKey<String>(
+                'service-provider-jobs-empty-${tab.name}',
+              ),
+              text: tab.emptyText,
+              bottomPadding: bottomPadding,
+            );
+          }
+          return ListView.separated(
+            key: PageStorageKey<String>(
+              'service-provider-jobs-list-${tab.name}',
+            ),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(12, 12, 12, bottomPadding + 8),
+            itemCount: pageResult.list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (BuildContext context, int index) {
+              return _PackageCard(
+                data: _PackageCardData.fromVisaPackage(
+                  pageResult.list[index],
+                  tab,
+                ),
+              );
+            },
+          );
+        },
+        loading: () => _PackageLoadingState(bottomPadding: bottomPadding),
+        error: (Object error, StackTrace _) => _PackageLoadError(
+          bottomPadding: bottomPadding,
+          errorText: error.toString(),
+          onRetry: () {
+            ref.invalidate(myVisaPackageListProvider(tab.status));
+          },
+        ),
+      ),
     );
   }
 }
@@ -137,8 +220,13 @@ class _PageHeader extends StatelessWidget {
 }
 
 class _PageTabBar extends StatelessWidget {
-  const _PageTabBar({required this.selectedIndex, required this.onTap});
+  const _PageTabBar({
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
+  final List<String> tabs;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
@@ -147,47 +235,44 @@ class _PageTabBar extends StatelessWidget {
     return Container(
       color: Colors.white,
       child: Row(
-        children: List<Widget>.generate(
-          _ServiceProviderJobsPageState._tabs.length,
-          (int index) {
-            final bool selected = index == selectedIndex;
-            return Expanded(
-              child: InkWell(
-                onTap: () => onTap(index),
-                child: Padding(
-                  padding: EdgeInsets.only(top: 11, bottom: selected ? 0 : 11),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        _ServiceProviderJobsPageState._tabs[index],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: selected
-                              ? const Color(0xFF096DD9)
-                              : const Color(0xFF262626),
-                          fontSize: 14,
-                          fontWeight: selected
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          height: 22 / 14,
-                        ),
+        children: List<Widget>.generate(tabs.length, (int index) {
+          final bool selected = index == selectedIndex;
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTap(index),
+              child: Padding(
+                padding: EdgeInsets.only(top: 11, bottom: selected ? 0 : 11),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      tabs[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: selected
+                            ? const Color(0xFF096DD9)
+                            : const Color(0xFF262626),
+                        fontSize: 14,
+                        fontWeight: selected
+                            ? FontWeight.w500
+                            : FontWeight.w400,
+                        height: 22 / 14,
                       ),
-                      if (selected) ...<Widget>[
-                        const SizedBox(height: 9),
-                        Container(
-                          width: 20,
-                          height: 2,
-                          color: const Color(0xFF096DD9),
-                        ),
-                      ],
+                    ),
+                    if (selected) ...<Widget>[
+                      const SizedBox(height: 9),
+                      Container(
+                        width: 20,
+                        height: 2,
+                        color: const Color(0xFF096DD9),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -207,7 +292,7 @@ class _PackageCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child:             Padding(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,25 +316,6 @@ class _PackageCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (data.showPreviewIcon &&
-                            data.headerPreviewCount != null) ...<Widget>[
-                          const SizedBox(width: 8),
-                          SvgPicture.asset(
-                            'assets/images/mou4an3g-gd04jfo.svg',
-                            width: 10,
-                            height: 10,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            data.headerPreviewCount!,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -261,14 +327,14 @@ class _PackageCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   ...data.tags.map(
-                        (String tag) => Padding(
+                    (String tag) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: _TagChip(label: tag),
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    data.previewCountText,
+                    data.metaText,
                     style: const TextStyle(
                       color: Color(0xFF8C8C8C),
                       fontSize: 12,
@@ -279,23 +345,28 @@ class _PackageCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 11),
-              ...List<Widget>.generate(data.packages.length, (int index) {
-                final _PackagePriceItem item = data.packages[index];
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index == data.packages.length - 1 ? 0 : 8,
-                  ),
-                  child: _PackagePriceRow(item: item),
-                );
-              }),
+              if (data.packages.isEmpty)
+                const _EmptyTierState()
+              else
+                ...List<Widget>.generate(data.packages.length, (int index) {
+                  final _PackagePriceItem item = data.packages[index];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == data.packages.length - 1 ? 0 : 8,
+                    ),
+                    child: _PackagePriceRow(item: item),
+                  );
+                }),
               const SizedBox(height: 12),
-              const Row(
+              Row(
                 children: <Widget>[
-                  _DeleteButton(),
-                  Spacer(),
-                  _GhostButton(label: '下架'),
-                  SizedBox(width: 8),
-                  _PrimaryButton(label: '编辑'),
+                  const _DeleteButton(),
+                  const Spacer(),
+                  if (data.secondaryActionLabel != null) ...<Widget>[
+                    _GhostButton(label: data.secondaryActionLabel!),
+                    const SizedBox(width: 8),
+                  ],
+                  const _PrimaryButton(label: '编辑'),
                 ],
               ),
             ],
@@ -382,6 +453,31 @@ class _TagChip extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w400,
           height: 10 / 10,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyTierState extends StatelessWidget {
+  const _EmptyTierState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        '暂无套餐档位',
+        style: TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 20 / 12,
         ),
       ),
     );
@@ -495,19 +591,42 @@ class _PrimaryButton extends StatelessWidget {
 class _PackageCardData {
   const _PackageCardData({
     required this.title,
-    required this.previewCountText,
+    required this.metaText,
     required this.tags,
     required this.packages,
-    this.headerPreviewCount,
-    this.showPreviewIcon = false,
+    this.secondaryActionLabel,
   });
 
+  factory _PackageCardData.fromVisaPackage(
+    VisaPackageVO package,
+    _PackageTab tab,
+  ) {
+    final List<String> tags = <String>[
+      _resolveCountryLabel(package.targetCountry),
+      _resolveVisaTypeLabel(package.visaType),
+    ].where((String value) => value.isNotEmpty).toList(growable: false);
+
+    return _PackageCardData(
+      title: package.name,
+      metaText: package.estimatedDays > 0 ? '预计${package.estimatedDays}天' : '-',
+      tags: tags,
+      packages: package.tiers
+          .map(
+            (TierVO item) => _PackagePriceItem.fromTier(
+              tier: item,
+              currency: package.currency,
+            ),
+          )
+          .toList(growable: false),
+      secondaryActionLabel: tab.secondaryActionLabel,
+    );
+  }
+
   final String title;
-  final String previewCountText;
+  final String metaText;
   final List<String> tags;
   final List<_PackagePriceItem> packages;
-  final String? headerPreviewCount;
-  final bool showPreviewIcon;
+  final String? secondaryActionLabel;
 }
 
 class _PackagePriceItem {
@@ -517,7 +636,200 @@ class _PackagePriceItem {
     required this.soldCount,
   });
 
+  factory _PackagePriceItem.fromTier({
+    required TierVO tier,
+    required String currency,
+  }) {
+    return _PackagePriceItem(
+      name: tier.name,
+      price: _formatCurrencyAmount(currency, tier.price),
+      soldCount: tier.soldCount,
+    );
+  }
+
   final String name;
   final String price;
   final int soldCount;
+}
+
+class _PackageLoadingState extends StatelessWidget {
+  const _PackageLoadingState({required this.bottomPadding});
+
+  final double bottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: bottomPadding + 8),
+      children: const <Widget>[
+        SizedBox(height: 96),
+        Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PackageEmptyState extends StatelessWidget {
+  const _PackageEmptyState({
+    super.key,
+    required this.text,
+    required this.bottomPadding,
+  });
+
+  final String text;
+  final double bottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: key,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: bottomPadding + 8),
+      children: <Widget>[
+        const SizedBox(height: 108),
+        Center(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF8C8C8C),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 22 / 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PackageLoadError extends StatelessWidget {
+  const _PackageLoadError({
+    required this.bottomPadding,
+    required this.errorText,
+    required this.onRetry,
+  });
+
+  final double bottomPadding;
+  final String errorText;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(
+        left: 24,
+        top: 96,
+        right: 24,
+        bottom: bottomPadding + 8,
+      ),
+      children: <Widget>[
+        const Text(
+          '套餐列表加载失败',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF262626),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            height: 24 / 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          errorText,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Color(0xFF8C8C8C),
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 20 / 12,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: SizedBox(
+            width: 88,
+            height: 32,
+            child: OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+const Map<String, String> _countryLabelMap = <String, String>{
+  'DE': '德国',
+  'FR': '法国',
+  'CH': '瑞士',
+  'GB': '英国',
+  'IT': '意大利',
+  'ES': '西班牙',
+};
+
+const Map<String, String> _visaTypeLabelMap = <String, String>{
+  'work': '工作签',
+  'travel': '旅行签',
+  'tech': '技术签',
+  'nursing': '护理签',
+  'study': '留学签',
+};
+
+String _resolveCountryLabel(String value) {
+  final String normalized = value.trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return _countryLabelMap[normalized.toUpperCase()] ?? normalized;
+}
+
+String _resolveVisaTypeLabel(String value) {
+  final String normalized = value.trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return _visaTypeLabelMap[normalized.toLowerCase()] ?? normalized;
+}
+
+String _formatCurrencyAmount(String currency, double amount) {
+  final String prefix = switch (currency.trim().toUpperCase()) {
+    'CNY' || 'RMB' => '¥',
+    'EUR' => 'EUR ',
+    'USD' => 'USD ',
+    _ => currency.trim().isEmpty ? '' : '${currency.trim().toUpperCase()} ',
+  };
+  return '$prefix${_formatDecimal(amount)}';
+}
+
+String _formatDecimal(double amount) {
+  final bool isInteger = amount == amount.roundToDouble();
+  final String raw = isInteger
+      ? amount.toStringAsFixed(0)
+      : amount.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  final List<String> parts = raw.split('.');
+  final StringBuffer buffer = StringBuffer();
+  final String integerPart = parts.first;
+
+  for (int index = 0; index < integerPart.length; index++) {
+    final int remaining = integerPart.length - index;
+    buffer.write(integerPart[index]);
+    if (remaining > 1 && remaining % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+
+  if (parts.length > 1 && parts[1].isNotEmpty) {
+    buffer
+      ..write('.')
+      ..write(parts[1]);
+  }
+  return buffer.toString();
 }
