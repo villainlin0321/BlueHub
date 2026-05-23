@@ -26,14 +26,41 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
   int _selectedTabIndex = 0;
   final Set<int> _collectingPackageIds = <int>{};
   final Map<int, bool> _collectedOverrides = <int, bool>{};
+  late final TextEditingController _searchController = TextEditingController();
+  String? _submittedKeyword;
 
   static const List<String> _tabs = <String>['推荐套餐', '德国签证', '法国签证', '意大利签证'];
+
+  VisaProviderListQuery get _query => VisaProviderListQuery(
+    page: 1,
+    pageSize: 50,
+    tab: _resolveTabQuery(_selectedTabIndex),
+    keyword: _submittedKeyword,
+  );
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _handleSearchSubmitted(String value) {
+    final String? keyword = value.trim().isEmpty ? null : value.trim();
+    if (_submittedKeyword == keyword) {
+      FocusScope.of(context).unfocus();
+      return;
+    }
+    setState(() {
+      _submittedKeyword = keyword;
+    });
+    FocusScope.of(context).unfocus();
+  }
 
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     final AsyncValue<PageResult<VisaProviderListVO>> providersAsync = ref.watch(
-      visaProviderListProvider(_resolveTabQuery(_selectedTabIndex)),
+      visaProviderListProvider(_query),
     );
     final AsyncValue<Set<int>> collectedVisaPackageIdsAsync = ref.watch(
       collectedVisaPackageIdsProvider,
@@ -49,6 +76,8 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
           children: <Widget>[
             _VisaHeroSection(
               selectedIndex: _selectedTabIndex,
+              controller: _searchController,
+              onSearchSubmitted: _handleSearchSubmitted,
               onTabTap: (int index) {
                 setState(() {
                   _selectedTabIndex = index;
@@ -63,9 +92,7 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
                 collectingPackageIds: _collectingPackageIds,
                 onRetry: () {
                   ref.invalidate(
-                    visaProviderListProvider(
-                      _resolveTabQuery(_selectedTabIndex),
-                    ),
+                    visaProviderListProvider(_query),
                   );
                 },
                 onToggleCollection: _handleToggleCollection,
@@ -321,9 +348,16 @@ String _formatVisaListPrice(double price) {
 }
 
 class _VisaHeroSection extends StatelessWidget {
-  const _VisaHeroSection({required this.selectedIndex, required this.onTabTap});
+  const _VisaHeroSection({
+    required this.selectedIndex,
+    required this.controller,
+    required this.onSearchSubmitted,
+    required this.onTabTap,
+  });
 
   final int selectedIndex;
+  final TextEditingController controller;
+  final ValueChanged<String> onSearchSubmitted;
   final ValueChanged<int> onTabTap;
 
   @override
@@ -346,9 +380,12 @@ class _VisaHeroSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: _VisaSearchBar(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: _VisaSearchBar(
+            controller: controller,
+            onSubmitted: onSearchSubmitted,
+          ),
         ),
         const SizedBox(height: 14),
         _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
@@ -359,7 +396,13 @@ class _VisaHeroSection extends StatelessWidget {
 }
 
 class _VisaSearchBar extends StatelessWidget {
-  const _VisaSearchBar();
+  const _VisaSearchBar({
+    required this.controller,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -378,11 +421,28 @@ class _VisaSearchBar extends StatelessWidget {
             height: 16,
           ),
           const SizedBox(width: 8),
-          Text(
-            '搜索签证服务/欧洲岗位',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFFBFBFBF),
-              fontSize: 14,
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: onSubmitted,
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 20 / 14,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '搜索签证服务/欧洲岗位',
+                hintStyle: TextStyle(
+                  color: Color(0xFFBFBFBF),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 14,
+                ),
+              ),
             ),
           ),
         ],
