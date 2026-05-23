@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../auth/application/auth_session_provider.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../data/resume_models.dart';
@@ -63,6 +64,26 @@ class ResumeDraft {
   final String duration;
   final String summary;
   final bool isPublic;
+}
+
+class _EditorBasicInfoViewData {
+  const _EditorBasicInfoViewData({
+    required this.name,
+    required this.region,
+    required this.age,
+    required this.gender,
+    required this.phone,
+    required this.avatarUrl,
+    required this.avatarFallbackText,
+  });
+
+  final String name;
+  final String region;
+  final String age;
+  final String gender;
+  final String phone;
+  final String avatarUrl;
+  final String avatarFallbackText;
 }
 
 /// 简历预览页所需的真实数据快照。
@@ -144,15 +165,6 @@ class MyResumeEditorPage extends ConsumerStatefulWidget {
 }
 
 class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
-  static const List<SelectableSheetOption<String>> _countrySheetOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '德国', label: '德国'),
-        SelectableSheetOption<String>(value: '法国', label: '法国'),
-        SelectableSheetOption<String>(value: '瑞士', label: '瑞士'),
-        SelectableSheetOption<String>(value: '英国', label: '英国'),
-        SelectableSheetOption<String>(value: '意大利', label: '意大利'),
-        SelectableSheetOption<String>(value: '西班牙', label: '西班牙'),
-      ];
   static const List<SelectableSheetOption<String>> _languageSheetOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: '德福TestDaF', label: '德福TestDaF'),
@@ -609,16 +621,22 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 构建基础信息区域。
   Widget _buildBasicInfoSection() {
+    final user = ref.watch(authSessionProvider).user;
+    final _EditorBasicInfoViewData basicInfoViewData = _buildBasicInfoViewData(
+      user,
+    );
     final List<Widget> metaWidgets = <Widget>[
-      if (_draft.region.trim().isNotEmpty) _buildMetaText(_draft.region),
-      if (_draft.gender.trim().isNotEmpty || _draft.age.trim().isNotEmpty)
+      if (basicInfoViewData.region.isNotEmpty)
+        _buildMetaText(basicInfoViewData.region),
+      if (basicInfoViewData.gender.isNotEmpty || basicInfoViewData.age.isNotEmpty)
         _buildMetaText(
           [
-            if (_draft.gender.trim().isNotEmpty) _draft.gender.trim(),
-            if (_draft.age.trim().isNotEmpty) '${_draft.age.trim()}岁',
+            if (basicInfoViewData.gender.isNotEmpty) basicInfoViewData.gender,
+            if (basicInfoViewData.age.isNotEmpty) '${basicInfoViewData.age}岁',
           ].join('·'),
         ),
-      if (_draft.phone.trim().isNotEmpty) _buildMetaText(_draft.phone),
+      if (basicInfoViewData.phone.isNotEmpty)
+        _buildMetaText(basicInfoViewData.phone),
     ];
 
     return Container(
@@ -634,7 +652,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 _buildSectionHeader(title: '基础信息'),
                 const SizedBox(height: 20),
                 Text(
-                  _draft.name.isEmpty ? '未填写姓名' : _draft.name,
+                  basicInfoViewData.name.isEmpty ? '未填写姓名' : basicInfoViewData.name,
                   style: const TextStyle(
                     color: Color(0xFF262626),
                     fontSize: 16,
@@ -662,7 +680,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 ),
               ),
               const SizedBox(height: 22),
-              _buildProfileAvatar(),
+              _buildProfileAvatar(basicInfoViewData),
             ],
           ),
         ],
@@ -672,6 +690,13 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 构建求职意向区域。
   Widget _buildJobIntentionSection() {
+    final countrySearch = ref.watch(
+      countrySearchProvider(const CountrySearchQuery()),
+    );
+    final Map<String, String> countryLabelMap = countrySearch.maybeWhen(
+      data: (result) => _buildCountryLabelMap(result.list),
+      orElse: () => const <String, String>{},
+    );
     final String currencyLabel = _draft.salaryCurrency.trim().isEmpty
         ? '币种未设置'
         : _draft.salaryCurrency;
@@ -733,7 +758,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 : _countryTags
                       .map(
                         (String item) => _buildTagChip(
-                          label: item,
+                          label: _resolveCountryLabel(item, countryLabelMap),
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
@@ -1327,8 +1352,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   /// 构建基础信息区头像，优先展示接口返回的真实头像地址。
-  Widget _buildProfileAvatar() {
-    final String avatarUrl = _resume?.basicInfo.avatarUrl ?? '';
+  Widget _buildProfileAvatar(_EditorBasicInfoViewData basicInfoViewData) {
+    final String avatarUrl = basicInfoViewData.avatarUrl;
     if (_isNetworkPath(avatarUrl)) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1337,15 +1362,16 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           width: 48,
           height: 48,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+          errorBuilder: (_, __, ___) =>
+              _buildAvatarPlaceholder(basicInfoViewData.avatarFallbackText),
         ),
       );
     }
-    return _buildAvatarPlaceholder();
+    return _buildAvatarPlaceholder(basicInfoViewData.avatarFallbackText);
   }
 
   /// 接口未返回头像时展示统一占位头像。
-  Widget _buildAvatarPlaceholder() {
+  Widget _buildAvatarPlaceholder(String fallbackText) {
     return Container(
       width: 48,
       height: 48,
@@ -1353,8 +1379,118 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         color: Color(0xFFE9EEF5),
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.person, size: 24, color: Color(0xFF8C8C8C)),
+      alignment: Alignment.center,
+      child: Text(
+        fallbackText,
+        style: const TextStyle(
+          color: Color(0xFF8C8C8C),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
+  }
+
+  _EditorBasicInfoViewData _buildBasicInfoViewData(dynamic user) {
+    final String name = _draft.name.trim().isNotEmpty
+        ? _draft.name.trim()
+        : _readCurrentUserName(user);
+    return _EditorBasicInfoViewData(
+      name: name,
+      region: _draft.region.trim().isNotEmpty
+          ? _draft.region.trim()
+          : _readCurrentUserRegion(user),
+      age: _draft.age.trim().isNotEmpty
+          ? _draft.age.trim()
+          : _readCurrentUserAge(user),
+      gender: _draft.gender.trim().isNotEmpty
+          ? _draft.gender.trim()
+          : _readCurrentUserGender(user),
+      phone: _draft.phone.trim().isNotEmpty
+          ? _draft.phone.trim()
+          : _readCurrentUserPhone(user),
+      avatarUrl: _readDraftAvatarUrl().isNotEmpty
+          ? _readDraftAvatarUrl()
+          : _readCurrentUserAvatarUrl(user),
+      avatarFallbackText: _buildAvatarFallbackText(name),
+    );
+  }
+
+  String _readCurrentUserName(dynamic user) {
+    final String nickname = user?.nickname?.toString().trim() ?? '';
+    return nickname;
+  }
+
+  String _readCurrentUserRegion(dynamic user) {
+    return user?.currentLocation?.toString().trim() ?? '';
+  }
+
+  String _readCurrentUserPhone(dynamic user) {
+    return user?.phone?.toString().trim() ?? '';
+  }
+
+  String _readCurrentUserAvatarUrl(dynamic user) {
+    return user?.avatarUrl?.toString().trim() ?? '';
+  }
+
+  String _readCurrentUserGender(dynamic user) {
+    final String value = user?.gender?.toString().trim().toLowerCase() ?? '';
+    switch (value) {
+      case 'male':
+      case 'man':
+      case 'm':
+      case '1':
+      case '男':
+        return '男';
+      case 'female':
+      case 'woman':
+      case 'f':
+      case '0':
+      case '女':
+        return '女';
+      default:
+        return '';
+    }
+  }
+
+  String _readCurrentUserAge(dynamic user) {
+    final String birthday = user?.birthday?.toString().trim() ?? '';
+    if (birthday.isEmpty) {
+      return '';
+    }
+    final List<String> parts = birthday
+        .replaceAll('.', '-')
+        .replaceAll('/', '-')
+        .split('-');
+    if (parts.length < 3) {
+      return '';
+    }
+    final int? year = int.tryParse(parts[0]);
+    final int? month = int.tryParse(parts[1]);
+    final int? day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) {
+      return '';
+    }
+    final DateTime now = DateTime.now();
+    int age = now.year - year;
+    if (now.month < month || (now.month == month && now.day < day)) {
+      age -= 1;
+    }
+    return age > 0 ? age.toString() : '';
+  }
+
+  String _readDraftAvatarUrl() {
+    return _resume?.basicInfo.avatarUrl.trim() ?? '';
+  }
+
+  String _buildAvatarFallbackText(String name) {
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return '我';
+    }
+    final List<int> runes = trimmed.runes.toList(growable: false);
+    final int takeCount = runes.length >= 2 ? 2 : 1;
+    return String.fromCharCodes(runes.take(takeCount));
   }
 
   /// 构建带图标的标签按钮。
@@ -1729,9 +1865,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return '简历保存失败，请稍后重试';
   }
 
-  /// 跳转到简历预览页，并把当前编辑中的真实快照一并传递过去。
+  /// 替换当前编辑页进入简历预览页，避免返回栈保留已提交的编辑页。
   void _openPreview() {
-    context.push(RoutePaths.myResumePreview, extra: _buildPreviewArgs());
+    context.pushReplacement(RoutePaths.myResumePreview, extra: _buildPreviewArgs());
   }
 
   /// 组装预览页所需的真实数据快照，避免预览页再拼接任何假数据。
@@ -1918,23 +2054,108 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return result;
   }
 
-  Future<void> _openExpectedCountrySheet() async {
-    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
-      context: context,
-      title: '期望国家/地区',
-      options: _countrySheetOptions,
-      initialSelectedValues: _countryTags,
+  Future<List<CountryVO>> _loadCountries() async {
+    final result = await ref.read(
+      countrySearchProvider(const CountrySearchQuery()).future,
     );
+    return result.list;
+  }
 
-    if (result == null) {
-      return;
+  List<SelectableSheetOption<String>> _buildCountrySheetOptions(
+    List<CountryVO> countries,
+  ) {
+    final Set<String> seen = <String>{};
+    return countries
+        .where(
+          (item) =>
+              item.countryCode.trim().isNotEmpty &&
+              item.nameZh.trim().isNotEmpty &&
+              seen.add(item.countryCode.trim()),
+        )
+        .map(
+          (item) => SelectableSheetOption<String>(
+            value: item.countryCode.trim(),
+            label: item.nameZh.trim(),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Map<String, String> _buildCountryLabelMap(List<CountryVO> countries) {
+    return <String, String>{
+      for (final CountryVO item in countries)
+        if (item.countryCode.trim().isNotEmpty && item.nameZh.trim().isNotEmpty)
+          item.countryCode.trim(): item.nameZh.trim(),
+    };
+  }
+
+  String _resolveCountryCode(String value, List<CountryVO> countries) {
+    final String trimmed = value.trim();
+    for (final CountryVO item in countries) {
+      if (item.countryCode.trim() == trimmed) {
+        return trimmed;
+      }
+      if (item.nameZh.trim() == trimmed) {
+        return item.countryCode.trim();
+      }
     }
+    return trimmed;
+  }
 
-    setState(() {
-      _countryTags
-        ..clear()
-        ..addAll(result);
-    });
+  String _resolveCountryLabel(
+    String value,
+    Map<String, String> countryLabelMap,
+  ) {
+    final String trimmed = value.trim();
+    return countryLabelMap[trimmed] ?? trimmed;
+  }
+
+  Future<void> _openExpectedCountrySheet() async {
+    try {
+      final List<CountryVO> countries = await _loadCountries();
+      if (!mounted) {
+        return;
+      }
+      final List<SelectableSheetOption<String>> options = _buildCountrySheetOptions(
+        countries,
+      );
+      if (options.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('暂无可选国家，请稍后重试')));
+        return;
+      }
+      final Set<String> validValues = options
+          .map((SelectableSheetOption<String> item) => item.value)
+          .toSet();
+      final List<String> currentSelected = _countryTags
+          .map((item) => _resolveCountryCode(item, countries))
+          .where(validValues.contains)
+          .toList(growable: false);
+      final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+        context: context,
+        title: '期望国家/地区',
+        options: options,
+        initialSelectedValues: currentSelected,
+      );
+
+      if (result == null) {
+        return;
+      }
+
+      setState(() {
+        _countryTags
+          ..clear()
+          ..addAll(result);
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('国家列表加载失败，请稍后重试')));
+    }
   }
 
   Future<void> _openLanguageSheet() async {

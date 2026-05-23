@@ -139,8 +139,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
             children: <Widget>[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SizedBox(
-                  height: 36,
+                child: Container(
+                  alignment: Alignment.center,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F5F5),
@@ -205,6 +205,12 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                           onTap: () {
                             setState(() {
                               _selectedSchool = schoolName;
+                              _searchController.value = TextEditingValue(
+                                text: schoolName,
+                                selection: TextSelection.collapsed(
+                                  offset: schoolName.length,
+                                ),
+                              );
                             });
                           },
                           child: Container(

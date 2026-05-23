@@ -273,6 +273,15 @@ class ResumeListItemVO {
     required this.targetCountries,
     required this.isPublic,
     required this.updatedAt,
+    required this.nickname,
+    required this.avatarUrl,
+    required this.gender,
+    required this.age,
+    required this.currentLocation,
+    required this.salaryMin,
+    required this.salaryMax,
+    required this.salaryCurrency,
+    required this.latestExperience,
   });
 
   final int resumeId;
@@ -282,16 +291,55 @@ class ResumeListItemVO {
   final List<String> targetCountries;
   final bool isPublic;
   final String updatedAt;
+  final String nickname;
+  final String avatarUrl;
+  final String gender;
+  final int? age;
+  final String currentLocation;
+  final double? salaryMin;
+  final double? salaryMax;
+  final String salaryCurrency;
+  final LatestExperienceVO? latestExperience;
 
   factory ResumeListItemVO.fromJson(JsonMap json) {
     return ResumeListItemVO(
-      resumeId: readInt(json, 'resumeId'),
-      isDefault: readBool(json, 'isDefault'),
+      resumeId: _readIntByKeys(json, const ['resume_id', 'resumeId']),
+      isDefault: _readBoolByKeys(json, const ['is_default', 'isDefault']),
       completeness: readInt(json, 'completeness'),
-      targetPositions: readStringList(json, 'targetPositions'),
-      targetCountries: readStringList(json, 'targetCountries'),
-      isPublic: readBool(json, 'isPublic'),
-      updatedAt: readString(json, 'updatedAt'),
+      targetPositions: _readStringListByKeys(
+        json,
+        const ['target_positions', 'targetPositions'],
+      ),
+      targetCountries: _readStringListByKeys(
+        json,
+        const ['target_countries', 'targetCountries'],
+      ),
+      isPublic: _readBoolByKeys(json, const ['is_public', 'isPublic']),
+      updatedAt: _readStringByKeys(json, const ['updated_at', 'updatedAt']),
+      nickname: readString(json, 'nickname'),
+      avatarUrl: _readStringByKeys(json, const ['avatar_url', 'avatarUrl']),
+      gender: readString(json, 'gender'),
+      age: _readNullableIntByKeys(json, const ['age']),
+      currentLocation: _readStringByKeys(
+        json,
+        const ['current_location', 'currentLocation'],
+      ),
+      salaryMin: _readNullableDoubleByKeys(
+        json,
+        const ['salary_min', 'salaryMin'],
+      ),
+      salaryMax: _readNullableDoubleByKeys(
+        json,
+        const ['salary_max', 'salaryMax'],
+      ),
+      salaryCurrency: _readStringByKeys(
+        json,
+        const ['salary_currency', 'salaryCurrency'],
+      ),
+      latestExperience: _readLatestExperience(
+        json,
+        const ['latest_experience', 'latestExperience'],
+      ),
     );
   }
 
@@ -304,6 +352,55 @@ class ResumeListItemVO {
       'targetCountries': targetCountries,
       'isPublic': isPublic,
       'updatedAt': updatedAt,
+      'nickname': nickname,
+      'avatarUrl': avatarUrl,
+      'gender': gender,
+      'age': age,
+      'currentLocation': currentLocation,
+      'salaryMin': salaryMin,
+      'salaryMax': salaryMax,
+      'salaryCurrency': salaryCurrency,
+      'latestExperience': latestExperience?.toJson(),
+    };
+  }
+}
+
+class LatestExperienceVO {
+  const LatestExperienceVO({
+    required this.company,
+    required this.position,
+    required this.startDate,
+    required this.endDate,
+    required this.isCurrent,
+    required this.description,
+  });
+
+  final String company;
+  final String position;
+  final String startDate;
+  final String? endDate;
+  final bool isCurrent;
+  final String description;
+
+  factory LatestExperienceVO.fromJson(JsonMap json) {
+    return LatestExperienceVO(
+      company: readString(json, 'company'),
+      position: readString(json, 'position'),
+      startDate: _readStringByKeys(json, const ['start_date', 'startDate']),
+      endDate: _readNullableStringByKeys(json, const ['end_date', 'endDate']),
+      isCurrent: _readBoolByKeys(json, const ['is_current', 'isCurrent']),
+      description: readString(json, 'description'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'company': company,
+      'position': position,
+      'startDate': startDate,
+      'endDate': endDate,
+      'isCurrent': isCurrent,
+      'description': description,
     };
   }
 }
@@ -393,6 +490,126 @@ class ResumeVO {
       'updatedAt': updatedAt,
     };
   }
+}
+
+String _readStringByKeys(
+  JsonMap json,
+  List<String> keys, {
+  String fallback = '',
+}) {
+  for (final key in keys) {
+    if (json.containsKey(key)) {
+      return readString(json, key, fallback: fallback);
+    }
+  }
+  return fallback;
+}
+
+String? _readNullableStringByKeys(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    if (!json.containsKey(key)) {
+      continue;
+    }
+    final value = json[key];
+    if (value == null) {
+      return null;
+    }
+    return readString(json, key);
+  }
+  return null;
+}
+
+int _readIntByKeys(
+  JsonMap json,
+  List<String> keys, {
+  int fallback = 0,
+}) {
+  for (final key in keys) {
+    if (json.containsKey(key)) {
+      return readInt(json, key, fallback: fallback);
+    }
+  }
+  return fallback;
+}
+
+bool _readBoolByKeys(
+  JsonMap json,
+  List<String> keys, {
+  bool fallback = false,
+}) {
+  for (final key in keys) {
+    if (json.containsKey(key)) {
+      return readBool(json, key, fallback: fallback);
+    }
+  }
+  return fallback;
+}
+
+List<String> _readStringListByKeys(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    if (json.containsKey(key)) {
+      return readStringList(json, key);
+    }
+  }
+  return const <String>[];
+}
+
+int? _readNullableIntByKeys(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    if (!json.containsKey(key)) {
+      continue;
+    }
+    final value = json[key];
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+    }
+  }
+  return null;
+}
+
+double? _readNullableDoubleByKeys(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    if (!json.containsKey(key)) {
+      continue;
+    }
+    final value = json[key];
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+  }
+  return null;
+}
+
+LatestExperienceVO? _readLatestExperience(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    if (!json.containsKey(key) || json[key] == null) {
+      continue;
+    }
+    final nested = readJsonMap(json, key);
+    if (nested.isEmpty) {
+      return null;
+    }
+    return LatestExperienceVO.fromJson(nested);
+  }
+  return null;
 }
 
 class SaveResumeBO {
