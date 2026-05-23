@@ -6,10 +6,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../features/auth/application/auth_session_provider.dart';
+import '../../../../features/me/presentation/current_user_view_data.dart';
+import '../../../../features/visa/data/provider_models.dart';
+import '../../../../features/visa/data/provider_providers.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
+
+final _currentProviderProfileProvider = FutureProvider.autoDispose<ProviderVO>((
+  ref,
+) async {
+  final service = ref.watch(providerServiceProvider);
+  return service.getMyProfile();
+});
 
 /// 当前按需求承载服务商首页实现，后续如补企业端首页可再拆分。
 class ServiceProviderHomePage extends ConsumerWidget {
@@ -214,11 +225,7 @@ class _HeroStatsRow extends ConsumerWidget {
         .asData
         ?.value;
     final List<_HeroStatItem> items = stats == null
-        ? const <_HeroStatItem>[
-            _HeroStatItem(value: '24', label: '今日咨询'),
-            _HeroStatItem(value: '132', label: '进行中订单'),
-            _HeroStatItem(value: '12.34w', label: '本月收入(¥)'),
-          ]
+        ? const <_HeroStatItem>[]
         : <_HeroStatItem>[
             _HeroStatItem(
               value: _formatProviderCount(stats.todayConsultations),
@@ -281,11 +288,27 @@ class _HeroStatItem extends StatelessWidget {
   }
 }
 
-class _ProviderInfoRow extends StatelessWidget {
+class _ProviderInfoRow extends ConsumerWidget {
   const _ProviderInfoRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
+      ref.watch(authSessionProvider).user,
+    );
+    final AsyncValue<ProviderVO> providerProfileAsync = ref.watch(
+      _currentProviderProfileProvider,
+    );
+    final ProviderVO? providerProfile = providerProfileAsync.asData?.value;
+    final String providerName = providerProfile?.name.trim() ?? '';
+    final String displayName = providerName.isNotEmpty
+        ? providerName
+        : userViewData.nickname;
+    final bool isVerified = providerProfile?.isVerified ?? false;
+    final String providerSummary = providerProfile == null
+        ? ''
+        : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
@@ -299,14 +322,14 @@ class _ProviderInfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Row(
+              Row(
                 children: <Widget>[
                   Flexible(
                     child: Text(
-                      '中欧出海签证服务',
+                      displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
@@ -314,19 +337,22 @@ class _ProviderInfoRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 6),
-                  _CertificationBadge(),
+                  if (isVerified) ...<Widget>[
+                    const SizedBox(width: 6),
+                    const _CertificationBadge(),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),
-              Text(
-                '服务评分 4.9  累计服务 1,205',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 11,
-                  height: 14 / 11,
+              if (providerSummary.isNotEmpty)
+                Text(
+                  providerSummary,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 11,
+                    height: 14 / 11,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -578,10 +604,10 @@ class _OrdersSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        Image.asset(
-          'assets/images/mon6azmx-ic3gin6.png',
-          width: 16,
-          height: 16,
+        const Icon(
+          Icons.arrow_forward_ios,
+          size: 12,
+          color: Color(0xFF8C8C8C),
         ),
       ],
     );
@@ -818,3 +844,18 @@ class _PendingOrderItem {
 }
 
 String _formatProviderCount(int? value) => (value ?? 0).toString();
+
+String _formatProviderRating(double value) => value.toStringAsFixed(1);
+
+String _formatProviderCaseCount(int value) {
+  final String digits = value.toString();
+  final StringBuffer buffer = StringBuffer();
+  for (int index = 0; index < digits.length; index++) {
+    final int reverseIndex = digits.length - index;
+    buffer.write(digits[index]);
+    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
+}

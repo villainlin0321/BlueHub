@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
+import '../../../me/presentation/current_user_view_data.dart';
+import '../../../visa/data/provider_models.dart';
+import '../../../visa/data/provider_providers.dart';
+
+final _currentProviderProfileProvider = FutureProvider.autoDispose<ProviderVO>((
+  ref,
+) async {
+  final service = ref.watch(providerServiceProvider);
+  return service.getMyProfile();
+});
 
 /// 服务商端个人中心，按 Figma 设计图还原。
 class ServiceProviderMePage extends StatelessWidget {
@@ -194,11 +206,17 @@ class _TopIconButton extends StatelessWidget {
   }
 }
 
-class _ProviderProfileRow extends StatelessWidget {
+class _ProviderProfileRow extends ConsumerWidget {
   const _ProviderProfileRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ProviderVO? providerProfile =
+        ref.watch(_currentProviderProfileProvider).asData?.value;
+    final String providerSummary = providerProfile == null
+        ? ''
+        : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
+
     return InkWell(
       onTap: () {
         ScaffoldMessenger.of(
@@ -215,20 +233,22 @@ class _ProviderProfileRow extends StatelessWidget {
             fit: BoxFit.cover,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _ProviderNameRow(),
-                SizedBox(height: 4),
-                Text(
-                  '服务评分 4.9  累计服务 1,205',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    height: 14 / 11,
+                const _ProviderNameRow(),
+                if (providerSummary.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    providerSummary,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      height: 14 / 11,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -242,19 +262,30 @@ class _ProviderProfileRow extends StatelessWidget {
   }
 }
 
-class _ProviderNameRow extends StatelessWidget {
+class _ProviderNameRow extends ConsumerWidget {
   const _ProviderNameRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
+      ref.watch(authSessionProvider).user,
+    );
+    final ProviderVO? providerProfile =
+        ref.watch(_currentProviderProfileProvider).asData?.value;
+    final String providerName = providerProfile?.name.trim() ?? '';
+    final String displayName = providerName.isNotEmpty
+        ? providerName
+        : userViewData.nickname;
+    final bool isVerified = providerProfile?.isVerified ?? false;
+
     return Row(
       children: <Widget>[
-        const Flexible(
+        Flexible(
           child: Text(
-            '中欧出海签证服务',
+            displayName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -262,47 +293,49 @@ class _ProviderNameRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 47,
-          height: 14,
-          child: Stack(
-            children: <Widget>[
-              Positioned(
-                left: 11,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: SvgPicture.asset(
-                  ServiceProviderMePage._badgeBgAsset,
-                  fit: BoxFit.fill,
-                ),
-              ),
-              Positioned(
-                left: 0,
-                top: 0,
-                child: SvgPicture.asset(
-                  ServiceProviderMePage._badgeVAsset,
-                  width: 15,
-                  height: 14,
-                ),
-              ),
-              const Positioned(
-                left: 18,
-                top: 2,
-                child: Text(
-                  '认证',
-                  style: TextStyle(
-                    color: Color(0xFF784301),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    height: 10 / 9,
+        if (isVerified) ...<Widget>[
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 47,
+            height: 14,
+            child: Stack(
+              children: <Widget>[
+                Positioned(
+                  left: 11,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: SvgPicture.asset(
+                    ServiceProviderMePage._badgeBgAsset,
+                    fit: BoxFit.fill,
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: SvgPicture.asset(
+                    ServiceProviderMePage._badgeVAsset,
+                    width: 15,
+                    height: 14,
+                  ),
+                ),
+                const Positioned(
+                  left: 18,
+                  top: 2,
+                  child: Text(
+                    '认证',
+                    style: TextStyle(
+                      color: Color(0xFF784301),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      height: 10 / 9,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -367,6 +400,21 @@ class _StatItem extends StatelessWidget {
       ],
     );
   }
+}
+
+String _formatProviderRating(double value) => value.toStringAsFixed(2);
+
+String _formatProviderCaseCount(int value) {
+  final String digits = value.toString();
+  final StringBuffer buffer = StringBuffer();
+  for (int index = 0; index < digits.length; index++) {
+    final int reverseIndex = digits.length - index;
+    buffer.write(digits[index]);
+    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
 }
 
 class _MenuCard extends StatelessWidget {
