@@ -1,9 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../order/data/visa_order_models.dart';
+import '../../order/data/visa_order_providers.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'service_detail_package_tab.dart';
 import 'app_result_page.dart';
@@ -35,6 +39,7 @@ class ServiceDetailConfirmPaymentBottomSheet {
   static Future<void> show({
     required BuildContext context,
     required String amountText,
+    required int orderId,
     required BuildContext parentContext,
   }) async {
     await _showServiceDetailBottomSheet(
@@ -42,6 +47,7 @@ class ServiceDetailConfirmPaymentBottomSheet {
       builder: (sheetContext) {
         return _ConfirmPaymentBottomSheetContent(
           amountText: amountText,
+          orderId: orderId,
           parentContext: parentContext,
         );
       },
@@ -62,7 +68,7 @@ Future<void> _showServiceDetailBottomSheet({
   );
 }
 
-class _ApplyBottomSheetContent extends StatefulWidget {
+class _ApplyBottomSheetContent extends ConsumerStatefulWidget {
   const _ApplyBottomSheetContent({
     required this.parentContext,
     required this.serviceTitle,
@@ -74,13 +80,15 @@ class _ApplyBottomSheetContent extends StatefulWidget {
   final ServicePackageData package;
 
   @override
-  State<_ApplyBottomSheetContent> createState() =>
+  ConsumerState<_ApplyBottomSheetContent> createState() =>
       _ApplyBottomSheetContentState();
 }
 
-class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
+class _ApplyBottomSheetContentState
+    extends ConsumerState<_ApplyBottomSheetContent> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -205,7 +213,7 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
                   ),
                 ),
                 child: FilledButton(
-                  onPressed: _handleGoPay,
+                  onPressed: _isSubmitting ? null : _handleGoPay,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
                     backgroundColor: const Color(0xFF096DD9),
@@ -216,7 +224,7 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
                     shadowColor: Colors.transparent,
                   ),
                   child: Text(
-                    '去支付',
+                    _isSubmitting ? '提交中...' : '去支付',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
@@ -233,43 +241,75 @@ class _ApplyBottomSheetContentState extends State<_ApplyBottomSheetContent> {
     );
   }
 
-  void _handleGoPay() {
+  Future<void> _handleGoPay() async {
+    if (_isSubmitting) {
+      return;
+    }
     FocusScope.of(context).unfocus();
-    final amountText = _formatPaymentAmount(widget.package.price);
-    Navigator.of(context).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ServiceDetailConfirmPaymentBottomSheet.show(
-        context: widget.parentContext,
-        amountText: amountText,
-        parentContext: widget.parentContext,
+    setState(() => _isSubmitting = true);
+    try {
+      final order = await ref.read(visaOrderServiceProvider).createOrder(
+        request: CreateVisaOrderBO(
+          packageId: widget.package.packageId,
+          tierId: widget.package.tierId,
+        ),
       );
-    });
+      if (!mounted) {
+        return;
+      }
+      final amountText = _formatPaymentAmount(widget.package.price);
+      Navigator.of(context).pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!widget.parentContext.mounted) {
+          return;
+        }
+        ServiceDetailConfirmPaymentBottomSheet.show(
+          context: widget.parentContext,
+          amountText: amountText,
+          orderId: order.orderId,
+          parentContext: widget.parentContext,
+        );
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isSubmitting = false);
+      _showMessage(_resolveBottomSheetErrorMessage(error, fallback: '创建订单失败，请稍后重试'));
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
-class _ConfirmPaymentBottomSheetContent extends StatefulWidget {
+class _ConfirmPaymentBottomSheetContent extends ConsumerStatefulWidget {
   const _ConfirmPaymentBottomSheetContent({
     required this.amountText,
+    required this.orderId,
     required this.parentContext,
   });
 
   final String amountText;
+  final int orderId;
   final BuildContext parentContext;
 
   @override
-  State<_ConfirmPaymentBottomSheetContent> createState() =>
+  ConsumerState<_ConfirmPaymentBottomSheetContent> createState() =>
       _ConfirmPaymentBottomSheetContentState();
 }
 
 enum _PaymentMethod { alipay, wechat }
 
 class _ConfirmPaymentBottomSheetContentState
-    extends State<_ConfirmPaymentBottomSheetContent> {
+    extends ConsumerState<_ConfirmPaymentBottomSheetContent> {
   static const _tickDuration = Duration(seconds: 1);
   static const _initialDuration = Duration(minutes: 30);
   Timer? _timer;
   Duration _remaining = _initialDuration;
   _PaymentMethod _selectedMethod = _PaymentMethod.alipay;
+  bool _isPaying = false;
 
   @override
   void initState() {
@@ -374,7 +414,7 @@ class _ConfirmPaymentBottomSheetContentState
             ),
           ),
           child: FilledButton(
-            onPressed: _handlePayNow,
+            onPressed: _isPaying ? null : _handlePayNow,
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
               backgroundColor: const Color(0xFF096DD9),
@@ -385,7 +425,7 @@ class _ConfirmPaymentBottomSheetContentState
               shadowColor: Colors.transparent,
             ),
             child: Text(
-              '立即支付',
+              _isPaying ? '支付中...' : '立即支付',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -399,14 +439,37 @@ class _ConfirmPaymentBottomSheetContentState
     );
   }
 
-  void _handlePayNow() {
-    Navigator.of(context).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.parentContext.push(
-        RoutePaths.appResult,
-        extra: const AppResultPageArgs.paymentSuccess(),
-      );
-    });
+  Future<void> _handlePayNow() async {
+    if (_isPaying) {
+      return;
+    }
+    setState(() => _isPaying = true);
+    try {
+      await ref.read(visaOrderServiceProvider).payOrder(orderId: widget.orderId);
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!widget.parentContext.mounted) {
+          return;
+        }
+        widget.parentContext.push(
+          RoutePaths.appResult,
+          extra: const AppResultPageArgs.paymentSuccess(),
+        );
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isPaying = false);
+      _showMessage(_resolveBottomSheetErrorMessage(error, fallback: '支付发起失败，请稍后重试'));
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -892,4 +955,15 @@ String _formatPaymentAmount(String priceText) {
     (match) => ',',
   );
   return '¥$groupedInteger.$decimalPart';
+}
+
+String _resolveBottomSheetErrorMessage(Object error, {required String fallback}) {
+  if (error is ApiException) {
+    return error.message;
+  }
+  final String message = error.toString().trim();
+  if (message.startsWith('Exception: ')) {
+    return message.substring('Exception: '.length);
+  }
+  return message.isEmpty ? fallback : message;
 }

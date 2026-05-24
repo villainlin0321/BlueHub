@@ -782,14 +782,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     color: Color(0xFF595959),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    height: 22 / 14,
                   ),
                 ),
                 const SizedBox(width: 4),
-                Image.asset(
-                  _ResumeEditorAssets.dropdownArrow,
+                SvgPicture.asset(
+                  'assets/images/icon_arrow_down.svg',
                   width: 16,
                   height: 16,
+                  color: Colors.black,
                 ),
               ],
             ),
@@ -2416,7 +2416,6 @@ class _ResumeEditorAssets {
   static const String addCircle = 'assets/images/add_circle.svg';
   static const String tagRemove = 'assets/images/tag_remove.svg';
   static const String tagAdd = 'assets/images/tag_add.svg';
-  static const String dropdownArrow = 'assets/images/dropdown_arrow.png';
   static const String languageTagRemove =
       'assets/images/language_tag_remove.svg';
   static const String educationLogo = 'assets/images/education_logo.png';

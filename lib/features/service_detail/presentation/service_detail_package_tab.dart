@@ -5,12 +5,16 @@ import '../../../shared/ui/app_spacing.dart';
 
 class ServicePackageData {
   const ServicePackageData({
+    required this.packageId,
+    required this.tierId,
     required this.title,
     required this.price,
     required this.description,
     required this.tags,
   });
 
+  final int packageId;
+  final int tierId;
   final String title;
   final String price;
   final String description;

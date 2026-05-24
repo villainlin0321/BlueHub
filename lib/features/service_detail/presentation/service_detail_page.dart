@@ -1089,6 +1089,8 @@ extension on VisaPackageVO {
     return tiers
         .map(
           (TierVO tier) => ServicePackageData(
+            packageId: packageId,
+            tierId: tier.tierId,
             title: tier.name.trim().isEmpty ? '套餐档位' : tier.name,
             price: _formatPrice(tier.price, currency),
             description: tier.description.trim().isEmpty

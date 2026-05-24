@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_paths.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
+import '../../order/presentation/order_detail_page.dart';
 import '../../order/presentation/order_review_page.dart';
 
 class MyOrdersPage extends ConsumerStatefulWidget {
@@ -51,11 +52,20 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.contactMerchant:
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
+        return;
       case _OrderActionType.uploadMaterials:
+      case _OrderActionType.viewDetail:
+        final bool? updated = await _openOrderDetail(order.orderId);
+        if (updated == true && mounted) {
+          await _loadOrders();
+        }
+        return;
       case _OrderActionType.goPay:
       case _OrderActionType.viewProgress:
       case _OrderActionType.supplementMaterials:
-      case _OrderActionType.viewDetail:
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
@@ -107,6 +117,13 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       return message.substring('Exception: '.length);
     }
     return message.isEmpty ? '订单加载失败，请稍后重试' : message;
+  }
+
+  Future<bool?> _openOrderDetail(int orderId) {
+    return context.push<bool>(
+      RoutePaths.orderDetail,
+      extra: OrderDetailPageArgs(orderId: orderId),
+    );
   }
 
   @override
@@ -191,7 +208,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         return _OrderCard(
           order: visibleOrders[index],
           onActionTap: _handleActionTap,
-          onTap: () => context.push(RoutePaths.orderDetail),
+          onTap: () => _openOrderDetail(visibleOrders[index].orderId),
         );
       },
     );
