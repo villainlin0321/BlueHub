@@ -13,13 +13,10 @@ import '../../../../shared/widgets/job_seeker_page_background.dart';
 class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({super.key});
 
-  static const String _profileCardBgAsset =
-      'assets/images/mou4gf12-37h742f.svg';
-  static const String _menuCardBgAsset = 'assets/images/mou4gf12-4znlacm.svg';
   static const String _verifiedBadgeBgAsset =
       'assets/images/mou4gf12-gd4t3xy.svg';
   static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
-  static const String _messageAsset = 'assets/images/mou4gf12-spcrp36.svg';
+  static const String _messageAsset = 'assets/images/home_message_center.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
 
   static const List<_MenuActionItem> _menuItems = <_MenuActionItem>[
@@ -178,8 +175,9 @@ class _TopIconButton extends StatelessWidget {
         child: Center(
           child: SvgPicture.asset(
             assetPath,
-            width: 19,
-            height: 19,
+            width: 24,
+            height: 24,
+            color: Colors.black,
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, size: 20, color: const Color(0xFF262626)),
           ),
@@ -209,136 +207,124 @@ class _ProfileCard extends StatelessWidget {
   @override
   /// 构建顶部资料卡，并展示当前登录用户的核心信息。
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(19.2),
-      child: Stack(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius: BorderRadius.circular(19.2),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 18, 15, 16),
+      child: Column(
         children: <Widget>[
-          Positioned.fill(
-            child: SvgPicture.asset(
-              JobSeekerMePage._profileCardBgAsset,
-              fit: BoxFit.fill,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 15, 16),
-            child: Column(
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Row(
               children: <Widget>[
-                InkWell(
-                  onTap: onTap,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Row(
+                _UserAvatar(
+                  avatarUrl: userViewData.avatarUrl,
+                  fallbackAssetPath: JobSeekerMePage._avatarAsset,
+                  size: 48,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      _UserAvatar(
-                        avatarUrl: userViewData.avatarUrl,
-                        fallbackAssetPath: JobSeekerMePage._avatarAsset,
-                        size: 48,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                Flexible(
-                                  child: Text(
-                                    userViewData.nickname,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF262626),
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      height: 26 / 20,
-                                    ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              userViewData.nickname,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF262626),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                height: 26 / 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (userViewData.isVerified) ...<Widget>[
+                            SizedBox(
+                              width: 42,
+                              height: 18,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: <Widget>[
+                                  SvgPicture.asset(
+                                    JobSeekerMePage._verifiedBadgeBgAsset,
+                                    fit: BoxFit.fill,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                if (userViewData.isVerified) ...<Widget>[
-                                  SizedBox(
-                                    width: 42,
-                                    height: 18,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: <Widget>[
-                                        SvgPicture.asset(
-                                          JobSeekerMePage._verifiedBadgeBgAsset,
-                                          fit: BoxFit.fill,
-                                        ),
-                                        const Center(
-                                          child: Text(
-                                            '已实名',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w500,
-                                              height: 14 / 10,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  const Center(
+                                    child: Text(
+                                      '已实名',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        height: 14 / 10,
+                                      ),
                                     ),
                                   ),
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              userViewData.maskedPhone,
-                              style: const TextStyle(
-                                color: Color(0xFF595959),
-                                fontSize: 13,
-                                height: 16 / 13,
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 14,
-                        color: Color(0xFFBFBFBF),
+                      const SizedBox(height: 5),
+                      Text(
+                        userViewData.maskedPhone,
+                        style: const TextStyle(
+                          color: Color(0xFF595959),
+                          fontSize: 13,
+                          height: 16 / 13,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _StatItem(
-                        value: '3',
-                        label: '我的订单',
-                        onTap: onOrderTap,
-                      ),
-                    ),
-                    Expanded(
-                      child: _StatItem(
-                        value: '85%',
-                        label: '我的简历',
-                        onTap: onResumeTap,
-                      ),
-                    ),
-                    Expanded(
-                      child: _StatItem(
-                        value: '3',
-                        label: '我的应聘',
-                        onTap: onApplicationTap,
-                      ),
-                    ),
-                    Expanded(
-                      child: _StatItem(
-                        value: '24',
-                        label: '我的收藏',
-                        onTap: onFavoriteTap,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Color(0xFFBFBFBF),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _StatItem(value: '3', label: '我的订单', onTap: onOrderTap),
+              ),
+              Expanded(
+                child: _StatItem(
+                  value: '85%',
+                  label: '我的简历',
+                  onTap: onResumeTap,
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  value: '3',
+                  label: '我的应聘',
+                  onTap: onApplicationTap,
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  value: '24',
+                  label: '我的收藏',
+                  onTap: onFavoriteTap,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -401,29 +387,17 @@ class _MenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(19.2),
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: SvgPicture.asset(
-              JobSeekerMePage._menuCardBgAsset,
-              fit: BoxFit.fill,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Column(
-              children: List<Widget>.generate(items.length, (int index) {
-                final _MenuActionItem item = items[index];
-                return _MenuTile(
-                  item: item,
-                  onTap: () => onItemTap(item.label),
-                );
-              }),
-            ),
-          ),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(19.2),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Column(
+        children: List<Widget>.generate(items.length, (int index) {
+          final _MenuActionItem item = items[index];
+          return _MenuTile(item: item, onTap: () => onItemTap(item.label));
+        }),
       ),
     );
   }

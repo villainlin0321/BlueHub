@@ -353,22 +353,9 @@ class _FilterRow extends StatelessWidget {
     return const Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        _DropdownChip(
-          label: '全部国家',
-          iconAssetPath: 'assets/images/mou2x9mw-y3xkvto.png',
-          width: 88,
-        ),
-        _DropdownChip(
-          label: '全部分类',
-          iconAssetPath: 'assets/images/mou2x9mw-y3xkvto.png',
-          width: 88,
-        ),
-        _DropdownChip(
-          label: '薪资要求',
-          iconAssetPath: 'assets/images/mou2x9mw-flxj53h.png',
-          width: 88,
-          highlighted: true,
-        ),
+        _DropdownChip(label: '全部国家', width: 88),
+        _DropdownChip(label: '全部分类', width: 88),
+        _DropdownChip(label: '薪资要求', width: 88, highlighted: true),
         _FilterActionChip(),
       ],
     );
@@ -378,13 +365,11 @@ class _FilterRow extends StatelessWidget {
 class _DropdownChip extends StatelessWidget {
   const _DropdownChip({
     required this.label,
-    required this.iconAssetPath,
     required this.width,
     this.highlighted = false,
   });
 
   final String label;
-  final String iconAssetPath;
   final double width;
   final bool highlighted;
 
@@ -400,39 +385,32 @@ class _DropdownChip extends StatelessWidget {
     return Container(
       width: width,
       height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: borderColor),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 12,
-                fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
-                height: 18 / 12,
-              ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 12,
+              fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
+              height: 18 / 12,
             ),
           ),
           const SizedBox(width: 4),
-          Image.asset(
-            iconAssetPath,
-            width: 12,
-            height: 12,
-            errorBuilder: (_, __, ___) {
-              return Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 14,
-                color: textColor,
-              );
-            },
+          AppSvgIcon(
+            assetPath: 'assets/images/icon_arrow_down.svg',
+            fallback: Icons.arrow_drop_down,
+            size: 12,
+            color: textColor,
           ),
         ],
       ),
@@ -448,24 +426,23 @@ class _FilterActionChip extends StatelessWidget {
     return Container(
       width: 64,
       height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
       ),
       child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Expanded(
-            child: Text(
-              '筛选',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Color(0xFF171A1D),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 18 / 12,
-              ),
+          Text(
+            '筛选',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Color(0xFF171A1D),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              height: 18 / 12,
             ),
           ),
           SizedBox(width: 4),
