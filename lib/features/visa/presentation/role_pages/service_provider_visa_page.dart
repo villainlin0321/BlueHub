@@ -164,8 +164,8 @@ class _OrderFilterChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Image.asset(
-            'assets/images/mon8ysqa-i6uxhdr.png',
+          SvgPicture.asset(
+            'assets/images/icon_arrow_down.svg',
             width: 12,
             height: 12,
           ),
