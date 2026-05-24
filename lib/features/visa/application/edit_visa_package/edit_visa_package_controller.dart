@@ -27,6 +27,7 @@ class EditVisaPackageMaterialDraftInput {
 
 class EditVisaPackageTierDraftInput {
   const EditVisaPackageTierDraftInput({
+    required this.tierId,
     required this.name,
     required this.price,
     required this.description,
@@ -36,6 +37,7 @@ class EditVisaPackageTierDraftInput {
     required this.materials,
   });
 
+  final int tierId;
   final String name;
   final String price;
   final String description;
@@ -115,17 +117,18 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     return tag.tagNameEn.trim();
   }
 
-  Future<void> saveDraft(EditVisaPackageFormDraft draft) async {
-    await _submit(draft, isDraft: true);
+  Future<void> saveDraft(EditVisaPackageFormDraft draft, {int? packageId}) async {
+    await _submit(draft, isDraft: true, packageId: packageId);
   }
 
-  Future<void> publish(EditVisaPackageFormDraft draft) async {
-    await _submit(draft, isDraft: false);
+  Future<void> publish(EditVisaPackageFormDraft draft, {int? packageId}) async {
+    await _submit(draft, isDraft: false, packageId: packageId);
   }
 
   Future<void> _submit(
     EditVisaPackageFormDraft draft, {
     required bool isDraft,
+    int? packageId,
   }) async {
     if (state.isSavingDraft || state.isPublishing) {
       return;
@@ -142,16 +145,32 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     );
 
     try {
-      await ref.read(visaPackageServiceProvider).createPackage(request: request);
+      if (packageId == null) {
+        await ref.read(visaPackageServiceProvider).createPackage(request: request);
+      } else {
+        await ref
+            .read(visaPackageServiceProvider)
+            .updatePackage(packageId: packageId, request: request);
+      }
+      _invalidateMyPackageLists();
       state = state.copyWith(
         isSavingDraft: false,
         isPublishing: false,
         submitSuccessId: state.submitSuccessId + 1,
       );
-      _emitFeedback(isDraft ? '草稿保存成功' : '签证套餐发布成功');
+      _emitFeedback(
+        packageId == null
+            ? (isDraft ? '草稿保存成功' : '签证套餐发布成功')
+            : (isDraft ? '草稿更新成功' : '签证套餐更新成功'),
+      );
     } catch (_) {
       state = state.copyWith(isSavingDraft: false, isPublishing: false);
-      _emitFeedback(isDraft ? '草稿保存失败，请稍后重试' : '签证套餐发布失败，请稍后重试', isError: true);
+      _emitFeedback(
+        packageId == null
+            ? (isDraft ? '草稿保存失败，请稍后重试' : '签证套餐发布失败，请稍后重试')
+            : (isDraft ? '草稿更新失败，请稍后重试' : '签证套餐更新失败，请稍后重试'),
+        isError: true,
+      );
     }
   }
 
@@ -245,7 +264,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
       tiers.add(
         TierBO(
-          tierId: 0,
+          tierId: tier.tierId,
           name: tierName,
           price: price,
           services: selectedServices,
@@ -277,5 +296,11 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       feedbackIsError: isError,
       feedbackId: state.feedbackId + 1,
     );
+  }
+
+  void _invalidateMyPackageLists() {
+    ref.invalidate(myVisaPackageListProvider('active'));
+    ref.invalidate(myVisaPackageListProvider('inactive'));
+    ref.invalidate(myVisaPackageListProvider('draft'));
   }
 }

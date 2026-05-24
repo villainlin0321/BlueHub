@@ -202,7 +202,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.editVisaPackage,
-        builder: (context, state) => const EditVisaPackagePage(),
+        builder: (context, state) => EditVisaPackagePage(
+          packageId: int.tryParse(state.uri.queryParameters['packageId'] ?? ''),
+        ),
       ),
       GoRoute(
         path: RoutePaths.serviceDetailReport,

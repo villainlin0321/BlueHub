@@ -184,7 +184,10 @@ class TierVO {
     required this.name,
     required this.price,
     required this.services,
+    required this.customServices,
     required this.description,
+    required this.showMaterials,
+    required this.materials,
     required this.soldCount,
   });
 
@@ -192,7 +195,10 @@ class TierVO {
   final String name;
   final double price;
   final List<String> services;
+  final List<String> customServices;
   final String description;
+  final bool showMaterials;
+  final List<MaterialBO> materials;
   final int soldCount;
 
   factory TierVO.fromJson(JsonMap json) {
@@ -201,7 +207,10 @@ class TierVO {
       name: readString(json, 'name'),
       price: readDouble(json, 'price'),
       services: readStringList(json, 'services'),
+      customServices: readStringList(json, 'customServices'),
       description: readString(json, 'description'),
+      showMaterials: readBool(json, 'showMaterials'),
+      materials: readModelList<MaterialBO>(json, 'materials', MaterialBO.fromJson),
       soldCount: readInt(json, 'soldCount'),
     );
   }
@@ -212,7 +221,10 @@ class TierVO {
       'name': name,
       'price': price,
       'services': services,
+      'customServices': customServices,
       'description': description,
+      'showMaterials': showMaterials,
+      'materials': materials.map((item) => item.toJson()).toList(growable: false),
       'soldCount': soldCount,
     };
   }

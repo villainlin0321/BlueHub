@@ -6,11 +6,15 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
+import '../data/visa_package_models.dart';
+import '../data/visa_package_providers.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
 class EditVisaPackagePage extends ConsumerStatefulWidget {
-  const EditVisaPackagePage({super.key});
+  const EditVisaPackagePage({super.key, this.packageId});
+
+  final int? packageId;
 
   @override
   ConsumerState<EditVisaPackagePage> createState() =>
@@ -46,6 +50,10 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   late final TextEditingController _serviceNameController;
   late final TextEditingController _durationController;
   late final List<EditVisaPackageTierViewDraft> _tiers;
+  bool _isLoadingPackageDetail = false;
+  String? _packageDetailError;
+
+  bool get _isEditMode => widget.packageId != null;
 
   @override
   void initState() {
@@ -58,11 +66,18 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
         return;
       }
       ref.read(editVisaPackageControllerProvider.notifier).loadServiceTags();
+      if (_isEditMode) {
+        _loadPackageDetail();
+      }
     });
   }
 
-  EditVisaPackageTierViewDraft _createTierDraft({bool deletable = false}) {
+  EditVisaPackageTierViewDraft _createTierDraft({
+    int tierId = 0,
+    bool deletable = false,
+  }) {
     return EditVisaPackageTierViewDraft(
+      tierId: tierId,
       nameController: TextEditingController(text: '基础套餐'),
       priceController: TextEditingController(),
       descriptionController: TextEditingController(),
@@ -80,6 +95,110 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       descriptionController: TextEditingController(),
       isRequired: false,
     );
+  }
+
+  EditVisaPackageMaterialViewDraft _createMaterialDraftFromModel(
+    MaterialBO material,
+  ) {
+    return EditVisaPackageMaterialViewDraft(
+      titleController: TextEditingController(text: material.name),
+      descriptionController: TextEditingController(text: material.description),
+      isRequired: material.isRequired,
+    );
+  }
+
+  EditVisaPackageTierViewDraft _createTierDraftFromModel(
+    TierVO tier, {
+    required bool deletable,
+  }) {
+    final List<EditVisaPackageMaterialViewDraft> materials = tier.materials
+        .map(_createMaterialDraftFromModel)
+        .toList(growable: false);
+    return EditVisaPackageTierViewDraft(
+      tierId: tier.tierId,
+      nameController: TextEditingController(text: tier.name),
+      priceController: TextEditingController(text: _formatPrice(tier.price)),
+      descriptionController: TextEditingController(text: tier.description),
+      showMaterials: tier.showMaterials,
+      selectedServiceTagCodes: tier.services.toSet(),
+      customServices: List<String>.from(tier.customServices),
+      materials: materials,
+      deletable: deletable,
+    );
+  }
+
+  String _formatPrice(double value) {
+    final bool isInteger = value == value.roundToDouble();
+    return isInteger
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  }
+
+  String _normalizeError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '套餐详情加载失败，请稍后重试' : message;
+  }
+
+  void _replaceTiers(List<EditVisaPackageTierViewDraft> nextTiers) {
+    for (final EditVisaPackageTierViewDraft tier in _tiers) {
+      tier.dispose();
+    }
+    _tiers
+      ..clear()
+      ..addAll(nextTiers);
+  }
+
+  Future<void> _loadPackageDetail() async {
+    final int? packageId = widget.packageId;
+    if (packageId == null) {
+      return;
+    }
+    setState(() {
+      _isLoadingPackageDetail = true;
+      _packageDetailError = null;
+    });
+    try {
+      final VisaPackageVO detail = await ref
+          .read(visaPackageServiceProvider)
+          .getPackageDetail(packageId: packageId);
+      if (!mounted) {
+        return;
+      }
+      _serviceNameController.text = detail.name;
+      _durationController.text = detail.estimatedDays > 0
+          ? '${detail.estimatedDays}'
+          : '';
+      final List<EditVisaPackageTierViewDraft> tiers = detail.tiers.isEmpty
+          ? <EditVisaPackageTierViewDraft>[_createTierDraft()]
+          : detail.tiers.asMap().entries.map((
+              MapEntry<int, TierVO> entry,
+            ) {
+              return _createTierDraftFromModel(
+                entry.value,
+                deletable: detail.tiers.length > 1 && entry.key > 0,
+              );
+            }).toList(growable: false);
+      _replaceTiers(tiers);
+      final EditVisaPackageController controller = ref.read(
+        editVisaPackageControllerProvider.notifier,
+      );
+      controller.setCountryCode(detail.targetCountry);
+      controller.setVisaTypeCode(detail.visaType);
+      setState(() {
+        _isLoadingPackageDetail = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingPackageDetail = false;
+        _packageDetailError = _normalizeError(error);
+      });
+    }
   }
 
   @override
@@ -172,6 +291,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       estimatedDays: _durationController.text,
       tiers: _tiers.map((EditVisaPackageTierViewDraft tier) {
         return EditVisaPackageTierDraftInput(
+          tierId: tier.tierId,
           name: tier.nameController.text,
           price: tier.priceController.text,
           description: tier.descriptionController.text,
@@ -202,14 +322,14 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     FocusScope.of(context).unfocus();
     await ref
         .read(editVisaPackageControllerProvider.notifier)
-        .saveDraft(_buildFormDraft());
+        .saveDraft(_buildFormDraft(), packageId: widget.packageId);
   }
 
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
     await ref
         .read(editVisaPackageControllerProvider.notifier)
-        .publish(_buildFormDraft());
+        .publish(_buildFormDraft(), packageId: widget.packageId);
   }
 
   void _handleAddTier() {
@@ -315,6 +435,56 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       editVisaPackageControllerProvider.notifier,
     );
     final MediaQueryData mediaQuery = MediaQuery.of(context);
+
+    if (_isEditMode && _isLoadingPackageDetail) {
+      return const Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_isEditMode && _packageDetailError != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Text(
+                  '套餐详情加载失败',
+                  style: TextStyle(
+                    color: Color(0xFF262626),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _packageDetailError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF8C8C8C),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loadPackageDetail,
+                  child: const Text('重试'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return EditVisaPackagePageView(
       topPadding: mediaQuery.padding.top,

@@ -94,12 +94,14 @@ enum _PackageTab {
     status: 'active',
     emptyText: '暂无已上架套餐',
     secondaryActionLabel: '下架',
+    secondaryActionStatus: 'inactive',
   ),
   inactive(
     label: '已下架',
     status: 'inactive',
     emptyText: '暂无已下架套餐',
     secondaryActionLabel: '上架',
+    secondaryActionStatus: 'active',
   ),
   draft(label: '已驳回', status: 'draft', emptyText: '暂无已驳回套餐');
 
@@ -108,66 +110,172 @@ enum _PackageTab {
     required this.status,
     required this.emptyText,
     this.secondaryActionLabel,
+    this.secondaryActionStatus,
   });
 
   final String label;
   final String status;
   final String emptyText;
   final String? secondaryActionLabel;
+  final String? secondaryActionStatus;
 }
 
-class _PackageTabView extends ConsumerWidget {
+class _PackageTabView extends ConsumerStatefulWidget {
   const _PackageTabView({super.key, required this.tab});
 
   final _PackageTab tab;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PackageTabView> createState() => _PackageTabViewState();
+}
+
+class _PackageTabViewState extends ConsumerState<_PackageTabView> {
+  List<VisaPackageVO>? _packages;
+  final Set<int> _updatingPackageIds = <int>{};
+
+  Future<void> _handleSecondaryAction(VisaPackageVO package) async {
+    final String? nextStatus = widget.tab.secondaryActionStatus;
+    if (nextStatus == null || _updatingPackageIds.contains(package.packageId)) {
+      return;
+    }
+
+    setState(() {
+      _updatingPackageIds.add(package.packageId);
+    });
+
+    try {
+      await ref
+          .read(visaPackageServiceProvider)
+          .updatePackageStatus(
+            packageId: package.packageId,
+            request: UpdatePackageStatusBO(status: nextStatus),
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _updatingPackageIds.remove(package.packageId);
+        final List<VisaPackageVO> currentPackages =
+            _packages ?? const <VisaPackageVO>[];
+        _packages = currentPackages
+            .where((VisaPackageVO item) => item.packageId != package.packageId)
+            .toList(growable: false);
+      });
+      ref.invalidate(myVisaPackageListProvider(widget.tab.status));
+      ref.invalidate(myVisaPackageListProvider(nextStatus));
+      _showMessage(widget.tab.status == 'active' ? '套餐已下架' : '套餐已上架');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _updatingPackageIds.remove(package.packageId);
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: isError ? const Color(0xFFD9363E) : null,
+          content: Text(message),
+        ),
+      );
+  }
+
+  String _normalizeError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '操作失败，请稍后重试' : message;
+  }
+
+  Widget _buildPackageList(
+    BuildContext context,
+    double bottomPadding,
+    List<VisaPackageVO> packages,
+  ) {
+    if (packages.isEmpty) {
+      return _PackageEmptyState(
+        key: PageStorageKey<String>(
+          'service-provider-jobs-empty-${widget.tab.name}',
+        ),
+        text: widget.tab.emptyText,
+        bottomPadding: bottomPadding,
+      );
+    }
+    return ListView.separated(
+      key: PageStorageKey<String>(
+        'service-provider-jobs-list-${widget.tab.name}',
+      ),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, bottomPadding + 8),
+      itemCount: packages.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (BuildContext context, int index) {
+        final VisaPackageVO package = packages[index];
+        return _PackageCard(
+          data: _PackageCardData.fromVisaPackage(package, widget.tab),
+          onSecondaryAction: widget.tab.secondaryActionStatus == null
+              ? null
+              : () => _handleSecondaryAction(package),
+          onPrimaryAction: () {
+            context.push(
+              '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
+            );
+          },
+          isSecondaryActionLoading: _updatingPackageIds.contains(
+            package.packageId,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     final AsyncValue<PageResult<VisaPackageVO>> packagesAsync = ref.watch(
-      myVisaPackageListProvider(tab.status),
+      myVisaPackageListProvider(widget.tab.status),
+    );
+    ref.listen<AsyncValue<PageResult<VisaPackageVO>>>(
+      myVisaPackageListProvider(widget.tab.status),
+      (_, AsyncValue<PageResult<VisaPackageVO>> next) {
+        next.whenData((PageResult<VisaPackageVO> pageResult) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _packages = pageResult.list;
+          });
+        });
+      },
     );
 
     return RefreshIndicator(
       onRefresh: () =>
-          ref.refresh(myVisaPackageListProvider(tab.status).future),
+          ref.refresh(myVisaPackageListProvider(widget.tab.status).future),
       child: packagesAsync.when(
         data: (PageResult<VisaPackageVO> pageResult) {
-          if (pageResult.list.isEmpty) {
-            return _PackageEmptyState(
-              key: PageStorageKey<String>(
-                'service-provider-jobs-empty-${tab.name}',
-              ),
-              text: tab.emptyText,
-              bottomPadding: bottomPadding,
-            );
-          }
-          return ListView.separated(
-            key: PageStorageKey<String>(
-              'service-provider-jobs-list-${tab.name}',
-            ),
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(12, 12, 12, bottomPadding + 8),
-            itemCount: pageResult.list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (BuildContext context, int index) {
-              return _PackageCard(
-                data: _PackageCardData.fromVisaPackage(
-                  pageResult.list[index],
-                  tab,
-                ),
-              );
-            },
-          );
+          final List<VisaPackageVO> packages = _packages ?? pageResult.list;
+          return _buildPackageList(context, bottomPadding, packages);
         },
-        loading: () => _PackageLoadingState(bottomPadding: bottomPadding),
-        error: (Object error, StackTrace _) => _PackageLoadError(
-          bottomPadding: bottomPadding,
-          errorText: error.toString(),
-          onRetry: () {
-            ref.invalidate(myVisaPackageListProvider(tab.status));
-          },
-        ),
+        loading: () => _packages != null
+            ? _buildPackageList(context, bottomPadding, _packages!)
+            : _PackageLoadingState(bottomPadding: bottomPadding),
+        error: (Object error, StackTrace _) => _packages != null
+            ? _buildPackageList(context, bottomPadding, _packages!)
+            : _PackageLoadError(
+                bottomPadding: bottomPadding,
+                errorText: error.toString(),
+                onRetry: () {
+                  ref.invalidate(myVisaPackageListProvider(widget.tab.status));
+                },
+              ),
       ),
     );
   }
@@ -279,9 +387,17 @@ class _PageTabBar extends StatelessWidget {
 }
 
 class _PackageCard extends StatelessWidget {
-  const _PackageCard({required this.data});
+  const _PackageCard({
+    required this.data,
+    this.onSecondaryAction,
+    this.onPrimaryAction,
+    this.isSecondaryActionLoading = false,
+  });
 
   final _PackageCardData data;
+  final VoidCallback? onSecondaryAction;
+  final VoidCallback? onPrimaryAction;
+  final bool isSecondaryActionLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -363,10 +479,14 @@ class _PackageCard extends StatelessWidget {
                   const _DeleteButton(),
                   const Spacer(),
                   if (data.secondaryActionLabel != null) ...<Widget>[
-                    _GhostButton(label: data.secondaryActionLabel!),
+                    _GhostButton(
+                      label: data.secondaryActionLabel!,
+                      onTap: onSecondaryAction,
+                      isLoading: isSecondaryActionLoading,
+                    ),
                     const SizedBox(width: 8),
                   ],
-                  const _PrimaryButton(label: '编辑'),
+                  _PrimaryButton(label: '编辑', onTap: onPrimaryAction),
                 ],
               ),
             ],
@@ -531,57 +651,78 @@ class _DeleteButton extends StatelessWidget {
 }
 
 class _GhostButton extends StatelessWidget {
-  const _GhostButton({required this.label});
+  const _GhostButton({
+    required this.label,
+    this.onTap,
+    this.isLoading = false,
+  });
 
   final String label;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 76,
-      height: 28,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 76,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
+          borderRadius: BorderRadius.circular(14),
         ),
+        child: isLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 12 / 12,
+                  letterSpacing: 0.2,
+                ),
+              ),
       ),
     );
   }
 }
 
 class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label});
+  const _PrimaryButton({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 76,
-      height: 28,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF096DD9),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 76,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF096DD9),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 12 / 12,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
     );

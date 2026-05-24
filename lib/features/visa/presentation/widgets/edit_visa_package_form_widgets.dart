@@ -7,6 +7,7 @@ import '../edit_visa_package_styles.dart';
 
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({
+    required this.tierId,
     required this.nameController,
     required this.priceController,
     required this.descriptionController,
@@ -17,6 +18,7 @@ class EditVisaPackageTierViewDraft {
     required this.deletable,
   });
 
+  final int tierId;
   final TextEditingController nameController;
   final TextEditingController priceController;
   final TextEditingController descriptionController;
