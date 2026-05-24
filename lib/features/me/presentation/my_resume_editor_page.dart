@@ -16,6 +16,7 @@ import '../data/resume_providers.dart';
 import 'add_education_experience_page.dart';
 import 'add_skill_certificate_page.dart';
 import 'add_work_experience_page.dart';
+import 'country_options_bottom_sheet.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 
@@ -628,7 +629,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     final List<Widget> metaWidgets = <Widget>[
       if (basicInfoViewData.region.isNotEmpty)
         _buildMetaText(basicInfoViewData.region),
-      if (basicInfoViewData.gender.isNotEmpty || basicInfoViewData.age.isNotEmpty)
+      if (basicInfoViewData.gender.isNotEmpty ||
+          basicInfoViewData.age.isNotEmpty)
         _buildMetaText(
           [
             if (basicInfoViewData.gender.isNotEmpty) basicInfoViewData.gender,
@@ -652,7 +654,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 _buildSectionHeader(title: '基础信息'),
                 const SizedBox(height: 20),
                 Text(
-                  basicInfoViewData.name.isEmpty ? '未填写姓名' : basicInfoViewData.name,
+                  basicInfoViewData.name.isEmpty
+                      ? '未填写姓名'
+                      : basicInfoViewData.name,
                   style: const TextStyle(
                     color: Color(0xFF262626),
                     fontSize: 16,
@@ -694,7 +698,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       countrySearchProvider(const CountrySearchQuery()),
     );
     final Map<String, String> countryLabelMap = countrySearch.maybeWhen(
-      data: (result) => _buildCountryLabelMap(result.list),
+      data: (result) => buildCountryLabelMap(result.list),
       orElse: () => const <String, String>{},
     );
     final String currencyLabel = _draft.salaryCurrency.trim().isEmpty
@@ -758,7 +762,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 : _countryTags
                       .map(
                         (String item) => _buildTagChip(
-                          label: _resolveCountryLabel(item, countryLabelMap),
+                          label: resolveCountryLabel(item, countryLabelMap),
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
@@ -1867,7 +1871,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 替换当前编辑页进入简历预览页，避免返回栈保留已提交的编辑页。
   void _openPreview() {
-    context.pushReplacement(RoutePaths.myResumePreview, extra: _buildPreviewArgs());
+    context.pushReplacement(
+      RoutePaths.myResumePreview,
+      extra: _buildPreviewArgs(),
+    );
   }
 
   /// 组装预览页所需的真实数据快照，避免预览页再拼接任何假数据。
@@ -2054,108 +2061,21 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return result;
   }
 
-  Future<List<CountryVO>> _loadCountries() async {
-    final result = await ref.read(
-      countrySearchProvider(const CountrySearchQuery()).future,
-    );
-    return result.list;
-  }
-
-  List<SelectableSheetOption<String>> _buildCountrySheetOptions(
-    List<CountryVO> countries,
-  ) {
-    final Set<String> seen = <String>{};
-    return countries
-        .where(
-          (item) =>
-              item.countryCode.trim().isNotEmpty &&
-              item.nameZh.trim().isNotEmpty &&
-              seen.add(item.countryCode.trim()),
-        )
-        .map(
-          (item) => SelectableSheetOption<String>(
-            value: item.countryCode.trim(),
-            label: item.nameZh.trim(),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  Map<String, String> _buildCountryLabelMap(List<CountryVO> countries) {
-    return <String, String>{
-      for (final CountryVO item in countries)
-        if (item.countryCode.trim().isNotEmpty && item.nameZh.trim().isNotEmpty)
-          item.countryCode.trim(): item.nameZh.trim(),
-    };
-  }
-
-  String _resolveCountryCode(String value, List<CountryVO> countries) {
-    final String trimmed = value.trim();
-    for (final CountryVO item in countries) {
-      if (item.countryCode.trim() == trimmed) {
-        return trimmed;
-      }
-      if (item.nameZh.trim() == trimmed) {
-        return item.countryCode.trim();
-      }
-    }
-    return trimmed;
-  }
-
-  String _resolveCountryLabel(
-    String value,
-    Map<String, String> countryLabelMap,
-  ) {
-    final String trimmed = value.trim();
-    return countryLabelMap[trimmed] ?? trimmed;
-  }
-
   Future<void> _openExpectedCountrySheet() async {
-    try {
-      final List<CountryVO> countries = await _loadCountries();
-      if (!mounted) {
-        return;
-      }
-      final List<SelectableSheetOption<String>> options = _buildCountrySheetOptions(
-        countries,
-      );
-      if (options.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('暂无可选国家，请稍后重试')));
-        return;
-      }
-      final Set<String> validValues = options
-          .map((SelectableSheetOption<String> item) => item.value)
-          .toSet();
-      final List<String> currentSelected = _countryTags
-          .map((item) => _resolveCountryCode(item, countries))
-          .where(validValues.contains)
-          .toList(growable: false);
-      final List<String>? result = await showSelectableOptionsBottomSheet<String>(
-        context: context,
-        title: '期望国家/地区',
-        options: options,
-        initialSelectedValues: currentSelected,
-      );
-
-      if (result == null) {
-        return;
-      }
-
-      setState(() {
-        _countryTags
-          ..clear()
-          ..addAll(result);
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('国家列表加载失败，请稍后重试')));
+    final List<CountryVO>? result = await showCountryOptionsBottomSheet(
+      context: context,
+      ref: ref,
+      title: '期望国家/地区',
+      initialSelectedValues: _countryTags,
+    );
+    if (!mounted || result == null) {
+      return;
     }
+    setState(() {
+      _countryTags
+        ..clear()
+        ..addAll(result.map((CountryVO item) => item.countryCode.trim()));
+    });
   }
 
   Future<void> _openLanguageSheet() async {
@@ -2196,8 +2116,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openAddSkillCertificatePage() async {
-    final ResumeCertificatePageResult? result =
-        await context.push<ResumeCertificatePageResult>(
+    final ResumeCertificatePageResult? result = await context
+        .push<ResumeCertificatePageResult>(
           RoutePaths.addSkillCertificate,
           extra: const AddSkillCertificatePageArgs(),
         );
@@ -2216,8 +2136,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   Future<void> _openEditSkillCertificatePage(int index) async {
     final _ResumeCertificate current = _certificates[index];
-    final ResumeCertificatePageResult? result =
-        await context.push<ResumeCertificatePageResult>(
+    final ResumeCertificatePageResult? result = await context
+        .push<ResumeCertificatePageResult>(
           RoutePaths.addSkillCertificate,
           extra: AddSkillCertificatePageArgs(
             initialValue: _buildCertificateFormResult(current),
@@ -2261,8 +2181,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openAddEducationExperiencePage() async {
-    final EducationExperiencePageResult? result =
-        await context.push<EducationExperiencePageResult>(
+    final EducationExperiencePageResult? result = await context
+        .push<EducationExperiencePageResult>(
           RoutePaths.addEducationExperience,
           extra: const AddEducationExperiencePageArgs(),
         );
@@ -2278,8 +2198,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   Future<void> _openEditEducationExperiencePage(int index) async {
     final _ResumeEducation current = _educations[index];
-    final EducationExperiencePageResult? result =
-        await context.push<EducationExperiencePageResult>(
+    final EducationExperiencePageResult? result = await context
+        .push<EducationExperiencePageResult>(
           RoutePaths.addEducationExperience,
           extra: AddEducationExperiencePageArgs(
             initialValue: _buildEducationFormResult(current),
@@ -2306,8 +2226,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openAddWorkExperiencePage() async {
-    final WorkExperiencePageResult? result =
-        await context.push<WorkExperiencePageResult>(
+    final WorkExperiencePageResult? result = await context
+        .push<WorkExperiencePageResult>(
           RoutePaths.addWorkExperience,
           extra: const AddWorkExperiencePageArgs(),
         );
@@ -2317,14 +2237,17 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     }
 
     setState(() {
-      _experiences.insert(0, _buildResumeExperienceFromFormResult(result.value!));
+      _experiences.insert(
+        0,
+        _buildResumeExperienceFromFormResult(result.value!),
+      );
     });
   }
 
   Future<void> _openEditWorkExperiencePage(int index) async {
     final _ResumeExperience current = _experiences[index];
-    final WorkExperiencePageResult? result =
-        await context.push<WorkExperiencePageResult>(
+    final WorkExperiencePageResult? result = await context
+        .push<WorkExperiencePageResult>(
           RoutePaths.addWorkExperience,
           extra: AddWorkExperiencePageArgs(
             initialValue: _buildWorkExperienceFormResult(current),
@@ -2446,7 +2369,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   EmploymentPeriodValue _buildEmploymentPeriodValue(_ResumeExperience item) {
     final List<int> start = _parseYearMonth(item.startDate);
-    final List<int>? end = item.isCurrent ? null : _tryParseYearMonth(item.endDate);
+    final List<int>? end = item.isCurrent
+        ? null
+        : _tryParseYearMonth(item.endDate);
     return EmploymentPeriodValue(
       startYear: start[0],
       startMonth: start[1],
@@ -2474,10 +2399,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     if (match == null) {
       return null;
     }
-    return <int>[
-      int.parse(match.group(1)!),
-      int.parse(match.group(2)!),
-    ];
+    return <int>[int.parse(match.group(1)!), int.parse(match.group(2)!)];
   }
 
   /// 将年月组装成接口兼容的 `yyyy.MM` 字符串。

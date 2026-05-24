@@ -4,11 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
-import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
-import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
-import '../../me/data/dictionary_providers.dart';
+import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../employer/data/employer_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../../visa/data/provider_providers.dart';
@@ -30,17 +28,7 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationStepThreePageState
     extends ConsumerState<QualificationCertificationStepThreePage> {
-  static const List<String> _steps = <String>[
-    '基本信息',
-    '资质证明',
-    '服务信息',
-  ];
-
-  static const List<String> _fallbackSelectedCountries = <String>[
-    '德国',
-    '意大利',
-    '法国',
-  ];
+  static const List<String> _steps = <String>['基本信息', '资质证明', '服务信息'];
 
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
@@ -53,7 +41,7 @@ class _QualificationCertificationStepThreePageState
   void initState() {
     super.initState();
     _selectedCountries = _draft.serviceCountryLabels.isEmpty
-        ? List<String>.of(_fallbackSelectedCountries)
+        ? <String>[]
         : List<String>.of(_draft.serviceCountryLabels);
     if (_draft.yearsOfService > 0) {
       _experienceController.text = _draft.yearsOfService.toString();
@@ -67,43 +55,20 @@ class _QualificationCertificationStepThreePageState
   }
 
   Future<void> _openExpectedCountrySheet() async {
-    try {
-      final List<SelectableSheetOption<String>> options =
-          await _loadCountrySheetOptions();
-      if (!mounted) {
-        return;
-      }
-      if (options.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('暂无可选国家，请稍后重试')));
-        return;
-      }
-
-      final List<String>? result = await showSelectableOptionsBottomSheet<String>(
-        context: context,
-        title: qualificationCountryLabel(_role),
-        options: options,
-        initialSelectedValues: _selectedCountries,
-      );
-
-      if (result == null) {
-        return;
-      }
-
-      setState(() {
-        _selectedCountries
-          ..clear()
-          ..addAll(result);
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('国家列表加载失败，请稍后重试')));
+    final result = await showCountryOptionsBottomSheet(
+      context: context,
+      ref: ref,
+      title: qualificationCountryLabel(_role),
+      initialSelectedValues: _selectedCountries,
+    );
+    if (!mounted || result == null) {
+      return;
     }
+    setState(() {
+      _selectedCountries
+        ..clear()
+        ..addAll(result.map((item) => item.nameZh.trim()));
+    });
   }
 
   void _removeSelectedCountry(String country) {
@@ -121,9 +86,9 @@ class _QualificationCertificationStepThreePageState
       _isSubmitting = true;
     });
     try {
-      final List<CountryVO> countries = await _loadCountries();
+      final countries = await loadCountries(ref);
       _draft.serviceCountryLabels = List<String>.of(_selectedCountries);
-      _draft.serviceCountryCodes = _mapCountryLabelsToCodes(
+      _draft.serviceCountryCodes = mapCountryLabelsToCodes(
         _selectedCountries,
         countries,
       );
@@ -169,7 +134,6 @@ class _QualificationCertificationStepThreePageState
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(countrySearchProvider(const CountrySearchQuery()));
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -386,9 +350,7 @@ class _QualificationCertificationStepThreePageState
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            border: Border(
-              top: BorderSide(color: Color(0xFFF0F0F0)),
-            ),
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(
@@ -448,48 +410,10 @@ class _QualificationCertificationStepThreePageState
       ),
     );
   }
-
-  Future<List<CountryVO>> _loadCountries() async {
-    final result = await ref.read(
-      countrySearchProvider(const CountrySearchQuery()).future,
-    );
-    return result.list;
-  }
-
-  Future<List<SelectableSheetOption<String>>> _loadCountrySheetOptions() async {
-    final List<CountryVO> countries = await _loadCountries();
-    return countries
-        .where((item) => item.nameZh.trim().isNotEmpty)
-        .map(
-          (item) => SelectableSheetOption<String>(
-            value: item.nameZh.trim(),
-            label: item.nameZh.trim(),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  List<String> _mapCountryLabelsToCodes(
-    Iterable<String> labels,
-    List<CountryVO> countries,
-  ) {
-    final Map<String, String> codeMap = <String, String>{
-      for (final CountryVO item in countries)
-        if (item.nameZh.trim().isNotEmpty && item.countryCode.trim().isNotEmpty)
-          item.nameZh.trim(): item.countryCode.trim(),
-    };
-    return labels
-        .map((label) => codeMap[label] ?? qualificationCountryCodeFromLabel(label))
-        .toSet()
-        .toList(growable: false);
-  }
 }
 
 class _CountryTag extends StatelessWidget {
-  const _CountryTag({
-    required this.label,
-    required this.onTap,
-  });
+  const _CountryTag({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;

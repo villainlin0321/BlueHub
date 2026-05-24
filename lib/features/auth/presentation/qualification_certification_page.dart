@@ -5,19 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
-import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../application/qualification_upload_helper.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 class QualificationCertificationPage extends ConsumerStatefulWidget {
-  const QualificationCertificationPage({
-    super.key,
-    required this.args,
-  });
+  const QualificationCertificationPage({super.key, required this.args});
 
   final QualificationCertificationPageArgs args;
 
@@ -28,17 +26,14 @@ class QualificationCertificationPage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationPageState
     extends ConsumerState<QualificationCertificationPage> {
-  static const List<String> _steps = <String>[
-    '基本信息',
-    '资质证明',
-    '服务信息',
-  ];
+  static const List<String> _steps = <String>['基本信息', '资质证明', '服务信息'];
 
   final TextEditingController _serviceProviderCompanyNameController =
       TextEditingController();
   final TextEditingController _creditCodeController = TextEditingController();
   final TextEditingController _legalPersonController = TextEditingController();
-  final TextEditingController _contactPersonController = TextEditingController();
+  final TextEditingController _contactPersonController =
+      TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
@@ -52,6 +47,7 @@ class _QualificationCertificationPageState
   PickedUploadFile? _idCardEmblemImage;
   PickedUploadFile? _idCardPortraitImage;
   String? _selectedCompanyCountry;
+  String? _selectedCompanyCountryCode;
   bool _isUploadingEmblem = false;
   bool _isUploadingPortrait = false;
 
@@ -70,7 +66,8 @@ class _QualificationCertificationPageState
   @override
   void initState() {
     super.initState();
-    _serviceProviderCompanyNameController.text = _draft.serviceProviderCompanyName;
+    _serviceProviderCompanyNameController.text =
+        _draft.serviceProviderCompanyName;
     _creditCodeController.text = _draft.unifiedCreditCode;
     _legalPersonController.text = _draft.legalPerson;
     _contactPersonController.text = _draft.contactPerson;
@@ -84,6 +81,9 @@ class _QualificationCertificationPageState
     _selectedCompanyCountry = _draft.companyCountryLabel.isEmpty
         ? null
         : _draft.companyCountryLabel;
+    _selectedCompanyCountryCode = _draft.companyCountryCode.trim().isEmpty
+        ? null
+        : _draft.companyCountryCode.trim();
     if (_draft.idCardEmblemDoc != null) {
       _idCardEmblemImage = PickedUploadFile(
         id: 'qualification-id-emblem',
@@ -142,9 +142,7 @@ class _QualificationCertificationPageState
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed);
   }
 
-  Future<void> _pickIdentityCardImage({
-    required bool isEmblemSide,
-  }) async {
+  Future<void> _pickIdentityCardImage({required bool isEmblemSide}) async {
     final List<PickedUploadFile> files =
         await UploadPickerUtils.pickImagesWithSourceSheet(
           context: context,
@@ -206,30 +204,21 @@ class _QualificationCertificationPageState
   }
 
   Future<void> _selectCompanyCountry() async {
-    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+    final List<CountryVO>? result = await showCountryOptionsBottomSheet(
       context: context,
+      ref: ref,
       title: '注册国家',
-      options: qualificationCountryOptions
-          .map(
-            (QualificationCountryOption item) =>
-                SelectableSheetOption<String>(
-                  value: item.label,
-                  label: item.label,
-                ),
-          )
-          .toList(growable: false),
-      initialSelectedValues: _selectedCompanyCountry == null
+      initialSelectedValues: _selectedCompanyCountryCode == null
           ? const <String>[]
-          : <String>[_selectedCompanyCountry!],
+          : <String>[_selectedCompanyCountryCode!],
       multiple: false,
     );
-
     if (!mounted || result == null || result.isEmpty) {
       return;
     }
-
     setState(() {
-      _selectedCompanyCountry = result.first;
+      _selectedCompanyCountry = result.first.nameZh.trim();
+      _selectedCompanyCountryCode = result.first.countryCode.trim();
     });
   }
 
@@ -238,8 +227,9 @@ class _QualificationCertificationPageState
       return;
     }
 
-    _draft.serviceProviderCompanyName =
-        _serviceProviderCompanyNameController.text.trim();
+    _draft.serviceProviderCompanyName = _serviceProviderCompanyNameController
+        .text
+        .trim();
     _draft.unifiedCreditCode = _creditCodeController.text.trim();
     _draft.legalPerson = _legalPersonController.text.trim();
     _draft.contactPerson = _contactPersonController.text.trim();
@@ -252,9 +242,7 @@ class _QualificationCertificationPageState
     _draft.companyPhone = _companyPhoneController.text.trim();
     _draft.companyEmail = _companyEmailController.text.trim();
     _draft.companyCountryLabel = _selectedCompanyCountry?.trim() ?? '';
-    _draft.companyCountryCode = qualificationCountryCodeFromLabel(
-      _draft.companyCountryLabel,
-    );
+    _draft.companyCountryCode = _selectedCompanyCountryCode?.trim() ?? '';
 
     context.push(
       RoutePaths.qualificationCertificationStepTwo,
@@ -264,7 +252,8 @@ class _QualificationCertificationPageState
 
   String _resolveErrorMessage(Object error) {
     final String message = error.toString();
-    if (message.startsWith('ApiException(') || message.startsWith('Exception: ')) {
+    if (message.startsWith('ApiException(') ||
+        message.startsWith('Exception: ')) {
       return '上传失败，请稍后重试';
     }
     return message;
@@ -366,15 +355,15 @@ class _QualificationCertificationPageState
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            border: Border(
-              top: BorderSide(color: Color(0xFFF0F0F0)),
-            ),
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: SizedBox(
             height: 48,
             child: FilledButton(
-              onPressed: _isCompany ? (_isCompanyNextEnabled ? _handleNext : null) : _handleNext,
+              onPressed: _isCompany
+                  ? (_isCompanyNextEnabled ? _handleNext : null)
+                  : _handleNext,
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF096DD9),
                 disabledBackgroundColor: const Color(0xFFD9D9D9),
@@ -603,10 +592,7 @@ class _FormCard extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({
-    required this.label,
-    this.required = false,
-  });
+  const _SectionLabel({required this.label, this.required = false});
 
   final String label;
   final bool required;

@@ -20,55 +20,8 @@ enum QualificationDocType {
   final FileScene uploadScene;
 }
 
-class QualificationCountryOption {
-  const QualificationCountryOption({required this.code, required this.label});
-
-  final String code;
-  final String label;
-}
-
-const List<QualificationCountryOption> qualificationCountryOptions =
-    <QualificationCountryOption>[
-      QualificationCountryOption(code: 'DE', label: '德国'),
-      QualificationCountryOption(code: 'FR', label: '法国'),
-      QualificationCountryOption(code: 'CH', label: '瑞士'),
-      QualificationCountryOption(code: 'GB', label: '英国'),
-      QualificationCountryOption(code: 'IT', label: '意大利'),
-      QualificationCountryOption(code: 'ES', label: '西班牙'),
-      QualificationCountryOption(code: 'NL', label: '荷兰'),
-    ];
-
 String qualificationCountryLabel(QualificationCertificationRole role) {
   return role == QualificationCertificationRole.company ? '主营国家' : '期望国家/地区';
-}
-
-String qualificationCountryCodeFromLabel(String label) {
-  for (final QualificationCountryOption option in qualificationCountryOptions) {
-    if (option.label == label) {
-      return option.code;
-    }
-  }
-  return label;
-}
-
-String qualificationCountryLabelFromCode(String code) {
-  for (final QualificationCountryOption option in qualificationCountryOptions) {
-    if (option.code == code) {
-      return option.label;
-    }
-  }
-  return code;
-}
-
-List<String> qualificationCountryCodesFromLabels(Iterable<String> labels) {
-  return labels
-      .map(qualificationCountryCodeFromLabel)
-      .toSet()
-      .toList(growable: false);
-}
-
-List<String> qualificationCountryLabelsFromCodes(Iterable<String> codes) {
-  return codes.map(qualificationCountryLabelFromCode).toList(growable: false);
 }
 
 class UploadedQualificationDoc {
