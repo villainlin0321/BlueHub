@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../me/data/dictionary_providers.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
@@ -24,14 +27,6 @@ class EditVisaPackagePage extends ConsumerStatefulWidget {
 }
 
 class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
-  static const List<SelectableSheetOption<String>> _visaTypeOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: 'work', label: '工作'),
-        SelectableSheetOption<String>(value: 'travel', label: '旅行'),
-        SelectableSheetOption<String>(value: 'tech', label: '技术'),
-        SelectableSheetOption<String>(value: 'nursing', label: '护理'),
-        SelectableSheetOption<String>(value: 'study', label: '留学'),
-      ];
   static const List<SelectableSheetOption<String>> _materialTypeOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: '护照原件及复印件', label: '护照原件及复印件'),
@@ -103,7 +98,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }) {
     final List<EditVisaPackageMaterialViewDraft> materials = tier.materials
         .map(_createMaterialDraftFromModel)
-        .toList(growable: false);
+        .toList();
     return EditVisaPackageTierViewDraft(
       tierId: tier.tierId,
       nameController: TextEditingController(text: tier.name),
@@ -226,10 +221,30 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     final EditVisaPackageState state = ref.read(
       editVisaPackageControllerProvider,
     );
+    final List<SelectableSheetOption<String>> visaTypeOptions;
+    try {
+      final List<TagItemVO> tags = await ref.read(
+        tagDictionaryProvider(TagCategory.visaType).future,
+      );
+      visaTypeOptions = _buildVisaTypeOptions(tags);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar('签证类型字典加载失败');
+      return;
+    }
+    if (visaTypeOptions.isEmpty) {
+      _showSnackBar('暂无可选签证类型');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '签证类型',
-      options: _visaTypeOptions,
+      options: visaTypeOptions,
       initialSelectedValues: state.selectedVisaTypeCode == null
           ? const <String>[]
           : <String>[state.selectedVisaTypeCode!],
@@ -241,6 +256,18 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     ref
         .read(editVisaPackageControllerProvider.notifier)
         .setVisaTypeCode(result.first);
+  }
+
+  List<SelectableSheetOption<String>> _buildVisaTypeOptions(
+    List<TagItemVO> tags,
+  ) {
+    return tags.map((TagItemVO item) {
+      final String code = item.tagCode.trim();
+      final String label = item.tagNameZh.trim().isNotEmpty
+          ? item.tagNameZh.trim()
+          : code;
+      return SelectableSheetOption<String>(value: code, label: label);
+    }).toList(growable: false);
   }
 
   Future<void> _openMaterialTypeSheet(int tierIndex, int materialIndex) async {
@@ -437,6 +464,12 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     final EditVisaPackageController controller = ref.read(
       editVisaPackageControllerProvider.notifier,
     );
+    final List<SelectableSheetOption<String>> visaTypeOptions = ref
+        .watch(tagDictionaryProvider(TagCategory.visaType))
+        .maybeWhen(
+          data: _buildVisaTypeOptions,
+          orElse: () => const <SelectableSheetOption<String>>[],
+        );
     final Map<String, String> countryLabelMap = ref
         .watch(countrySearchProvider(const CountrySearchQuery()))
         .maybeWhen(
@@ -504,7 +537,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           ? null
           : resolveCountryLabel(state.selectedCountryCode!, countryLabelMap),
       selectedVisaTypeLabel: _findLabel(
-        _visaTypeOptions,
+        visaTypeOptions,
         state.selectedVisaTypeCode,
       ),
       state: state,

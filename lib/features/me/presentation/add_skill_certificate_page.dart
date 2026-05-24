@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../files/data/file_models.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-class AddSkillCertificatePage extends StatefulWidget {
+class AddSkillCertificatePage extends ConsumerStatefulWidget {
   const AddSkillCertificatePage({
     super.key,
     this.args,
@@ -15,23 +19,15 @@ class AddSkillCertificatePage extends StatefulWidget {
   final AddSkillCertificatePageArgs? args;
 
   @override
-  State<AddSkillCertificatePage> createState() =>
+  ConsumerState<AddSkillCertificatePage> createState() =>
       _AddSkillCertificatePageState();
 }
 
-class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
+class _AddSkillCertificatePageState
+    extends ConsumerState<AddSkillCertificatePage> {
   static const int _maxAttachments = 9;
   static const String _uploadAsset =
       'assets/images/service_detail_report_upload.svg';
-  static const List<SelectableSheetOption<String>> _certificateOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '中式烹调师·五级', label: '中式烹调师·五级'),
-        SelectableSheetOption<String>(value: '中式面点师·五级', label: '中式面点师·五级'),
-        SelectableSheetOption<String>(value: '电工职业资格证', label: '电工职业资格证'),
-        SelectableSheetOption<String>(value: '焊工职业资格证', label: '焊工职业资格证'),
-        SelectableSheetOption<String>(value: '护理员职业技能证', label: '护理员职业技能证'),
-        SelectableSheetOption<String>(value: '保育师职业技能证', label: '保育师职业技能证'),
-      ];
 
   String? _certificateName;
   ResumeTimePickerValue? _issuedAt;
@@ -60,11 +56,43 @@ class _AddSkillCertificatePageState extends State<AddSkillCertificatePage> {
     _isUploadingImages = initialValue.localImagePaths.isNotEmpty;
   }
 
+  Future<List<SelectableSheetOption<String>>> _loadCertificateOptions() async {
+    final List<TagItemVO> tags = await ref.read(
+      tagDictionaryProvider(TagCategory.skillCertType).future,
+    );
+    return tags.map((TagItemVO item) {
+      final String label = item.tagNameZh.trim().isNotEmpty
+          ? item.tagNameZh.trim()
+          : item.tagCode.trim();
+      return SelectableSheetOption<String>(value: label, label: label);
+    }).toList(growable: false);
+  }
+
   Future<void> _openCertificateSheet() async {
+    final List<SelectableSheetOption<String>> certificateOptions;
+    try {
+      certificateOptions = await _loadCertificateOptions();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('技能证书字典加载失败');
+      return;
+    }
+    if (certificateOptions.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('暂无可选技能证书');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '技能证书',
-      options: _certificateOptions,
+      options: certificateOptions,
       initialSelectedValues: _certificateName == null
           ? const <String>[]
           : <String>[_certificateName!],

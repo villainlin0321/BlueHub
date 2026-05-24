@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
-class AddEducationExperiencePage extends StatefulWidget {
+class AddEducationExperiencePage extends ConsumerStatefulWidget {
   const AddEducationExperiencePage({
     super.key,
     this.args,
@@ -15,20 +19,12 @@ class AddEducationExperiencePage extends StatefulWidget {
   final AddEducationExperiencePageArgs? args;
 
   @override
-  State<AddEducationExperiencePage> createState() =>
+  ConsumerState<AddEducationExperiencePage> createState() =>
       _AddEducationExperiencePageState();
 }
 
-class _AddEducationExperiencePageState extends State<AddEducationExperiencePage> {
-  static const List<SelectableSheetOption<String>> _degreeOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '大专', label: '大专'),
-        SelectableSheetOption<String>(value: '本科', label: '本科'),
-        SelectableSheetOption<String>(value: '硕士', label: '硕士'),
-        SelectableSheetOption<String>(value: '博士', label: '博士'),
-        SelectableSheetOption<String>(value: '其他', label: '其他'),
-      ];
-
+class _AddEducationExperiencePageState
+    extends ConsumerState<AddEducationExperiencePage> {
   final TextEditingController _majorController = TextEditingController();
 
   AddEducationExperiencePageArgs get _resolvedArgs =>
@@ -74,11 +70,43 @@ class _AddEducationExperiencePageState extends State<AddEducationExperiencePage>
     });
   }
 
+  Future<List<SelectableSheetOption<String>>> _loadDegreeOptions() async {
+    final List<TagItemVO> tags = await ref.read(
+      tagDictionaryProvider(TagCategory.educationLevel).future,
+    );
+    return tags.map((TagItemVO item) {
+      final String label = item.tagNameZh.trim().isNotEmpty
+          ? item.tagNameZh.trim()
+          : item.tagCode.trim();
+      return SelectableSheetOption<String>(value: label, label: label);
+    }).toList(growable: false);
+  }
+
   Future<void> _openDegreeSheet() async {
+    final List<SelectableSheetOption<String>> degreeOptions;
+    try {
+      degreeOptions = await _loadDegreeOptions();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('学历字典加载失败');
+      return;
+    }
+    if (degreeOptions.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('暂无可选学历');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '学历',
-      options: _degreeOptions,
+      options: degreeOptions,
       initialSelectedValues: _selectedDegree == null
           ? const <String>[]
           : <String>[_selectedDegree!],

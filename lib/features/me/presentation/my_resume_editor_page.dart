@@ -8,8 +8,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../auth/application/auth_session_provider.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../data/resume_models.dart';
 import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
@@ -166,16 +169,6 @@ class MyResumeEditorPage extends ConsumerStatefulWidget {
 }
 
 class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
-  static const List<SelectableSheetOption<String>> _languageSheetOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '德福TestDaF', label: '德福TestDaF'),
-        SelectableSheetOption<String>(value: '法语专业四级', label: '法语专业四级'),
-        SelectableSheetOption<String>(value: '英语专业四级', label: '英语专业四级'),
-        SelectableSheetOption<String>(value: '英语专业八级', label: '英语专业八级'),
-        SelectableSheetOption<String>(value: '歌德C2', label: '歌德C2'),
-        SelectableSheetOption<String>(value: '西班牙语三级', label: '西班牙语三级'),
-      ];
-
   late final ResumeVO? _resume;
   late final ResumeDraft _draft;
   late final List<String> _jobTags;
@@ -2061,6 +2054,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return result;
   }
 
+  Future<List<SelectableSheetOption<String>>> _loadLanguageSheetOptions() async {
+    final List<TagItemVO> tags = await ref.read(
+      tagDictionaryProvider(TagCategory.languageCert).future,
+    );
+    return tags.map((TagItemVO item) {
+      final String label = item.tagNameZh.trim().isNotEmpty
+          ? item.tagNameZh.trim()
+          : item.tagCode.trim();
+      return SelectableSheetOption<String>(value: label, label: label);
+    }).toList(growable: false);
+  }
+
   Future<void> _openExpectedCountrySheet() async {
     final List<CountryVO>? result = await showCountryOptionsBottomSheet(
       context: context,
@@ -2079,6 +2084,30 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   Future<void> _openLanguageSheet() async {
+    final List<SelectableSheetOption<String>> languageOptions;
+    try {
+      languageOptions = await _loadLanguageSheetOptions();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('语言字典加载失败')));
+      return;
+    }
+    if (languageOptions.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('暂无可选语言能力')));
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final Map<String, _ResumeLanguage> existingByLabel =
         <String, _ResumeLanguage>{
           for (final _ResumeLanguage item in _languages)
@@ -2087,7 +2116,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '语言能力',
-      options: _languageSheetOptions,
+      options: languageOptions,
       initialSelectedValues: _languages
           .map((item) => item.displayLabel)
           .toList(growable: false),
