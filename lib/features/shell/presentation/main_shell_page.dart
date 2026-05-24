@@ -62,7 +62,6 @@ class _BottomBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const Color _inactiveColor = Color(0xFF5B708E);
-  static const String _homeInactiveAsset = 'assets/images/home_inactive.svg';
 
   static const Map<ShellRole, List<_BottomItem>> _itemsByRole =
       <ShellRole, List<_BottomItem>>{
@@ -70,7 +69,7 @@ class _BottomBar extends StatelessWidget {
           _BottomItem(
             label: '首页',
             activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            inactiveAsset: _homeInactiveAsset,
+            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
@@ -101,8 +100,8 @@ class _BottomBar extends StatelessWidget {
         ShellRole.serviceProvider: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/mon1zpec-y8912h0.svg',
-            inactiveAsset: _homeInactiveAsset,
+            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
@@ -119,28 +118,28 @@ class _BottomBar extends StatelessWidget {
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/mon1zpec-3ck1bes.svg',
-            inactiveAsset: 'assets/images/mon1zpec-3ck1bes.svg',
+            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
             fallback: Icons.smart_toy_rounded,
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/mon1zpeb-ntefo96.svg',
-            inactiveAsset: 'assets/images/mon1zpeb-ntefo96.svg',
+            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
             fallback: Icons.person_rounded,
           ),
         ],
         ShellRole.company: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/mon1zsur-pq619ml.svg',
-            inactiveAsset: _homeInactiveAsset,
+            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
             fallback: Icons.home_rounded,
           ),
           _BottomItem(
             label: '岗位',
-            activeAsset: 'assets/images/mon1zsur-xb20l62.svg',
-            inactiveAsset: 'assets/images/mon1zsur-xb20l62.svg',
+            activeAsset: 'assets/images/mon1zl1k-loy1tez.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-loy1tez.svg',
             fallback: Icons.work_outline_rounded,
           ),
           _BottomItem(
@@ -151,14 +150,14 @@ class _BottomBar extends StatelessWidget {
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/mon1zsur-0uz78we.svg',
-            inactiveAsset: 'assets/images/mon1zsur-0uz78we.svg',
+            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
             fallback: Icons.smart_toy_rounded,
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/mon1zsur-0oz9j5d.svg',
-            inactiveAsset: 'assets/images/mon1zsur-0oz9j5d.svg',
+            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
+            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
             fallback: Icons.person_rounded,
           ),
         ],
@@ -188,9 +187,7 @@ class _BottomBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       AppSvgIcon(
-                        assetPath: isActive
-                            ? item.activeAsset
-                            : item.inactiveAsset,
+                        assetPath: item.inactiveAsset,
                         fallback: item.fallback,
                         size: 24,
                         color: color,

@@ -801,14 +801,14 @@ class _AiAssistantBanner extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        height: 12 / 12,
                       ),
                     ),
                     const SizedBox(width: 2),
-                    Image.asset(
-                      'assets/images/mon6z4rt-3ivopc0.png',
+                    SvgPicture.asset(
+                      'assets/images/chat_page_order_arrow.svg',
                       width: 12,
                       height: 12,
+                      color: Colors.white,
                     ),
                   ],
                 ),

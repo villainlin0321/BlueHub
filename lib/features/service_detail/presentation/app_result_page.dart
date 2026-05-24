@@ -73,7 +73,7 @@ class AppResultPage extends StatelessWidget {
   void _handleAction(BuildContext context) {
     switch (args.action.type) {
       case AppResultActionType.push:
-        context.push(args.action.route!);
+        context.pushReplacement(args.action.route!);
         return;
       case AppResultActionType.go:
         context.go(args.action.route!);

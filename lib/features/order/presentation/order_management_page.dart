@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_paths.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
+import 'order_detail_page.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
@@ -329,8 +330,14 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                             onContactTap: () => _showPlaceholderToast(
                               '联系客户 ${_displayCustomerName(item)}',
                             ),
-                            onProcessTap: () => context.push(RoutePaths.orderDetail),
-                            onTap: () => context.push(RoutePaths.orderDetail),
+                            onProcessTap: () => context.push(
+                              RoutePaths.orderDetail,
+                              extra: OrderDetailPageArgs(orderId: item.orderId),
+                            ),
+                            onTap: () => context.push(
+                              RoutePaths.orderDetail,
+                              extra: OrderDetailPageArgs(orderId: item.orderId),
+                            ),
                           );
                         },
                       ),

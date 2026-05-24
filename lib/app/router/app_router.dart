@@ -177,7 +177,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.orderDetail,
-        builder: (context, state) => const OrderDetailPage(),
+        builder: (context, state) => OrderDetailPage(
+          args:
+              state.extra as OrderDetailPageArgs? ??
+              const OrderDetailPageArgs(orderId: 0),
+        ),
       ),
       GoRoute(
         path: RoutePaths.orderReview,
