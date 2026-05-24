@@ -511,10 +511,11 @@ class _BannerAction extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                Image.asset(
-                  'assets/images/mou52cw6-bqoy994.png',
+                SvgPicture.asset(
+                  'assets/images/chat_page_order_arrow.svg',
                   width: 12,
                   height: 12,
+                  color: Colors.white,
                 ),
               ],
             ),

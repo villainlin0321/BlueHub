@@ -1,6 +1,7 @@
-<svg width="20" height="22" viewBox="0 0 20 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<foreignObject x="-14.3909" y="-13.4422" width="48.7818" height="49.0093"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(7.2px);clip-path:url(#bgblur_0_149_10275_clip_path);height:100%;width:100%"></div></foreignObject><path data-figma-bg-blur-radius="14.3909" fill-rule="evenodd" clip-rule="evenodd" d="M1.79287 5.79327C0.668604 6.58687 0 7.87722 0 9.25337L0 16.9412C0 19.2803 1.89621 21.1765 4.23529 21.1765H15.7647C18.1038 21.1765 20 19.2803 20 16.9412V9.25337C20 7.87722 19.3314 6.58687 18.2071 5.79327L12.4424 1.72406C10.9782 0.690469 9.02183 0.69047 7.55758 1.72406L1.79287 5.79327Z" fill="#096DD9"/>
-<defs>
-<clipPath id="bgblur_0_149_10275_clip_path" transform="translate(14.3909 13.4422)"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.79287 5.79327C0.668604 6.58687 0 7.87722 0 9.25337L0 16.9412C0 19.2803 1.89621 21.1765 4.23529 21.1765H15.7647C18.1038 21.1765 20 19.2803 20 16.9412V9.25337C20 7.87722 19.3314 6.58687 18.2071 5.79327L12.4424 1.72406C10.9782 0.690469 9.02183 0.69047 7.55758 1.72406L1.79287 5.79327Z"/>
-</clipPath></defs>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <foreignObject x="-12.3909" y="-12.0301" width="48.7818" height="49.0093"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(7.2px);clip-path:url(#bgblur_0_1_9150_clip_path);height:100%;width:100%"></div></foreignObject><path data-figma-bg-blur-radius="14.3909" fill-rule="evenodd" clip-rule="evenodd" d="M3.79287 7.20513C2.6686 7.99873 2 9.28909 2 10.6652L2 18.353C2 20.6921 3.89621 22.5883 6.23529 22.5883H17.7647C20.1038 22.5883 22 20.6921 22 18.353V10.6652C22 9.28909 21.3314 7.99873 20.2071 7.20513L14.4424 3.13593C12.9782 2.10233 11.0218 2.10234 9.55758 3.13593L3.79287 7.20513Z" fill="#096DD9"/>
+    <path d="M9.5 16C8.94772 16 8.5 16.4477 8.5 17C8.5 17.5523 8.94772 18 9.5 18H14.5C15.0523 18 15.5 17.5523 15.5 17C15.5 16.4477 15.0523 16 14.5 16H9.5Z" fill="white"/>
+    <defs>
+        <clipPath id="bgblur_0_1_9150_clip_path" transform="translate(12.3909 12.0301)"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.79287 7.20513C2.6686 7.99873 2 9.28909 2 10.6652L2 18.353C2 20.6921 3.89621 22.5883 6.23529 22.5883H17.7647C20.1038 22.5883 22 20.6921 22 18.353V10.6652C22 9.28909 21.3314 7.99873 20.2071 7.20513L14.4424 3.13593C12.9782 2.10233 11.0218 2.10234 9.55758 3.13593L3.79287 7.20513Z"/>
+        </clipPath></defs>
 </svg>
