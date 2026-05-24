@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../me/data/dictionary_providers.dart';
+import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
@@ -18,15 +20,6 @@ class EditVisaPackagePage extends ConsumerStatefulWidget {
 }
 
 class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
-  static const List<SelectableSheetOption<String>> _countryOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: 'DE', label: '德国'),
-        SelectableSheetOption<String>(value: 'FR', label: '法国'),
-        SelectableSheetOption<String>(value: 'CH', label: '瑞士'),
-        SelectableSheetOption<String>(value: 'GB', label: '英国'),
-        SelectableSheetOption<String>(value: 'IT', label: '意大利'),
-        SelectableSheetOption<String>(value: 'ES', label: '西班牙'),
-      ];
   static const List<SelectableSheetOption<String>> _visaTypeOptions =
       <SelectableSheetOption<String>>[
         SelectableSheetOption<String>(value: 'work', label: '工作'),
@@ -37,10 +30,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       ];
   static const List<SelectableSheetOption<String>> _materialTypeOptions =
       <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(
-          value: '护照原件及复印件',
-          label: '护照原件及复印件',
-        ),
+        SelectableSheetOption<String>(value: '护照原件及复印件', label: '护照原件及复印件'),
       ];
 
   late final TextEditingController _serviceNameController;
@@ -93,11 +83,13 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }
 
   Future<void> _openCountrySheet() async {
-    final EditVisaPackageState state = ref.read(editVisaPackageControllerProvider);
-    final List<String>? result = await showSelectableOptionsBottomSheet<String>(
+    final EditVisaPackageState state = ref.read(
+      editVisaPackageControllerProvider,
+    );
+    final result = await showCountryOptionsBottomSheet(
       context: context,
+      ref: ref,
       title: '服务国家',
-      options: _countryOptions,
       initialSelectedValues: state.selectedCountryCode == null
           ? const <String>[]
           : <String>[state.selectedCountryCode!],
@@ -106,13 +98,15 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     if (result == null || result.isEmpty) {
       return;
     }
-    ref.read(editVisaPackageControllerProvider.notifier).setCountryCode(
-      result.first,
-    );
+    ref
+        .read(editVisaPackageControllerProvider.notifier)
+        .setCountryCode(result.first.countryCode.trim());
   }
 
   Future<void> _openVisaTypeSheet() async {
-    final EditVisaPackageState state = ref.read(editVisaPackageControllerProvider);
+    final EditVisaPackageState state = ref.read(
+      editVisaPackageControllerProvider,
+    );
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '签证类型',
@@ -125,14 +119,17 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     if (result == null || result.isEmpty) {
       return;
     }
-    ref.read(editVisaPackageControllerProvider.notifier).setVisaTypeCode(
-      result.first,
-    );
+    ref
+        .read(editVisaPackageControllerProvider.notifier)
+        .setVisaTypeCode(result.first);
   }
 
   Future<void> _openMaterialTypeSheet(int tierIndex, int materialIndex) async {
-    final String currentValue =
-        _tiers[tierIndex].materials[materialIndex].titleController.text.trim();
+    final String currentValue = _tiers[tierIndex]
+        .materials[materialIndex]
+        .titleController
+        .text
+        .trim();
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '材料类型',
@@ -170,25 +167,29 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     return EditVisaPackageFormDraft(
       name: _serviceNameController.text,
       estimatedDays: _durationController.text,
-      tiers: _tiers.map((EditVisaPackageTierViewDraft tier) {
-        return EditVisaPackageTierDraftInput(
-          name: tier.nameController.text,
-          price: tier.priceController.text,
-          description: tier.descriptionController.text,
-          showMaterials: tier.showMaterials,
-          selectedServiceTagCodes: tier.selectedServiceTagCodes.toList(
-            growable: false,
-          ),
-          customServices: List<String>.from(tier.customServices),
-          materials: tier.materials.map((EditVisaPackageMaterialViewDraft material) {
-            return EditVisaPackageMaterialDraftInput(
-              name: material.titleController.text,
-              description: material.descriptionController.text,
-              isRequired: material.isRequired,
+      tiers: _tiers
+          .map((EditVisaPackageTierViewDraft tier) {
+            return EditVisaPackageTierDraftInput(
+              name: tier.nameController.text,
+              price: tier.priceController.text,
+              description: tier.descriptionController.text,
+              showMaterials: tier.showMaterials,
+              selectedServiceTagCodes: tier.selectedServiceTagCodes.toList(
+                growable: false,
+              ),
+              customServices: List<String>.from(tier.customServices),
+              materials: tier.materials
+                  .map((EditVisaPackageMaterialViewDraft material) {
+                    return EditVisaPackageMaterialDraftInput(
+                      name: material.titleController.text,
+                      description: material.descriptionController.text,
+                      isRequired: material.isRequired,
+                    );
+                  })
+                  .toList(growable: false),
             );
-          }).toList(growable: false),
-        );
-      }).toList(growable: false),
+          })
+          .toList(growable: false),
     );
   }
 
@@ -245,7 +246,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }
 
   Future<void> _handleAddCustomService(int tierIndex) async {
-    final String? result = await showEditVisaPackageCustomServiceDialog(context);
+    final String? result = await showEditVisaPackageCustomServiceDialog(
+      context,
+    );
     if (result == null) {
       return;
     }
@@ -310,10 +313,18 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       }
     });
 
-    final EditVisaPackageState state = ref.watch(editVisaPackageControllerProvider);
+    final EditVisaPackageState state = ref.watch(
+      editVisaPackageControllerProvider,
+    );
     final EditVisaPackageController controller = ref.read(
       editVisaPackageControllerProvider.notifier,
     );
+    final Map<String, String> countryLabelMap = ref
+        .watch(countrySearchProvider(const CountrySearchQuery()))
+        .maybeWhen(
+          data: (result) => buildCountryLabelMap(result.list),
+          orElse: () => const <String, String>{},
+        );
     final MediaQueryData mediaQuery = MediaQuery.of(context);
 
     return EditVisaPackagePageView(
@@ -321,7 +332,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       bottomPadding: mediaQuery.padding.bottom,
       serviceNameController: _serviceNameController,
       durationController: _durationController,
-      selectedCountryLabel: _findLabel(_countryOptions, state.selectedCountryCode),
+      selectedCountryLabel: state.selectedCountryCode == null
+          ? null
+          : resolveCountryLabel(state.selectedCountryCode!, countryLabelMap),
       selectedVisaTypeLabel: _findLabel(
         _visaTypeOptions,
         state.selectedVisaTypeCode,
