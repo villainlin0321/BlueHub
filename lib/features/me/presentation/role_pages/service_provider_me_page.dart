@@ -24,7 +24,7 @@ class ServiceProviderMePage extends StatelessWidget {
   static const String _headerBgAsset = 'assets/images/mou588hj-8pcermw.png';
   static const String _avatarAsset = 'assets/images/mou588hj-vpl779h.png';
   static const String _messageAsset = 'assets/images/mou588hj-ehihl8o.svg';
-  static const String _settingsAsset = 'assets/images/mou588hj-ycjdz35.svg';
+  static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _badgeBgAsset = 'assets/images/mou588hj-umrxyv9.svg';
   static const String _badgeVAsset = 'assets/images/mou588hj-j0ju7dc.svg';
 
