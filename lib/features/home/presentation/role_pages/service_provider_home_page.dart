@@ -550,6 +550,7 @@ class _AiAssistantBanner extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
                     const Text(
                       '查看',
@@ -557,14 +558,14 @@ class _AiAssistantBanner extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        height: 12 / 12,
                       ),
                     ),
                     const SizedBox(width: 2),
-                    Image.asset(
-                      'assets/images/mon6azmx-wqt9b30.png',
+                    SvgPicture.asset(
+                      'assets/images/chat_page_order_arrow.svg',
                       width: 12,
                       height: 12,
+                      color: Colors.white,
                     ),
                   ],
                 ),
@@ -604,11 +605,7 @@ class _OrdersSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        const Icon(
-          Icons.arrow_forward_ios,
-          size: 12,
-          color: Color(0xFF8C8C8C),
-        ),
+        const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF8C8C8C)),
       ],
     );
   }
