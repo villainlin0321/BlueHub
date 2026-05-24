@@ -13,20 +13,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 
-final companyJobListRefreshTickProvider =
-    NotifierProvider<_CompanyJobListRefreshTickNotifier, int>(
-      _CompanyJobListRefreshTickNotifier.new,
-    );
-
-class _CompanyJobListRefreshTickNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void notifyChanged() {
-    state++;
-  }
-}
-
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
   const CompanyVisaPage({super.key});
@@ -473,7 +459,6 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
     if (!mounted || result != true) {
       return;
     }
-    ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
   }
 
   @override

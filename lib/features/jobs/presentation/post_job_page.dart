@@ -6,6 +6,7 @@ import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
 import '../../../shared/logging/app_logger.dart';
 import '../data/job_models.dart';
+import '../data/job_providers.dart';
 import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
@@ -199,6 +200,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
 
       if (previous?.publishSuccessId != next.publishSuccessId &&
           next.publishSuccessId > 0) {
+        ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
         if (Navigator.of(context).canPop()) {
           context.pop(true);
         } else {

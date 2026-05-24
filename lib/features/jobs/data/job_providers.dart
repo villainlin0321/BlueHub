@@ -9,6 +9,20 @@ final jobServiceProvider = Provider<JobService>((ref) {
   return JobService(apiClient: ref.watch(apiClientProvider));
 });
 
+final companyJobListRefreshTickProvider =
+    NotifierProvider<_CompanyJobListRefreshTickNotifier, int>(
+      _CompanyJobListRefreshTickNotifier.new,
+    );
+
+class _CompanyJobListRefreshTickNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void notifyChanged() {
+    state++;
+  }
+}
+
 /// 求职者岗位列表 Provider。
 ///
 /// 当前先按首页首屏场景请求第 1 页最新岗位，后续接搜索和筛选时，
