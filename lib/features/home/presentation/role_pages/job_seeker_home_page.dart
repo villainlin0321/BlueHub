@@ -682,13 +682,6 @@ class _VisaMiniCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
