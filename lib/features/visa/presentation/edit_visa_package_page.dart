@@ -27,11 +27,6 @@ class EditVisaPackagePage extends ConsumerStatefulWidget {
 }
 
 class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
-  static const List<SelectableSheetOption<String>> _materialTypeOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: '护照原件及复印件', label: '护照原件及复印件'),
-      ];
-
   late final TextEditingController _serviceNameController;
   late final TextEditingController _durationController;
   late final List<EditVisaPackageTierViewDraft> _tiers;
@@ -270,16 +265,47 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }).toList(growable: false);
   }
 
+  List<SelectableSheetOption<String>> _buildMaterialTypeOptions(
+    List<TagItemVO> tags,
+  ) {
+    return tags.map((TagItemVO item) {
+      final String label = item.tagNameZh.trim().isNotEmpty
+          ? item.tagNameZh.trim()
+          : item.tagCode.trim();
+      return SelectableSheetOption<String>(value: label, label: label);
+    }).toList(growable: false);
+  }
+
   Future<void> _openMaterialTypeSheet(int tierIndex, int materialIndex) async {
     final String currentValue = _tiers[tierIndex]
         .materials[materialIndex]
         .titleController
         .text
         .trim();
+    final List<SelectableSheetOption<String>> materialTypeOptions;
+    try {
+      final List<TagItemVO> tags = await ref.read(
+        tagDictionaryProvider(TagCategory.materialType).future,
+      );
+      materialTypeOptions = _buildMaterialTypeOptions(tags);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar('材料类型字典加载失败');
+      return;
+    }
+    if (materialTypeOptions.isEmpty) {
+      _showSnackBar('暂无可选材料类型');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
       title: '材料类型',
-      options: _materialTypeOptions,
+      options: materialTypeOptions,
       initialSelectedValues: currentValue.isEmpty
           ? const <String>[]
           : <String>[currentValue],

@@ -23,7 +23,7 @@ class ServiceProviderMePage extends StatelessWidget {
 
   static const String _headerBgAsset = 'assets/images/mou588hj-8pcermw.png';
   static const String _avatarAsset = 'assets/images/mou588hj-vpl779h.png';
-  static const String _messageAsset = 'assets/images/mou588hj-ehihl8o.svg';
+  static const String _messageAsset = 'assets/images/home_message_center.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _badgeBgAsset = 'assets/images/mou588hj-umrxyv9.svg';
   static const String _badgeVAsset = 'assets/images/mou588hj-j0ju7dc.svg';
@@ -62,7 +62,7 @@ class ServiceProviderMePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const _HeaderSection(),
+          _HeaderSection(onSettingsTap: () => _handleSettingsTap(context)),
           const SizedBox(height: 40),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -98,10 +98,16 @@ class ServiceProviderMePage extends StatelessWidget {
     }
     _showPlaceholderToast(context, label);
   }
+
+  void _handleSettingsTap(BuildContext context) {
+    context.push(RoutePaths.settings);
+  }
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection();
+  const _HeaderSection({required this.onSettingsTap});
+
+  final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -126,12 +132,12 @@ class _HeaderSection extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 80),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  _HeaderActions(),
-                  SizedBox(height: 10),
-                  _ProviderProfileRow(),
+                  _HeaderActions(onSettingsTap: onSettingsTap),
+                  const SizedBox(height: 10),
+                  const _ProviderProfileRow(),
                 ],
               ),
             ),
@@ -144,7 +150,9 @@ class _HeaderSection extends StatelessWidget {
 }
 
 class _HeaderActions extends StatelessWidget {
-  const _HeaderActions();
+  const _HeaderActions({required this.onSettingsTap});
+
+  final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -160,16 +168,10 @@ class _HeaderActions extends StatelessWidget {
         _TopIconButton(
           assetPath: ServiceProviderMePage._settingsAsset,
           fallbackIcon: Icons.settings_outlined,
-          onTap: () => _showPlaceholderToast(context, '设置'),
+          onTap: onSettingsTap,
         ),
       ],
     );
-  }
-
-  void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label（占位）')));
   }
 }
 
@@ -195,8 +197,9 @@ class _TopIconButton extends StatelessWidget {
         child: Center(
           child: SvgPicture.asset(
             assetPath,
-            width: 19,
-            height: 19,
+            width: 24,
+            height: 24,
+            color: Colors.white,
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, color: Colors.white, size: 20),
           ),
@@ -211,8 +214,10 @@ class _ProviderProfileRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ProviderVO? providerProfile =
-        ref.watch(_currentProviderProfileProvider).asData?.value;
+    final ProviderVO? providerProfile = ref
+        .watch(_currentProviderProfileProvider)
+        .asData
+        ?.value;
     final String providerSummary = providerProfile == null
         ? ''
         : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
@@ -270,8 +275,10 @@ class _ProviderNameRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       ref.watch(authSessionProvider).user,
     );
-    final ProviderVO? providerProfile =
-        ref.watch(_currentProviderProfileProvider).asData?.value;
+    final ProviderVO? providerProfile = ref
+        .watch(_currentProviderProfileProvider)
+        .asData
+        ?.value;
     final String providerName = providerProfile?.name.trim() ?? '';
     final String displayName = providerName.isNotEmpty
         ? providerName
