@@ -20,8 +20,8 @@ final _currentEmployerProfileProvider =
 class CompanyMePage extends StatelessWidget {
   const CompanyMePage({super.key});
 
-  static const String _messageAsset = 'assets/images/mou64ult-r2vhiam.svg';
-  static const String _settingsAsset = 'assets/images/mou64ult-u3ktrfm.svg';
+  static const String _messageAsset = 'assets/images/home_message_center.svg';
+  static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
 
   static const List<_StatData> _stats = <_StatData>[
