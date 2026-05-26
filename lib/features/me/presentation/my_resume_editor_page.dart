@@ -28,17 +28,19 @@ enum ResumeEditorMode { create, edit }
 
 /// 简历编辑页的路由参数。
 class ResumeEditorArgs {
-  const ResumeEditorArgs.create({this.isPublic = true})
+  const ResumeEditorArgs.create({this.isPublic = true, this.resumeId})
     : mode = ResumeEditorMode.create,
       resume = null;
 
   ResumeEditorArgs.edit(this.resume)
     : mode = ResumeEditorMode.edit,
-      isPublic = resume?.isPublic ?? true;
+      isPublic = resume?.isPublic ?? true,
+      resumeId = resume?.resumeId;
 
   final ResumeEditorMode mode;
   final ResumeVO? resume;
   final bool isPublic;
+  final int? resumeId;
 }
 
 /// 简历草稿数据。
@@ -185,6 +187,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 当前页面是否为创建模式。
   bool get _isCreateMode => widget.args.mode == ResumeEditorMode.create;
+
+  /// 当前编辑目标的简历 ID；多简历场景优先使用显式传入的 ID。
+  int? get _targetResumeId => widget.args.resumeId ?? _resume?.resumeId;
 
   String get _salaryValue => _salaryValueController.text.trim();
 
@@ -1720,9 +1725,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
 
     try {
-      await ref
-          .read(resumeServiceProvider)
-          .saveResume(request: _buildSaveRequest());
+      await _persistResume();
       if (!mounted) {
         return;
       }
@@ -1751,9 +1754,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
 
     try {
-      await ref
-          .read(resumeServiceProvider)
-          .saveResume(request: _buildSaveRequest());
+      await _persistResume();
       if (!mounted) {
         return;
       }
@@ -1773,6 +1774,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         context,
       ).showSnackBar(SnackBar(content: Text(_resolveSaveErrorMessage(error))));
     }
+  }
+
+  /// 按当前编辑目标保存简历；多简历场景优先走指定 `resumeId` 更新接口。
+  Future<void> _persistResume() async {
+    final SaveResumeBO request = _buildSaveRequest();
+    final int? resumeId = _targetResumeId;
+    final service = ref.read(resumeServiceProvider);
+    if (resumeId != null && resumeId > 0) {
+      await service.updateResume(resumeId: resumeId, request: request);
+      return;
+    }
+    await service.saveResume(request: request);
   }
 
   /// 组装保存简历所需的全量请求。

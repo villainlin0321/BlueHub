@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
 class AppResultPageArgs {
@@ -11,17 +12,19 @@ class AppResultPageArgs {
     required this.tipText,
     required this.actionLabel,
     required this.action,
+    this.orderId,
   });
 
-  const AppResultPageArgs.paymentSuccess()
+  const AppResultPageArgs.paymentSuccess({int? orderId})
       : this(
           pageTitle: '支付结果',
           resultTitle: '支付成功',
           tipText: '可以在个人中心“订单管理”查看',
           actionLabel: '去上传提交材料',
           action: const AppResultAction.push(
-            RoutePaths.myOrders,
+            RoutePaths.orderDetail,
           ),
+          orderId: orderId,
         );
 
   final String pageTitle;
@@ -29,6 +32,7 @@ class AppResultPageArgs {
   final String tipText;
   final String actionLabel;
   final AppResultAction action;
+  final int? orderId;
 }
 
 class AppResultAction {
@@ -71,12 +75,29 @@ class AppResultPage extends StatelessWidget {
   final AppResultPageArgs args;
 
   void _handleAction(BuildContext context) {
+    final bool hasValidOrderId = (args.orderId ?? 0) > 0;
     switch (args.action.type) {
       case AppResultActionType.push:
-        context.pushReplacement(args.action.route!);
+        final String route = args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+            ? RoutePaths.myOrders
+            : args.action.route!;
+        context.pushReplacement(
+          route,
+          extra: route == RoutePaths.orderDetail
+              ? OrderDetailPageArgs(orderId: args.orderId!)
+              : null,
+        );
         return;
       case AppResultActionType.go:
-        context.go(args.action.route!);
+        final String route = args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+            ? RoutePaths.myOrders
+            : args.action.route!;
+        context.go(
+          route,
+          extra: route == RoutePaths.orderDetail
+              ? OrderDetailPageArgs(orderId: args.orderId!)
+              : null,
+        );
         return;
       case AppResultActionType.pop:
         if (context.canPop()) {

@@ -7,18 +7,17 @@ class ResumeService {
 
   final ApiClient _apiClient;
 
-  /// 创建一份新的空白简历。
-  ///
-  /// 返回值通常包含后端生成的新简历 ID 等字段。
-  Future<Map<String, dynamic>> createResume() async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
+  /// 创建一份新的空白简历，并返回后端生成的简历 ID。
+  Future<int> createResume() async {
+    final response = await _apiClient.post<JsonMap>(
       '/resumes',
-      decode: (data) => decodeMapValues<dynamic>(
-        data ?? const <String, dynamic>{},
-        (value) => value,
-      ),
+      decode: (data) => asJsonMap(data),
     );
-    return response;
+    final int? resumeId = _readCreatedResumeId(response);
+    if (resumeId == null || resumeId <= 0) {
+      throw StateError('创建简历成功，但未返回有效的简历 ID');
+    }
+    return resumeId;
   }
 
   /// 获取当前登录用户的简历。
@@ -81,5 +80,24 @@ class ResumeService {
   /// 将指定简历设为默认简历。
   Future<void> setDefaultResume({required int resumeId}) async {
     return _apiClient.putVoid('/resumes/$resumeId/default');
+  }
+
+  int? _readCreatedResumeId(JsonMap response) {
+    for (final String key in const <String>['resumeId', 'resume_id', 'id']) {
+      final dynamic value = response[key];
+      if (value is int) {
+        return value;
+      }
+      if (value is num) {
+        return value.toInt();
+      }
+      if (value is String) {
+        final int? parsed = int.tryParse(value) ?? double.tryParse(value)?.toInt();
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+    }
+    return null;
   }
 }

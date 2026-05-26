@@ -8,6 +8,7 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../message/application/chat/chat_page_args.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
 import '../../me/data/collection_providers.dart';
 import '../../visa/data/provider_models.dart'
@@ -107,6 +108,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
             backgroundColor: Colors.white,
             bottomNavigationBar: _BottomActionBar(
               consultIconAsset: _consultIconAsset,
+              onConsultTap: () => _handleConsultTap(provider),
               onApplyTap: () => _showApplyBottomSheet(
                 serviceTitle: package.name,
                 package: selectedPackage,
@@ -302,6 +304,27 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       context: context,
       serviceTitle: serviceTitle,
       package: package,
+    );
+  }
+
+  /// 跳转到聊天页，并携带当前服务商作为聊天对象。
+  void _handleConsultTap(ProviderVO? provider) {
+    if (provider == null) {
+      _showMessage('商家信息加载中，请稍后重试');
+      return;
+    }
+    if (provider.providerId <= 0) {
+      _showMessage('商家信息缺失，暂无法发起咨询');
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: provider.providerId,
+        targetUserRole: 'visa_provider',
+        nickname: provider.name.trim().isEmpty ? '服务商' : provider.name,
+        avatarUrl: provider.logoUrl,
+      ),
     );
   }
 
@@ -813,10 +836,12 @@ class _PinnedTopTabBarDelegate extends SliverPersistentHeaderDelegate {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.consultIconAsset,
+    required this.onConsultTap,
     required this.onApplyTap,
   });
 
   final String consultIconAsset;
+  final VoidCallback onConsultTap;
   final VoidCallback onApplyTap;
 
   @override
@@ -834,6 +859,7 @@ class _BottomActionBar extends StatelessWidget {
           default:
             return _PackageBottomActionBar(
               consultIconAsset: consultIconAsset,
+              onConsultTap: onConsultTap,
               onApplyTap: onApplyTap,
             );
         }
@@ -845,10 +871,12 @@ class _BottomActionBar extends StatelessWidget {
 class _PackageBottomActionBar extends StatelessWidget {
   const _PackageBottomActionBar({
     required this.consultIconAsset,
+    required this.onConsultTap,
     required this.onApplyTap,
   });
 
   final String consultIconAsset;
+  final VoidCallback onConsultTap;
   final VoidCallback onApplyTap;
 
   @override
@@ -868,7 +896,7 @@ class _PackageBottomActionBar extends StatelessWidget {
               height: 44,
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: () {},
+                onTap: onConsultTap,
                 child: Stack(
                   children: <Widget>[
                     Positioned(

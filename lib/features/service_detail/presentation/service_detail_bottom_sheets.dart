@@ -456,7 +456,7 @@ class _ConfirmPaymentBottomSheetContentState
         }
         widget.parentContext.push(
           RoutePaths.appResult,
-          extra: const AppResultPageArgs.paymentSuccess(),
+          extra: AppResultPageArgs.paymentSuccess(orderId: widget.orderId),
         );
       });
     } catch (error) {

@@ -31,6 +31,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   int? _savingVisibilityResumeId;
   int? _settingDefaultResumeId;
   int? _deletingResumeId;
+  bool _isCreatingResume = false;
   String? _errorMessage;
 
   @override
@@ -540,7 +541,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         child: SizedBox(
           height: 44,
           child: ElevatedButton(
-            onPressed: _openCreateResume,
+            onPressed: _isCreatingResume ? null : _openCreateResume,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF096DD9),
               foregroundColor: Colors.white,
@@ -549,9 +550,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              '创建简历',
-              style: TextStyle(
+            child: Text(
+              _isCreatingResume ? '创建中...' : '创建简历',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 height: 22 / 16,
@@ -596,12 +597,45 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
   /// 进入创建简历页，使用空白初始值。
   Future<void> _openCreateResume() async {
-    final bool? didSave = await context.push<bool>(
-      RoutePaths.myResumeEditor,
-      extra: ResumeEditorArgs.create(isPublic: _defaultCreateVisibility),
-    );
-    if (didSave == true && mounted) {
+    if (_isCreatingResume) {
+      return;
+    }
+
+    setState(() {
+      _isCreatingResume = true;
+    });
+
+    try {
+      final int resumeId = await ref.read(resumeServiceProvider).createResume();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isCreatingResume = false;
+      });
+
+      await context.push<bool>(
+        RoutePaths.myResumeEditor,
+        extra: ResumeEditorArgs.create(
+          isPublic: _defaultCreateVisibility,
+          resumeId: resumeId,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
       await _loadResume();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isCreatingResume = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
     }
   }
 

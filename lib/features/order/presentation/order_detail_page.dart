@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
+import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -167,6 +169,30 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _handleConsultTap() {
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('商家信息加载中，请稍后重试');
+      return;
+    }
+    if (detail.providerInfo.providerId <= 0) {
+      _showMessage('商家信息缺失，暂无法发起咨询');
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: detail.providerInfo.providerId,
+        targetUserRole: 'visa_provider',
+        nickname: detail.providerName.trim().isEmpty ? '服务商' : detail.providerName,
+        avatarUrl: detail.avatarUrl,
+        relatedOrderId: detail.orderId,
+        packageName: detail.packageName,
+        orderStatus: detail.statusLabel,
+      ),
+    );
   }
 
   List<PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
@@ -445,7 +471,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: () => _showMessage('联系商家（占位）'),
+            onPressed: _handleConsultTap,
             child: Text(
               '联系商家',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
