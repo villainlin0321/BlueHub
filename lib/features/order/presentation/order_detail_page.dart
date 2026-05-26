@@ -1,14 +1,17 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
+import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -49,20 +52,18 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
-  late final Map<String, List<PickedUploadFile>> _uploadsByRequirement;
+  final Map<String, List<PickedUploadFile>> _uploadsByRequirement =
+      <String, List<PickedUploadFile>>{};
+  final Set<String> _downloadingMaterialUrls = <String>{};
   VisaOrderVO? _orderDetail;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isProcessingOrder = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _uploadsByRequirement = <String, List<PickedUploadFile>>{
-      for (final _MaterialRequirement requirement
-          in OrderDetailPage._fallbackRequirements)
-        requirement.id: <PickedUploadFile>[],
-    };
     Future<void>.microtask(_loadOrderDetail);
   }
 
@@ -92,7 +93,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         _orderDetail = detail;
         _isLoading = false;
       });
-      _syncRequirements(_buildMaterialRequirements(detail));
+      _syncRequirements(detail.materials);
     } catch (error) {
       if (!mounted) {
         return;
@@ -104,8 +105,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
-  List<_MaterialRequirement> _buildMaterialRequirements(VisaOrderVO? detail) {
-    final List<String> names = (detail?.materials ?? const <MaterialVO>[])
+  List<_MaterialRequirement> _buildMaterialRequirements(List<MaterialVO>? materials) {
+    final List<String> names = (materials ?? const <MaterialVO>[])
         .map((item) => item.materialName.trim())
         .where((name) => name.isNotEmpty)
         .toSet()
@@ -122,10 +123,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }, growable: false);
   }
 
-  void _syncRequirements(List<_MaterialRequirement> requirements) {
+  void _syncRequirements(List<MaterialVO>? materials) {
     if (!mounted) {
       return;
     }
+    final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
+      materials,
+    );
     setState(() {
       final Map<String, List<PickedUploadFile>> next =
           <String, List<PickedUploadFile>>{};
@@ -326,7 +330,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       _showMessage('订单详情尚未加载完成');
       return;
     }
-    final List<_MaterialRequirement> requirements = _buildMaterialRequirements(detail);
+    final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
+      detail.materials,
+    );
     _MaterialRequirement? missingRequirement;
     for (final _MaterialRequirement item in requirements) {
       if (item.required && _filesFor(item).isEmpty) {
@@ -434,10 +440,279 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return message.isEmpty ? fallback : message;
   }
 
+  Future<Directory> _resolveDownloadDirectory() async {
+    try {
+      final Directory? downloadsDirectory = await getDownloadsDirectory();
+      if (downloadsDirectory != null) {
+        return Directory('${downloadsDirectory.path}/BlueHub');
+      }
+    } catch (_) {}
+
+    try {
+      final Directory documentsDirectory =
+          await getApplicationDocumentsDirectory();
+      return Directory('${documentsDirectory.path}/downloads');
+    } catch (_) {
+      final Directory temporaryDirectory = await getTemporaryDirectory();
+      return Directory('${temporaryDirectory.path}/downloads');
+    }
+  }
+
+  String _materialDisplayName(MaterialVO material) {
+    final String materialName = material.materialName.trim();
+    if (materialName.isNotEmpty) {
+      return materialName;
+    }
+    final Uri? uri = Uri.tryParse(material.fileUrl);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    return '订单材料';
+  }
+
+  String _materialFileExtension(MaterialVO material) {
+    final String name = _materialDisplayName(material);
+    final int dotIndex = name.lastIndexOf('.');
+    if (dotIndex >= 0 && dotIndex < name.length - 1) {
+      return name.substring(dotIndex);
+    }
+
+    final Uri? uri = Uri.tryParse(material.fileUrl);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      final String lastSegment = Uri.decodeComponent(uri.pathSegments.last);
+      final int urlDotIndex = lastSegment.lastIndexOf('.');
+      if (urlDotIndex >= 0 && urlDotIndex < lastSegment.length - 1) {
+        return lastSegment.substring(urlDotIndex);
+      }
+    }
+
+    final String type = material.fileType.trim().toLowerCase();
+    if (type.contains('png')) {
+      return '.png';
+    }
+    if (type.contains('jpeg') || type.contains('jpg')) {
+      return '.jpg';
+    }
+    if (type.contains('pdf')) {
+      return '.pdf';
+    }
+    return '';
+  }
+
+  String _sanitizeFileName(String name) {
+    return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+  }
+
+  Future<void> _downloadMaterial(MaterialVO material) async {
+    final String fileUrl = material.fileUrl.trim();
+    if (fileUrl.isEmpty) {
+      _showMessage('文件地址不存在，暂时无法下载');
+      return;
+    }
+    if (_downloadingMaterialUrls.contains(fileUrl)) {
+      return;
+    }
+
+    setState(() {
+      _downloadingMaterialUrls.add(fileUrl);
+    });
+
+    final Dio dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: const Duration(seconds: 60),
+      ),
+    );
+
+    try {
+      final Directory directory = await _resolveDownloadDirectory();
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
+      }
+
+      final String displayName = _materialDisplayName(material);
+      final String extension = _materialFileExtension(material);
+      final String normalizedName = displayName.contains('.') || extension.isEmpty
+          ? displayName
+          : '$displayName$extension';
+      final String sanitizedName = _sanitizeFileName(normalizedName);
+      String savePath = '${directory.path}/$sanitizedName';
+      if (File(savePath).existsSync()) {
+        final String timestamp = DateTime.now().millisecondsSinceEpoch
+            .toString();
+        final int nameDotIndex = sanitizedName.lastIndexOf('.');
+        final String uniqueName = nameDotIndex > 0
+            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
+            : '${sanitizedName}_$timestamp';
+        savePath = '${directory.path}/$uniqueName';
+      }
+
+      await dio.download(
+        fileUrl,
+        savePath,
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+        deleteOnError: true,
+      );
+
+      if (!mounted) {
+        return;
+      }
+      _showMessage('已下载到本地');
+    } on DioException {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('文件下载失败，请稍后重试');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '文件下载失败，请稍后重试'));
+    } finally {
+      dio.close(force: true);
+      if (mounted) {
+        setState(() {
+          _downloadingMaterialUrls.remove(fileUrl);
+        });
+      }
+    }
+  }
+
+  Future<String?> _showRejectReasonDialog() async {
+    final TextEditingController controller = TextEditingController(
+      text: _orderDetail?.rejectReason.trim() ?? '',
+    );
+    String? reason;
+    try {
+      reason = await showDialog<String>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          String? errorText;
+          return StatefulBuilder(
+            builder: (
+              BuildContext context,
+              void Function(VoidCallback fn) setDialogState,
+            ) {
+              return AlertDialog(
+                title: const Text('驳回重传'),
+                content: TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: '请输入驳回原因',
+                    errorText: errorText,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final String value = controller.text.trim();
+                      if (value.isEmpty) {
+                        setDialogState(() {
+                          errorText = '请输入驳回原因';
+                        });
+                        return;
+                      }
+                      Navigator.of(dialogContext).pop(value);
+                    },
+                    child: const Text('确认'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
+    return reason;
+  }
+
+  Future<void> _processOrder({
+    required String action,
+    required String nextStatus,
+    required String remark,
+  }) async {
+    if (_isProcessingOrder) {
+      return;
+    }
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单详情尚未加载完成');
+      return;
+    }
+
+    setState(() => _isProcessingOrder = true);
+    try {
+      await ref.read(visaOrderServiceProvider).processOrder(
+        orderId: detail.orderId,
+        request: ProcessOrderBO(
+          action: action,
+          remark: remark,
+          nextStatus: nextStatus,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (context.canPop()) {
+        context.pop(true);
+        return;
+      }
+      await _loadOrderDetail();
+      if (!mounted) {
+        return;
+      }
+      _showMessage(action == 'approve' ? '审核已通过' : '已驳回重传');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '订单处理失败，请稍后重试'));
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessingOrder = false);
+      }
+    }
+  }
+
+  Future<void> _handleApproveOrder() async {
+    await _processOrder(
+      action: 'approve',
+      nextStatus: 'embassy_submitted',
+      remark: '',
+    );
+  }
+
+  Future<void> _handleRejectOrder() async {
+    final String? reason = await _showRejectReasonDialog();
+    if (reason == null || reason.trim().isEmpty) {
+      return;
+    }
+    await _processOrder(
+      action: 'reject',
+      nextStatus: '',
+      remark: reason.trim(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final ShellRole currentRole = ref.watch(shellRoleProvider);
+    final bool isServiceProvider = currentRole == ShellRole.serviceProvider;
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
-      _orderDetail,
+      _orderDetail?.materials,
     );
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -469,31 +744,48 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             fontSize: 17,
           ),
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: _handleConsultTap,
-            child: Text(
-              '联系商家',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF262626),
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-              ),
+        actions: isServiceProvider
+            ? const <Widget>[]
+            : <Widget>[
+                TextButton(
+                  onPressed: _handleConsultTap,
+                  child: Text(
+                    '联系商家',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF262626),
+                      fontWeight: FontWeight.w400,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+      ),
+      body: _buildBody(
+        requirements: requirements,
+        isServiceProvider: isServiceProvider,
+      ),
+      bottomNavigationBar: isServiceProvider
+          ? _ProviderBottomActionBar(
+              enabled: !_isLoading &&
+                  _errorMessage == null &&
+                  !_isSubmitting &&
+                  !_isProcessingOrder,
+              onRejectTap: _handleRejectOrder,
+              onApproveTap: _handleApproveOrder,
+            )
+          : _BottomSubmitBar(
+              label: _isSubmitting ? '提交中...' : '提交材料',
+              enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
+              onPressed: _submitMaterials,
             ),
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: _buildBody(requirements),
-      bottomNavigationBar: _BottomSubmitBar(
-        label: _isSubmitting ? '提交中...' : '提交材料',
-        enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
-        onPressed: _submitMaterials,
-      ),
     );
   }
 
-  Widget _buildBody(List<_MaterialRequirement> requirements) {
+  Widget _buildBody({
+    required List<_MaterialRequirement> requirements,
+    required bool isServiceProvider,
+  }) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -522,13 +814,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-          child: _MaterialUploadCard(
-            requirements: requirements,
-            uploadsByRequirement: _uploadsByRequirement,
-            onPreviewTap: (String title) => _showMessage('$title 查看样例（占位）'),
-            onUploadTap: _openUploadSheet,
-            onDeleteFile: _removeUploadFile,
-          ),
+          child: isServiceProvider
+              ? _ProviderMaterialReviewCard(
+                  materials: detail.materials,
+                  downloadingFileUrls: _downloadingMaterialUrls,
+                  onDownloadTap: _downloadMaterial,
+                )
+              : _MaterialUploadCard(
+                  requirements: requirements,
+                  uploadsByRequirement: _uploadsByRequirement,
+                  onPreviewTap: (String title) =>
+                      _showMessage('$title 查看样例（占位）'),
+                  onUploadTap: _openUploadSheet,
+                  onDeleteFile: _removeUploadFile,
+                ),
         ),
         const SizedBox(height: 24),
       ],
@@ -675,6 +974,206 @@ class _MaterialUploadCard extends StatelessWidget {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _ProviderMaterialReviewCard extends StatelessWidget {
+  const _ProviderMaterialReviewCard({
+    required this.materials,
+    required this.downloadingFileUrls,
+    required this.onDownloadTap,
+  });
+
+  final List<MaterialVO> materials;
+  final Set<String> downloadingFileUrls;
+  final ValueChanged<MaterialVO> onDownloadTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '客户上传材料',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: const Color(0xFF262626),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 22 / 16,
+                  ),
+                ),
+              ),
+              Text(
+                '共${materials.length}份',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF8C8C8C),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (materials.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '暂无客户上传材料',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF8C8C8C),
+                  fontSize: 14,
+                ),
+              ),
+            )
+          else
+            ...List<Widget>.generate(materials.length, (int index) {
+              final MaterialVO material = materials[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == materials.length - 1 ? 0 : 12,
+                ),
+                child: _ProviderMaterialFileCard(
+                  material: material,
+                  isDownloading:
+                      downloadingFileUrls.contains(material.fileUrl.trim()),
+                  onDownloadTap: () => onDownloadTap(material),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProviderMaterialFileCard extends StatelessWidget {
+  const _ProviderMaterialFileCard({
+    required this.material,
+    required this.isDownloading,
+    required this.onDownloadTap,
+  });
+
+  final MaterialVO material;
+  final bool isDownloading;
+  final VoidCallback onDownloadTap;
+
+  bool get _isImage {
+    final String type = material.fileType.trim().toLowerCase();
+    final String url = material.fileUrl.trim().toLowerCase();
+    return type.startsWith('image/') ||
+        url.endsWith('.png') ||
+        url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.webp');
+  }
+
+  String get _displayName {
+    final String name = material.materialName.trim();
+    if (name.isNotEmpty) {
+      return name;
+    }
+    final Uri? uri = Uri.tryParse(material.fileUrl);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    return '订单材料';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: <Widget>[
+          SvgPicture.asset(
+            _isImage
+                ? 'assets/images/order_detail_file_photo.svg'
+                : 'assets/images/order_detail_file_pdf.svg',
+            width: 32,
+            height: 32,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF333333),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  UploadPickerUtils.formatFileSize(material.fileSize),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF999999),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    height: 14 / 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: isDownloading ? null : onDownloadTap,
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: Center(
+                child: isDownloading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF262626),
+                          ),
+                        ),
+                      )
+                    : SvgPicture.asset(
+                        'assets/images/order_detail_download.svg',
+                        width: 15,
+                        height: 15,
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1272,6 +1771,96 @@ class _BottomSubmitBar extends StatelessWidget {
               label: label,
               onPressed: enabled ? onPressed : () {},
               enabled: enabled,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProviderBottomActionBar extends StatelessWidget {
+  const _ProviderBottomActionBar({
+    required this.enabled,
+    required this.onRejectTap,
+    required this.onApproveTap,
+  });
+
+  final bool enabled;
+  final VoidCallback onRejectTap;
+  final VoidCallback onApproveTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFFF0F0F0),
+                offset: const Offset(0, -0.5),
+              ),
+            ],
+          ),
+          child: Opacity(
+            opacity: enabled ? 1 : 0.4,
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: TextButton(
+                      onPressed: enabled ? onRejectTap : null,
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFEBEB),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '驳回重传',
+                        style: TextStyle(
+                          color: Color(0xFFD9363E),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 22 / 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: enabled ? onApproveTap : null,
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: const Color(0xFF096DD9),
+                        disabledBackgroundColor: const Color(0xFF096DD9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '审核通过',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 22 / 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

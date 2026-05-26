@@ -34,8 +34,8 @@ enum TagCategory {
   /// 学历层级，如高中、大专、本科、硕士等。
   educationLevel('education_level'),
 
-  /// ISA 类型。
-  isaType('isa_type'),
+  /// 材料类型，如护照、照片、申请表等。
+  materialType('material_type'),
 
   /// 签证类型，如工作、旅行、技术、护理、留学等。
   visaType('visa_type');
@@ -80,7 +80,7 @@ class ConfigService {
   /// - `TagCategory.languageCert` -> `GET /config/tags?category=language_cert`
   /// - `TagCategory.skillCertType` -> `GET /config/tags?category=skill_cert_type`
   /// - `TagCategory.educationLevel` -> `GET /config/tags?category=education_level`
-  /// - `TagCategory.isaType` -> `GET /config/tags?category=isa_type`
+  /// - `TagCategory.materialType` -> `GET /config/tags?category=material_type`
   /// - `TagCategory.visaType` -> `GET /config/tags?category=visa_type`
   ///
   /// 返回值说明：

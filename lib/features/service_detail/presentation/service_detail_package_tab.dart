@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
@@ -236,70 +237,66 @@ class _MaterialsSection extends StatelessWidget {
 class _MaterialCard extends StatelessWidget {
   const _MaterialCard({required this.material});
 
+  static const String _materialIconAsset =
+      'assets/images/service_detail_material_file.svg';
+
   final ServiceMaterialData material;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 64),
+      padding: const EdgeInsets.fromLTRB(12, 12, 17, 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: Color(0xFF8FA0C9),
-              size: 20,
-            ),
+          SvgPicture.asset(
+            _materialIconAsset,
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
                   material.title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 20 / 14,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   material.subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF8C8C8C),
-                    height: 1.4,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 16 / 12,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              _MaterialStatusTag(
-                label: material.status,
-                required: material.required,
-              ),
-              const SizedBox(height: 10),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF8C8C8C),
-                size: 18,
-              ),
-            ],
+          _MaterialStatusTag(
+            label: material.status,
+            required: material.required,
           ),
         ],
       ),
@@ -345,16 +342,18 @@ class _MaterialStatusTag extends StatelessWidget {
         : const Color(0xFFA3AFD4);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: color,
-          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          fontWeight: FontWeight.w400,
+          height: 1,
         ),
       ),
     );
