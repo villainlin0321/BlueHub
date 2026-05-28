@@ -127,17 +127,20 @@ class PackageInfoVO {
     required this.packageName,
     required this.tierName,
     required this.amount,
+    required this.currency,
   });
 
   final String packageName;
   final String tierName;
   final double amount;
+  final String? currency;
 
   factory PackageInfoVO.fromJson(JsonMap json) {
     return PackageInfoVO(
       packageName: readString(json, 'packageName'),
       tierName: readString(json, 'tierName'),
       amount: readDouble(json, 'amount'),
+      currency: _readNullableString(json['currency']),
     );
   }
 
@@ -146,6 +149,7 @@ class PackageInfoVO {
       'packageName': packageName,
       'tierName': tierName,
       'amount': amount,
+      'currency': currency,
     };
   }
 }
@@ -181,6 +185,8 @@ class ProcessOrderBO {
 class ProviderInfoVO {
   const ProviderInfoVO({required this.providerId, required this.name});
 
+  const ProviderInfoVO.empty() : providerId = 0, name = '';
+
   final int providerId;
   final String name;
 
@@ -193,6 +199,34 @@ class ProviderInfoVO {
 
   JsonMap toJson() {
     return <String, dynamic>{'providerId': providerId, 'name': name};
+  }
+}
+
+class RequiredMaterialVO {
+  const RequiredMaterialVO({
+    required this.name,
+    required this.description,
+    required this.isRequired,
+  });
+
+  final String name;
+  final String description;
+  final bool isRequired;
+
+  factory RequiredMaterialVO.fromJson(JsonMap json) {
+    return RequiredMaterialVO(
+      name: readString(json, 'name'),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'name': name,
+      'description': description,
+      'isRequired': isRequired,
+    };
   }
 }
 
@@ -293,11 +327,13 @@ class VisaOrderVO {
     required this.currentStep,
     required this.steps,
     required this.amount,
+    required this.currency,
     required this.packageName,
     required this.tierName,
     required this.providerName,
     required this.packageInfo,
     required this.providerInfo,
+    required this.requiredMaterials,
     required this.materials,
     required this.visaDocuments,
     required this.rejectReason,
@@ -317,23 +353,26 @@ class VisaOrderVO {
   final int currentStep;
   final List<StepVO> steps;
   final double amount;
+  final String? currency;
   final String packageName;
   final String tierName;
   final String providerName;
   final PackageInfoVO packageInfo;
   final ProviderInfoVO providerInfo;
+  final List<RequiredMaterialVO> requiredMaterials;
   final List<MaterialVO> materials;
   final List<VisaDocVO> visaDocuments;
-  final String rejectReason;
+  final String? rejectReason;
   final bool isUrgent;
   final String nickname;
   final String avatarUrl;
   final String country;
   final String createdAt;
   final String updatedAt;
-  final String paymentUrl;
+  final String? paymentUrl;
 
   factory VisaOrderVO.fromJson(JsonMap json) {
+    final JsonMap providerInfoJson = readJsonMap(json, 'providerInfo');
     return VisaOrderVO(
       orderId: readInt(json, 'orderId'),
       orderNo: readString(json, 'orderNo'),
@@ -342,25 +381,31 @@ class VisaOrderVO {
       currentStep: readInt(json, 'currentStep'),
       steps: readModelList<StepVO>(json, 'steps', StepVO.fromJson),
       amount: readDouble(json, 'amount'),
+      currency: _readNullableString(json['currency']),
       packageName: readString(json, 'packageName'),
       tierName: readString(json, 'tierName'),
       providerName: readString(json, 'providerName'),
       packageInfo: PackageInfoVO.fromJson(
         readJsonMap(json, 'packageInfo'),
       ),
-      providerInfo: ProviderInfoVO.fromJson(
-        readJsonMap(json, 'providerInfo'),
+      providerInfo: providerInfoJson.isEmpty
+          ? const ProviderInfoVO.empty()
+          : ProviderInfoVO.fromJson(providerInfoJson),
+      requiredMaterials: readModelList<RequiredMaterialVO>(
+        json,
+        'requiredMaterials',
+        RequiredMaterialVO.fromJson,
       ),
       materials: readModelList<MaterialVO>(json, 'materials', MaterialVO.fromJson),
       visaDocuments: readModelList<VisaDocVO>(json, 'visaDocuments', VisaDocVO.fromJson),
-      rejectReason: readString(json, 'rejectReason'),
+      rejectReason: _readNullableString(json['rejectReason']),
       isUrgent: readBool(json, 'isUrgent'),
       nickname: readString(json, 'nickname'),
       avatarUrl: readString(json, 'avatarUrl'),
       country: readString(json, 'country'),
       createdAt: readString(json, 'createdAt'),
       updatedAt: readString(json, 'updatedAt'),
-      paymentUrl: readString(json, 'paymentUrl'),
+      paymentUrl: _readNullableString(json['paymentUrl']),
     );
   }
 
@@ -373,11 +418,15 @@ class VisaOrderVO {
       'currentStep': currentStep,
       'steps': steps.map((item) => item.toJson()).toList(growable: false),
       'amount': amount,
+      'currency': currency,
       'packageName': packageName,
       'tierName': tierName,
       'providerName': providerName,
       'packageInfo': packageInfo.toJson(),
       'providerInfo': providerInfo.toJson(),
+      'requiredMaterials': requiredMaterials
+          .map((item) => item.toJson())
+          .toList(growable: false),
       'materials': materials
           .map((item) => item.toJson())
           .toList(growable: false),
@@ -394,4 +443,17 @@ class VisaOrderVO {
       'paymentUrl': paymentUrl,
     };
   }
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }

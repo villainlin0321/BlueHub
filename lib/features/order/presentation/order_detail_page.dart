@@ -93,7 +93,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         _orderDetail = detail;
         _isLoading = false;
       });
-      _syncRequirements(detail.materials);
+      _syncRequirements(detail.requiredMaterials);
     } catch (error) {
       if (!mounted) {
         return;
@@ -105,30 +105,32 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
-  List<_MaterialRequirement> _buildMaterialRequirements(List<MaterialVO>? materials) {
-    final List<String> names = (materials ?? const <MaterialVO>[])
-        .map((item) => item.materialName.trim())
-        .where((name) => name.isNotEmpty)
-        .toSet()
+  List<_MaterialRequirement> _buildMaterialRequirements(
+    List<RequiredMaterialVO>? requiredMaterials,
+  ) {
+    final List<RequiredMaterialVO> materials = (requiredMaterials ??
+            const <RequiredMaterialVO>[])
+        .where((item) => item.name.trim().isNotEmpty)
         .toList(growable: false);
-    if (names.isEmpty) {
+    if (materials.isEmpty) {
       return OrderDetailPage._fallbackRequirements;
     }
-    return List<_MaterialRequirement>.generate(names.length, (int index) {
+    return List<_MaterialRequirement>.generate(materials.length, (int index) {
+      final RequiredMaterialVO item = materials[index];
       return _MaterialRequirement(
         id: 'material_${index + 1}',
-        title: names[index],
-        required: true,
+        title: item.name,
+        required: item.isRequired,
       );
     }, growable: false);
   }
 
-  void _syncRequirements(List<MaterialVO>? materials) {
+  void _syncRequirements(List<RequiredMaterialVO>? requiredMaterials) {
     if (!mounted) {
       return;
     }
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
-      materials,
+      requiredMaterials,
     );
     setState(() {
       final Map<String, List<PickedUploadFile>> next =
@@ -331,7 +333,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return;
     }
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
-      detail.materials,
+      detail.requiredMaterials,
     );
     _MaterialRequirement? missingRequirement;
     for (final _MaterialRequirement item in requirements) {
@@ -584,7 +586,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
   Future<String?> _showRejectReasonDialog() async {
     final TextEditingController controller = TextEditingController(
-      text: _orderDetail?.rejectReason.trim() ?? '',
+      text: (_orderDetail?.rejectReason ?? '').trim(),
     );
     String? reason;
     try {
@@ -712,7 +714,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final ShellRole currentRole = ref.watch(shellRoleProvider);
     final bool isServiceProvider = currentRole == ShellRole.serviceProvider;
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
-      _orderDetail?.materials,
+      _orderDetail?.requiredMaterials,
     );
     return Scaffold(
       backgroundColor: AppColors.background,
