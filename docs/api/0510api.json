@@ -38,6 +38,10 @@
       "description": "会话管理、消息收发、已读标记"
     },
     {
+      "name": "服务商财务模块",
+      "description": "余额概览、结算流水、提现申请、银行卡管理"
+    },
+    {
       "name": "收藏模块",
       "description": "收藏/取消收藏岗位或签证套餐"
     },
@@ -2320,6 +2324,80 @@
         }
       }
     },
+    "/visa-orders/{orderId}/refund": {
+      "post": {
+        "tags": [
+          "签证订单模块"
+        ],
+        "summary": "订单退款（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "refundOrder",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "订单 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/visa-orders/{orderId}/pay": {
       "post": {
         "tags": [
@@ -2905,6 +2983,210 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider/finance/withdraw": {
+      "post": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "申请提现（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "withdraw_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider/finance/bank-cards": {
+      "get": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "获取已绑定银行卡列表（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listBankCards",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultListProviderBankCardVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "添加银行卡（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "addBankCard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBankCardBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
                 }
               }
             }
@@ -5777,6 +6059,240 @@
         }
       }
     },
+    "/provider/finance/withdrawals": {
+      "get": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "获取提现记录列表（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listWithdrawals",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultProviderWithdrawalVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider/finance/transactions": {
+      "get": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "获取结算流水列表（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listTransactions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultProviderTransactionVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider/finance/overview": {
+      "get": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "获取财务概览（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "getOverview",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultProviderFinanceOverviewVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/positions": {
       "get": {
         "tags": [
@@ -7125,6 +7641,80 @@
           }
         }
       }
+    },
+    "/provider/finance/bank-cards/{cardId}": {
+      "delete": {
+        "tags": [
+          "服务商财务模块"
+        ],
+        "summary": "删除银行卡（服务商端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "deleteBankCard",
+        "parameters": [
+          {
+            "name": "cardId",
+            "in": "path",
+            "description": "银行卡 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7920,6 +8510,11 @@
         "type": "object",
         "description": "资质文件项",
         "properties": {
+          "docId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "记录 ID（更新已有记录时传入，新增时不传）"
+          },
           "docType": {
             "type": "string",
             "description": "文档类型：business_license / special_permit / id_card"
@@ -8466,6 +9061,60 @@
           "orderId",
           "providerId",
           "rating"
+        ]
+      },
+      "WithdrawBO": {
+        "type": "object",
+        "description": "申请提现请求",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "提现金额（必须大于 0 且不超过可提现余额）",
+            "example": 1000.0,
+            "minimum": 0.01
+          },
+          "cardId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "提现到的银行卡 ID"
+          }
+        },
+        "required": [
+          "amount",
+          "cardId"
+        ]
+      },
+      "AddBankCardBO": {
+        "type": "object",
+        "description": "添加银行卡请求",
+        "properties": {
+          "bankName": {
+            "type": "string",
+            "description": "银行名称",
+            "example": "中国工商银行",
+            "minLength": 1
+          },
+          "cardNoMask": {
+            "type": "string",
+            "description": "卡号掩码（展示用，如 **** 1234）",
+            "example": "**** **** **** 1234",
+            "minLength": 1
+          },
+          "cardHolder": {
+            "type": "string",
+            "description": "持卡人姓名",
+            "minLength": 1
+          },
+          "isDefault": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否设为默认提现卡"
+          }
+        },
+        "required": [
+          "bankName",
+          "cardHolder",
+          "cardNoMask"
         ]
       },
       "FilePresignBO": {
@@ -9749,6 +10398,16 @@
               "type": "string"
             }
           },
+          "pendingOrderCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "待处理订单数"
+          },
+          "activePackageCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "已上架套餐数"
+          },
           "qualificationDocs": {
             "type": "array",
             "description": "已上传的资质证明文件列表",
@@ -10693,6 +11352,309 @@
             "type": "string"
           },
           "data": {}
+        }
+      },
+      "AppResultPageResultProviderWithdrawalVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultProviderWithdrawalVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PageResultProviderWithdrawalVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/ProviderWithdrawalVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
+      "ProviderWithdrawalVO": {
+        "type": "object",
+        "description": "提现记录列表项",
+        "properties": {
+          "withdrawalId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "提现申请 ID"
+          },
+          "amount": {
+            "type": "number",
+            "description": "提现金额"
+          },
+          "currency": {
+            "type": "string",
+            "description": "币种",
+            "example": "CNY"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：pending=待处理；success=已打款；failed=失败"
+          },
+          "cardNoMask": {
+            "type": "string",
+            "description": "提现银行卡掩码，如 **** 1234"
+          },
+          "bankName": {
+            "type": "string",
+            "description": "银行名称"
+          },
+          "appliedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "申请时间"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "处理时间"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          }
+        }
+      },
+      "AppResultPageResultProviderTransactionVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultProviderTransactionVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PageResultProviderTransactionVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/ProviderTransactionVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
+      "ProviderTransactionVO": {
+        "type": "object",
+        "description": "结算流水列表项",
+        "properties": {
+          "txId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "流水 ID"
+          },
+          "orderNo": {
+            "type": "string",
+            "description": "订单号"
+          },
+          "clientNameMasked": {
+            "type": "string",
+            "description": "客户脱敏姓名"
+          },
+          "netAmount": {
+            "type": "number",
+            "description": "服务商实收金额，退款冲销时为负"
+          },
+          "currency": {
+            "type": "string",
+            "description": "币种",
+            "example": "CNY"
+          },
+          "txType": {
+            "type": "string",
+            "description": "流水类型：income=收入；refund=退款冲销"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "结算时间"
+          }
+        }
+      },
+      "AppResultProviderFinanceOverviewVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProviderFinanceOverviewVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "ProviderFinanceOverviewVO": {
+        "type": "object",
+        "description": "服务商财务概览",
+        "properties": {
+          "availableAmount": {
+            "type": "number",
+            "description": "可提现余额"
+          },
+          "pendingAmount": {
+            "type": "number",
+            "description": "未到账金额（活跃订单预期净收入）"
+          },
+          "totalEarned": {
+            "type": "number",
+            "description": "累计总收入"
+          },
+          "currency": {
+            "type": "string",
+            "description": "币种",
+            "example": "CNY"
+          }
+        }
+      },
+      "AppResultListProviderBankCardVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "array",
+            "description": "响应数据",
+            "items": {
+              "$ref": "#/components/schemas/ProviderBankCardVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "ProviderBankCardVO": {
+        "type": "object",
+        "description": "银行卡信息",
+        "properties": {
+          "cardId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "银行卡 ID"
+          },
+          "bankName": {
+            "type": "string",
+            "description": "银行名称"
+          },
+          "cardNoMask": {
+            "type": "string",
+            "description": "卡号掩码"
+          },
+          "cardHolder": {
+            "type": "string",
+            "description": "持卡人姓名"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "是否默认提现卡"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "绑定时间"
+          }
         }
       },
       "AppResultListPositionCategoryVO": {

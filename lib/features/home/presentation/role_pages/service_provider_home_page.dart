@@ -46,6 +46,7 @@ class ServiceProviderHomePage extends ConsumerWidget {
       label: '财务结算',
       assetPath: 'assets/images/mon6azmx-tafz6au.svg',
       fallback: Icons.account_balance_wallet_outlined,
+      routePath: RoutePaths.financeSettlement,
     ),
   ];
 

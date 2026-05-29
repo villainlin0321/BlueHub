@@ -29,13 +29,6 @@ class ServiceProviderMePage extends ConsumerWidget {
   static const String _badgeBgAsset = 'assets/images/mou588hj-umrxyv9.svg';
   static const String _badgeVAsset = 'assets/images/mou588hj-j0ju7dc.svg';
 
-  static const List<_StatData> _stats = <_StatData>[
-    _StatData(value: '88', label: '待处理订单'),
-    _StatData(value: '24', label: '已上架套餐'),
-    _StatData(value: '1.2k', label: '累计服务'),
-    _StatData(value: '4.87', label: '综合评分'),
-  ];
-
   static const List<_MenuData> _menus = <_MenuData>[
     _MenuData(
       label: '资质管理',
@@ -94,6 +87,10 @@ class ServiceProviderMePage extends ConsumerWidget {
     }
     if (label == '订单管理') {
       context.push(RoutePaths.orderManagement);
+      return;
+    }
+    if (label == '财务结算') {
+      context.push(RoutePaths.financeSettlement);
       return;
     }
     _showPlaceholderToast(context, label);
@@ -232,7 +229,10 @@ class _TopIconButton extends StatelessWidget {
             assetPath,
             width: 24,
             height: 24,
-            color: Colors.white,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, color: Colors.white, size: 20),
           ),
@@ -377,11 +377,16 @@ class _ProviderNameRow extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _StatCard extends ConsumerWidget {
   const _StatCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final VisaProviderProfileVO? providerProfile = ref
+        .watch(_currentProviderProfileProvider)
+        .asData
+        ?.value;
+    final List<_StatData> stats = _buildProviderStats(providerProfile);
     return Container(
       height: 88,
       padding: const EdgeInsets.fromLTRB(9, 20, 10, 20),
@@ -391,7 +396,7 @@ class _StatCard extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: ServiceProviderMePage._stats
+        children: stats
             .map(
               (_StatData item) => Expanded(
                 child: _StatItem(value: item.value, label: item.label),
@@ -438,7 +443,30 @@ class _StatItem extends StatelessWidget {
   }
 }
 
+List<_StatData> _buildProviderStats(VisaProviderProfileVO? providerProfile) {
+  return <_StatData>[
+    _StatData(
+      value: _formatProviderInteger(providerProfile?.pendingOrderCount ?? 0),
+      label: '待处理订单',
+    ),
+    _StatData(
+      value: _formatProviderInteger(providerProfile?.activePackageCount ?? 0),
+      label: '已上架套餐',
+    ),
+    _StatData(
+      value: _formatProviderCaseCount(providerProfile?.caseCount ?? 0),
+      label: '累计服务',
+    ),
+    _StatData(
+      value: _formatProviderRating(providerProfile?.rating ?? 0),
+      label: '综合评分',
+    ),
+  ];
+}
+
 String _formatProviderRating(double value) => value.toStringAsFixed(2);
+
+String _formatProviderInteger(int value) => value.toString();
 
 String _formatProviderCaseCount(int value) {
   final String digits = value.toString();

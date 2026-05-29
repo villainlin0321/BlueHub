@@ -200,6 +200,8 @@ class VisaProviderProfileVO {
     this.verifyRejectReason,
     required this.rating,
     required this.caseCount,
+    required this.pendingOrderCount,
+    required this.activePackageCount,
     required this.companyName,
     required this.unifiedCreditCode,
     required this.legalPerson,
@@ -222,6 +224,8 @@ class VisaProviderProfileVO {
   final String? verifyRejectReason;
   final double rating;
   final int caseCount;
+  final int pendingOrderCount;
+  final int activePackageCount;
   final String companyName;
   final String unifiedCreditCode;
   final String legalPerson;
@@ -245,6 +249,8 @@ class VisaProviderProfileVO {
       verifyRejectReason: _readNullableString(json['verifyRejectReason']),
       rating: readDouble(json, 'rating'),
       caseCount: readInt(json, 'caseCount'),
+      pendingOrderCount: readInt(json, 'pendingOrderCount'),
+      activePackageCount: readInt(json, 'activePackageCount'),
       companyName: readString(json, 'companyName'),
       unifiedCreditCode: readString(json, 'unifiedCreditCode'),
       legalPerson: readString(json, 'legalPerson'),
@@ -274,6 +280,8 @@ class VisaProviderProfileVO {
       if (verifyRejectReason != null) 'verifyRejectReason': verifyRejectReason,
       'rating': rating,
       'caseCount': caseCount,
+      'pendingOrderCount': pendingOrderCount,
+      'activePackageCount': activePackageCount,
       'companyName': companyName,
       'unifiedCreditCode': unifiedCreditCode,
       'legalPerson': legalPerson,

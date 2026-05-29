@@ -22,6 +22,10 @@ import '../../features/me/presentation/add_work_experience_page.dart';
 import '../../features/me/presentation/add_skill_certificate_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/company_my_info_page.dart';
+import '../../features/me/presentation/finance_bank_cards_page.dart';
+import '../../features/me/presentation/finance_settlement_page.dart';
+import '../../features/me/presentation/finance_transactions_page.dart';
+import '../../features/me/presentation/finance_withdrawals_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_info_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
@@ -200,6 +204,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                 orderNo: '',
               ),
         ),
+      ),
+      GoRoute(
+        path: RoutePaths.financeSettlement,
+        builder: (context, state) => const FinanceSettlementPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.financeTransactions,
+        builder: (context, state) => const FinanceTransactionsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.financeWithdrawals,
+        builder: (context, state) => const FinanceWithdrawalsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.financeBankCards,
+        builder: (context, state) => const FinanceBankCardsPage(),
       ),
       GoRoute(
         path: RoutePaths.serviceDetail,

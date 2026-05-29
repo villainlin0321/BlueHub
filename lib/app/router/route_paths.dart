@@ -101,6 +101,18 @@ class RoutePaths {
   /// 订单评价页。
   static const orderReview = '/order/review';
 
+  /// 财务结算页。
+  static const financeSettlement = '/finance/settlement';
+
+  /// 财务账单明细页。
+  static const financeTransactions = '/finance/settlement/transactions';
+
+  /// 财务提现记录页。
+  static const financeWithdrawals = '/finance/settlement/withdrawals';
+
+  /// 财务银行卡管理页。
+  static const financeBankCards = '/finance/settlement/bank-cards';
+
   /// 手机号登录路由名称。
   static const loginPhoneName = 'loginPhone';
 
