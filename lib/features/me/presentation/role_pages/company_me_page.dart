@@ -259,9 +259,7 @@ class _CompanyProfileRow extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('企业资料（占位）')));
+        context.push(RoutePaths.companyMyInfo);
       },
       borderRadius: BorderRadius.circular(16),
       child: Row(
