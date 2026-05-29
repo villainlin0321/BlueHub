@@ -22,6 +22,7 @@ import '../../features/me/presentation/add_work_experience_page.dart';
 import '../../features/me/presentation/add_skill_certificate_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/company_my_info_page.dart';
+import '../../features/me/presentation/blacklist_page.dart';
 import '../../features/me/presentation/finance_bank_cards_page.dart';
 import '../../features/me/presentation/finance_settlement_page.dart';
 import '../../features/me/presentation/finance_transactions_page.dart';
@@ -259,6 +260,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.blacklist,
+        builder: (context, state) => const BlacklistPage(),
       ),
       GoRoute(
         path: RoutePaths.myOrders,

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../auth/application/auth_role_mapper.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -113,7 +112,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 黑名单暂未接入真实业务，先保留占位提示避免点击无反馈。
   void _handleBlacklistTap() {
-    _showMessage('黑名单功能建设中');
+    context.push(RoutePaths.blacklist);
   }
 
   /// 注销能力尚未接入接口，先提示用户当前状态。
