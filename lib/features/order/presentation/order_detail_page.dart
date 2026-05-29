@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -58,6 +60,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   static const int _visaIssuedStepNumber = 6;
   final Map<String, List<PickedUploadFile>> _uploadsByRequirement =
       <String, List<PickedUploadFile>>{};
+  final List<PickedUploadFile> _visaDocumentUploads = <PickedUploadFile>[];
   final Set<String> _downloadingMaterialUrls = <String>{};
   VisaOrderVO? _orderDetail;
   bool _isLoading = true;
@@ -98,6 +101,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         _isLoading = false;
       });
       _syncRequirements(detail.requiredMaterials);
+      _syncVisaDocuments(detail.visaDocuments);
     } catch (error) {
       if (!mounted) {
         return;
@@ -149,6 +153,37 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     });
   }
 
+  void _syncVisaDocuments(List<VisaDocVO>? visaDocuments) {
+    if (!mounted) {
+      return;
+    }
+    final List<PickedUploadFile> uploads = (visaDocuments ?? const <VisaDocVO>[])
+        .map(_buildPickedUploadFileFromVisaDocument)
+        .toList(growable: false);
+    setState(() {
+      _visaDocumentUploads
+        ..clear()
+        ..addAll(uploads);
+    });
+  }
+
+  PickedUploadFile _buildPickedUploadFileFromVisaDocument(VisaDocVO document) {
+    final String normalizedPath = _normalizedPathFromUrl(document.fileUrl);
+    final String fileName = document.docName.trim().isNotEmpty
+        ? document.docName
+        : _displayNameFromUrl(document.fileUrl, fallback: '出证材料');
+    return PickedUploadFile(
+      id: 'visa_doc_${document.fileUrl.hashCode}_${document.uploadedAt}',
+      name: fileName,
+      path: normalizedPath.isEmpty ? document.fileUrl : normalizedPath,
+      sourceType: UploadSourceType.file,
+      state: UploadItemState.success,
+      isImage: UploadPickerUtils.isImagePath(normalizedPath),
+      uploadedFileUrl: document.fileUrl,
+      progress: 1,
+    );
+  }
+
   Map<String, List<PickedUploadFile>> _buildReadonlyUploadsByRequirement({
     required List<_MaterialRequirement> requirements,
     required List<MaterialVO> materials,
@@ -172,8 +207,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       uploadsByRequirement[requirement.id]!.add(
         PickedUploadFile(
-          id:
-              '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
+          id: '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
           name: _materialDisplayName(material),
           path: material.fileUrl,
           sourceType: UploadSourceType.file,
@@ -187,6 +221,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
 
     return uploadsByRequirement;
+  }
+
+  String _normalizedPathFromUrl(String value) {
+    final Uri? uri = Uri.tryParse(value);
+    if (uri == null) {
+      return value;
+    }
+    return uri.path.isEmpty ? value : uri.path;
+  }
+
+  String _displayNameFromUrl(String value, {required String fallback}) {
+    final Uri? uri = Uri.tryParse(value);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    final String basename = UploadPickerUtils.basename(value);
+    return basename.trim().isEmpty ? fallback : basename;
   }
 
   List<ProgressStep> _buildProgressSteps(VisaOrderVO? detail) {
@@ -300,6 +351,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         status.contains('review');
   }
 
+  bool _isRejectedStatus(VisaOrderVO? detail) {
+    return (detail?.status.trim().toLowerCase() ?? '') == 'rejected';
+  }
+
   bool _isEmbassySubmittedStage(VisaOrderVO? detail) {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
@@ -360,6 +415,33 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
+  Future<void> _openVisaDocumentUploadSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (BuildContext sheetContext) {
+        return _UploadTypeBottomSheet(
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromCamera();
+          },
+          onGalleryTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromGallery();
+          },
+          onFileTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromFiles();
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _pickFromCamera(_MaterialRequirement requirement) async {
     try {
       final List<PickedUploadFile> pickedFiles =
@@ -410,6 +492,55 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
+  Future<void> _pickVisaDocumentsFromCamera() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromCamera();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('打开相机失败，请稍后重试');
+    }
+  }
+
+  Future<void> _pickVisaDocumentsFromGallery() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromGallery();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('打开相册失败，请稍后重试');
+    }
+  }
+
+  Future<void> _pickVisaDocumentsFromFiles() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromFiles();
+      if (pickedFiles.isEmpty) {
+        _showMessage('未能读取所选文件');
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('选择文件失败，请稍后重试');
+    }
+  }
+
   Future<void> _appendUploadFiles(
     _MaterialRequirement requirement,
     List<PickedUploadFile> files,
@@ -437,6 +568,27 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     await _uploadPickedFiles(requirement, pendingFiles);
   }
 
+  Future<void> _appendVisaDocumentFiles(List<PickedUploadFile> files) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final List<PickedUploadFile> pendingFiles = files
+        .map(
+          (file) => file.copyWith(
+            state: UploadItemState.uploading,
+            progress: 0,
+            errorMessage: null,
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        )
+        .toList(growable: false);
+    setState(() {
+      _visaDocumentUploads.addAll(pendingFiles);
+    });
+    await _uploadPickedVisaDocuments(pendingFiles);
+  }
+
   void _removeUploadFile(
     _MaterialRequirement requirement,
     PickedUploadFile file,
@@ -445,6 +597,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       _uploadsByRequirement[requirement.id] = _filesFor(
         requirement,
       ).where((item) => item.id != file.id).toList();
+    });
+  }
+
+  void _removeVisaDocumentFile(PickedUploadFile file) {
+    setState(() {
+      _visaDocumentUploads.removeWhere((item) => item.id == file.id);
     });
   }
 
@@ -462,6 +620,21 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             return update(item);
           })
           .toList(growable: false);
+    });
+  }
+
+  void _updateVisaDocumentFile(
+    String fileId,
+    PickedUploadFile Function(PickedUploadFile current) update,
+  ) {
+    setState(() {
+      for (int index = 0; index < _visaDocumentUploads.length; index++) {
+        final PickedUploadFile item = _visaDocumentUploads[index];
+        if (item.id == fileId) {
+          _visaDocumentUploads[index] = update(item);
+          break;
+        }
+      }
     });
   }
 
@@ -515,6 +688,66 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         }
         _updateUploadFile(
           requirement,
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.failure,
+            progress: 0,
+            errorMessage: _resolveErrorMessage(
+              error,
+              fallback: '上传失败，请删除后重新上传',
+            ),
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadPickedVisaDocuments(List<PickedUploadFile> files) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final fileService = ref.read(fileServiceProvider);
+    for (final PickedUploadFile file in files) {
+      try {
+        final uploaded = await fileService.uploadFile(
+          path: file.path,
+          scene: FileScene.visaDoc,
+          errorMessage: '出证材料上传失败，请稍后重试',
+          onSendProgress: (int sent, int total) {
+            if (!mounted || total <= 0) {
+              return;
+            }
+            final double progress = (sent / total).clamp(0, 1).toDouble();
+            _updateVisaDocumentFile(
+              file.id,
+              (current) => current.copyWith(
+                state: UploadItemState.uploading,
+                progress: progress,
+                errorMessage: null,
+              ),
+            );
+          },
+        );
+        if (!mounted) {
+          return;
+        }
+        _updateVisaDocumentFile(
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.success,
+            progress: 1,
+            errorMessage: null,
+            uploadedFileId: uploaded.fileId,
+            uploadedFileUrl: uploaded.fileUrl,
+          ),
+        );
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+        _updateVisaDocumentFile(
           file.id,
           (current) => current.copyWith(
             state: UploadItemState.failure,
@@ -616,6 +849,72 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       setState(() => _isSubmitting = false);
       _showMessage(_resolveErrorMessage(error, fallback: '提交材料失败，请稍后重试'));
+    }
+  }
+
+  Future<void> _completeOrderWithVisaDocuments() async {
+    if (_isSubmitting || _isProcessingOrder) {
+      return;
+    }
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单详情尚未加载完成');
+      return;
+    }
+    if (_visaDocumentUploads.isEmpty) {
+      _showMessage('请先上传出证材料');
+      return;
+    }
+    if (_visaDocumentUploads.any((file) => file.state != UploadItemState.success)) {
+      _showMessage('存在未上传成功的出证材料，请处理后再完结');
+      return;
+    }
+
+    final List<DocumentItemBO> newDocuments = _visaDocumentUploads
+        .where(
+          (file) =>
+              file.uploadedFileId != null &&
+              (file.uploadedFileUrl ?? '').trim().isNotEmpty,
+        )
+        .map(
+          (file) => DocumentItemBO(
+            docName: file.name,
+            fileId: file.uploadedFileId!,
+            fileUrl: file.uploadedFileUrl!.trim(),
+            fileType: FileService.resolveMimeType(file.path),
+          ),
+        )
+        .toList(growable: false);
+
+    setState(() {
+      _isSubmitting = true;
+      _isProcessingOrder = true;
+    });
+    try {
+      if (newDocuments.isNotEmpty) {
+        await ref
+            .read(visaOrderServiceProvider)
+            .uploadVisaDocuments(
+              orderId: detail.orderId,
+              request: UploadVisaDocumentsBO(documents: newDocuments),
+            );
+      }
+      if (!mounted) {
+        return;
+      }
+      context.pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '上传出证材料失败，请稍后重试'));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _isProcessingOrder = false;
+        });
+      }
     }
   }
 
@@ -774,61 +1073,19 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<String?> _showRejectReasonDialog() async {
-    final TextEditingController controller = TextEditingController(
-      text: (_orderDetail?.rejectReason ?? '').trim(),
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext sheetContext) {
+        return _RejectReasonBottomSheet(
+          initialReason: (_orderDetail?.rejectReason ?? '').trim(),
+          onClose: () => Navigator.of(sheetContext).pop(),
+        );
+      },
     );
-    String? reason;
-    try {
-      reason = await showDialog<String>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          String? errorText;
-          return StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(VoidCallback fn) setDialogState,
-                ) {
-                  return AlertDialog(
-                    title: const Text('驳回重传'),
-                    content: TextField(
-                      controller: controller,
-                      maxLines: 3,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: '请输入驳回原因',
-                        errorText: errorText,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('取消'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final String value = controller.text.trim();
-                          if (value.isEmpty) {
-                            setDialogState(() {
-                              errorText = '请输入驳回原因';
-                            });
-                            return;
-                          }
-                          Navigator.of(dialogContext).pop(value);
-                        },
-                        child: const Text('确认'),
-                      ),
-                    ],
-                  );
-                },
-          );
-        },
-      );
-    } finally {
-      controller.dispose();
-    }
-    return reason;
   }
 
   Future<void> _processOrder({
@@ -911,9 +1168,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
     final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
     final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
-    final bool shouldShowApplicantMaterialCard = _shouldShowApplicantMaterialCard(
-      detail,
-    );
+    final bool isEmbassySubmittedStage = _isEmbassySubmittedStage(detail);
+    final bool isVisaIssuedStage = _isVisaIssuedStage(detail);
+    final bool shouldShowApplicantMaterialCard =
+        _shouldShowApplicantMaterialCard(detail);
     final bool shouldShowProviderMaterialCard = _shouldShowProviderMaterialCard(
       detail,
     );
@@ -970,6 +1228,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         isServiceProvider: isServiceProvider,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
+        isEmbassySubmittedStage: isEmbassySubmittedStage,
+        isVisaIssuedStage: isVisaIssuedStage,
         shouldShowApplicantMaterialCard: shouldShowApplicantMaterialCard,
         shouldShowProviderMaterialCard: shouldShowProviderMaterialCard,
       ),
@@ -978,6 +1238,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         isServiceProvider: isServiceProvider,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
+        isEmbassySubmittedStage: isEmbassySubmittedStage,
       ),
     );
   }
@@ -987,9 +1248,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required bool isServiceProvider,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
+    required bool isEmbassySubmittedStage,
   }) {
     if (detail == null) {
       return const SizedBox.shrink();
+    }
+    if (_isRejectedStatus(detail)) {
+      return const _RejectedStatusBar();
     }
     if (isUploadMaterialsStage) {
       if (isServiceProvider) {
@@ -1019,6 +1284,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         onPressed: _noopAction,
       );
     }
+    if (isEmbassySubmittedStage && isServiceProvider) {
+      return _BottomSubmitBar(
+        label: _isSubmitting || _isProcessingOrder ? '完结中...' : '完结',
+        enabled:
+            !_isLoading &&
+            _errorMessage == null &&
+            !_isSubmitting &&
+            !_isProcessingOrder,
+        onPressed: _completeOrderWithVisaDocuments,
+      );
+    }
     return const SizedBox.shrink();
   }
 
@@ -1028,6 +1304,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required bool isServiceProvider,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
+    required bool isEmbassySubmittedStage,
+    required bool isVisaIssuedStage,
     required bool shouldShowApplicantMaterialCard,
     required bool shouldShowProviderMaterialCard,
   }) {
@@ -1068,10 +1346,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           child: isServiceProvider
               ? shouldShowProviderMaterialCard
                     ? _ProviderMaterialReviewCard(
-                  materials: detail.materials,
-                  downloadingFileUrls: _downloadingMaterialUrls,
-                  onDownloadTap: _downloadMaterial,
-                )
+                        materials: detail.materials,
+                        downloadingFileUrls: _downloadingMaterialUrls,
+                        onDownloadTap: _downloadMaterial,
+                      )
                     : const SizedBox.shrink()
               : shouldShowApplicantMaterialCard
               ? _MaterialUploadCard(
@@ -1086,6 +1364,18 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 )
               : const SizedBox.shrink(),
         ),
+        if (isServiceProvider &&
+            (isEmbassySubmittedStage || isVisaIssuedStage))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: _ProviderVisaDocumentUploadCard(
+              files: _visaDocumentUploads,
+              allowUpload: isEmbassySubmittedStage,
+              allowDelete: isEmbassySubmittedStage,
+              onUploadTap: _openVisaDocumentUploadSheet,
+              onDeleteFile: _removeVisaDocumentFile,
+            ),
+          ),
         const SizedBox(height: 24),
       ],
     );
@@ -1239,6 +1529,55 @@ class _MaterialUploadCard extends StatelessWidget {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _ProviderVisaDocumentUploadCard extends StatelessWidget {
+  const _ProviderVisaDocumentUploadCard({
+    required this.files,
+    required this.allowUpload,
+    required this.allowDelete,
+    required this.onUploadTap,
+    required this.onDeleteFile,
+  });
+
+  final List<PickedUploadFile> files;
+  final bool allowUpload;
+  final bool allowDelete;
+  final VoidCallback onUploadTap;
+  final ValueChanged<PickedUploadFile> onDeleteFile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '添加出证材料',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF171A1D),
+              fontWeight: FontWeight.w400,
+              fontSize: 14,
+              height: 22 / 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MaterialUploadContent(
+            files: files,
+            allowUpload: allowUpload,
+            allowDelete: allowDelete,
+            onAddTap: onUploadTap,
+            onDeleteFile: onDeleteFile,
+          ),
+        ],
       ),
     );
   }
@@ -1560,11 +1899,14 @@ class _MaterialUploadContent extends StatelessWidget {
             child: _UploadFileCard(
               file: file,
               showRemoveButton: allowDelete && onDeleteFile != null,
-              onRemoveTap: onDeleteFile == null ? null : () => onDeleteFile!(file),
+              onRemoveTap: onDeleteFile == null
+                  ? null
+                  : () => onDeleteFile!(file),
             ),
           );
         }),
-        if (allowUpload && onAddTap != null) _UploadPlaceholder(onTap: onAddTap!),
+        if (allowUpload && onAddTap != null)
+          _UploadPlaceholder(onTap: onAddTap!),
       ],
     );
   }
@@ -1849,6 +2191,337 @@ class _ReadonlyUploadPlaceholder extends StatelessWidget {
   }
 }
 
+class _RejectReasonBottomSheet extends StatefulWidget {
+  const _RejectReasonBottomSheet({
+    required this.initialReason,
+    required this.onClose,
+  });
+
+  final String initialReason;
+  final VoidCallback onClose;
+
+  @override
+  State<_RejectReasonBottomSheet> createState() =>
+      _RejectReasonBottomSheetState();
+}
+
+class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
+  static const int _maxReasonLength = 50;
+
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: _truncateReason(widget.initialReason.trim()),
+    )..addListener(_handleTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  String _truncateReason(String value) {
+    if (value.length <= _maxReasonLength) {
+      return value;
+    }
+    return value.substring(0, _maxReasonLength);
+  }
+
+  void _handleTextChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (_errorText != null && _controller.text.trim().isNotEmpty) {
+        _errorText = null;
+      }
+    });
+  }
+
+  void _handleConfirm() {
+    final String reason = _controller.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _errorText = '请输入驳回原因');
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final double bottomSafeArea = MediaQuery.paddingOf(context).bottom;
+    final double topSafeArea = MediaQuery.paddingOf(context).top;
+    final int currentLength = _controller.text.length;
+
+    return TapBlankToDismissKeyboard(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(top: topSafeArea + 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(
+                      height: 52,
+                      child: Stack(
+                        children: <Widget>[
+                          Align(
+                            child: Text(
+                              '驳回材料',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: const Color(0xFF171A1D),
+                                fontSize: 17,
+                                height: 25 / 17,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: InkWell(
+                              onTap: widget.onClose,
+                              borderRadius: BorderRadius.circular(10),
+                              child: const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Color(0xFF171A1D),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Text(
+                        '请填写驳回原因，客户将收到通知并重新上传材料',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF595959),
+                          fontSize: 14,
+                          height: 20 / 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _RejectReasonInputCard(
+                        controller: _controller,
+                        errorText: _errorText,
+                        currentLength: currentLength,
+                        maxLength: _maxReasonLength,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFF0F0F0)),
+                        ),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            12,
+                            12,
+                            12,
+                            12 + bottomSafeArea,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: _RejectReasonActionButton(
+                                  label: '取消',
+                                  backgroundColor: const Color(0xFFF0F0F0),
+                                  foregroundColor: const Color(0xFF262626),
+                                  onTap: widget.onClose,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _RejectReasonActionButton(
+                                  label: '确认驳回',
+                                  backgroundColor: const Color(0xFFD9363E),
+                                  foregroundColor: Colors.white,
+                                  onTap: _handleConfirm,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RejectReasonInputCard extends StatelessWidget {
+  const _RejectReasonInputCard({
+    required this.controller,
+    required this.errorText,
+    required this.currentLength,
+    required this.maxLength,
+  });
+
+  final TextEditingController controller;
+  final String? errorText;
+  final int currentLength;
+  final int maxLength;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: hasError
+                ? Border.all(color: const Color(0xFFD9363E))
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: controller,
+                autofocus: true,
+                minLines: 4,
+                maxLines: 4,
+                maxLength: maxLength,
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(maxLength),
+                ],
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF262626),
+                  fontSize: 14,
+                  height: 24 / 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  counterText: '',
+                  hintText: '例如：护照首页照片反光，请重新上传清晰照片…',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    height: 24 / 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '$currentLength/$maxLength',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFBFBFBF),
+                    fontSize: 14,
+                    height: 20 / 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasError) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            errorText!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFFD9363E),
+              fontSize: 12,
+              height: 18 / 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RejectReasonActionButton extends StatelessWidget {
+  const _RejectReasonActionButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          backgroundColor: backgroundColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: foregroundColor,
+            fontSize: 16,
+            height: 22 / 16,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _UploadTypeBottomSheet extends StatelessWidget {
   const _UploadTypeBottomSheet({
     required this.onClose,
@@ -2069,6 +2742,51 @@ class _BottomSubmitBar extends StatelessWidget {
               label: label,
               onPressed: enabled ? onPressed : () {},
               enabled: enabled,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RejectedStatusBar extends StatelessWidget {
+  const _RejectedStatusBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFFF0F0F0),
+                offset: const Offset(0, -0.5),
+              ),
+            ],
+          ),
+          child: Container(
+            height: 44,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD9D9D9)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '已驳回',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF8C8C8C),
+                fontSize: 16,
+                height: 22 / 16,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
         ),

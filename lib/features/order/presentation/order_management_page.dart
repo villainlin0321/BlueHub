@@ -4,8 +4,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../features/me/data/dictionary_providers.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
+import '../../../shared/network/models/dictionary_models.dart';
 import 'order_detail_page.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
@@ -23,12 +25,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     _OrderTab.pending,
     _OrderTab.processing,
     _OrderTab.completed,
-  ];
-
-  static const List<_CountryFilter> _countries = <_CountryFilter>[
-    _CountryFilter.all,
-    _CountryFilter.germany,
-    _CountryFilter.france,
   ];
 
   static const List<_StatusFilter> _statuses = <_StatusFilter>[
@@ -58,7 +54,12 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       ..showSnackBar(SnackBar(content: Text('$label（占位）')));
   }
 
-  Future<void> _loadOrders() async {
+  Future<void> _loadOrders({
+    _CountryFilter? country,
+    _StatusFilter? status,
+  }) async {
+    final _CountryFilter effectiveCountry = country ?? _selectedCountry;
+    final _StatusFilter effectiveStatus = status ?? _selectedStatus;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -68,8 +69,8 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       final response = await ref.read(visaOrderServiceProvider).listProviderOrders(
         page: 1,
         pageSize: 20,
-        status: _selectedStatus.apiValue,
-        country: _selectedCountry.apiValue,
+        status: effectiveStatus.apiValue,
+        country: effectiveCountry.apiValue,
       );
       if (!mounted) {
         return;
@@ -99,18 +100,57 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     return message.isEmpty ? '订单加载失败，请稍后重试' : message;
   }
 
+  Future<List<_CountryFilter>> _loadCountryFilters() async {
+    final result = await ref.read(
+      countrySearchProvider(
+        const CountrySearchQuery(page: 1, pageSize: 300),
+      ).future,
+    );
+    final Set<String> seen = <String>{};
+    final List<_CountryFilter> countries = result.list
+        .where(
+          (CountryVO item) =>
+              item.countryCode.trim().isNotEmpty &&
+              item.nameZh.trim().isNotEmpty &&
+              seen.add(item.countryCode.trim()),
+        )
+        .map(
+          (CountryVO item) => _CountryFilter(
+            label: item.nameZh.trim(),
+            apiValue: item.countryCode.trim(),
+          ),
+        )
+        .toList(growable: false);
+    return <_CountryFilter>[_CountryFilter.all, ...countries];
+  }
+
   Future<void> _selectCountry() async {
+    final List<_CountryFilter> countries;
+    try {
+      countries = await _loadCountryFilters();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('国家列表加载失败，请稍后重试')));
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final _CountryFilter? result = await _showFilterSheet<_CountryFilter>(
       title: '选择国家',
       currentValue: _selectedCountry,
-      options: _countries,
+      options: countries,
       labelBuilder: (_CountryFilter item) => item.label,
     );
     if (result == null || result == _selectedCountry) {
       return;
     }
     setState(() => _selectedCountry = result);
-    await _loadOrders();
+    await _loadOrders(country: result);
   }
 
   Future<void> _selectStatus() async {
@@ -124,7 +164,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       return;
     }
     setState(() => _selectedStatus = result);
-    await _loadOrders();
+    await _loadOrders(status: result);
   }
 
   Future<T?> _showFilterSheet<T>({
@@ -138,49 +178,60 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       backgroundColor: Colors.white,
       showDragHandle: true,
       builder: (BuildContext context) {
+        final double maxHeight = MediaQuery.sizeOf(context).height * 0.6;
         return SafeArea(
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                ...options.map((T option) {
-                  final bool selected = option == currentValue;
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    title: Text(
-                      labelBuilder(option),
-                      style: TextStyle(
-                        color: selected
-                            ? const Color(0xFF096DD9)
-                            : const Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w400,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFF262626),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    trailing: selected
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF096DD9),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(option),
-                  );
-                }),
-              ],
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final T option = options[index];
+                        final bool selected = option == currentValue;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          title: Text(
+                            labelBuilder(option),
+                            style: TextStyle(
+                              color: selected
+                                  ? const Color(0xFF096DD9)
+                                  : const Color(0xFF262626),
+                              fontSize: 14,
+                              fontWeight:
+                                  selected ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                          trailing: selected
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Color(0xFF096DD9),
+                                )
+                              : null,
+                          onTap: () => Navigator.of(context).pop(option),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -307,7 +358,10 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                           _selectedCountry = _CountryFilter.all;
                           _selectedStatus = _StatusFilter.all;
                         });
-                        await _loadOrders();
+                        await _loadOrders(
+                          country: _CountryFilter.all,
+                          status: _StatusFilter.all,
+                        );
                       },
                     );
                   }
@@ -384,15 +438,25 @@ enum _OrderTab {
   final String label;
 }
 
-enum _CountryFilter {
-  all('全部国家', null),
-  germany('德国', 'DE'),
-  france('法国', 'FR');
+class _CountryFilter {
+  const _CountryFilter({required this.label, this.apiValue});
 
-  const _CountryFilter(this.label, this.apiValue);
+  static const _CountryFilter all = _CountryFilter(label: '全部国家');
 
   final String label;
   final String? apiValue;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _CountryFilter &&
+            runtimeType == other.runtimeType &&
+            label == other.label &&
+            apiValue == other.apiValue;
+  }
+
+  @override
+  int get hashCode => Object.hash(label, apiValue);
 }
 
 enum _StatusFilter {
