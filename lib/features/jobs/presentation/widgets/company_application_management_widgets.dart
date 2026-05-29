@@ -161,7 +161,7 @@ class CompanyApplicationJobFilterBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Image.asset(
+                SvgPicture.asset(
                   CompanyApplicationManagementStyles.filterArrowAssetPath,
                   width: 12,
                   height: 12,
@@ -267,6 +267,7 @@ class CompanyApplicationCard extends StatelessWidget {
             ),
             Container(
               decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(
                   CompanyApplicationManagementStyles.cardRadius,
                 ),

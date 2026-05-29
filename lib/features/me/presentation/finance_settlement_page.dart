@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
@@ -78,11 +79,12 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
 
     try {
       final financeService = ref.read(providerFinanceServiceProvider);
-      final List<Object?> results = await Future.wait<Object?>(<Future<Object?>>[
-        financeService.getOverview(),
-        financeService.listTransactions(page: 1, pageSize: 20),
-        financeService.listBankCards(),
-      ]);
+      final List<Object?> results =
+          await Future.wait<Object?>(<Future<Object?>>[
+            financeService.getOverview(),
+            financeService.listTransactions(page: 1, pageSize: 20),
+            financeService.listBankCards(),
+          ]);
 
       if (!mounted) {
         return;
@@ -107,7 +109,9 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
   }
 
   Future<void> _submitAddBankCard(AddBankCardBO request) async {
-    await ref.read(providerFinanceServiceProvider).addBankCard(request: request);
+    await ref
+        .read(providerFinanceServiceProvider)
+        .addBankCard(request: request);
     if (!mounted) {
       return;
     }
@@ -119,9 +123,11 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
     required double amount,
     required int cardId,
   }) async {
-    await ref.read(providerFinanceServiceProvider).withdraw(
-      request: WithdrawBO(amount: amount, cardId: cardId),
-    );
+    await ref
+        .read(providerFinanceServiceProvider)
+        .withdraw(
+          request: WithdrawBO(amount: amount, cardId: cardId),
+        );
     if (!mounted) {
       return;
     }
@@ -230,7 +236,10 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
     }
 
     if (_errorMessage != null) {
-      return _FinanceStateView(message: _errorMessage!, onRetry: _loadFinanceData);
+      return _FinanceStateView(
+        message: _errorMessage!,
+        onRetry: _loadFinanceData,
+      );
     }
 
     final ProviderFinanceOverviewVO overview =
@@ -578,7 +587,9 @@ class _TransactionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item.orderNo.trim().isEmpty ? _mapTransactionType(item.txType) : '订单号: ${item.orderNo}',
+                  item.orderNo.trim().isEmpty
+                      ? _mapTransactionType(item.txType)
+                      : '订单号: ${item.orderNo}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -669,7 +680,8 @@ class _FinanceSheetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final double maxHeight = MediaQuery.sizeOf(context).height - topPadding - 12;
+    final double maxHeight =
+        MediaQuery.sizeOf(context).height - topPadding - 12;
 
     return SafeArea(
       top: false,
@@ -751,13 +763,9 @@ class _SheetEmptyState extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 13,
-            height: 18 / 13,
-          ),
+        child: AppEmptyState(
+          message: message,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );
@@ -839,7 +847,9 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
           minimumSize: const Size.fromHeight(44),
           backgroundColor: const Color(0xFF096DD9),
           disabledBackgroundColor: const Color(0xFF91CAFF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Text(_isSubmitting ? '提交中...' : '确认添加'),
       ),
@@ -909,10 +919,7 @@ class _WithdrawSheet extends StatefulWidget {
   final double availableAmount;
   final String currency;
   final List<ProviderBankCardVO> bankCards;
-  final Future<void> Function({
-    required double amount,
-    required int cardId,
-  })
+  final Future<void> Function({required double amount, required int cardId})
   onSubmit;
   final Future<void> Function() onAddBankCardTap;
 
@@ -995,7 +1002,9 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
           minimumSize: const Size.fromHeight(44),
           backgroundColor: const Color(0xFF096DD9),
           disabledBackgroundColor: const Color(0xFF91CAFF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Text(_isSubmitting ? '提交中...' : '确认提现'),
       ),
@@ -1041,7 +1050,9 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                       .map(
                         (ProviderBankCardVO card) => DropdownMenuItem<int>(
                           value: card.cardId,
-                          child: Text('${card.bankName} ${card.cardNoMask}'.trim()),
+                          child: Text(
+                            '${card.bankName} ${card.cardNoMask}'.trim(),
+                          ),
                         ),
                       )
                       .toList(growable: false),

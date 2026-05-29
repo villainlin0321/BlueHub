@@ -8,6 +8,7 @@ import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/network/models/dictionary_models.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
@@ -897,13 +898,9 @@ class _JobsEmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(
-        child: Text(
-          '暂无岗位数据',
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+        child: AppEmptyState(
+          message: '暂无岗位数据',
+          padding: EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );

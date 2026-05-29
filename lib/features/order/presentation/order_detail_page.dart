@@ -18,6 +18,7 @@ import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/progress_stepper.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -157,9 +158,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (!mounted) {
       return;
     }
-    final List<PickedUploadFile> uploads = (visaDocuments ?? const <VisaDocVO>[])
-        .map(_buildPickedUploadFileFromVisaDocument)
-        .toList(growable: false);
+    final List<PickedUploadFile> uploads =
+        (visaDocuments ?? const <VisaDocVO>[])
+            .map(_buildPickedUploadFileFromVisaDocument)
+            .toList(growable: false);
     setState(() {
       _visaDocumentUploads
         ..clear()
@@ -865,7 +867,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       _showMessage('请先上传出证材料');
       return;
     }
-    if (_visaDocumentUploads.any((file) => file.state != UploadItemState.success)) {
+    if (_visaDocumentUploads.any(
+      (file) => file.state != UploadItemState.success,
+    )) {
       _showMessage('存在未上传成功的出证材料，请处理后再完结');
       return;
     }
@@ -1364,8 +1368,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 )
               : const SizedBox.shrink(),
         ),
-        if (isServiceProvider &&
-            (isEmbassySubmittedStage || isVisaIssuedStage))
+        if (isServiceProvider && (isEmbassySubmittedStage || isVisaIssuedStage))
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: _ProviderVisaDocumentUploadCard(
@@ -1639,12 +1642,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: Text(
-                '暂无客户上传材料',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontSize: 14,
-                ),
+              child: const AppEmptyState(
+                message: '暂无客户上传材料',
+                padding: EdgeInsets.symmetric(horizontal: 24),
               ),
             )
           else

@@ -9,6 +9,7 @@ import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import 'order_detail_page.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
@@ -66,12 +67,14 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     });
 
     try {
-      final response = await ref.read(visaOrderServiceProvider).listProviderOrders(
-        page: 1,
-        pageSize: 20,
-        status: effectiveStatus.apiValue,
-        country: effectiveCountry.apiValue,
-      );
+      final response = await ref
+          .read(visaOrderServiceProvider)
+          .listProviderOrders(
+            page: 1,
+            pageSize: 20,
+            status: effectiveStatus.apiValue,
+            country: effectiveCountry.apiValue,
+          );
       if (!mounted) {
         return;
       }
@@ -207,7 +210,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                         final T option = options[index];
                         final bool selected = option == currentValue;
                         return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                          ),
                           title: Text(
                             labelBuilder(option),
                             style: TextStyle(
@@ -215,8 +220,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                                   ? const Color(0xFF096DD9)
                                   : const Color(0xFF262626),
                               fontSize: 14,
-                              fontWeight:
-                                  selected ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                           trailing: selected
@@ -240,12 +246,14 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   }
 
   List<VisaOrderVO> get _visibleOrders {
-    return _orders.where((VisaOrderVO item) {
-      if (_selectedTab == _OrderTab.all) {
-        return true;
-      }
-      return _tabForStatus(item.status) == _selectedTab;
-    }).toList(growable: false);
+    return _orders
+        .where((VisaOrderVO item) {
+          if (_selectedTab == _OrderTab.all) {
+            return true;
+          }
+          return _tabForStatus(item.status) == _selectedTab;
+        })
+        .toList(growable: false);
   }
 
   _OrderTab _tabForStatus(String status) {
@@ -472,11 +480,7 @@ enum _StatusFilter {
   final String apiValue;
 }
 
-enum _OrderStatusStyle {
-  red,
-  blue,
-  outlined,
-}
+enum _OrderStatusStyle { red, blue, outlined }
 
 class _OrderTabs extends StatelessWidget {
   const _OrderTabs({
@@ -500,39 +504,42 @@ class _OrderTabs extends StatelessWidget {
         ),
       ),
       child: Row(
-        children: tabs.map((_OrderTab tab) {
-          final bool selected = tab == selectedTab;
-          return Expanded(
-            child: InkWell(
-              onTap: () => onSelected(tab),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    tab.label,
-                    style: TextStyle(
-                      color: selected
-                          ? const Color(0xFF096DD9)
-                          : const Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight:
-                          selected ? FontWeight.w500 : FontWeight.w400,
-                      height: 22 / 14,
-                    ),
+        children: tabs
+            .map((_OrderTab tab) {
+              final bool selected = tab == selectedTab;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onSelected(tab),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Text(
+                        tab.label,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFF096DD9)
+                              : const Color(0xFF262626),
+                          fontSize: 14,
+                          fontWeight: selected
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                          height: 22 / 14,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Container(
+                        width: 20,
+                        height: 2,
+                        color: selected
+                            ? const Color(0xFF096DD9)
+                            : Colors.transparent,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 9),
-                  Container(
-                    width: 20,
-                    height: 2,
-                    color: selected
-                        ? const Color(0xFF096DD9)
-                        : Colors.transparent,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(growable: false),
+                ),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -574,10 +581,7 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _FilterButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -689,9 +693,7 @@ class _OrderCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  ClipOval(
-                    child: _OrderAvatar(avatarUrl: order.avatarUrl),
-                  ),
+                  ClipOval(child: _OrderAvatar(avatarUrl: order.avatarUrl)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -886,10 +888,7 @@ class _OrderAvatar extends StatelessWidget {
 }
 
 class _StatusTag extends StatelessWidget {
-  const _StatusTag({
-    required this.label,
-    required this.style,
-  });
+  const _StatusTag({required this.label, required this.style});
 
   final String label;
   final _OrderStatusStyle style;
@@ -976,12 +975,13 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor =
-        outlined ? Colors.white : const Color(0xFF096DD9);
-    final Color borderColor =
-        outlined ? const Color(0xFFD9D9D9) : const Color(0xFF096DD9);
-    final Color textColor =
-        outlined ? const Color(0xFF262626) : Colors.white;
+    final Color backgroundColor = outlined
+        ? Colors.white
+        : const Color(0xFF096DD9);
+    final Color borderColor = outlined
+        ? const Color(0xFFD9D9D9)
+        : const Color(0xFF096DD9);
+    final Color textColor = outlined ? const Color(0xFF262626) : Colors.white;
 
     return SizedBox(
       width: 77,
@@ -1025,27 +1025,11 @@ class _OrderManagementEmptyState extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(24, 80, 24, bottomInset + 24),
       children: <Widget>[
-        const Icon(
-          Icons.receipt_long_outlined,
-          size: 48,
-          color: Color(0xFFBFBFBF),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          '暂无符合条件的订单',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
+        const AppEmptyState(message: '暂无符合条件的订单'),
         const SizedBox(height: 16),
         TextButton(
           onPressed: onResetTap,
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF096DD9),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
           child: const Text('重置筛选'),
         ),
       ],
@@ -1070,11 +1054,7 @@ class _OrderManagementErrorState extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(24, 80, 24, bottomInset + 24),
       children: <Widget>[
-        const Icon(
-          Icons.cloud_off_rounded,
-          size: 48,
-          color: Color(0xFFBFBFBF),
-        ),
+        const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFFBFBFBF)),
         const SizedBox(height: 16),
         Text(
           message,
@@ -1088,9 +1068,7 @@ class _OrderManagementErrorState extends StatelessWidget {
         const SizedBox(height: 16),
         TextButton(
           onPressed: onRetryTap,
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF096DD9),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
           child: const Text('重新加载'),
         ),
       ],
