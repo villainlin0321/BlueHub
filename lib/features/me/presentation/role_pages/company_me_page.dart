@@ -50,11 +50,6 @@ class CompanyMePage extends ConsumerWidget {
       fallbackIcon: Icons.groups_outlined,
     ),
     _MenuData(
-      label: '签证服务',
-      iconAsset: 'assets/images/mou64ult-83t4ndy.svg',
-      fallbackIcon: Icons.public_outlined,
-    ),
-    _MenuData(
       label: '订单管理',
       iconAsset: 'assets/images/mou64ulu-l17h9p8.svg',
       fallbackIcon: Icons.checklist_rounded,
@@ -104,6 +99,10 @@ class CompanyMePage extends ConsumerWidget {
     }
     if (label == '应聘管理') {
       context.push(RoutePaths.companyApplications);
+      return;
+    }
+    if (label == '人才中心') {
+      context.go(RoutePaths.jobs);
       return;
     }
     _showPlaceholderToast(context, label);
@@ -566,18 +565,16 @@ class _MenuTile extends StatelessWidget {
             SizedBox(
               width: 24,
               height: 24,
-              child: item.label == '签证服务'
-                  ? const _VisaServiceIcon()
-                  : SvgPicture.asset(
-                      item.iconAsset,
-                      width: 24,
-                      height: 24,
-                      placeholderBuilder: (_) => Icon(
-                        item.fallbackIcon,
-                        size: 22,
-                        color: const Color(0xFF262626),
-                      ),
-                    ),
+              child: SvgPicture.asset(
+                item.iconAsset,
+                width: 24,
+                height: 24,
+                placeholderBuilder: (_) => Icon(
+                  item.fallbackIcon,
+                  size: 22,
+                  color: const Color(0xFF262626),
+                ),
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -598,40 +595,6 @@ class _MenuTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _VisaServiceIcon extends StatelessWidget {
-  const _VisaServiceIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        Container(
-          width: 18,
-          height: 18,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF262626), width: 1.6),
-          ),
-        ),
-        SvgPicture.asset(
-          'assets/images/mou64ulu-4e3m1j7.svg',
-          width: 18,
-          height: 1,
-        ),
-        Container(
-          width: 6,
-          height: 18,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFF262626), width: 1.6),
-          ),
-        ),
-      ],
     );
   }
 }

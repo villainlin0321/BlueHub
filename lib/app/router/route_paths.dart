@@ -38,6 +38,9 @@ class RoutePaths {
   /// 设置页。
   static const settings = '/me/settings';
 
+  /// 黑名单页。
+  static const blacklist = '/me/blacklist';
+
   /// 我的简历页。
   static const myResume = '/me/resume';
 

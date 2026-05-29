@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../auth/application/auth_role_mapper.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -35,37 +34,35 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: <Widget>[
                 _SettingsHeader(onBackTap: context.pop),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 24),
-                    child: Column(
-                      children: <Widget>[
-                        _SettingsCard(
-                          children: <Widget>[
-                            _LanguageRow(
-                              isChinese: _isChinese,
-                              onChanged: _handleLanguageChanged,
-                            ),
-                            _SettingsActionRow(
-                              title: '我的信息',
-                              onTap: _handleMyInfoTap,
-                            ),
-                            _SettingsActionRow(
-                              title: '黑名单',
-                              onTap: _handleBlacklistTap,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 396),
-                        _BottomTextButton(
-                          label: '退出登录',
-                          onTap: _isLoggingOut ? null : _handleLogoutTap,
-                        ),
-                        const SizedBox(height: 16),
-                        _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
-                      ],
-                    ),
+                  child: Column(
+                    children: <Widget>[
+                      _SettingsCard(
+                        children: <Widget>[
+                          _LanguageRow(
+                            isChinese: _isChinese,
+                            onChanged: _handleLanguageChanged,
+                          ),
+                          _SettingsActionRow(
+                            title: '我的信息',
+                            onTap: _handleMyInfoTap,
+                          ),
+                          _SettingsActionRow(
+                            title: '黑名单',
+                            onTap: _handleBlacklistTap,
+                          ),
+                        ],
+                      ),
+                      Expanded(child: SizedBox()),
+                      _BottomTextButton(
+                        label: '退出登录',
+                        onTap: _isLoggingOut ? null : _handleLogoutTap,
+                      ),
+                      const SizedBox(height: 16),
+                      _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 100),
               ],
             ),
             if (_isLoggingOut)
@@ -115,7 +112,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 黑名单暂未接入真实业务，先保留占位提示避免点击无反馈。
   void _handleBlacklistTap() {
-    _showMessage('黑名单功能建设中');
+    context.push(RoutePaths.blacklist);
   }
 
   /// 注销能力尚未接入接口，先提示用户当前状态。
