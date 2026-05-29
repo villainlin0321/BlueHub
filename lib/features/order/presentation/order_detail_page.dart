@@ -899,16 +899,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               request: UploadVisaDocumentsBO(documents: newDocuments),
             );
       }
-      await ref
-          .read(visaOrderServiceProvider)
-          .processOrder(
-            orderId: detail.orderId,
-            request: const ProcessOrderBO(
-              action: 'approve',
-              remark: '',
-              nextStatus: 'visa_issued',
-            ),
-          );
       if (!mounted) {
         return;
       }
@@ -917,7 +907,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '订单处理失败，请稍后重试'));
+      _showMessage(_resolveErrorMessage(error, fallback: '上传出证材料失败，请稍后重试'));
     } finally {
       if (mounted) {
         setState(() {
@@ -1179,6 +1169,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
     final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
     final bool isEmbassySubmittedStage = _isEmbassySubmittedStage(detail);
+    final bool isVisaIssuedStage = _isVisaIssuedStage(detail);
     final bool shouldShowApplicantMaterialCard =
         _shouldShowApplicantMaterialCard(detail);
     final bool shouldShowProviderMaterialCard = _shouldShowProviderMaterialCard(
@@ -1238,6 +1229,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
         isEmbassySubmittedStage: isEmbassySubmittedStage,
+        isVisaIssuedStage: isVisaIssuedStage,
         shouldShowApplicantMaterialCard: shouldShowApplicantMaterialCard,
         shouldShowProviderMaterialCard: shouldShowProviderMaterialCard,
       ),
@@ -1313,6 +1305,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
     required bool isEmbassySubmittedStage,
+    required bool isVisaIssuedStage,
     required bool shouldShowApplicantMaterialCard,
     required bool shouldShowProviderMaterialCard,
   }) {
@@ -1371,11 +1364,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 )
               : const SizedBox.shrink(),
         ),
-        if (isServiceProvider && isEmbassySubmittedStage)
+        if (isServiceProvider &&
+            (isEmbassySubmittedStage || isVisaIssuedStage))
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: _ProviderVisaDocumentUploadCard(
               files: _visaDocumentUploads,
+              allowUpload: isEmbassySubmittedStage,
+              allowDelete: isEmbassySubmittedStage,
               onUploadTap: _openVisaDocumentUploadSheet,
               onDeleteFile: _removeVisaDocumentFile,
             ),
@@ -1541,11 +1537,15 @@ class _MaterialUploadCard extends StatelessWidget {
 class _ProviderVisaDocumentUploadCard extends StatelessWidget {
   const _ProviderVisaDocumentUploadCard({
     required this.files,
+    required this.allowUpload,
+    required this.allowDelete,
     required this.onUploadTap,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
+  final bool allowUpload;
+  final bool allowDelete;
   final VoidCallback onUploadTap;
   final ValueChanged<PickedUploadFile> onDeleteFile;
 
@@ -1572,8 +1572,8 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
           const SizedBox(height: 12),
           _MaterialUploadContent(
             files: files,
-            allowUpload: true,
-            allowDelete: true,
+            allowUpload: allowUpload,
+            allowDelete: allowDelete,
             onAddTap: onUploadTap,
             onDeleteFile: onDeleteFile,
           ),
