@@ -1,29 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../auth/presentation/qualification_certification_flow.dart';
+import '../../visa/data/provider_models.dart';
+import '../../visa/data/provider_providers.dart';
+import '../data/dictionary_providers.dart';
+import 'country_options_bottom_sheet.dart';
 
-/// 服务商“我的信息”页，按 Figma 设计稿实现静态占位展示。
-class ServiceProviderMyInfoPage extends StatelessWidget {
+final _serviceProviderMyInfoProfileProvider =
+    FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
+      final service = ref.watch(providerServiceProvider);
+      return service.getMyProfile();
+    });
+
+/// 服务商“我的信息”页，使用当前登录服务商资料接口渲染。
+class ServiceProviderMyInfoPage extends ConsumerWidget {
   const ServiceProviderMyInfoPage({super.key});
 
-  static const String _logoAsset = 'assets/images/mou588hj-vpl779h.png';
-  static const List<_InfoItem> _infoItems = <_InfoItem>[
-    _InfoItem(label: '企业名称', value: '中欧出海签证服务'),
-    _InfoItem(label: '统一社会\n信用代码', value: 'CKHR87982937938497'),
-    _InfoItem(label: '法人姓名', value: '王晓晓'),
-    _InfoItem(label: '官方联系人', value: '王晓霞'),
-    _InfoItem(label: '联系电话', value: '13290867643'),
-    _InfoItem(label: '邮箱', value: 'lksdoieu@126.com'),
-    _InfoItem(label: '官网', value: 'www.idsfoi948.com'),
-    _InfoItem(label: '从业年限', value: '12'),
-    _InfoItem(label: '国家/地区', value: '德国/意大利/法国'),
-  ];
+  static const String _logoFallbackAsset = 'assets/images/mou588hj-vpl779h.png';
+  static const String _idCardEmblemPlaceholderAsset =
+      'assets/images/qualification_id_emblem.png';
+  static const String _idCardPortraitPlaceholderAsset =
+      'assets/images/qualification_id_portrait.png';
+  static const String _licensePlaceholderAsset =
+      'assets/images/qualification_license_placeholder.png';
+  static const String _noteText =
+      '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final AsyncValue<VisaProviderProfileVO> profileAsync = ref.watch(
+      _serviceProviderMyInfoProfileProvider,
+    );
+    final Map<String, String> countryLabelMap = ref
+        .watch(countrySearchProvider(const CountrySearchQuery()))
+        .maybeWhen(
+          data: (result) => buildCountryLabelMap(result.list),
+          orElse: () => const <String, String>{},
+        );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -33,27 +50,16 @@ class ServiceProviderMyInfoPage extends StatelessWidget {
           children: <Widget>[
             _Header(onBackTap: context.pop),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _InfoSection(items: _infoItems),
-                    const SizedBox(height: 12),
-                    const _QualificationSection(),
-                    const SizedBox(height: 12),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。',
-                        style: TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          height: 18 / 12,
-                        ),
-                      ),
+              child: profileAsync.when(
+                data: (VisaProviderProfileVO profile) =>
+                    _ServiceProviderMyInfoContent(
+                      profile: profile,
+                      countryLabelMap: countryLabelMap,
                     ),
-                  ],
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => _ServiceProviderMyInfoErrorView(
+                  onRetry: () =>
+                      ref.invalidate(_serviceProviderMyInfoProfileProvider),
                 ),
               ),
             ),
@@ -70,6 +76,90 @@ class ServiceProviderMyInfoPage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ServiceProviderMyInfoContent extends StatelessWidget {
+  const _ServiceProviderMyInfoContent({
+    required this.profile,
+    required this.countryLabelMap,
+  });
+
+  final VisaProviderProfileVO profile;
+  final Map<String, String> countryLabelMap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_InfoItem> infoItems = <_InfoItem>[
+      _InfoItem(label: '企业名称', value: _textOrPlaceholder(profile.companyName)),
+      _InfoItem(
+        label: '统一社会\n信用代码',
+        value: _textOrPlaceholder(profile.unifiedCreditCode),
+      ),
+      _InfoItem(label: '法人姓名', value: _textOrPlaceholder(profile.legalPerson)),
+      _InfoItem(label: '官方联系人', value: _textOrPlaceholder(profile.contactPerson)),
+      _InfoItem(label: '联系电话', value: _textOrPlaceholder(profile.contactPhone)),
+      _InfoItem(label: '邮箱', value: _textOrPlaceholder(profile.contactEmail)),
+      _InfoItem(label: '官网', value: _textOrPlaceholder(profile.website)),
+      _InfoItem(
+        label: '从业年限',
+        value: profile.yearsOfService > 0 ? '${profile.yearsOfService}' : '未完善',
+      ),
+      _InfoItem(
+        label: '国家/地区',
+        value: _serviceCountriesText(profile.serviceCountries, countryLabelMap),
+      ),
+    ];
+    final _ProviderQualificationDocs docs = _ProviderQualificationDocs.fromList(
+      profile.qualificationDocs,
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _InfoSection(
+            avatarUrl: profile.logoUrl,
+            items: infoItems,
+          ),
+          const SizedBox(height: 12),
+          _QualificationSection(docs: docs),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              ServiceProviderMyInfoPage._noteText,
+              style: TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 12,
+                height: 18 / 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _textOrPlaceholder(String value) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? '未完善' : trimmed;
+  }
+
+  static String _serviceCountriesText(
+    List<String> countries,
+    Map<String, String> countryLabelMap,
+  ) {
+    final List<String> labels = countries
+        .map((value) => resolveCountryLabel(value, countryLabelMap).trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (labels.isEmpty) {
+      return '未完善';
+    }
+    return labels.join('/');
   }
 }
 
@@ -109,8 +199,9 @@ class _Header extends StatelessWidget {
 }
 
 class _InfoSection extends StatelessWidget {
-  const _InfoSection({required this.items});
+  const _InfoSection({required this.avatarUrl, required this.items});
 
+  final String avatarUrl;
   final List<_InfoItem> items;
 
   @override
@@ -135,7 +226,7 @@ class _InfoSection extends StatelessWidget {
               ),
             ),
           ),
-          const _AvatarRow(),
+          _AvatarRow(avatarUrl: avatarUrl),
           for (int index = 0; index < items.length; index++) ...<Widget>[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
@@ -150,10 +241,19 @@ class _InfoSection extends StatelessWidget {
 }
 
 class _AvatarRow extends StatelessWidget {
-  const _AvatarRow();
+  const _AvatarRow({required this.avatarUrl});
+
+  final String avatarUrl;
 
   @override
   Widget build(BuildContext context) {
+    final Widget fallback = Image.asset(
+      ServiceProviderMyInfoPage._logoFallbackAsset,
+      width: 40,
+      height: 40,
+      fit: BoxFit.cover,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Row(
@@ -168,11 +268,26 @@ class _AvatarRow extends StatelessWidget {
               ),
             ),
           ),
-          Image.asset(
-            ServiceProviderMyInfoPage._logoAsset,
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
+          ClipOval(
+            child: avatarUrl.trim().isEmpty
+                ? fallback
+                : Image.network(
+                    avatarUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => fallback,
+                    loadingBuilder: (
+                      BuildContext context,
+                      Widget child,
+                      ImageChunkEvent? progress,
+                    ) {
+                      if (progress == null) {
+                        return child;
+                      }
+                      return fallback;
+                    },
+                  ),
           ),
         ],
       ),
@@ -224,7 +339,9 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _QualificationSection extends StatelessWidget {
-  const _QualificationSection();
+  const _QualificationSection({required this.docs});
+
+  final _ProviderQualificationDocs docs;
 
   @override
   Widget build(BuildContext context) {
@@ -256,44 +373,50 @@ class _QualificationSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             children: <Widget>[
               Expanded(
-                child: _MaterialPlaceholderCard(
-                  imageAsset: 'assets/images/qualification_id_emblem.png',
+                child: _MaterialPreviewCard(
+                  imageUrl: docs.idCardEmblem?.fileUrl ?? '',
+                  placeholderAsset:
+                      ServiceProviderMyInfoPage._idCardEmblemPlaceholderAsset,
                   height: 100,
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
-                child: _MaterialPlaceholderCard(
-                  imageAsset: 'assets/images/qualification_id_portrait.png',
+                child: _MaterialPreviewCard(
+                  imageUrl: docs.idCardPortrait?.fileUrl ?? '',
+                  placeholderAsset:
+                      ServiceProviderMyInfoPage._idCardPortraitPlaceholderAsset,
                   height: 100,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
                 child: _DocumentBlock(
                   label: '营业执照',
-                  child: _MaterialPlaceholderCard(
-                    imageAsset:
-                        'assets/images/qualification_license_placeholder.png',
+                  child: _MaterialPreviewCard(
+                    imageUrl: docs.businessLicense?.fileUrl ?? '',
+                    placeholderAsset:
+                        ServiceProviderMyInfoPage._licensePlaceholderAsset,
                     height: 110,
                   ),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: _DocumentBlock(
                   label: '特许经验许可',
-                  child: _MaterialPlaceholderCard(
-                    imageAsset:
-                        'assets/images/qualification_license_placeholder.png',
+                  child: _MaterialPreviewCard(
+                    imageUrl: docs.specialPermit?.fileUrl ?? '',
+                    placeholderAsset:
+                        ServiceProviderMyInfoPage._licensePlaceholderAsset,
                     height: 110,
                   ),
                 ),
@@ -335,17 +458,26 @@ class _DocumentBlock extends StatelessWidget {
   }
 }
 
-class _MaterialPlaceholderCard extends StatelessWidget {
-  const _MaterialPlaceholderCard({
-    required this.imageAsset,
+class _MaterialPreviewCard extends StatelessWidget {
+  const _MaterialPreviewCard({
+    required this.imageUrl,
+    required this.placeholderAsset,
     required this.height,
   });
 
-  final String imageAsset;
+  final String imageUrl;
+  final String placeholderAsset;
   final double height;
 
   @override
   Widget build(BuildContext context) {
+    final Widget fallback = Image.asset(
+      placeholderAsset,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
+    );
+
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -360,11 +492,54 @@ class _MaterialPlaceholderCard extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.asset(
-          imageAsset,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
+        child: imageUrl.trim().isEmpty
+            ? fallback
+            : Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
+                loadingBuilder: (
+                  BuildContext context,
+                  Widget child,
+                  ImageChunkEvent? progress,
+                ) {
+                  if (progress == null) {
+                    return child;
+                  }
+                  return fallback;
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _ServiceProviderMyInfoErrorView extends StatelessWidget {
+  const _ServiceProviderMyInfoErrorView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Text(
+              '加载服务商资料失败，请稍后重试',
+              style: TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                height: 20 / 14,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onRetry, child: const Text('重试')),
+          ],
         ),
       ),
     );
@@ -420,4 +595,66 @@ class _InfoItem {
 
   final String label;
   final String value;
+}
+
+class _ProviderQualificationDocs {
+  const _ProviderQualificationDocs({
+    this.businessLicense,
+    this.specialPermit,
+    this.idCardEmblem,
+    this.idCardPortrait,
+  });
+
+  factory _ProviderQualificationDocs.fromList(List<QualificationDocVO> docs) {
+    QualificationDocVO? businessLicense;
+    QualificationDocVO? specialPermit;
+    QualificationDocVO? idCardEmblem;
+    QualificationDocVO? idCardPortrait;
+    final List<QualificationDocVO> idCards = <QualificationDocVO>[];
+
+    for (final QualificationDocVO doc in docs) {
+      final String docType = doc.docType.trim();
+      if (docType == 'business_license') {
+        businessLicense ??= doc;
+        continue;
+      }
+      if (docType == 'special_permit') {
+        specialPermit ??= doc;
+        continue;
+      }
+      if (docType == 'id_card') {
+        idCards.add(doc);
+      }
+    }
+
+    for (final QualificationDocVO doc in idCards) {
+      final String name = doc.docName.trim();
+      if (idCardEmblem == null && name.contains('国徽')) {
+        idCardEmblem = doc;
+        continue;
+      }
+      if (idCardPortrait == null && name.contains('人像')) {
+        idCardPortrait = doc;
+      }
+    }
+
+    if (idCards.isNotEmpty) {
+      idCardEmblem ??= idCards.first;
+      if (idCards.length > 1) {
+        idCardPortrait ??= idCards[1];
+      }
+    }
+
+    return _ProviderQualificationDocs(
+      businessLicense: businessLicense,
+      specialPermit: specialPermit,
+      idCardEmblem: idCardEmblem,
+      idCardPortrait: idCardPortrait,
+    );
+  }
+
+  final QualificationDocVO? businessLicense;
+  final QualificationDocVO? specialPermit;
+  final QualificationDocVO? idCardEmblem;
+  final QualificationDocVO? idCardPortrait;
 }
