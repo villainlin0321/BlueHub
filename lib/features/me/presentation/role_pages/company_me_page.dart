@@ -4,11 +4,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/network/api_exception.dart';
 import '../../../employer/data/employer_models.dart';
 import '../../../employer/data/employer_providers.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
+import '../country_options_bottom_sheet.dart';
 
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
@@ -17,7 +19,7 @@ final _currentEmployerProfileProvider =
     });
 
 /// 企业端我的页，按 Figma 设计图还原。
-class CompanyMePage extends StatelessWidget {
+class CompanyMePage extends ConsumerWidget {
   const CompanyMePage({super.key});
 
   static const String _messageAsset = 'assets/images/home_message_center.svg';
@@ -60,7 +62,7 @@ class CompanyMePage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: bottomInset + 96),
@@ -73,7 +75,7 @@ class CompanyMePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String label) => _handleMenuTap(context, label),
+              onTap: (String label) => _handleMenuTap(context, ref, label),
             ),
           ),
         ],
@@ -87,14 +89,13 @@ class CompanyMePage extends StatelessWidget {
     ).showSnackBar(SnackBar(content: Text('$label（占位）')));
   }
 
-  void _handleMenuTap(BuildContext context, String label) {
+  Future<void> _handleMenuTap(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+  ) async {
     if (label == '企业资质') {
-      context.push(
-        RoutePaths.qualificationCertification,
-        extra: QualificationCertificationPageArgs(
-          role: QualificationCertificationRole.company,
-        ),
-      );
+      await _openQualificationCertification(context, ref);
       return;
     }
     if (label == '订单管理') {
@@ -106,6 +107,39 @@ class CompanyMePage extends StatelessWidget {
       return;
     }
     _showPlaceholderToast(context, label);
+  }
+
+  Future<void> _openQualificationCertification(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      final profile = await ref.read(_currentEmployerProfileProvider.future);
+      final countries = await loadCountries(ref);
+      final draft = QualificationCertificationDraft()
+        ..fillFromEmployerProfile(
+          profile,
+          countryLabelMap: buildCountryLabelMap(countries),
+        );
+      if (!context.mounted) {
+        return;
+      }
+      context.push(
+        RoutePaths.qualificationCertification,
+        extra: QualificationCertificationPageArgs(
+          role: QualificationCertificationRole.company,
+          draft: draft,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      final String message = error is ApiException
+          ? error.message
+          : '资料加载失败，请稍后重试';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 }
 

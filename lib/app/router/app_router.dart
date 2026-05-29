@@ -27,6 +27,7 @@ import '../../features/me/presentation/my_info_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
+import '../../features/me/presentation/service_provider_my_info_page.dart';
 import '../../features/me/presentation/settings_page.dart';
 import '../../features/message/application/chat/chat_page_args.dart';
 import '../../features/message/presentation/chat_page.dart';
@@ -226,6 +227,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myInfo,
         builder: (context, state) => const MyInfoPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceProviderMyInfo,
+        builder: (context, state) => const ServiceProviderMyInfoPage(),
       ),
       GoRoute(
         path: RoutePaths.companyMyInfo,

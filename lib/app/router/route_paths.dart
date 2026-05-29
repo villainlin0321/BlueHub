@@ -32,6 +32,9 @@ class RoutePaths {
   /// 企业端我的信息页。
   static const companyMyInfo = '/me/company-info';
 
+  /// 服务商我的信息页。
+  static const serviceProviderMyInfo = '/me/service-provider-info';
+
   /// 设置页。
   static const settings = '/me/settings';
 

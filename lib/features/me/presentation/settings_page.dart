@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -107,7 +108,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         context.push(RoutePaths.companyMyInfo);
         return;
       case ShellRole.serviceProvider:
-        _showMessage('机构资料建设中');
+        context.push(RoutePaths.serviceProviderMyInfo);
         return;
     }
   }
