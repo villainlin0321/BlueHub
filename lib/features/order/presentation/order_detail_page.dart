@@ -52,6 +52,10 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
+  static const int _uploadMaterialsStepNumber = 3;
+  static const int _materialReviewStepNumber = 4;
+  static const int _embassySubmittedStepNumber = 5;
+  static const int _visaIssuedStepNumber = 6;
   final Map<String, List<PickedUploadFile>> _uploadsByRequirement =
       <String, List<PickedUploadFile>>{};
   final Set<String> _downloadingMaterialUrls = <String>{};
@@ -108,10 +112,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   List<_MaterialRequirement> _buildMaterialRequirements(
     List<RequiredMaterialVO>? requiredMaterials,
   ) {
-    final List<RequiredMaterialVO> materials = (requiredMaterials ??
-            const <RequiredMaterialVO>[])
-        .where((item) => item.name.trim().isNotEmpty)
-        .toList(growable: false);
+    final List<RequiredMaterialVO> materials =
+        (requiredMaterials ?? const <RequiredMaterialVO>[])
+            .where((item) => item.name.trim().isNotEmpty)
+            .toList(growable: false);
     if (materials.isEmpty) {
       return OrderDetailPage._fallbackRequirements;
     }
@@ -136,12 +140,53 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final Map<String, List<PickedUploadFile>> next =
           <String, List<PickedUploadFile>>{};
       for (final _MaterialRequirement requirement in requirements) {
-        next[requirement.id] = _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[];
+        next[requirement.id] =
+            _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[];
       }
       _uploadsByRequirement
         ..clear()
         ..addAll(next);
     });
+  }
+
+  Map<String, List<PickedUploadFile>> _buildReadonlyUploadsByRequirement({
+    required List<_MaterialRequirement> requirements,
+    required List<MaterialVO> materials,
+  }) {
+    final Map<String, List<PickedUploadFile>> uploadsByRequirement =
+        <String, List<PickedUploadFile>>{
+          for (final _MaterialRequirement requirement in requirements)
+            requirement.id: <PickedUploadFile>[],
+        };
+    final Map<String, _MaterialRequirement> requirementByTitle =
+        <String, _MaterialRequirement>{
+          for (final _MaterialRequirement requirement in requirements)
+            requirement.title.trim(): requirement,
+        };
+
+    for (final MaterialVO material in materials) {
+      final _MaterialRequirement? requirement =
+          requirementByTitle[material.materialName.trim()];
+      if (requirement == null) {
+        continue;
+      }
+      uploadsByRequirement[requirement.id]!.add(
+        PickedUploadFile(
+          id:
+              '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
+          name: _materialDisplayName(material),
+          path: material.fileUrl,
+          sourceType: UploadSourceType.file,
+          state: UploadItemState.success,
+          isImage: material.fileType.trim().toLowerCase().startsWith('image/'),
+          sizeLabel: material.fileSize > 0
+              ? UploadPickerUtils.formatFileSize(material.fileSize)
+              : null,
+        ),
+      );
+    }
+
+    return uploadsByRequirement;
   }
 
   List<ProgressStep> _buildProgressSteps(VisaOrderVO? detail) {
@@ -150,25 +195,45 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return const <ProgressStep>[
         ProgressStep(label: '提交订单', state: ProgressStepState.completed),
         ProgressStep(label: '支付费用', state: ProgressStepState.completed),
-        ProgressStep(label: '上传材料', state: ProgressStepState.current, number: 3),
-        ProgressStep(label: '材料审核', state: ProgressStepState.pending, number: 4),
-        ProgressStep(label: '使馆递交', state: ProgressStepState.pending, number: 5),
-        ProgressStep(label: '签证出签', state: ProgressStepState.pending, number: 6),
+        ProgressStep(
+          label: '上传材料',
+          state: ProgressStepState.current,
+          number: 3,
+        ),
+        ProgressStep(
+          label: '材料审核',
+          state: ProgressStepState.pending,
+          number: 4,
+        ),
+        ProgressStep(
+          label: '使馆递交',
+          state: ProgressStepState.pending,
+          number: 5,
+        ),
+        ProgressStep(
+          label: '签证出签',
+          state: ProgressStepState.pending,
+          number: 6,
+        ),
       ];
     }
-    return steps.map((StepVO step) {
-      final int currentStep = detail?.currentStep ?? 0;
-      final ProgressStepState state;
-      if (step.step < currentStep) {
-        state = ProgressStepState.completed;
-      } else if (step.step == currentStep) {
-        state = ProgressStepState.current;
-      } else {
-        state = ProgressStepState.pending;
-      }
-      final String label = step.label.trim().isEmpty ? '步骤${step.step}' : step.label;
-      return ProgressStep(label: label, state: state, number: step.step);
-    }).toList(growable: false);
+    return steps
+        .map((StepVO step) {
+          final int currentStep = detail?.currentStep ?? 0;
+          final ProgressStepState state;
+          if (step.step < currentStep) {
+            state = ProgressStepState.completed;
+          } else if (step.step == currentStep) {
+            state = ProgressStepState.current;
+          } else {
+            state = ProgressStepState.pending;
+          }
+          final String label = step.label.trim().isEmpty
+              ? '步骤${step.step}'
+              : step.label;
+          return ProgressStep(label: label, state: state, number: step.step);
+        })
+        .toList(growable: false);
   }
 
   void _showMessage(String message) {
@@ -192,7 +257,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       extra: ChatPageArgs(
         targetUserId: detail.providerInfo.providerId,
         targetUserRole: 'visa_provider',
-        nickname: detail.providerName.trim().isEmpty ? '服务商' : detail.providerName,
+        nickname: detail.providerName.trim().isEmpty
+            ? '服务商'
+            : detail.providerName,
         avatarUrl: detail.avatarUrl,
         relatedOrderId: detail.orderId,
         packageName: detail.packageName,
@@ -204,6 +271,67 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   List<PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
     return _uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[];
   }
+
+  String _currentStepLabel(VisaOrderVO? detail) {
+    if (detail == null) {
+      return '';
+    }
+    for (final StepVO step in detail.steps) {
+      if (step.step == detail.currentStep) {
+        return step.label.trim();
+      }
+    }
+    return detail.statusLabel.trim();
+  }
+
+  bool _isUploadMaterialsStage(VisaOrderVO? detail) {
+    final String currentStepLabel = _currentStepLabel(detail);
+    final String status = detail?.status.trim().toLowerCase() ?? '';
+    return (detail?.currentStep ?? 0) == _uploadMaterialsStepNumber ||
+        currentStepLabel.contains('上传材料') ||
+        status.contains('upload');
+  }
+
+  bool _isMaterialReviewStage(VisaOrderVO? detail) {
+    final String currentStepLabel = _currentStepLabel(detail);
+    final String status = detail?.status.trim().toLowerCase() ?? '';
+    return (detail?.currentStep ?? 0) == _materialReviewStepNumber ||
+        currentStepLabel.contains('材料审核') ||
+        status.contains('review');
+  }
+
+  bool _isEmbassySubmittedStage(VisaOrderVO? detail) {
+    final String currentStepLabel = _currentStepLabel(detail);
+    final String status = detail?.status.trim().toLowerCase() ?? '';
+    return (detail?.currentStep ?? 0) == _embassySubmittedStepNumber ||
+        currentStepLabel.contains('使馆递交') ||
+        status.contains('embassy');
+  }
+
+  bool _isVisaIssuedStage(VisaOrderVO? detail) {
+    final String currentStepLabel = _currentStepLabel(detail);
+    final String status = detail?.status.trim().toLowerCase() ?? '';
+    return (detail?.currentStep ?? 0) == _visaIssuedStepNumber ||
+        currentStepLabel.contains('签证出签') ||
+        status.contains('visa_issued') ||
+        status.contains('issued');
+  }
+
+  bool _shouldShowApplicantMaterialCard(VisaOrderVO? detail) {
+    return _isUploadMaterialsStage(detail) ||
+        _isMaterialReviewStage(detail) ||
+        _isEmbassySubmittedStage(detail) ||
+        _isVisaIssuedStage(detail);
+  }
+
+  bool _shouldShowProviderMaterialCard(VisaOrderVO? detail) {
+    return _isUploadMaterialsStage(detail) ||
+        _isMaterialReviewStage(detail) ||
+        _isEmbassySubmittedStage(detail) ||
+        _isVisaIssuedStage(detail);
+  }
+
+  void _noopAction() {}
 
   Future<void> _openUploadSheet(_MaterialRequirement requirement) async {
     await showModalBottomSheet<void>(
@@ -239,7 +367,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (pickedFiles.isEmpty) {
         return;
       }
-      _appendUploadFiles(requirement, pickedFiles);
+      await _appendUploadFiles(requirement, pickedFiles);
     } catch (_) {
       if (!mounted) {
         return;
@@ -255,7 +383,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (pickedFiles.isEmpty) {
         return;
       }
-      _appendUploadFiles(requirement, pickedFiles);
+      await _appendUploadFiles(requirement, pickedFiles);
     } catch (_) {
       if (!mounted) {
         return;
@@ -273,7 +401,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return;
       }
 
-      _appendUploadFiles(requirement, pickedFiles);
+      await _appendUploadFiles(requirement, pickedFiles);
     } catch (_) {
       if (!mounted) {
         return;
@@ -282,19 +410,31 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
-  void _appendUploadFiles(
+  Future<void> _appendUploadFiles(
     _MaterialRequirement requirement,
     List<PickedUploadFile> files,
-  ) {
+  ) async {
     if (files.isEmpty) {
       return;
     }
+    final List<PickedUploadFile> pendingFiles = files
+        .map(
+          (file) => file.copyWith(
+            state: UploadItemState.uploading,
+            progress: 0,
+            errorMessage: null,
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        )
+        .toList(growable: false);
     setState(() {
       _uploadsByRequirement[requirement.id] = <PickedUploadFile>[
         ..._filesFor(requirement),
-        ...files,
+        ...pendingFiles,
       ];
     });
+    await _uploadPickedFiles(requirement, pendingFiles);
   }
 
   void _removeUploadFile(
@@ -314,13 +454,81 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     PickedUploadFile Function(PickedUploadFile current) update,
   ) {
     setState(() {
-      _uploadsByRequirement[requirement.id] = _filesFor(requirement).map((item) {
-        if (item.id != fileId) {
-          return item;
-        }
-        return update(item);
-      }).toList(growable: false);
+      _uploadsByRequirement[requirement.id] = _filesFor(requirement)
+          .map((item) {
+            if (item.id != fileId) {
+              return item;
+            }
+            return update(item);
+          })
+          .toList(growable: false);
     });
+  }
+
+  Future<void> _uploadPickedFiles(
+    _MaterialRequirement requirement,
+    List<PickedUploadFile> files,
+  ) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final fileService = ref.read(fileServiceProvider);
+    for (final PickedUploadFile file in files) {
+      try {
+        final uploaded = await fileService.uploadFile(
+          path: file.path,
+          scene: FileScene.material,
+          errorMessage: '材料文件上传失败，请稍后重试',
+          onSendProgress: (int sent, int total) {
+            if (!mounted || total <= 0) {
+              return;
+            }
+            final double progress = (sent / total).clamp(0, 1).toDouble();
+            _updateUploadFile(
+              requirement,
+              file.id,
+              (current) => current.copyWith(
+                state: UploadItemState.uploading,
+                progress: progress,
+                errorMessage: null,
+              ),
+            );
+          },
+        );
+        if (!mounted) {
+          return;
+        }
+        _updateUploadFile(
+          requirement,
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.success,
+            progress: 1,
+            errorMessage: null,
+            uploadedFileId: uploaded.fileId,
+            uploadedFileUrl: uploaded.fileUrl,
+          ),
+        );
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+        _updateUploadFile(
+          requirement,
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.failure,
+            progress: 0,
+            errorMessage: _resolveErrorMessage(
+              error,
+              fallback: '上传失败，请删除后重新上传',
+            ),
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _submitMaterials() async {
@@ -336,14 +544,25 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       detail.requiredMaterials,
     );
     _MaterialRequirement? missingRequirement;
+    _MaterialRequirement? failedRequirement;
     for (final _MaterialRequirement item in requirements) {
       if (item.required && _filesFor(item).isEmpty) {
         missingRequirement = item;
         break;
       }
+      if (_filesFor(
+        item,
+      ).any((file) => file.state != UploadItemState.success)) {
+        failedRequirement = item;
+        break;
+      }
     }
     if (missingRequirement != null) {
       _showMessage('请先上传${missingRequirement.title}');
+      return;
+    }
+    if (failedRequirement != null) {
+      _showMessage('${failedRequirement.title}存在未上传成功的文件，请处理后再提交');
       return;
     }
 
@@ -359,65 +578,34 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     setState(() => _isSubmitting = true);
     try {
       final List<MaterialItemBO> requestMaterials = <MaterialItemBO>[];
-      final fileService = ref.read(fileServiceProvider);
       for (final _MaterialRequirement requirement in requirements) {
         for (final PickedUploadFile file in _filesFor(requirement)) {
-          _updateUploadFile(
-            requirement,
-            file.id,
-            (current) => current.copyWith(
-              state: UploadItemState.uploading,
-              progress: 0.3,
-              errorMessage: null,
+          final int? uploadedFileId = file.uploadedFileId;
+          final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+          if (file.state != UploadItemState.success ||
+              uploadedFileId == null ||
+              uploadedFileUrl.isEmpty) {
+            throw ApiException.unknown('存在未上传完成的材料文件');
+          }
+          final int fileSize = UploadPickerUtils.readFileSize(file.path);
+          requestMaterials.add(
+            MaterialItemBO(
+              materialName: requirement.title,
+              fileId: uploadedFileId,
+              fileUrl: uploadedFileUrl,
+              fileType: FileService.resolveMimeType(file.path),
+              fileSize: fileSize,
             ),
           );
-          try {
-            final uploaded = await fileService.uploadFile(
-              path: file.path,
-              scene: FileScene.material,
-              errorMessage: '材料文件上传失败，请稍后重试',
-            );
-            final int fileSize = UploadPickerUtils.readFileSize(file.path);
-            requestMaterials.add(
-              MaterialItemBO(
-                materialName: requirement.title,
-                fileId: uploaded.fileId,
-                fileUrl: uploaded.fileUrl,
-                fileType: FileService.resolveMimeType(file.path),
-                fileSize: fileSize,
-              ),
-            );
-            _updateUploadFile(
-              requirement,
-              file.id,
-              (current) => current.copyWith(
-                state: UploadItemState.success,
-                progress: 1,
-                errorMessage: null,
-              ),
-            );
-          } catch (error) {
-            _updateUploadFile(
-              requirement,
-              file.id,
-              (current) => current.copyWith(
-                state: UploadItemState.failure,
-                progress: 0,
-                errorMessage: _resolveErrorMessage(
-                  error,
-                  fallback: '上传失败，请删除后重新上传',
-                ),
-              ),
-            );
-            rethrow;
-          }
         }
       }
 
-      await ref.read(visaOrderServiceProvider).uploadMaterials(
-        orderId: detail.orderId,
-        request: UploadOrderMaterialsBO(materials: requestMaterials),
-      );
+      await ref
+          .read(visaOrderServiceProvider)
+          .uploadMaterials(
+            orderId: detail.orderId,
+            request: UploadOrderMaterialsBO(materials: requestMaterials),
+          );
       if (!mounted) {
         return;
       }
@@ -535,7 +723,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
       final String displayName = _materialDisplayName(material);
       final String extension = _materialFileExtension(material);
-      final String normalizedName = displayName.contains('.') || extension.isEmpty
+      final String normalizedName =
+          displayName.contains('.') || extension.isEmpty
           ? displayName
           : '$displayName$extension';
       final String sanitizedName = _sanitizeFileName(normalizedName);
@@ -595,43 +784,44 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         builder: (BuildContext dialogContext) {
           String? errorText;
           return StatefulBuilder(
-            builder: (
-              BuildContext context,
-              void Function(VoidCallback fn) setDialogState,
-            ) {
-              return AlertDialog(
-                title: const Text('驳回重传'),
-                content: TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: '请输入驳回原因',
-                    errorText: errorText,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text('取消'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      final String value = controller.text.trim();
-                      if (value.isEmpty) {
-                        setDialogState(() {
-                          errorText = '请输入驳回原因';
-                        });
-                        return;
-                      }
-                      Navigator.of(dialogContext).pop(value);
-                    },
-                    child: const Text('确认'),
-                  ),
-                ],
-              );
-            },
+            builder:
+                (
+                  BuildContext context,
+                  void Function(VoidCallback fn) setDialogState,
+                ) {
+                  return AlertDialog(
+                    title: const Text('驳回重传'),
+                    content: TextField(
+                      controller: controller,
+                      maxLines: 3,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: '请输入驳回原因',
+                        errorText: errorText,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: const Text('取消'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final String value = controller.text.trim();
+                          if (value.isEmpty) {
+                            setDialogState(() {
+                              errorText = '请输入驳回原因';
+                            });
+                            return;
+                          }
+                          Navigator.of(dialogContext).pop(value);
+                        },
+                        child: const Text('确认'),
+                      ),
+                    ],
+                  );
+                },
           );
         },
       );
@@ -657,14 +847,16 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     setState(() => _isProcessingOrder = true);
     try {
-      await ref.read(visaOrderServiceProvider).processOrder(
-        orderId: detail.orderId,
-        request: ProcessOrderBO(
-          action: action,
-          remark: remark,
-          nextStatus: nextStatus,
-        ),
-      );
+      await ref
+          .read(visaOrderServiceProvider)
+          .processOrder(
+            orderId: detail.orderId,
+            request: ProcessOrderBO(
+              action: action,
+              remark: remark,
+              nextStatus: nextStatus,
+            ),
+          );
       if (!mounted) {
         return;
       }
@@ -713,8 +905,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Widget build(BuildContext context) {
     final ShellRole currentRole = ref.watch(shellRoleProvider);
     final bool isServiceProvider = currentRole == ShellRole.serviceProvider;
+    final VisaOrderVO? detail = _orderDetail;
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
-      _orderDetail?.requiredMaterials,
+      detail?.requiredMaterials,
+    );
+    final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
+    final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
+    final bool shouldShowApplicantMaterialCard = _shouldShowApplicantMaterialCard(
+      detail,
+    );
+    final bool shouldShowProviderMaterialCard = _shouldShowProviderMaterialCard(
+      detail,
     );
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -764,29 +965,71 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               ],
       ),
       body: _buildBody(
+        detail: detail,
         requirements: requirements,
         isServiceProvider: isServiceProvider,
+        isUploadMaterialsStage: isUploadMaterialsStage,
+        isMaterialReviewStage: isMaterialReviewStage,
+        shouldShowApplicantMaterialCard: shouldShowApplicantMaterialCard,
+        shouldShowProviderMaterialCard: shouldShowProviderMaterialCard,
       ),
-      bottomNavigationBar: isServiceProvider
-          ? _ProviderBottomActionBar(
-              enabled: !_isLoading &&
-                  _errorMessage == null &&
-                  !_isSubmitting &&
-                  !_isProcessingOrder,
-              onRejectTap: _handleRejectOrder,
-              onApproveTap: _handleApproveOrder,
-            )
-          : _BottomSubmitBar(
-              label: _isSubmitting ? '提交中...' : '提交材料',
-              enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
-              onPressed: _submitMaterials,
-            ),
+      bottomNavigationBar: _buildBottomNavigationBar(
+        detail: detail,
+        isServiceProvider: isServiceProvider,
+        isUploadMaterialsStage: isUploadMaterialsStage,
+        isMaterialReviewStage: isMaterialReviewStage,
+      ),
     );
   }
 
+  Widget _buildBottomNavigationBar({
+    required VisaOrderVO? detail,
+    required bool isServiceProvider,
+    required bool isUploadMaterialsStage,
+    required bool isMaterialReviewStage,
+  }) {
+    if (detail == null) {
+      return const SizedBox.shrink();
+    }
+    if (isUploadMaterialsStage) {
+      if (isServiceProvider) {
+        return const SizedBox.shrink();
+      }
+      return _BottomSubmitBar(
+        label: _isSubmitting ? '提交中...' : '提交材料',
+        enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
+        onPressed: _submitMaterials,
+      );
+    }
+    if (isMaterialReviewStage) {
+      if (isServiceProvider) {
+        return _ProviderBottomActionBar(
+          enabled:
+              !_isLoading &&
+              _errorMessage == null &&
+              !_isSubmitting &&
+              !_isProcessingOrder,
+          onRejectTap: _handleRejectOrder,
+          onApproveTap: _handleApproveOrder,
+        );
+      }
+      return _BottomSubmitBar(
+        label: '材料审核中...',
+        enabled: false,
+        onPressed: _noopAction,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   Widget _buildBody({
+    required VisaOrderVO? detail,
     required List<_MaterialRequirement> requirements,
     required bool isServiceProvider,
+    required bool isUploadMaterialsStage,
+    required bool isMaterialReviewStage,
+    required bool shouldShowApplicantMaterialCard,
+    required bool shouldShowProviderMaterialCard,
   }) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -798,7 +1041,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         onTap: _loadOrderDetail,
       );
     }
-    final VisaOrderVO? detail = _orderDetail;
     if (detail == null) {
       return _OrderDetailStateView(
         message: '订单详情不存在',
@@ -806,6 +1048,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         onTap: () => context.pop(),
       );
     }
+    final Map<String, List<PickedUploadFile>> displayedUploadsByRequirement =
+        isUploadMaterialsStage
+        ? _uploadsByRequirement
+        : _buildReadonlyUploadsByRequirement(
+            requirements: requirements,
+            materials: detail.materials,
+          );
     return ListView(
       padding: EdgeInsets.zero,
       children: <Widget>[
@@ -817,19 +1066,25 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
           child: isServiceProvider
-              ? _ProviderMaterialReviewCard(
+              ? shouldShowProviderMaterialCard
+                    ? _ProviderMaterialReviewCard(
                   materials: detail.materials,
                   downloadingFileUrls: _downloadingMaterialUrls,
                   onDownloadTap: _downloadMaterial,
                 )
-              : _MaterialUploadCard(
+                    : const SizedBox.shrink()
+              : shouldShowApplicantMaterialCard
+              ? _MaterialUploadCard(
                   requirements: requirements,
-                  uploadsByRequirement: _uploadsByRequirement,
+                  uploadsByRequirement: displayedUploadsByRequirement,
+                  allowUpload: isUploadMaterialsStage,
+                  allowDelete: isUploadMaterialsStage,
                   onPreviewTap: (String title) =>
                       _showMessage('$title 查看样例（占位）'),
                   onUploadTap: _openUploadSheet,
                   onDeleteFile: _removeUploadFile,
-                ),
+                )
+              : const SizedBox.shrink(),
         ),
         const SizedBox(height: 24),
       ],
@@ -939,6 +1194,8 @@ class _MaterialUploadCard extends StatelessWidget {
   const _MaterialUploadCard({
     required this.requirements,
     required this.uploadsByRequirement,
+    required this.allowUpload,
+    required this.allowDelete,
     required this.onPreviewTap,
     required this.onUploadTap,
     required this.onDeleteFile,
@@ -946,6 +1203,8 @@ class _MaterialUploadCard extends StatelessWidget {
 
   final List<_MaterialRequirement> requirements;
   final Map<String, List<PickedUploadFile>> uploadsByRequirement;
+  final bool allowUpload;
+  final bool allowDelete;
   final ValueChanged<String> onPreviewTap;
   final ValueChanged<_MaterialRequirement> onUploadTap;
   final void Function(_MaterialRequirement, PickedUploadFile) onDeleteFile;
@@ -970,9 +1229,13 @@ class _MaterialUploadCard extends StatelessWidget {
             child: _MaterialUploadItem(
               requirement: item,
               files: files,
+              allowUpload: allowUpload,
+              allowDelete: allowDelete,
               onPreviewTap: () => onPreviewTap(item.title),
-              onUploadTap: () => onUploadTap(item),
-              onDeleteFile: (PickedUploadFile file) => onDeleteFile(item, file),
+              onUploadTap: allowUpload ? () => onUploadTap(item) : null,
+              onDeleteFile: allowDelete
+                  ? (PickedUploadFile file) => onDeleteFile(item, file)
+                  : null,
             ),
           );
         }),
@@ -985,12 +1248,12 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
   const _ProviderMaterialReviewCard({
     required this.materials,
     required this.downloadingFileUrls,
-    required this.onDownloadTap,
+    this.onDownloadTap,
   });
 
   final List<MaterialVO> materials;
   final Set<String> downloadingFileUrls;
-  final ValueChanged<MaterialVO> onDownloadTap;
+  final Future<void> Function(MaterialVO)? onDownloadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1054,9 +1317,12 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                 ),
                 child: _ProviderMaterialFileCard(
                   material: material,
-                  isDownloading:
-                      downloadingFileUrls.contains(material.fileUrl.trim()),
-                  onDownloadTap: () => onDownloadTap(material),
+                  isDownloading: downloadingFileUrls.contains(
+                    material.fileUrl.trim(),
+                  ),
+                  onDownloadTap: onDownloadTap == null
+                      ? null
+                      : () => onDownloadTap!(material),
                 ),
               );
             }),
@@ -1070,12 +1336,12 @@ class _ProviderMaterialFileCard extends StatelessWidget {
   const _ProviderMaterialFileCard({
     required this.material,
     required this.isDownloading,
-    required this.onDownloadTap,
+    this.onDownloadTap,
   });
 
   final MaterialVO material;
   final bool isDownloading;
-  final VoidCallback onDownloadTap;
+  final VoidCallback? onDownloadTap;
 
   bool get _isImage {
     final String type = material.fileType.trim().toLowerCase();
@@ -1148,33 +1414,35 @@ class _ProviderMaterialFileCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: isDownloading ? null : onDownloadTap,
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: Center(
-                child: isDownloading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF262626),
+          if (onDownloadTap != null) ...<Widget>[
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: isDownloading ? null : onDownloadTap,
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: Center(
+                  child: isDownloading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF262626),
+                            ),
                           ),
+                        )
+                      : SvgPicture.asset(
+                          'assets/images/order_detail_download.svg',
+                          width: 15,
+                          height: 15,
                         ),
-                      )
-                    : SvgPicture.asset(
-                        'assets/images/order_detail_download.svg',
-                        width: 15,
-                        height: 15,
-                      ),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1185,6 +1453,8 @@ class _MaterialUploadItem extends StatelessWidget {
   const _MaterialUploadItem({
     required this.requirement,
     required this.files,
+    required this.allowUpload,
+    required this.allowDelete,
     required this.onPreviewTap,
     required this.onUploadTap,
     required this.onDeleteFile,
@@ -1192,9 +1462,11 @@ class _MaterialUploadItem extends StatelessWidget {
 
   final _MaterialRequirement requirement;
   final List<PickedUploadFile> files;
+  final bool allowUpload;
+  final bool allowDelete;
   final VoidCallback onPreviewTap;
-  final VoidCallback onUploadTap;
-  final ValueChanged<PickedUploadFile> onDeleteFile;
+  final VoidCallback? onUploadTap;
+  final ValueChanged<PickedUploadFile>? onDeleteFile;
 
   @override
   Widget build(BuildContext context) {
@@ -1245,6 +1517,8 @@ class _MaterialUploadItem extends StatelessWidget {
         const SizedBox(height: 12),
         _MaterialUploadContent(
           files: files,
+          allowUpload: allowUpload,
+          allowDelete: allowDelete,
           onAddTap: onUploadTap,
           onDeleteFile: onDeleteFile,
         ),
@@ -1256,18 +1530,25 @@ class _MaterialUploadItem extends StatelessWidget {
 class _MaterialUploadContent extends StatelessWidget {
   const _MaterialUploadContent({
     required this.files,
+    required this.allowUpload,
+    required this.allowDelete,
     required this.onAddTap,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
-  final VoidCallback onAddTap;
-  final ValueChanged<PickedUploadFile> onDeleteFile;
+  final bool allowUpload;
+  final bool allowDelete;
+  final VoidCallback? onAddTap;
+  final ValueChanged<PickedUploadFile>? onDeleteFile;
 
   @override
   Widget build(BuildContext context) {
     if (files.isEmpty) {
-      return _UploadPlaceholder(onTap: onAddTap);
+      if (allowUpload && onAddTap != null) {
+        return _UploadPlaceholder(onTap: onAddTap!);
+      }
+      return const _ReadonlyUploadPlaceholder(text: '待求职者上传材料');
     }
 
     return Column(
@@ -1278,21 +1559,27 @@ class _MaterialUploadContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
               file: file,
-              onRemoveTap: () => onDeleteFile(file),
+              showRemoveButton: allowDelete && onDeleteFile != null,
+              onRemoveTap: onDeleteFile == null ? null : () => onDeleteFile!(file),
             ),
           );
         }),
-        _UploadPlaceholder(onTap: onAddTap),
+        if (allowUpload && onAddTap != null) _UploadPlaceholder(onTap: onAddTap!),
       ],
     );
   }
 }
 
 class _UploadFileCard extends StatelessWidget {
-  const _UploadFileCard({required this.file, required this.onRemoveTap});
+  const _UploadFileCard({
+    required this.file,
+    this.onRemoveTap,
+    this.showRemoveButton = true,
+  });
 
   final PickedUploadFile file;
-  final VoidCallback onRemoveTap;
+  final VoidCallback? onRemoveTap;
+  final bool showRemoveButton;
 
   @override
   Widget build(BuildContext context) {
@@ -1372,7 +1659,8 @@ class _UploadFileCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _RemoveUploadButton(onTap: onRemoveTap),
+              if (showRemoveButton && onRemoveTap != null)
+                _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
         );
@@ -1392,14 +1680,14 @@ class _UploadFileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF333333),
+                        color: const Color(0xFFD4380D),
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      file.errorMessage ?? '上传失败，请删除后重新上传',
+                      (file.errorMessage ?? '上传失败，请删除后重新上传').trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1412,7 +1700,8 @@ class _UploadFileCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _RemoveUploadButton(onTap: onRemoveTap),
+              if (showRemoveButton && onRemoveTap != null)
+                _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
         );
@@ -1446,34 +1735,16 @@ class _UploadFileLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (file.isImage && file.state == UploadItemState.success) {
-      final File localFile = File(file.path);
-      if (localFile.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.file(
-            localFile,
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) {
-              return SvgPicture.asset(
-                'assets/images/order_upload_file_photo.svg',
-                width: 32,
-                height: 32,
-              );
-            },
-          ),
-        );
-      }
-    }
+    final String filePath = file.path.toLowerCase();
+    final String fileName = file.name.toLowerCase();
+    final bool isPdfFile =
+        filePath.endsWith('.pdf') || fileName.endsWith('.pdf');
 
-    return SvgPicture.asset(
-      file.isImage
-          ? 'assets/images/order_upload_file_photo.svg'
-          : 'assets/images/order_upload_file_pdf.svg',
+    return Image.asset(
+      isPdfFile ? 'assets/images/icon_pdf.png' : 'assets/images/icon_file.png',
       width: 32,
       height: 32,
+      fit: BoxFit.cover,
     );
   }
 }
@@ -1487,16 +1758,18 @@ class _RemoveUploadButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: SizedBox(
+      child: Container(
         width: 20,
         height: 20,
-        child: Center(
-          child: SvgPicture.asset(
-            'assets/images/order_upload_remove.svg',
-            width: 14,
-            height: 14,
-          ),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Color(0xFF707788),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: SvgPicture.asset(
+          'assets/images/order_upload_remove.svg',
+          width: 8,
+          height: 8,
         ),
       ),
     );
@@ -1543,6 +1816,33 @@ class _UploadPlaceholder extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadonlyUploadPlaceholder extends StatelessWidget {
+  const _ReadonlyUploadPlaceholder({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: const Color(0xFF8C8C8C),
+          fontWeight: FontWeight.w400,
+          fontSize: 14,
+          height: 20 / 14,
         ),
       ),
     );
@@ -1727,11 +2027,7 @@ class _OrderDetailStateView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            PrimaryButton(
-              label: buttonLabel,
-              onPressed: onTap,
-              enabled: true,
-            ),
+            PrimaryButton(label: buttonLabel, onPressed: onTap, enabled: true),
           ],
         ),
       ),

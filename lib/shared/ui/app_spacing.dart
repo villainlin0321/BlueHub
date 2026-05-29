@@ -3,5 +3,6 @@ class AppSpacing {
   static const double pagePadding = 16;
   static const double cardRadius = 16;
   static const double chipRadius = 6;
+  static const double buttonRadius = 8;
 }
 

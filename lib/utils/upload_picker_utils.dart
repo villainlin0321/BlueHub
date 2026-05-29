@@ -21,6 +21,8 @@ class PickedUploadFile {
     this.sizeLabel,
     this.errorMessage,
     this.progress = 0.48,
+    this.uploadedFileId,
+    this.uploadedFileUrl,
   });
 
   final String id;
@@ -32,6 +34,8 @@ class PickedUploadFile {
   final String? sizeLabel;
   final String? errorMessage;
   final double progress;
+  final int? uploadedFileId;
+  final String? uploadedFileUrl;
 
   PickedUploadFile copyWith({
     String? id,
@@ -43,6 +47,8 @@ class PickedUploadFile {
     String? sizeLabel,
     Object? errorMessage = _sentinel,
     double? progress,
+    Object? uploadedFileId = _sentinel,
+    Object? uploadedFileUrl = _sentinel,
   }) {
     return PickedUploadFile(
       id: id ?? this.id,
@@ -56,6 +62,12 @@ class PickedUploadFile {
           ? this.errorMessage
           : errorMessage as String?,
       progress: progress ?? this.progress,
+      uploadedFileId: identical(uploadedFileId, _sentinel)
+          ? this.uploadedFileId
+          : uploadedFileId as int?,
+      uploadedFileUrl: identical(uploadedFileUrl, _sentinel)
+          ? this.uploadedFileUrl
+          : uploadedFileUrl as String?,
     );
   }
 
