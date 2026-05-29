@@ -10,6 +10,7 @@ import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import 'order_detail_page.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
@@ -318,6 +319,31 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
         );
       },
     );
+  }
+
+  List<VisaOrderVO> get _visibleOrders {
+    return _orders
+        .where((VisaOrderVO item) {
+          if (_selectedTab == _OrderTab.all) {
+            return true;
+          }
+          return _tabForStatus(item.status) == _selectedTab;
+        })
+        .toList(growable: false);
+  }
+
+  _OrderTab _tabForStatus(String status) {
+    final String normalized = status.trim().toLowerCase();
+    if (normalized == 'completed') {
+      return _OrderTab.completed;
+    }
+    if (normalized == 'processing') {
+      return _OrderTab.processing;
+    }
+    if (normalized.startsWith('pending_') || normalized == 'all') {
+      return _OrderTab.pending;
+    }
+    return _OrderTab.pending;
   }
 
   @override
@@ -1071,21 +1097,7 @@ class _OrderManagementEmptyState extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(24, 80, 24, bottomInset + 24),
       children: <Widget>[
-        const Icon(
-          Icons.receipt_long_outlined,
-          size: 48,
-          color: Color(0xFFBFBFBF),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          '暂无符合条件的订单',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
+        const AppEmptyState(message: '暂无符合条件的订单'),
         const SizedBox(height: 16),
         TextButton(
           onPressed: onResetTap,

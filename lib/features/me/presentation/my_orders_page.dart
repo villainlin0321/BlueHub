@@ -8,6 +8,7 @@ import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../order/presentation/order_review_page.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 
 class MyOrdersPage extends ConsumerStatefulWidget {
   const MyOrdersPage({super.key});
@@ -487,6 +488,15 @@ class _OrderStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (buttonLabel == null && onTap == null) {
+      return Center(
+        child: AppEmptyState(
+          message: message,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),

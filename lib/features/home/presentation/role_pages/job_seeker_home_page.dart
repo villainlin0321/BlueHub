@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
@@ -559,15 +560,16 @@ class _HomeSectionEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 124,
+      height: 180,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
-        child: Text(
-          message,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        child: AppEmptyState(
+          message: message,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: const Color(0xFF8C8C8C),
             fontSize: 14,
           ),

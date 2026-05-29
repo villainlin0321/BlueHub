@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/visa_service_card.dart';
 import '../../../me/data/collection_models.dart' show CollectionBO;
@@ -91,9 +92,7 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
                 collectedVisaPackageIdsAsync: collectedVisaPackageIdsAsync,
                 collectingPackageIds: _collectingPackageIds,
                 onRetry: () {
-                  ref.invalidate(
-                    visaProviderListProvider(_query),
-                  );
+                  ref.invalidate(visaProviderListProvider(_query));
                 },
                 onToggleCollection: _handleToggleCollection,
               ),
@@ -254,13 +253,9 @@ class _VisaProviderEmptyState extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Center(
-        child: Text(
-          '暂无签证服务',
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+        child: AppEmptyState(
+          message: '暂无签证服务',
+          padding: EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );
@@ -396,10 +391,7 @@ class _VisaHeroSection extends StatelessWidget {
 }
 
 class _VisaSearchBar extends StatelessWidget {
-  const _VisaSearchBar({
-    required this.controller,
-    required this.onSubmitted,
-  });
+  const _VisaSearchBar({required this.controller, required this.onSubmitted});
 
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;

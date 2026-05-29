@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../application/company_applications/company_application_list_state.dart';
 import '../../application/company_applications/company_application_lists_controller.dart';
 import '../../data/application_models.dart';
@@ -884,13 +885,9 @@ class _TalentsEmptyState extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.only(top: 48),
       child: Center(
-        child: Text(
-          '暂无人才数据',
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+        child: AppEmptyState(
+          message: '暂无人才数据',
+          padding: EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );

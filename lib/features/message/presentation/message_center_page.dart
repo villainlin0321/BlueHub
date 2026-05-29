@@ -8,6 +8,7 @@ import '../../messages/data/message_models.dart';
 import '../../messages/data/message_providers.dart';
 import '../application/chat/chat_page_args.dart';
 import '../../../shared/network/page_result.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 
 /// 消息中心页，按 Figma 设计稿还原顶部导航、Tab 及系统通知列表。
@@ -622,6 +623,15 @@ class _ChatStatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (actionLabel == null && onAction == null) {
+      return Center(
+        child: AppEmptyState(
+          message: message,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../visa/data/provider_models.dart';
 
 class ServiceDetailReviewTab extends StatefulWidget {
@@ -480,6 +481,12 @@ class _ReviewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message == '暂无评价数据') {
+      return const Center(
+        child: AppEmptyState(message: '暂无评价数据', padding: EdgeInsets.all(24)),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

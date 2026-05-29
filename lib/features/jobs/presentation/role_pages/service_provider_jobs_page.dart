@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 
@@ -651,11 +652,7 @@ class _DeleteButton extends StatelessWidget {
 }
 
 class _GhostButton extends StatelessWidget {
-  const _GhostButton({
-    required this.label,
-    this.onTap,
-    this.isLoading = false,
-  });
+  const _GhostButton({required this.label, this.onTap, this.isLoading = false});
 
   final String label;
   final VoidCallback? onTap;
@@ -836,14 +833,9 @@ class _PackageEmptyState extends StatelessWidget {
       children: <Widget>[
         const SizedBox(height: 108),
         Center(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
-            ),
+          child: AppEmptyState(
+            message: text,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
           ),
         ),
       ],

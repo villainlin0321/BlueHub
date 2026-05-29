@@ -236,7 +236,7 @@ class _HeaderActions extends StatelessWidget {
           fallbackIcon: Icons.chat_bubble_outline,
           onTap: () => context.push(RoutePaths.messageCenter),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         _TopIconButton(
           assetPath: CompanyMePage._settingsAsset,
           fallbackIcon: Icons.settings_outlined,
@@ -269,8 +269,9 @@ class _TopIconButton extends StatelessWidget {
         child: Center(
           child: SvgPicture.asset(
             assetPath,
-            width: 19,
-            height: 19,
+            width: 24,
+            height: 24,
+            color: Colors.white,
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, color: Colors.white, size: 20),
           ),

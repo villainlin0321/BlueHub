@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../shared/network/sse_models.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
@@ -592,13 +593,9 @@ class _ChatMessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
       return const Center(
-        child: Text(
-          '暂无聊天记录',
-          style: TextStyle(
-            color: _ChatPageState._subtleTextColor,
-            fontSize: 14,
-            height: 20 / 14,
-          ),
+        child: AppEmptyState(
+          message: '暂无聊天记录',
+          padding: EdgeInsets.symmetric(horizontal: 24),
         ),
       );
     }
