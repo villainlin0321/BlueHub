@@ -9,6 +9,7 @@ import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
 import '../../me/data/collection_providers.dart';
+import '../../message/application/chat/chat_page_args.dart';
 import '../../messages/data/message_models.dart';
 import '../../messages/data/message_providers.dart';
 import 'job_apply_helper.dart';
@@ -157,7 +158,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     }
   }
 
-  /// 创建或获取与雇主的会话，当前工程暂无消息详情页，先给出真实接口反馈。
+  /// 创建或获取与雇主的会话，成功后直接进入聊天页。
   Future<void> _handleChat() async {
     final JobDetailVO? detail = _detail;
     if (_isContacting || detail == null) {
@@ -173,7 +174,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     });
 
     try {
-      await ref
+      final Map<String, dynamic> response = await ref
           .read(messageServiceProvider)
           .createConversation(
             request: CreateConversationBO(
@@ -187,7 +188,19 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isContacting = false;
       });
-      _showMessage(context, '会话已创建，可在消息中心查看');
+      final int conversationId = _readConversationId(response);
+      context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: detail.employer.employerId,
+          targetUserRole: 'employer',
+          nickname: detail.employer.name.trim().isEmpty
+              ? '企业'
+              : detail.employer.name,
+          avatarUrl: detail.employer.logoUrl,
+          conversationId: conversationId,
+        ),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -197,6 +210,36 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       });
       _showMessage(context, _resolveDetailErrorMessage(error));
     }
+  }
+
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
+    }
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
   }
 
   /// 处理详情页投递操作，并根据接口结果切换按钮状态。

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chat_bottom_container/chat_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,6 +30,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   static const Color _subtleTextColor = Color(0xFF8C8C8C);
   static const Color _brandBlue = Color(0xFF2781FF);
   static const Color _onlineGreen = Color(0xFF64BF3F);
+  static const double _chatContentMaxWidth = 720;
   static const String _backAsset = 'assets/images/chat_page_back.svg';
   static const String _fileAsset = 'assets/images/chat_page_file.svg';
   static const String _orderArrowAsset =
@@ -39,6 +41,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  final ChatBottomPanelContainerController<_ChatPanelType>
+  _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
   StreamSubscription<SseEvent>? _sseSubscription;
 
   @override
@@ -90,53 +94,81 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _handleFileAction() async {
-    final _AttachmentSource? source =
-        await showModalBottomSheet<_AttachmentSource>(
-          context: context,
-          builder: (BuildContext sheetContext) {
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                    title: const Text('从相册选择'),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_AttachmentSource.gallery),
-                  ),
-                  ListTile(
-                    title: const Text('选择文件'),
-                    onTap: () =>
-                        Navigator.of(sheetContext).pop(_AttachmentSource.file),
-                  ),
-                  ListTile(
-                    title: const Text('取消'),
-                    onTap: () => Navigator.of(sheetContext).pop(),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-
-    if (!mounted || source == null) {
+    if (_bottomPanelController.currentPanelType == ChatBottomPanelType.other &&
+        _bottomPanelController.data == _ChatPanelType.attachment) {
+      _hideBottomPanel();
       return;
     }
-
-    final List<PickedUploadFile> pickedFiles;
-    if (source == _AttachmentSource.gallery) {
-      pickedFiles = await UploadPickerUtils.pickFromGallery();
-    } else {
-      pickedFiles = await UploadPickerUtils.pickFromFiles();
-    }
-    if (!mounted || pickedFiles.isEmpty) {
-      return;
-    }
-
-    final controller = ref.read(
-      chatPageControllerProvider(widget.args).notifier,
+    _bottomPanelController.updatePanelType(
+      ChatBottomPanelType.other,
+      data: _ChatPanelType.attachment,
     );
-    await controller.sendPickedFiles(pickedFiles);
+  }
+
+  void _hideBottomPanel() {
+    _inputFocusNode.unfocus();
+    if (_bottomPanelController.currentPanelType == ChatBottomPanelType.none) {
+      return;
+    }
+    _bottomPanelController.updatePanelType(ChatBottomPanelType.none);
+  }
+
+  Future<void> _handleCameraPick() async {
+    await _pickAndSendFiles(
+      picker: UploadPickerUtils.pickFromCamera,
+      errorMessage: '打开相机失败，请稍后重试',
+      emptyMessage: null,
+    );
+  }
+
+  Future<void> _handleGalleryPick() async {
+    await _pickAndSendFiles(
+      picker: UploadPickerUtils.pickFromGallery,
+      errorMessage: '打开相册失败，请稍后重试',
+      emptyMessage: null,
+    );
+  }
+
+  Future<void> _handleLocalFilePick() async {
+    await _pickAndSendFiles(
+      picker: UploadPickerUtils.pickFromFiles,
+      errorMessage: '选择文件失败，请稍后重试',
+      emptyMessage: '未能读取所选文件',
+    );
+  }
+
+  Future<void> _pickAndSendFiles({
+    required Future<List<PickedUploadFile>> Function() picker,
+    required String errorMessage,
+    required String? emptyMessage,
+  }) async {
+    try {
+      final List<PickedUploadFile> pickedFiles = await picker();
+      if (!mounted) {
+        return;
+      }
+      if (pickedFiles.isEmpty) {
+        if (emptyMessage != null) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(emptyMessage)));
+        }
+        return;
+      }
+
+      final controller = ref.read(
+        chatPageControllerProvider(widget.args).notifier,
+      );
+      await controller.sendPickedFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(errorMessage)));
+      return;
+    }
   }
 
   void _handleVoiceTap() {
@@ -209,80 +241,119 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     return Scaffold(
       backgroundColor: _pageBackground,
+      resizeToAvoidBottomInset: false,
       appBar: _ChatPageAppBar(
         args: widget.args,
         onBack: () => Navigator.of(context).maybePop(),
       ),
-      body: Column(
-        children: <Widget>[
-          if (_shouldShowOrderCard(widget.args))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: _OrderSummaryCard(
-                packageName: widget.args.packageName,
-                orderStatus: _resolveOrderStatusLabel(widget.args.orderStatus),
-                onTap: _handleOrderCardTap,
-              ),
-            ),
-          if (_shouldShowOrderCard(widget.args))
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                '对方已接收您的签证申请，现在可以开始沟通了',
-                style: const TextStyle(
-                  color: _subtleTextColor,
-                  fontSize: 11,
-                  height: 18 / 11,
-                ),
-              ),
-            ),
-          if (state.messages.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Text(
-                _formatChatDateTime(state.messages.last.sentAt),
-                style: const TextStyle(
-                  color: _subtleTextColor,
-                  fontSize: 11,
-                  height: 14 / 11,
-                ),
-              ),
-            ),
-          Expanded(
-            child: state.isInitialLoading
-                ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-                : state.loadErrorMessage != null
-                ? _ChatLoadError(
-                    message: state.loadErrorMessage!,
-                    onRetry: chatController.retry,
-                  )
-                : _ChatMessageList(
-                    messages: state.messages,
-                    currentUserId: authUser?.userId ?? 0,
-                    targetNickname: widget.args.nickname,
-                    targetAvatarUrl: widget.args.avatarUrl,
-                    currentUserNickname: authUser?.nickname ?? '我',
-                    currentUserAvatarUrl: authUser?.avatarUrl ?? '',
-                    scrollController: _scrollController,
-                    isLoadingMore: state.isLoadingMore,
-                    onTapFileMessage: _handleFileMessageTap,
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double contentWidth = constraints.maxWidth.clamp(
+            0,
+            _chatContentMaxWidth,
+          );
+          return Center(
+            child: SizedBox(
+              width: contentWidth,
+              child: Column(
+                children: <Widget>[
+                  if (_shouldShowOrderCard(widget.args))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      child: _OrderSummaryCard(
+                        packageName: widget.args.packageName,
+                        orderStatus: _resolveOrderStatusLabel(
+                          widget.args.orderStatus,
+                        ),
+                        onTap: _handleOrderCardTap,
+                      ),
+                    ),
+                  if (_shouldShowOrderCard(widget.args))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        '对方已接收您的签证申请，现在可以开始沟通了',
+                        style: const TextStyle(
+                          color: _subtleTextColor,
+                          fontSize: 11,
+                          height: 18 / 11,
+                        ),
+                      ),
+                    ),
+                  if (state.messages.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Text(
+                        _formatChatDateTime(state.messages.last.sentAt),
+                        style: const TextStyle(
+                          color: _subtleTextColor,
+                          fontSize: 11,
+                          height: 14 / 11,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: state.isInitialLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : state.loadErrorMessage != null
+                        ? _ChatLoadError(
+                            message: state.loadErrorMessage!,
+                            onRetry: chatController.retry,
+                          )
+                        : _ChatMessageList(
+                            messages: state.messages,
+                            currentUserId: authUser?.userId ?? 0,
+                            targetNickname: widget.args.nickname,
+                            targetAvatarUrl: widget.args.avatarUrl,
+                            currentUserNickname: authUser?.nickname ?? '我',
+                            currentUserAvatarUrl: authUser?.avatarUrl ?? '',
+                            scrollController: _scrollController,
+                            isLoadingMore: state.isLoadingMore,
+                            onTapFileMessage: _handleFileMessageTap,
+                          ),
                   ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _ChatComposer(
-        controller: _inputController,
-        focusNode: _inputFocusNode,
-        isSending: state.isSending,
-        onVoiceTap: _handleVoiceTap,
-        onFileTap: _handleFileAction,
-        onSend: () => chatController.sendTextMessage(_inputController.text),
+                  _ChatComposer(
+                    controller: _inputController,
+                    focusNode: _inputFocusNode,
+                    isSending: state.isSending,
+                    onVoiceTap: _handleVoiceTap,
+                    onFileTap: _handleFileAction,
+                    onSend: () =>
+                        chatController.sendTextMessage(_inputController.text),
+                  ),
+                  ChatBottomPanelContainer<_ChatPanelType>(
+                    controller: _bottomPanelController,
+                    inputFocusNode: _inputFocusNode,
+                    panelBgColor: Colors.transparent,
+                    safeAreaBottom: 0,
+                    otherPanelWidget: (_ChatPanelType? type) {
+                      switch (type) {
+                        case _ChatPanelType.attachment:
+                          return _ChatAttachmentPanel(
+                            onClose: _hideBottomPanel,
+                            onCameraTap: _handleCameraPick,
+                            onGalleryTap: _handleGalleryPick,
+                            onFileTap: _handleLocalFilePick,
+                          );
+                        case null:
+                          return const SizedBox(height: 20);
+                      }
+                    },
+                  ),
+                  Container(height: 20, color: Colors.white),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-enum _AttachmentSource { gallery, file }
+enum _ChatPanelType { attachment }
 
 class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _ChatPageAppBar({required this.args, required this.onBack});
@@ -547,12 +618,7 @@ class _ChatMessageList extends StatelessWidget {
           child: ListView.separated(
             controller: scrollController,
             reverse: true,
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              MediaQuery.paddingOf(context).bottom + 12,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             itemCount: messages.length,
             separatorBuilder: (_, __) => const SizedBox(height: 16),
             itemBuilder: (BuildContext context, int index) {
@@ -794,101 +860,221 @@ class _ChatComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                IconButton(
-                  onPressed: isSending ? null : onVoiceTap,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 24,
-                    height: 24,
-                  ),
-                  icon: SvgPicture.asset(
-                    _ChatPageState._voiceAsset,
-                    width: 20,
-                    height: 20,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: InkWell(
+                  onTap: isSending ? null : onVoiceTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      _ChatPageState._voiceAsset,
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    minLines: 1,
-                    maxLines: 4,
-                    enabled: !isSending,
-                    textInputAction: TextInputAction.send,
-                    keyboardType: TextInputType.multiline,
-                    onSubmitted: (_) => onSend(),
-                    decoration: const InputDecoration(
-                      isCollapsed: true,
-                      hintText: '发消息...',
-                      hintStyle: TextStyle(
-                        color: _ChatPageState._subtleTextColor,
-                        fontSize: 15,
-                        height: 22 / 15,
-                      ),
-                      border: InputBorder.none,
-                    ),
-                    style: const TextStyle(
-                      color: _ChatPageState._titleColor,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  minLines: 1,
+                  maxLines: 4,
+                  enabled: !isSending,
+                  textInputAction: TextInputAction.send,
+                  keyboardType: TextInputType.multiline,
+                  onSubmitted: (_) => onSend(),
+                  decoration: const InputDecoration(
+                    isCollapsed: true,
+                    hintText: '发消息...',
+                    hintStyle: TextStyle(
+                      color: _ChatPageState._subtleTextColor,
                       fontSize: 15,
                       height: 22 / 15,
                     ),
+                    border: InputBorder.none,
+                  ),
+                  style: const TextStyle(
+                    color: _ChatPageState._titleColor,
+                    fontSize: 15,
+                    height: 22 / 15,
                   ),
                 ),
-                const SizedBox(width: 12),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder:
-                      (
-                        BuildContext context,
-                        TextEditingValue value,
-                        Widget? child,
-                      ) {
-                        final bool hasText = value.text.trim().isNotEmpty;
-                        if (hasText) {
-                          return TextButton(
-                            onPressed: isSending ? null : onSend,
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(48, 24),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
+              ),
+              const SizedBox(width: 12),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: controller,
+                builder:
+                    (
+                      BuildContext context,
+                      TextEditingValue value,
+                      Widget? child,
+                    ) {
+                      final bool hasText = value.text.trim().isNotEmpty;
+                      if (hasText) {
+                        return InkWell(
+                          onTap: isSending ? null : onSend,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '发送',
+                              style: TextStyle(
+                                color: isSending
+                                    ? const Color(0xFFBFBFBF)
+                                    : _ChatPageState._brandBlue,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                height: 24 / 15,
                               ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text('发送'),
-                          );
-                        }
-                        return IconButton(
-                          onPressed: isSending ? null : onFileTap,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 24,
-                            height: 24,
-                          ),
-                          icon: SvgPicture.asset(
-                            _ChatPageState._addAsset,
-                            width: 20,
-                            height: 20,
                           ),
                         );
-                      },
-                ),
-              ],
-            ),
+                      }
+                      return SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: InkWell(
+                          onTap: isSending ? null : onFileTap,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              _ChatPageState._addAsset,
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatAttachmentPanel extends StatelessWidget {
+  const _ChatAttachmentPanel({
+    required this.onClose,
+    required this.onCameraTap,
+    required this.onGalleryTap,
+    required this.onFileTap,
+  });
+
+  final VoidCallback onClose;
+  final Future<void> Function() onCameraTap;
+  final Future<void> Function() onGalleryTap;
+  final Future<void> Function() onFileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: SizedBox(
+        height: 86,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 375),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(36.75, 0, 36.75, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      _ChatAttachmentAction(
+                        label: '拍照上传',
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_camera.svg',
+                        onTap: onCameraTap,
+                      ),
+                      _ChatAttachmentAction(
+                        label: '本地相册',
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_gallery.svg',
+                        onTap: onGalleryTap,
+                      ),
+                      _ChatAttachmentAction(
+                        label: '本地文件',
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_file.svg',
+                        onTap: onFileTap,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatAttachmentAction extends StatelessWidget {
+  const _ChatAttachmentAction({
+    required this.label,
+    required this.iconAssetPath,
+    required this.onTap,
+  });
+
+  final String label;
+  final String iconAssetPath;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: <Widget>[
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(iconAssetPath, width: 24, height: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF595959),
+                fontWeight: FontWeight.w400,
+                fontSize: 13,
+                height: 18 / 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
