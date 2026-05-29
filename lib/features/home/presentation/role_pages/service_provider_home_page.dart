@@ -12,6 +12,7 @@ import '../../../../features/order/data/visa_order_models.dart'
     show MaterialVO, VisaOrderVO;
 import '../../../../features/visa/data/provider_models.dart' show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
@@ -690,9 +691,15 @@ class _PendingOrdersSection extends ConsumerWidget {
       ),
       data: (List<VisaOrderVO> orders) {
         if (orders.isEmpty) {
-          return const _PendingOrdersStateView(
-            icon: Icons.receipt_long_outlined,
-            message: '暂无待审核订单',
+          return Container(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const AppEmptyState(
+              message: '暂无待审核订单',
+            ),
           );
         }
 
