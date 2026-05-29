@@ -57,6 +57,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
         return;
       case _OrderActionType.uploadMaterials:
+      case _OrderActionType.viewProgress:
       case _OrderActionType.viewDetail:
         final bool? updated = await _openOrderDetail(order.orderId);
         if (updated == true && mounted) {
@@ -64,7 +65,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.goPay:
-      case _OrderActionType.viewProgress:
       case _OrderActionType.supplementMaterials:
         ScaffoldMessenger.of(
           context,

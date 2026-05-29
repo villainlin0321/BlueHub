@@ -27,7 +27,7 @@ class PrimaryButton extends StatelessWidget {
           backgroundColor: AppColors.brand,
           disabledBackgroundColor: AppColors.brand.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
           ),
         ),
         child: Text(

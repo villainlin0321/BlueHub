@@ -40,6 +40,7 @@ class FileService {
     required FileScene scene,
     String accessType = 'PUBLIC',
     String errorMessage = '文件上传失败，请稍后重试',
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     final File localFile = File(path);
     if (!localFile.existsSync()) {
@@ -63,6 +64,7 @@ class FileService {
       bytes: bytes,
       mimeType: mimeType,
       errorMessage: errorMessage,
+      onSendProgress: onSendProgress,
     );
     await confirmUpload(
       request: ConfirmUploadBO(
@@ -89,6 +91,7 @@ class FileService {
     required List<int> bytes,
     required String mimeType,
     String errorMessage = '文件上传失败，请稍后重试',
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     final Dio uploadDio = Dio(
       BaseOptions(
@@ -101,6 +104,7 @@ class FileService {
       final Response<dynamic> response = await uploadDio.put<dynamic>(
         uploadUrl,
         data: bytes,
+        onSendProgress: onSendProgress,
         options: Options(
           headers: <String, Object>{
             Headers.contentTypeHeader: mimeType,
