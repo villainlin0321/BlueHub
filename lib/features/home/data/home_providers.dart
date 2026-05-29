@@ -1,4 +1,6 @@
 import 'package:bluehub_app/features/jobs/data/job_models.dart';
+import 'package:bluehub_app/features/order/data/visa_order_models.dart';
+import 'package:bluehub_app/features/order/data/visa_order_providers.dart';
 import 'package:bluehub_app/features/shell/application/shell_role_provider.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,4 +33,16 @@ final homeDashboardStatsProvider =
       ref.watch(shellRoleProvider);
       final homeService = ref.watch(homeServiceProvider);
       return homeService.getDashboardStats();
+    });
+
+/// 服务商首页待处理订单预览 Provider，仅拉取 reviewing 状态的前 3 条数据。
+final serviceProviderReviewingOrdersProvider =
+    FutureProvider.autoDispose<List<VisaOrderVO>>((ref) async {
+      final service = ref.watch(visaOrderServiceProvider);
+      final response = await service.listProviderOrders(
+        page: 1,
+        pageSize: 3,
+        status: 'reviewing',
+      );
+      return response.list;
     });

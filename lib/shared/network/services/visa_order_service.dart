@@ -41,6 +41,9 @@ class VisaOrderService {
   }
 
   /// 获取服务商视角的订单列表，支持分页、状态和国家维度筛选。
+  /// `status` 传 `all` 或不传返回全部，也支持：
+  /// `pending_payment`、`pending_upload`、`reviewing`、`rejected`、
+  /// `embassy_submitted`、`completed`、`cancelled`、`refunded`。
   Future<PageResult<VisaOrderVO>> listProviderOrders({
     int? page,
     int? pageSize,

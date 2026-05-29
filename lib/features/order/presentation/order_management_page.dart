@@ -1,3 +1,4 @@
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -20,6 +21,7 @@ class OrderManagementPage extends ConsumerStatefulWidget {
 }
 
 class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
+  static const int _pageSize = 20;
   static const List<_OrderTab> _tabs = <_OrderTab>[
     _OrderTab.all,
     _OrderTab.pending,
@@ -31,15 +33,22 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     _StatusFilter.all,
     _StatusFilter.pendingPayment,
     _StatusFilter.pendingUpload,
+    _StatusFilter.reviewing,
+    _StatusFilter.rejected,
     _StatusFilter.processing,
     _StatusFilter.completed,
+    _StatusFilter.cancelled,
+    _StatusFilter.refunded,
   ];
 
   _OrderTab _selectedTab = _OrderTab.all;
   _CountryFilter _selectedCountry = _CountryFilter.all;
   _StatusFilter _selectedStatus = _StatusFilter.all;
   List<VisaOrderVO> _orders = const <VisaOrderVO>[];
+  int _currentPage = 1;
+  bool _hasMore = false;
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _errorMessage;
 
   @override
@@ -57,27 +66,40 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   Future<void> _loadOrders({
     _CountryFilter? country,
     _StatusFilter? status,
+    _OrderTab? tab,
   }) async {
+    final _OrderTab effectiveTab = tab ?? _selectedTab;
     final _CountryFilter effectiveCountry = country ?? _selectedCountry;
     final _StatusFilter effectiveStatus = status ?? _selectedStatus;
+    final String? apiStatus = _statusForRequest(
+      tab: effectiveTab,
+      status: effectiveStatus,
+    );
+    final String? apiCountry = effectiveTab == _OrderTab.all
+        ? effectiveCountry.apiValue
+        : null;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final response = await ref.read(visaOrderServiceProvider).listProviderOrders(
-        page: 1,
-        pageSize: 20,
-        status: effectiveStatus.apiValue,
-        country: effectiveCountry.apiValue,
-      );
+      final response = await ref
+          .read(visaOrderServiceProvider)
+          .listProviderOrders(
+            page: 1,
+            pageSize: _pageSize,
+            status: apiStatus,
+            country: apiCountry,
+          );
       if (!mounted) {
         return;
       }
 
       setState(() {
         _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
         _isLoading = false;
       });
     } catch (error) {
@@ -92,12 +114,68 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     }
   }
 
+  Future<void> _loadMoreOrders() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    final String? apiStatus = _statusForRequest(
+      tab: _selectedTab,
+      status: _selectedStatus,
+    );
+    final String? apiCountry = _selectedTab == _OrderTab.all
+        ? _selectedCountry.apiValue
+        : null;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final response = await ref
+          .read(visaOrderServiceProvider)
+          .listProviderOrders(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: apiStatus,
+            country: apiCountry,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _orders = <VisaOrderVO>[..._orders, ...response.list];
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _isLoadingMore = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(_normalizeError(error))));
+    }
+  }
+
   String _normalizeError(Object error) {
     final String message = error.toString().trim();
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
     return message.isEmpty ? '订单加载失败，请稍后重试' : message;
+  }
+
+  String? _statusForRequest({
+    required _OrderTab tab,
+    required _StatusFilter status,
+  }) {
+    if (tab == _OrderTab.all) {
+      return status == _StatusFilter.all ? null : status.apiValue;
+    }
+    return tab.apiValue;
   }
 
   Future<List<_CountryFilter>> _loadCountryFilters() async {
@@ -207,7 +285,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                         final T option = options[index];
                         final bool selected = option == currentValue;
                         return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                          ),
                           title: Text(
                             labelBuilder(option),
                             style: TextStyle(
@@ -215,8 +295,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                                   ? const Color(0xFF096DD9)
                                   : const Color(0xFF262626),
                               fontSize: 14,
-                              fontWeight:
-                                  selected ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                           trailing: selected
@@ -239,33 +320,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     );
   }
 
-  List<VisaOrderVO> get _visibleOrders {
-    return _orders.where((VisaOrderVO item) {
-      if (_selectedTab == _OrderTab.all) {
-        return true;
-      }
-      return _tabForStatus(item.status) == _selectedTab;
-    }).toList(growable: false);
-  }
-
-  _OrderTab _tabForStatus(String status) {
-    final String normalized = status.trim().toLowerCase();
-    if (normalized == 'completed') {
-      return _OrderTab.completed;
-    }
-    if (normalized == 'processing') {
-      return _OrderTab.processing;
-    }
-    if (normalized.startsWith('pending_') || normalized == 'all') {
-      return _OrderTab.pending;
-    }
-    return _OrderTab.pending;
-  }
-
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
-    final List<VisaOrderVO> visibleOrders = _visibleOrders;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -326,6 +383,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                 return;
               }
               setState(() => _selectedTab = value);
+              _loadOrders(tab: value);
             },
           ),
           _FilterBar(
@@ -333,10 +391,14 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
             statusLabel: _selectedStatus.label,
             onCountryTap: _selectCountry,
             onStatusTap: _selectStatus,
+            showStatusFilter: _selectedTab == _OrderTab.all,
           ),
           Expanded(
-            child: RefreshIndicator(
+            child: EasyRefresh(
+              header: const ClassicHeader(),
+              footer: const ClassicFooter(),
               onRefresh: _loadOrders,
+              onLoad: _hasMore && _orders.isNotEmpty ? _loadMoreOrders : null,
               child: Builder(
                 builder: (BuildContext context) {
                   if (_isLoading && _orders.isEmpty) {
@@ -349,7 +411,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                       onRetryTap: _loadOrders,
                     );
                   }
-                  if (visibleOrders.isEmpty) {
+                  if (_orders.isEmpty) {
                     return _OrderManagementEmptyState(
                       bottomInset: bottomInset,
                       onResetTap: () async {
@@ -361,53 +423,34 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                         await _loadOrders(
                           country: _CountryFilter.all,
                           status: _StatusFilter.all,
+                          tab: _OrderTab.all,
                         );
                       },
                     );
                   }
 
-                  return Stack(
-                    children: <Widget>[
-                      ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
-                          12,
-                          12,
-                          12,
-                          bottomInset + 16,
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 16),
+                    itemCount: _orders.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (BuildContext context, int index) {
+                      final VisaOrderVO item = _orders[index];
+                      return _OrderCard(
+                        order: item,
+                        onContactTap: () => _showPlaceholderToast(
+                          '联系客户 ${_displayCustomerName(item)}',
                         ),
-                        itemCount: visibleOrders.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (BuildContext context, int index) {
-                          final VisaOrderVO item = visibleOrders[index];
-                          return _OrderCard(
-                            order: item,
-                            onContactTap: () => _showPlaceholderToast(
-                              '联系客户 ${_displayCustomerName(item)}',
-                            ),
-                            onProcessTap: () => context.push(
-                              RoutePaths.orderDetail,
-                              extra: OrderDetailPageArgs(orderId: item.orderId),
-                            ),
-                            onTap: () => context.push(
-                              RoutePaths.orderDetail,
-                              extra: OrderDetailPageArgs(orderId: item.orderId),
-                            ),
-                          );
-                        },
-                      ),
-                      if (_isLoading)
-                        const Positioned(
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          child: LinearProgressIndicator(
-                            minHeight: 2,
-                            color: Color(0xFF096DD9),
-                            backgroundColor: Color(0xFFE6F4FF),
-                          ),
+                        onProcessTap: () => context.push(
+                          RoutePaths.orderDetail,
+                          extra: OrderDetailPageArgs(orderId: item.orderId),
                         ),
-                    ],
+                        onTap: () => context.push(
+                          RoutePaths.orderDetail,
+                          extra: OrderDetailPageArgs(orderId: item.orderId),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -429,13 +472,14 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
 
 enum _OrderTab {
   all('全部'),
-  pending('待处理'),
-  processing('办理中'),
-  completed('已完成');
+  pending('待处理', 'pending_payment'),
+  processing('办理中', 'embassy_submitted'),
+  completed('已完成', 'completed');
 
-  const _OrderTab(this.label);
+  const _OrderTab(this.label, [this.apiValue]);
 
   final String label;
+  final String? apiValue;
 }
 
 class _CountryFilter {
@@ -463,8 +507,12 @@ enum _StatusFilter {
   all('订单状态', 'all'),
   pendingPayment('待付款', 'pending_payment'),
   pendingUpload('待用户上传材料', 'pending_upload'),
-  processing('办理中', 'processing'),
-  completed('已完成', 'completed');
+  reviewing('材料审核中', 'reviewing'),
+  rejected('材料被驳回', 'rejected'),
+  processing('办理中', 'embassy_submitted'),
+  completed('已完成', 'completed'),
+  cancelled('已取消', 'cancelled'),
+  refunded('已退款', 'refunded');
 
   const _StatusFilter(this.label, this.apiValue);
 
@@ -472,11 +520,7 @@ enum _StatusFilter {
   final String apiValue;
 }
 
-enum _OrderStatusStyle {
-  red,
-  blue,
-  outlined,
-}
+enum _OrderStatusStyle { red, blue, outlined }
 
 class _OrderTabs extends StatelessWidget {
   const _OrderTabs({
@@ -500,39 +544,42 @@ class _OrderTabs extends StatelessWidget {
         ),
       ),
       child: Row(
-        children: tabs.map((_OrderTab tab) {
-          final bool selected = tab == selectedTab;
-          return Expanded(
-            child: InkWell(
-              onTap: () => onSelected(tab),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    tab.label,
-                    style: TextStyle(
-                      color: selected
-                          ? const Color(0xFF096DD9)
-                          : const Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight:
-                          selected ? FontWeight.w500 : FontWeight.w400,
-                      height: 22 / 14,
-                    ),
+        children: tabs
+            .map((_OrderTab tab) {
+              final bool selected = tab == selectedTab;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onSelected(tab),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Text(
+                        tab.label,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFF096DD9)
+                              : const Color(0xFF262626),
+                          fontSize: 14,
+                          fontWeight: selected
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                          height: 22 / 14,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Container(
+                        width: 20,
+                        height: 2,
+                        color: selected
+                            ? const Color(0xFF096DD9)
+                            : Colors.transparent,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 9),
-                  Container(
-                    width: 20,
-                    height: 2,
-                    color: selected
-                        ? const Color(0xFF096DD9)
-                        : Colors.transparent,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(growable: false),
+                ),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -544,12 +591,14 @@ class _FilterBar extends StatelessWidget {
     required this.statusLabel,
     required this.onCountryTap,
     required this.onStatusTap,
+    required this.showStatusFilter,
   });
 
   final String countryLabel;
   final String statusLabel;
   final VoidCallback onCountryTap;
   final VoidCallback onStatusTap;
+  final bool showStatusFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -565,8 +614,10 @@ class _FilterBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           _FilterButton(label: countryLabel, onTap: onCountryTap),
-          const SizedBox(width: 12),
-          _FilterButton(label: statusLabel, onTap: onStatusTap),
+          if (showStatusFilter) ...<Widget>[
+            const SizedBox(width: 12),
+            _FilterButton(label: statusLabel, onTap: onStatusTap),
+          ],
         ],
       ),
     );
@@ -574,10 +625,7 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _FilterButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -689,9 +737,7 @@ class _OrderCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  ClipOval(
-                    child: _OrderAvatar(avatarUrl: order.avatarUrl),
-                  ),
+                  ClipOval(child: _OrderAvatar(avatarUrl: order.avatarUrl)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -807,7 +853,9 @@ class _OrderCard extends StatelessWidget {
         return _OrderStatusStyle.blue;
       case 'pending_upload':
         return _OrderStatusStyle.blue;
-      case 'processing':
+      case 'reviewing':
+        return _OrderStatusStyle.blue;
+      case 'embassy_submitted':
         return _OrderStatusStyle.blue;
       default:
         return _OrderStatusStyle.red;
@@ -886,10 +934,7 @@ class _OrderAvatar extends StatelessWidget {
 }
 
 class _StatusTag extends StatelessWidget {
-  const _StatusTag({
-    required this.label,
-    required this.style,
-  });
+  const _StatusTag({required this.label, required this.style});
 
   final String label;
   final _OrderStatusStyle style;
@@ -976,12 +1021,13 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor =
-        outlined ? Colors.white : const Color(0xFF096DD9);
-    final Color borderColor =
-        outlined ? const Color(0xFFD9D9D9) : const Color(0xFF096DD9);
-    final Color textColor =
-        outlined ? const Color(0xFF262626) : Colors.white;
+    final Color backgroundColor = outlined
+        ? Colors.white
+        : const Color(0xFF096DD9);
+    final Color borderColor = outlined
+        ? const Color(0xFFD9D9D9)
+        : const Color(0xFF096DD9);
+    final Color textColor = outlined ? const Color(0xFF262626) : Colors.white;
 
     return SizedBox(
       width: 77,
@@ -1043,9 +1089,7 @@ class _OrderManagementEmptyState extends StatelessWidget {
         const SizedBox(height: 16),
         TextButton(
           onPressed: onResetTap,
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF096DD9),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
           child: const Text('重置筛选'),
         ),
       ],
@@ -1070,11 +1114,7 @@ class _OrderManagementErrorState extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(24, 80, 24, bottomInset + 24),
       children: <Widget>[
-        const Icon(
-          Icons.cloud_off_rounded,
-          size: 48,
-          color: Color(0xFFBFBFBF),
-        ),
+        const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFFBFBFBF)),
         const SizedBox(height: 16),
         Text(
           message,
@@ -1088,9 +1128,7 @@ class _OrderManagementErrorState extends StatelessWidget {
         const SizedBox(height: 16),
         TextButton(
           onPressed: onRetryTap,
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF096DD9),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
           child: const Text('重新加载'),
         ),
       ],
