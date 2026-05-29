@@ -4,9 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/network/api_exception.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../me/presentation/current_user_view_data.dart';
+import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
@@ -18,7 +20,7 @@ final _currentProviderProfileProvider = FutureProvider.autoDispose<ProviderVO>((
 });
 
 /// 服务商端个人中心，按 Figma 设计图还原。
-class ServiceProviderMePage extends StatelessWidget {
+class ServiceProviderMePage extends ConsumerWidget {
   const ServiceProviderMePage({super.key});
 
   static const String _headerBgAsset = 'assets/images/mou588hj-8pcermw.png';
@@ -54,7 +56,7 @@ class ServiceProviderMePage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SingleChildScrollView(
@@ -68,7 +70,7 @@ class ServiceProviderMePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String label) => _handleMenuTap(context, label),
+              onTap: (String label) => _handleMenuTap(context, ref, label),
             ),
           ),
         ],
@@ -82,14 +84,13 @@ class ServiceProviderMePage extends StatelessWidget {
     ).showSnackBar(SnackBar(content: Text('$label（占位）')));
   }
 
-  void _handleMenuTap(BuildContext context, String label) {
+  Future<void> _handleMenuTap(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+  ) async {
     if (label == '资质管理') {
-      context.push(
-        RoutePaths.qualificationCertification,
-        extra: QualificationCertificationPageArgs(
-          role: QualificationCertificationRole.serviceProvider,
-        ),
-      );
+      await _openQualificationCertification(context, ref);
       return;
     }
     if (label == '订单管理') {
@@ -101,6 +102,39 @@ class ServiceProviderMePage extends StatelessWidget {
 
   void _handleSettingsTap(BuildContext context) {
     context.push(RoutePaths.settings);
+  }
+
+  Future<void> _openQualificationCertification(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      final profile = await ref.read(_currentProviderProfileProvider.future);
+      final countries = await loadCountries(ref);
+      final draft = QualificationCertificationDraft()
+        ..fillFromProviderProfile(
+          profile,
+          countryLabelMap: buildCountryLabelMap(countries),
+        );
+      if (!context.mounted) {
+        return;
+      }
+      context.push(
+        RoutePaths.qualificationCertification,
+        extra: QualificationCertificationPageArgs(
+          role: QualificationCertificationRole.serviceProvider,
+          draft: draft,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      final String message = error is ApiException
+          ? error.message
+          : '资料加载失败，请稍后重试';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 }
 
@@ -223,11 +257,7 @@ class _ProviderProfileRow extends ConsumerWidget {
         : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
 
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('机构资料（占位）')));
-      },
+      onTap: () => context.push(RoutePaths.serviceProviderMyInfo),
       borderRadius: BorderRadius.circular(16),
       child: Row(
         children: <Widget>[

@@ -295,8 +295,8 @@ class UpdateVisaProviderBO {
     required this.contactEmail,
     required this.website,
     required this.yearsOfService,
-    required this.logoId,
-    required this.logoUrl,
+    this.logoId,
+    this.logoUrl,
     required this.brief,
     required this.servicePromise,
     required this.serviceCountries,
@@ -310,8 +310,8 @@ class UpdateVisaProviderBO {
   final String contactEmail;
   final String website;
   final int yearsOfService;
-  final int logoId;
-  final String logoUrl;
+  final int? logoId;
+  final String? logoUrl;
   final String brief;
   final String servicePromise;
   final List<String> serviceCountries;
@@ -326,8 +326,8 @@ class UpdateVisaProviderBO {
       contactEmail: readString(json, 'contactEmail'),
       website: readString(json, 'website'),
       yearsOfService: readInt(json, 'yearsOfService'),
-      logoId: readInt(json, 'logoId'),
-      logoUrl: readString(json, 'logoUrl'),
+      logoId: _readNullableInt(json['logoId']),
+      logoUrl: _readNullableString(json['logoUrl']),
       brief: readString(json, 'brief'),
       servicePromise: readString(json, 'servicePromise'),
       serviceCountries: readStringList(json, 'serviceCountries'),
@@ -344,13 +344,39 @@ class UpdateVisaProviderBO {
       'contactEmail': contactEmail,
       'website': website,
       'yearsOfService': yearsOfService,
-      'logoId': logoId,
-      'logoUrl': logoUrl,
+      if (logoId != null) 'logoId': logoId,
+      if (logoUrl != null && logoUrl!.trim().isNotEmpty) 'logoUrl': logoUrl,
       'brief': brief,
       'servicePromise': servicePromise,
       'serviceCountries': serviceCountries,
     };
   }
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }
 
 class UploadQualificationDocsBO {
