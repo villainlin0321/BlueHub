@@ -74,6 +74,28 @@ class QualificationCertificationDraft {
   UploadedQualificationDoc? idCardEmblemDoc;
   UploadedQualificationDoc? idCardPortraitDoc;
 
+  void fillFromProviderProfile(
+    ProviderVO profile, {
+    Map<String, String> countryLabelMap = const <String, String>{},
+  }) {
+    serviceProviderCompanyName = profile.name.trim();
+    yearsOfService = profile.yearsOfService;
+    serviceCountryCodes = _distinctNonEmptyStrings(profile.serviceCountries);
+    serviceCountryLabels = serviceCountryCodes
+        .map((code) => countryLabelMap[code] ?? code)
+        .toList(growable: false);
+  }
+
+  void fillFromEmployerProfile(
+    EmployerProfileVO profile, {
+    Map<String, String> countryLabelMap = const <String, String>{},
+  }) {
+    companyName = profile.companyName.trim();
+    companyCountryCode = profile.country.trim();
+    companyCountryLabel =
+        countryLabelMap[companyCountryCode] ?? companyCountryCode;
+  }
+
   List<DocItemBO> qualificationDocs() {
     return <DocItemBO>[
       if (businessLicenseDoc != null) businessLicenseDoc!.toDocItemBO(),
@@ -93,8 +115,6 @@ class QualificationCertificationDraft {
       contactEmail: contactEmail,
       website: website,
       yearsOfService: yearsOfService,
-      logoId: 0,
-      logoUrl: '',
       brief: '',
       servicePromise: '',
       serviceCountries: serviceCountryCodes,
@@ -115,6 +135,14 @@ class QualificationCertificationDraft {
       city: '',
     );
   }
+}
+
+List<String> _distinctNonEmptyStrings(Iterable<String> values) {
+  return values
+      .map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
 }
 
 class QualificationCertificationPageArgs {

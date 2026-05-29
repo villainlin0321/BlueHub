@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../shell/application/shell_role_provider.dart';
 
 /// 设置页：承接企业端“我的”页右上角设置入口，并提供基础账号操作。
 class SettingsPage extends ConsumerStatefulWidget {
@@ -98,7 +100,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 打开“我的信息”页面，复用项目中已有的资料编辑入口。
   void _handleMyInfoTap() {
-    context.push(RoutePaths.myInfo);
+    final String role = ref.read(authSessionProvider).user?.role ?? '';
+    final ShellRole shellRole = shellRoleFromApiRole(role);
+    final String targetPath = shellRole == ShellRole.serviceProvider
+        ? RoutePaths.serviceProviderMyInfo
+        : RoutePaths.myInfo;
+    context.push(targetPath);
   }
 
   /// 黑名单暂未接入真实业务，先保留占位提示避免点击无反馈。
