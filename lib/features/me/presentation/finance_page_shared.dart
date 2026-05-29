@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 
 class FinanceStateView extends StatelessWidget {
-  const FinanceStateView({super.key, required this.message, required this.onRetry});
+  const FinanceStateView({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
 
   final String message;
   final Future<void> Function() onRetry;
@@ -44,16 +49,9 @@ class FinanceEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: AppEmptyState(
+        message: message,
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-        child: Text(
-          message,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 13,
-            height: 18 / 13,
-          ),
-        ),
       ),
     );
   }
@@ -196,7 +194,9 @@ class FinanceWithdrawalTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              FinanceStatusBadge(label: mapFinanceWithdrawalStatus(item.status)),
+              FinanceStatusBadge(
+                label: mapFinanceWithdrawalStatus(item.status),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -247,11 +247,7 @@ class FinanceWithdrawalTile extends StatelessWidget {
 }
 
 class FinanceBankCardTile extends StatelessWidget {
-  const FinanceBankCardTile({
-    super.key,
-    required this.item,
-    this.onDelete,
-  });
+  const FinanceBankCardTile({super.key, required this.item, this.onDelete});
 
   final ProviderBankCardVO item;
   final Future<void> Function()? onDelete;
@@ -304,7 +300,10 @@ class FinanceBankCardTile extends StatelessWidget {
               child: TextButton(
                 onPressed: onDelete,
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: const Color(0xFFFF4D4F),
@@ -333,7 +332,8 @@ class FinanceAddBankCardSheet extends StatefulWidget {
   final Future<void> Function(AddBankCardBO request) onSubmit;
 
   @override
-  State<FinanceAddBankCardSheet> createState() => _FinanceAddBankCardSheetState();
+  State<FinanceAddBankCardSheet> createState() =>
+      _FinanceAddBankCardSheetState();
 }
 
 class _FinanceAddBankCardSheetState extends State<FinanceAddBankCardSheet> {
@@ -565,7 +565,11 @@ String formatFinanceCurrencySymbol(String currency) {
   };
 }
 
-String formatFinanceAmount(num amount, String currency, {bool withSymbol = true}) {
+String formatFinanceAmount(
+  num amount,
+  String currency, {
+  bool withSymbol = true,
+}) {
   final String symbol = withSymbol ? formatFinanceCurrencySymbol(currency) : '';
   final bool isNegative = amount < 0;
   final num absAmount = amount.abs();

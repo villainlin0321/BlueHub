@@ -27,12 +27,12 @@ class CompanyHomePage extends ConsumerStatefulWidget {
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
       label: '发布招聘',
-      assetPath: 'assets/images/mon6z4rt-qet9p7k.svg',
+      assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_business_outlined,
     ),
     _QuickActionItem(
       label: '人才中心',
-      assetPath: 'assets/images/mon6z4rt-vvh6pmo.svg',
+      assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
     ),
     _QuickActionItem(

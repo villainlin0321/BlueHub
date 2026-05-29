@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../visa/data/provider_models.dart';
 
 class ServiceDetailMerchantTab extends StatelessWidget {
@@ -231,6 +232,12 @@ class _MerchantPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message == '暂无商家信息') {
+      return const Center(
+        child: AppEmptyState(message: '暂无商家信息', padding: EdgeInsets.all(24)),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

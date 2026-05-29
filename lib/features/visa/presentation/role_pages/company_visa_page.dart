@@ -9,6 +9,7 @@ import '../../../jobs/data/job_providers.dart';
 import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -544,20 +545,9 @@ class _CompanyJobEmptyState extends StatelessWidget {
           ),
           child: Column(
             children: <Widget>[
-              const Icon(
-                Icons.work_outline_rounded,
-                size: 36,
-                color: Color(0xFF8C8C8C),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 14,
-                  height: 20 / 14,
-                ),
+              AppEmptyState(
+                message: message,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
               ),
               if (buttonLabel != null && onTap != null) ...<Widget>[
                 const SizedBox(height: 12),
