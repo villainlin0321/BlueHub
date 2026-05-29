@@ -150,12 +150,14 @@ class CompanyMyInfoAvatarRow extends StatelessWidget {
 class CompanyQualificationPreview extends StatelessWidget {
   const CompanyQualificationPreview({
     required this.title,
-    required this.assetPath,
+    required this.fallbackAssetPath,
+    this.imageUrl,
     super.key,
   });
 
   final String title;
-  final String assetPath;
+  final String fallbackAssetPath;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -191,20 +193,53 @@ class CompanyQualificationPreview extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.all(8),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  CompanyMyInfoStyles.qualificationPreviewRadius,
-                ),
-                image: DecorationImage(
-                  image: AssetImage(assetPath),
-                  fit: BoxFit.cover,
-                ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                CompanyMyInfoStyles.qualificationPreviewRadius,
+              ),
+              child: _CompanyQualificationImage(
+                imageUrl: imageUrl,
+                fallbackAssetPath: fallbackAssetPath,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CompanyQualificationImage extends StatelessWidget {
+  const _CompanyQualificationImage({
+    required this.imageUrl,
+    required this.fallbackAssetPath,
+  });
+
+  final String? imageUrl;
+  final String fallbackAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final String resolvedImageUrl = imageUrl?.trim() ?? '';
+    final Widget fallback = Image.asset(
+      fallbackAssetPath,
+      fit: BoxFit.cover,
+    );
+    if (resolvedImageUrl.isEmpty) {
+      return fallback;
+    }
+
+    return Image.network(
+      resolvedImageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
+      loadingBuilder:
+          (BuildContext context, Widget child, ImageChunkEvent? progress) {
+            if (progress == null) {
+              return child;
+            }
+            return fallback;
+          },
     );
   }
 }
