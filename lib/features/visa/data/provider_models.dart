@@ -152,6 +152,148 @@ class ProviderVO {
   }
 }
 
+class QualificationDocVO {
+  const QualificationDocVO({
+    required this.docId,
+    required this.docType,
+    required this.docName,
+    required this.fileUrl,
+    this.fileId,
+    required this.createdAt,
+  });
+
+  final int docId;
+  final String docType;
+  final String docName;
+  final String fileUrl;
+  final int? fileId;
+  final String createdAt;
+
+  factory QualificationDocVO.fromJson(JsonMap json) {
+    return QualificationDocVO(
+      docId: readInt(json, 'docId'),
+      docType: readString(json, 'docType'),
+      docName: readString(json, 'docName'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileId: _readNullableInt(json['fileId']),
+      createdAt: readString(json, 'createdAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'docId': docId,
+      'docType': docType,
+      'docName': docName,
+      'fileUrl': fileUrl,
+      if (fileId != null) 'fileId': fileId,
+      'createdAt': createdAt,
+    };
+  }
+}
+
+class VisaProviderProfileVO {
+  const VisaProviderProfileVO({
+    required this.profileId,
+    required this.isVerified,
+    required this.verifyStatus,
+    this.verifyRejectReason,
+    required this.rating,
+    required this.caseCount,
+    required this.companyName,
+    required this.unifiedCreditCode,
+    required this.legalPerson,
+    required this.contactPerson,
+    required this.contactPhone,
+    required this.contactEmail,
+    required this.website,
+    required this.yearsOfService,
+    this.logoId,
+    required this.logoUrl,
+    required this.brief,
+    required this.servicePromise,
+    required this.serviceCountries,
+    required this.qualificationDocs,
+  });
+
+  final int profileId;
+  final bool isVerified;
+  final String verifyStatus;
+  final String? verifyRejectReason;
+  final double rating;
+  final int caseCount;
+  final String companyName;
+  final String unifiedCreditCode;
+  final String legalPerson;
+  final String contactPerson;
+  final String contactPhone;
+  final String contactEmail;
+  final String website;
+  final int yearsOfService;
+  final int? logoId;
+  final String logoUrl;
+  final String brief;
+  final String servicePromise;
+  final List<String> serviceCountries;
+  final List<QualificationDocVO> qualificationDocs;
+
+  factory VisaProviderProfileVO.fromJson(JsonMap json) {
+    return VisaProviderProfileVO(
+      profileId: readInt(json, 'profileId'),
+      isVerified: readBool(json, 'isVerified'),
+      verifyStatus: readString(json, 'verifyStatus'),
+      verifyRejectReason: _readNullableString(json['verifyRejectReason']),
+      rating: readDouble(json, 'rating'),
+      caseCount: readInt(json, 'caseCount'),
+      companyName: readString(json, 'companyName'),
+      unifiedCreditCode: readString(json, 'unifiedCreditCode'),
+      legalPerson: readString(json, 'legalPerson'),
+      contactPerson: readString(json, 'contactPerson'),
+      contactPhone: readString(json, 'contactPhone'),
+      contactEmail: readString(json, 'contactEmail'),
+      website: readString(json, 'website'),
+      yearsOfService: readInt(json, 'yearsOfService'),
+      logoId: _readNullableInt(json['logoId']),
+      logoUrl: readString(json, 'logoUrl'),
+      brief: readString(json, 'brief'),
+      servicePromise: readString(json, 'servicePromise'),
+      serviceCountries: readStringList(json, 'serviceCountries'),
+      qualificationDocs: readModelList<QualificationDocVO>(
+        json,
+        'qualificationDocs',
+        QualificationDocVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'profileId': profileId,
+      'isVerified': isVerified,
+      'verifyStatus': verifyStatus,
+      if (verifyRejectReason != null) 'verifyRejectReason': verifyRejectReason,
+      'rating': rating,
+      'caseCount': caseCount,
+      'companyName': companyName,
+      'unifiedCreditCode': unifiedCreditCode,
+      'legalPerson': legalPerson,
+      'contactPerson': contactPerson,
+      'contactPhone': contactPhone,
+      'contactEmail': contactEmail,
+      'website': website,
+      'yearsOfService': yearsOfService,
+      if (logoId != null) 'logoId': logoId,
+      'logoUrl': logoUrl,
+      'brief': brief,
+      'servicePromise': servicePromise,
+      'serviceCountries': serviceCountries,
+      'qualificationDocs': qualificationDocs
+          .map((item) => item.toJson())
+          .toList(growable: false),
+    };
+  }
+}
+
 class ReviewItemVO {
   const ReviewItemVO({
     required this.reviewId,

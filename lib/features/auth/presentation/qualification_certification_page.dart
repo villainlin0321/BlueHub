@@ -167,6 +167,7 @@ class _QualificationCertificationPageState
       final UploadedQualificationDoc uploadedDoc =
           await QualificationUploadHelper.uploadQualificationImage(
             ref: ref,
+            role: _role,
             file: pickedFile,
             docType: QualificationDocType.idCard,
             docName: isEmblemSide ? '法人身份证国徽面' : '法人身份证人像面',

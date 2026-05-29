@@ -3,59 +3,121 @@ import 'package:bluehub_app/shared/network/api_decoders.dart';
 class EmployerProfileVO {
   const EmployerProfileVO({
     required this.profileId,
+    required this.isVerified,
+    required this.verifyStatus,
+    this.verifyRejectReason,
     required this.companyName,
     required this.industry,
     required this.companySize,
+    this.logoId,
     required this.logoUrl,
     required this.description,
     required this.website,
     required this.foundedYear,
     required this.country,
     required this.city,
-    required this.isVerified,
+    required this.qualificationDocs,
   });
 
   final int profileId;
+  final bool isVerified;
+  final String verifyStatus;
+  final String? verifyRejectReason;
   final String companyName;
   final String industry;
   final String companySize;
+  final int? logoId;
   final String logoUrl;
   final String description;
   final String website;
   final int foundedYear;
   final String country;
   final String city;
-  final bool isVerified;
+  final List<QualificationDocVO> qualificationDocs;
 
   factory EmployerProfileVO.fromJson(JsonMap json) {
     return EmployerProfileVO(
       profileId: readInt(json, 'profileId'),
+      isVerified: readBool(json, 'isVerified'),
+      verifyStatus: readString(json, 'verifyStatus'),
+      verifyRejectReason: _readNullableString(json['verifyRejectReason']),
       companyName: readString(json, 'companyName'),
       industry: readString(json, 'industry'),
       companySize: readString(json, 'companySize'),
+      logoId: _readNullableInt(json['logoId']),
       logoUrl: readString(json, 'logoUrl'),
       description: readString(json, 'description'),
       website: readString(json, 'website'),
       foundedYear: readInt(json, 'foundedYear'),
       country: readString(json, 'country'),
       city: readString(json, 'city'),
-      isVerified: readBool(json, 'isVerified'),
+      qualificationDocs: readModelList<QualificationDocVO>(
+        json,
+        'qualificationDocs',
+        QualificationDocVO.fromJson,
+      ),
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
       'profileId': profileId,
+      'isVerified': isVerified,
+      'verifyStatus': verifyStatus,
+      if (verifyRejectReason != null) 'verifyRejectReason': verifyRejectReason,
       'companyName': companyName,
       'industry': industry,
       'companySize': companySize,
+      if (logoId != null) 'logoId': logoId,
       'logoUrl': logoUrl,
       'description': description,
       'website': website,
       'foundedYear': foundedYear,
       'country': country,
       'city': city,
-      'isVerified': isVerified,
+      'qualificationDocs': qualificationDocs
+          .map((item) => item.toJson())
+          .toList(growable: false),
+    };
+  }
+}
+
+class QualificationDocVO {
+  const QualificationDocVO({
+    required this.docId,
+    required this.docType,
+    required this.docName,
+    required this.fileUrl,
+    this.fileId,
+    required this.createdAt,
+  });
+
+  final int docId;
+  final String docType;
+  final String docName;
+  final String fileUrl;
+  final int? fileId;
+  final String createdAt;
+
+  factory QualificationDocVO.fromJson(JsonMap json) {
+    return QualificationDocVO(
+      docId: readInt(json, 'docId'),
+      docType: readString(json, 'docType'),
+      docName: readString(json, 'docName'),
+      fileUrl: readString(json, 'fileUrl'),
+      fileId: _readNullableInt(json['fileId']),
+      createdAt: readString(json, 'createdAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'docId': docId,
+      'docType': docType,
+      'docName': docName,
+      'fileUrl': fileUrl,
+      if (fileId != null) 'fileId': fileId,
+      'createdAt': createdAt,
     };
   }
 }
@@ -65,8 +127,8 @@ class UpdateEmployerBO {
     required this.companyName,
     required this.industry,
     required this.companySize,
-    required this.logoId,
-    required this.logoUrl,
+    this.logoId,
+    this.logoUrl,
     required this.description,
     required this.website,
     required this.foundedYear,
@@ -77,8 +139,8 @@ class UpdateEmployerBO {
   final String companyName;
   final String industry;
   final String companySize;
-  final int logoId;
-  final String logoUrl;
+  final int? logoId;
+  final String? logoUrl;
   final String description;
   final String website;
   final int foundedYear;
@@ -90,8 +152,8 @@ class UpdateEmployerBO {
       companyName: readString(json, 'companyName'),
       industry: readString(json, 'industry'),
       companySize: readString(json, 'companySize'),
-      logoId: readInt(json, 'logoId'),
-      logoUrl: readString(json, 'logoUrl'),
+      logoId: _readNullableInt(json['logoId']),
+      logoUrl: _readNullableString(json['logoUrl']),
       description: readString(json, 'description'),
       website: readString(json, 'website'),
       foundedYear: readInt(json, 'foundedYear'),
@@ -105,8 +167,8 @@ class UpdateEmployerBO {
       'companyName': companyName,
       'industry': industry,
       'companySize': companySize,
-      'logoId': logoId,
-      'logoUrl': logoUrl,
+      if (logoId != null) 'logoId': logoId,
+      if (logoUrl != null && logoUrl!.trim().isNotEmpty) 'logoUrl': logoUrl,
       'description': description,
       'website': website,
       'foundedYear': foundedYear,
@@ -114,4 +176,30 @@ class UpdateEmployerBO {
       'city': city,
     };
   }
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }

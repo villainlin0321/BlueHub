@@ -161,7 +161,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppResultProviderVO"
+                  "$ref": "#/components/schemas/AppResultVisaProviderProfileVO"
                 }
               }
             }
@@ -1661,7 +1661,7 @@
         "tags": [
           "雇主模块"
         ],
-        "summary": "获取当前雇主企业信息",
+        "summary": "获取当前雇主企业信息（雇主端）",
         "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
         "operationId": "getMyProfile_1",
         "responses": {
@@ -1721,7 +1721,7 @@
         "tags": [
           "雇主模块"
         ],
-        "summary": "更新雇主企业信息",
+        "summary": "更新雇主企业信息（雇主端）",
         "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
         "operationId": "updateMyProfile_1",
         "requestBody": {
@@ -3260,6 +3260,78 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employer/me/qualifications": {
+      "post": {
+        "tags": [
+          "雇主模块"
+        ],
+        "summary": "上传资质证明文件（雇主端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "uploadQualifications_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadQualificationDocsBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
                 }
               }
             }
@@ -7971,23 +8043,29 @@
       },
       "MaterialVO": {
         "type": "object",
+        "description": "用户已上传材料项",
         "properties": {
+          "materialId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "材料记录 ID"
+          },
           "materialName": {
             "type": "string",
             "description": "材料名称"
           },
           "fileUrl": {
             "type": "string",
-            "description": "文件URL"
+            "description": "文件 URL"
           },
           "fileType": {
             "type": "string",
-            "description": "文件类型"
+            "description": "文件 MIME 类型"
           },
           "fileSize": {
             "type": "integer",
             "format": "int64",
-            "description": "文件大小"
+            "description": "文件大小（字节）"
           },
           "uploadedAt": {
             "type": "string",
@@ -8028,6 +8106,24 @@
           "name": {
             "type": "string",
             "description": "服务商名称"
+          }
+        }
+      },
+      "RequiredMaterialVO": {
+        "type": "object",
+        "description": "套餐要求材料项",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "材料名称"
+          },
+          "description": {
+            "type": "string",
+            "description": "材料说明"
+          },
+          "isRequired": {
+            "type": "boolean",
+            "description": "是否必须提交"
           }
         }
       },
@@ -8127,6 +8223,13 @@
           "providerInfo": {
             "$ref": "#/components/schemas/ProviderInfoVO",
             "description": "服务商信息"
+          },
+          "requiredMaterials": {
+            "type": "array",
+            "description": "套餐要求的材料清单（指引用户准备，贯穿订单全程）",
+            "items": {
+              "$ref": "#/components/schemas/RequiredMaterialVO"
+            }
           },
           "materials": {
             "type": "array",
@@ -9490,7 +9593,7 @@
           }
         }
       },
-      "AppResultProviderVO": {
+      "AppResultVisaProviderProfileVO": {
         "type": "object",
         "description": "统一响应体",
         "properties": {
@@ -9506,7 +9609,7 @@
             "example": "success"
           },
           "data": {
-            "$ref": "#/components/schemas/ProviderVO",
+            "$ref": "#/components/schemas/VisaProviderProfileVO",
             "description": "响应数据"
           },
           "timestamp": {
@@ -9519,6 +9622,139 @@
             "type": "string",
             "description": "请求追踪ID",
             "example": "req_abc123xyz"
+          }
+        }
+      },
+      "QualificationDocVO": {
+        "type": "object",
+        "description": "资质证明文件项",
+        "properties": {
+          "docId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件记录 ID"
+          },
+          "docType": {
+            "type": "string",
+            "description": "文档类型：business_license / special_permit / id_card"
+          },
+          "docName": {
+            "type": "string",
+            "description": "文档名称"
+          },
+          "fileUrl": {
+            "type": "string",
+            "description": "文件访问 URL"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件 ID（关联 es_uploaded_files）"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "上传时间"
+          }
+        }
+      },
+      "VisaProviderProfileVO": {
+        "type": "object",
+        "description": "服务商我的资料（服务商端，含全部可编辑字段）",
+        "properties": {
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务商档案 ID"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "description": "是否已通过平台认证"
+          },
+          "verifyStatus": {
+            "type": "string",
+            "description": "认证状态：unverified / pending / verified / rejected"
+          },
+          "verifyRejectReason": {
+            "type": "string",
+            "description": "认证驳回原因，verifyStatus=rejected 时有值"
+          },
+          "rating": {
+            "type": "number",
+            "description": "平均评分"
+          },
+          "caseCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "累计案例数"
+          },
+          "companyName": {
+            "type": "string",
+            "description": "公司名称"
+          },
+          "unifiedCreditCode": {
+            "type": "string",
+            "description": "统一社会信用代码"
+          },
+          "legalPerson": {
+            "type": "string",
+            "description": "法人姓名"
+          },
+          "contactPerson": {
+            "type": "string",
+            "description": "联系人姓名"
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "联系电话"
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "联系邮箱"
+          },
+          "website": {
+            "type": "string",
+            "description": "官网地址"
+          },
+          "yearsOfService": {
+            "type": "integer",
+            "format": "int32",
+            "description": "从业年限"
+          },
+          "logoId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Logo 文件 ID（新版，优先使用）"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Logo URL（由后端解析，只读）"
+          },
+          "brief": {
+            "type": "string",
+            "description": "服务商简介"
+          },
+          "servicePromise": {
+            "type": "string",
+            "description": "服务承诺"
+          },
+          "serviceCountries": {
+            "type": "array",
+            "description": "服务国家列表（ISO 2 码）",
+            "example": [
+              "DE",
+              "FR"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "qualificationDocs": {
+            "type": "array",
+            "description": "已上传的资质证明文件列表",
+            "items": {
+              "$ref": "#/components/schemas/QualificationDocVO"
+            }
           }
         }
       },
@@ -11119,12 +11355,24 @@
       },
       "EmployerProfileVO": {
         "type": "object",
-        "description": "雇主企业信息响应",
+        "description": "雇主我的资料（雇主端，含全部可编辑字段）",
         "properties": {
           "profileId": {
             "type": "integer",
             "format": "int64",
-            "description": "企业档案ID"
+            "description": "企业档案 ID"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "description": "是否已通过平台认证"
+          },
+          "verifyStatus": {
+            "type": "string",
+            "description": "认证状态：unverified / pending / verified / rejected"
+          },
+          "verifyRejectReason": {
+            "type": "string",
+            "description": "认证驳回原因，verifyStatus=rejected 时有值"
           },
           "companyName": {
             "type": "string",
@@ -11132,23 +11380,28 @@
           },
           "industry": {
             "type": "string",
-            "description": "行业"
+            "description": "行业类型"
           },
           "companySize": {
             "type": "string",
             "description": "公司规模"
           },
+          "logoId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Logo 文件 ID（新版，优先使用）"
+          },
           "logoUrl": {
             "type": "string",
-            "description": "公司Logo URL"
+            "description": "Logo URL（由后端解析，只读）"
           },
           "description": {
             "type": "string",
-            "description": "公司描述"
+            "description": "公司简介"
           },
           "website": {
             "type": "string",
-            "description": "公司官网"
+            "description": "官网地址"
           },
           "foundedYear": {
             "type": "integer",
@@ -11157,15 +11410,18 @@
           },
           "country": {
             "type": "string",
-            "description": "所在国家"
+            "description": "企业所在国（ISO 2 码）"
           },
           "city": {
             "type": "string",
             "description": "所在城市"
           },
-          "isVerified": {
-            "type": "boolean",
-            "description": "是否已认证"
+          "qualificationDocs": {
+            "type": "array",
+            "description": "已上传的资质证明文件列表",
+            "items": {
+              "$ref": "#/components/schemas/QualificationDocVO"
+            }
           }
         }
       },

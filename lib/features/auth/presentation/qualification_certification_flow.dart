@@ -75,10 +75,16 @@ class QualificationCertificationDraft {
   UploadedQualificationDoc? idCardPortraitDoc;
 
   void fillFromProviderProfile(
-    ProviderVO profile, {
+    VisaProviderProfileVO profile, {
     Map<String, String> countryLabelMap = const <String, String>{},
   }) {
-    serviceProviderCompanyName = profile.name.trim();
+    serviceProviderCompanyName = profile.companyName.trim();
+    unifiedCreditCode = profile.unifiedCreditCode.trim();
+    legalPerson = profile.legalPerson.trim();
+    contactPerson = profile.contactPerson.trim();
+    contactPhone = profile.contactPhone.trim();
+    contactEmail = profile.contactEmail.trim();
+    website = profile.website.trim();
     yearsOfService = profile.yearsOfService;
     serviceCountryCodes = _distinctNonEmptyStrings(profile.serviceCountries);
     serviceCountryLabels = serviceCountryCodes
@@ -126,8 +132,6 @@ class QualificationCertificationDraft {
       companyName: companyName,
       industry: '',
       companySize: '',
-      logoId: 0,
-      logoUrl: '',
       description: '',
       website: '',
       foundedYear: 0,

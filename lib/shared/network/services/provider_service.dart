@@ -37,10 +37,10 @@ class ProviderService {
   }
 
   /// 获取当前登录服务商的机构资料。
-  Future<ProviderVO> getMyProfile() async {
-    final response = await _apiClient.get<ProviderVO>(
+  Future<VisaProviderProfileVO> getMyProfile() async {
+    final response = await _apiClient.get<VisaProviderProfileVO>(
       '/visa-providers/me',
-      decode: (data) => ProviderVO.fromJson(asJsonMap(data)),
+      decode: (data) => VisaProviderProfileVO.fromJson(asJsonMap(data)),
     );
     return response;
   }

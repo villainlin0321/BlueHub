@@ -1,6 +1,7 @@
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import '../../../features/employer/data/employer_models.dart';
+import '../../../features/visa/data/provider_models.dart';
 
 class EmployerService {
   EmployerService({required ApiClient apiClient}) : _apiClient = apiClient;
@@ -21,5 +22,15 @@ class EmployerService {
     required UpdateEmployerBO request,
   }) async {
     return _apiClient.putVoid('/employer/me', data: request.toJson());
+  }
+
+  /// 上传当前登录雇主的资质文档列表。
+  Future<void> uploadQualifications({
+    required UploadQualificationDocsBO request,
+  }) async {
+    return _apiClient.postVoid(
+      '/employer/me/qualifications',
+      data: request.toJson(),
+    );
   }
 }

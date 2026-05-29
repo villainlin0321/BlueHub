@@ -12,9 +12,8 @@ import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
-final _currentProviderProfileProvider = FutureProvider.autoDispose<ProviderVO>((
-  ref,
-) async {
+final _currentProviderProfileProvider =
+    FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
   final service = ref.watch(providerServiceProvider);
   return service.getMyProfile();
 });
@@ -248,7 +247,7 @@ class _ProviderProfileRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ProviderVO? providerProfile = ref
+    final VisaProviderProfileVO? providerProfile = ref
         .watch(_currentProviderProfileProvider)
         .asData
         ?.value;
@@ -305,11 +304,11 @@ class _ProviderNameRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       ref.watch(authSessionProvider).user,
     );
-    final ProviderVO? providerProfile = ref
+    final VisaProviderProfileVO? providerProfile = ref
         .watch(_currentProviderProfileProvider)
         .asData
         ?.value;
-    final String providerName = providerProfile?.name.trim() ?? '';
+    final String providerName = providerProfile?.companyName.trim() ?? '';
     final String displayName = providerName.isNotEmpty
         ? providerName
         : userViewData.nickname;

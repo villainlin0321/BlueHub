@@ -27,7 +27,6 @@ class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationStepTwoPageState
     extends ConsumerState<QualificationCertificationStepTwoPage> {
-
   static const List<String> _steps = <String>[
     '基本信息',
     '资质证明',
@@ -39,6 +38,7 @@ class _QualificationCertificationStepTwoPageState
   bool _isUploadingBusinessLicense = false;
   bool _isUploadingSpecialPermit = false;
 
+  QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
 
   @override
@@ -95,6 +95,7 @@ class _QualificationCertificationStepTwoPageState
       final UploadedQualificationDoc uploadedDoc =
           await QualificationUploadHelper.uploadQualificationImage(
             ref: ref,
+            role: _role,
             file: pickedFile,
             docType: docType,
             docName: docType.defaultDocName,

@@ -15,9 +15,8 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
-final _currentProviderProfileProvider = FutureProvider.autoDispose<ProviderVO>((
-  ref,
-) async {
+final _currentProviderProfileProvider =
+    FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
   final service = ref.watch(providerServiceProvider);
   return service.getMyProfile();
 });
@@ -296,11 +295,12 @@ class _ProviderInfoRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       ref.watch(authSessionProvider).user,
     );
-    final AsyncValue<ProviderVO> providerProfileAsync = ref.watch(
+    final AsyncValue<VisaProviderProfileVO> providerProfileAsync = ref.watch(
       _currentProviderProfileProvider,
     );
-    final ProviderVO? providerProfile = providerProfileAsync.asData?.value;
-    final String providerName = providerProfile?.name.trim() ?? '';
+    final VisaProviderProfileVO? providerProfile =
+        providerProfileAsync.asData?.value;
+    final String providerName = providerProfile?.companyName.trim() ?? '';
     final String displayName = providerName.isNotEmpty
         ? providerName
         : userViewData.nickname;

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/network/api_exception.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../../employer/data/employer_providers.dart';
 import '../../files/data/file_models.dart';
 import '../../files/data/file_providers.dart';
 import '../../visa/data/provider_models.dart';
@@ -23,6 +24,7 @@ class QualificationUploadHelper {
   /// 上传资质图片：先走文件预签名上传，再回调资质接口登记文档信息。
   static Future<UploadedQualificationDoc> uploadQualificationImage({
     required WidgetRef ref,
+    required QualificationCertificationRole role,
     required PickedUploadFile file,
     required QualificationDocType docType,
     String? docName,
@@ -48,6 +50,7 @@ class QualificationUploadHelper {
 
     await _uploadQualificationsWithRetry(
       ref: ref,
+      role: role,
       request: UploadQualificationDocsBO(
         docs: <DocItemBO>[uploadedDoc.toDocItemBO()],
       ),
@@ -58,6 +61,7 @@ class QualificationUploadHelper {
   /// 规避文件确认后立即登记资质时的短暂一致性窗口，失败时做有限重试。
   static Future<void> _uploadQualificationsWithRetry({
     required WidgetRef ref,
+    required QualificationCertificationRole role,
     required UploadQualificationDocsBO request,
   }) async {
     await Future.delayed(_initialQualificationSyncDelay);
@@ -69,9 +73,15 @@ class QualificationUploadHelper {
       attempt++
     ) {
       try {
-        await ref
-            .read(providerServiceProvider)
-            .uploadQualifications(request: request);
+        if (role == QualificationCertificationRole.company) {
+          await ref
+              .read(employerServiceProvider)
+              .uploadQualifications(request: request);
+        } else {
+          await ref
+              .read(providerServiceProvider)
+              .uploadQualifications(request: request);
+        }
         return;
       } catch (error) {
         lastError = error;
