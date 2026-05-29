@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/network/models/dictionary_models.dart';
+import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
+import '../../../me/data/dictionary_providers.dart';
 import '../../../me/data/collection_models.dart' show CollectionBO;
 import '../../../me/data/collection_providers.dart';
 import '../../data/job_models.dart';
@@ -38,18 +42,37 @@ class _JobsPageBody extends ConsumerStatefulWidget {
 
 class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   static const int _pageSize = 20;
+  static const List<_SalaryRangeOption> _salaryRangeOptions =
+      <_SalaryRangeOption>[
+        _SalaryRangeOption(key: '', label: '薪资要求'),
+        _SalaryRangeOption(key: '1000-2000', label: '1000-2000', min: 1000, max: 2000),
+        _SalaryRangeOption(key: '2000-3000', label: '2000-3000', min: 2000, max: 3000),
+        _SalaryRangeOption(key: '3000-4000', label: '3000-4000', min: 3000, max: 4000),
+        _SalaryRangeOption(key: '4000-5000', label: '4000-5000', min: 4000, max: 5000),
+        _SalaryRangeOption(key: '5000-6000', label: '5000-6000', min: 5000, max: 6000),
+        _SalaryRangeOption(key: '6000-7000', label: '6000-7000', min: 6000, max: 7000),
+        _SalaryRangeOption(key: '7000-8000', label: '7000-8000', min: 7000, max: 8000),
+        _SalaryRangeOption(key: '8000-9000', label: '8000-9000', min: 8000, max: 9000),
+        _SalaryRangeOption(key: '9000-10000', label: '9000-10000', min: 9000, max: 10000),
+        _SalaryRangeOption(key: '10000+', label: '10000以上', min: 10000),
+      ];
 
   final List<JobListVO> _jobs = <JobListVO>[];
   final Set<int> _submittingJobIds = <int>{};
   final Set<int> _appliedJobIds = <int>{};
   final Set<int> _collectingJobIds = <int>{};
   final Map<int, bool> _collectedOverrides = <int, bool>{};
+  late final TextEditingController _searchController = TextEditingController();
   int _currentPage = 0;
   bool _hasNext = true;
   bool _isInitialLoading = true;
   bool _isRefreshing = false;
   bool _isLoadingMore = false;
   String? _initialErrorMessage;
+  String? _submittedKeyword;
+  String? _selectedCountryCode;
+  String? _selectedPositionKeyword;
+  String? _selectedSalaryRangeKey;
 
   @override
   void initState() {
@@ -60,10 +83,26 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     final AsyncValue<Set<int>> collectedJobIdsAsync = ref.watch(
       collectedJobIdsProvider,
+    );
+    final AsyncValue<PageResult<CountryVO>> countriesAsync = ref.watch(
+      countrySearchProvider(const CountrySearchQuery(page: 1, pageSize: 200)),
+    );
+    final AsyncValue<List<PositionCategoryVO>> positionTreeAsync = ref.watch(
+      positionTreeProvider(null),
+    );
+    final List<CountryVO> countries = countriesAsync.asData?.value.list ?? const <CountryVO>[];
+    final List<PositionVO> positions = _flattenPositions(
+      positionTreeAsync.asData?.value ?? const <PositionCategoryVO>[],
     );
 
     return SafeArea(
@@ -88,17 +127,32 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: _JobsSearchBar(),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _JobsSearchBar(
+                  controller: _searchController,
+                  onSubmitted: _handleSearchSubmitted,
+                ),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 13)),
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: _FilterRow(),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _FilterRow(
+                  countries: countries,
+                  positions: positions,
+                  salaryRanges: _salaryRangeOptions,
+                  selectedCountryCode: _selectedCountryCode,
+                  selectedPositionKeyword: _selectedPositionKeyword,
+                  selectedSalaryRangeKey: _selectedSalaryRangeKey,
+                  isCountryEnabled: countriesAsync.hasValue,
+                  isPositionEnabled: positionTreeAsync.hasValue,
+                  onCountryChanged: _handleCountryChanged,
+                  onPositionChanged: _handlePositionChanged,
+                  onSalaryRangeChanged: _handleSalaryRangeChanged,
+                ),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 19)),
@@ -139,6 +193,62 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     await _fetchJobs(reset: false, showFullscreenLoading: false);
   }
 
+  /// 提交搜索关键字后刷新岗位列表。
+  void _handleSearchSubmitted(String value) {
+    final String? keyword = value.trim().isEmpty ? null : value.trim();
+    if (_submittedKeyword == keyword) {
+      FocusScope.of(context).unfocus();
+      return;
+    }
+    setState(() {
+      _submittedKeyword = keyword;
+    });
+    FocusScope.of(context).unfocus();
+    _fetchJobs(
+      reset: true,
+      showFullscreenLoading: _jobs.isEmpty,
+    );
+  }
+
+  /// 切换国家筛选后重新请求岗位列表。
+  void _handleCountryChanged(String? value) {
+    final String? countryCode = _normalizeFilterValue(value);
+    if (_selectedCountryCode == countryCode) {
+      return;
+    }
+    setState(() {
+      _selectedCountryCode = countryCode;
+    });
+    FocusScope.of(context).unfocus();
+    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
+  }
+
+  /// 当前岗位列表接口没有显式职位参数，先将职位名称拼到关键字中过滤。
+  void _handlePositionChanged(String? value) {
+    final String? positionKeyword = _normalizeFilterValue(value);
+    if (_selectedPositionKeyword == positionKeyword) {
+      return;
+    }
+    setState(() {
+      _selectedPositionKeyword = positionKeyword;
+    });
+    FocusScope.of(context).unfocus();
+    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
+  }
+
+  /// 切换薪资区间后重新请求岗位列表。
+  void _handleSalaryRangeChanged(String? value) {
+    final String? rangeKey = _normalizeFilterValue(value);
+    if (_selectedSalaryRangeKey == rangeKey) {
+      return;
+    }
+    setState(() {
+      _selectedSalaryRangeKey = rangeKey;
+    });
+    FocusScope.of(context).unfocus();
+    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
+  }
+
   /// 请求岗位列表，并根据刷新/加载更多场景合并页面状态。
   Future<void> _fetchJobs({
     required bool reset,
@@ -168,6 +278,10 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
           .listJobs(
             page: reset ? 1 : _currentPage + 1,
             pageSize: _pageSize,
+            country: _selectedCountryCode,
+            keyword: _buildKeywordQuery(),
+            salaryMin: _selectedSalaryRange?.min,
+            salaryMax: _selectedSalaryRange?.max,
             sort: 'latest',
           );
       if (!mounted) {
@@ -180,9 +294,13 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _isRefreshing = false;
         _isLoadingMore = false;
         _initialErrorMessage = null;
-        _jobs
-          ..clear()
-          ..addAll(reset ? result.list : <JobListVO>[..._jobs, ...result.list]);
+        if (reset) {
+          _jobs
+            ..clear()
+            ..addAll(result.list);
+        } else {
+          _jobs.addAll(result.list);
+        }
       });
     } catch (error) {
       if (!mounted) {
@@ -211,6 +329,51 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       return error.message;
     }
     return '岗位列表加载失败，请稍后重试';
+  }
+
+  String? _normalizeFilterValue(String? value) {
+    final String trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  /// 组合搜索框关键字与职位筛选，统一复用岗位列表接口的 keyword 参数。
+  String? _buildKeywordQuery() {
+    final Set<String> parts = <String>{
+      if ((_submittedKeyword ?? '').isNotEmpty) _submittedKeyword!,
+      if ((_selectedPositionKeyword ?? '').isNotEmpty) _selectedPositionKeyword!,
+    };
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.join(' ');
+  }
+
+  _SalaryRangeOption? get _selectedSalaryRange {
+    final String? key = _selectedSalaryRangeKey;
+    if (key == null) {
+      return null;
+    }
+    for (final _SalaryRangeOption option in _salaryRangeOptions) {
+      if (option.key == key) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  List<PositionVO> _flattenPositions(List<PositionCategoryVO> categories) {
+    final Set<String> seenLabels = <String>{};
+    final List<PositionVO> positions = <PositionVO>[];
+    for (final PositionCategoryVO category in categories) {
+      for (final PositionVO position in category.positions) {
+        final String label = position.nameZh.trim();
+        if (label.isEmpty || !seenLabels.add(label)) {
+          continue;
+        }
+        positions.add(position);
+      }
+    }
+    return positions;
   }
 
   /// 提交岗位投递请求，并根据结果更新按钮状态与页面提示。
@@ -310,7 +473,13 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 }
 
 class _JobsSearchBar extends StatelessWidget {
-  const _JobsSearchBar();
+  const _JobsSearchBar({
+    required this.controller,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -321,22 +490,37 @@ class _JobsSearchBar extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          AppSvgIcon(
+          const AppSvgIcon(
             assetPath: 'assets/images/mou2x9mw-2jfef5b.svg',
             fallback: Icons.search_rounded,
             size: 16,
             color: Color(0xFFBFBFBF),
           ),
-          SizedBox(width: 8),
-          Text(
-            '搜索签证服务/欧洲岗位',
-            style: TextStyle(
-              color: Color(0xFFBFBFBF),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: onSubmitted,
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 20 / 14,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '搜索签证服务/欧洲岗位',
+                hintStyle: TextStyle(
+                  color: Color(0xFFBFBFBF),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 14,
+                ),
+              ),
             ),
           ),
         ],
@@ -346,17 +530,79 @@ class _JobsSearchBar extends StatelessWidget {
 }
 
 class _FilterRow extends StatelessWidget {
-  const _FilterRow();
+  const _FilterRow({
+    required this.countries,
+    required this.positions,
+    required this.salaryRanges,
+    required this.selectedCountryCode,
+    required this.selectedPositionKeyword,
+    required this.selectedSalaryRangeKey,
+    required this.isCountryEnabled,
+    required this.isPositionEnabled,
+    required this.onCountryChanged,
+    required this.onPositionChanged,
+    required this.onSalaryRangeChanged,
+  });
+
+  final List<CountryVO> countries;
+  final List<PositionVO> positions;
+  final List<_SalaryRangeOption> salaryRanges;
+  final String? selectedCountryCode;
+  final String? selectedPositionKeyword;
+  final String? selectedSalaryRangeKey;
+  final bool isCountryEnabled;
+  final bool isPositionEnabled;
+  final ValueChanged<String?>? onCountryChanged;
+  final ValueChanged<String?>? onPositionChanged;
+  final ValueChanged<String?> onSalaryRangeChanged;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final List<_DropdownOption> countryOptions = <_DropdownOption>[
+      const _DropdownOption(value: '', label: '全部国家'),
+      ...countries.map(
+        (CountryVO item) => _DropdownOption(
+          value: item.countryCode.trim(),
+          label: item.nameZh.trim().isNotEmpty ? item.nameZh.trim() : item.nameEn.trim(),
+        ),
+      ),
+    ];
+    final List<_DropdownOption> positionOptions = <_DropdownOption>[
+      const _DropdownOption(value: '', label: '全部分类'),
+      ...positions.map(
+        (PositionVO item) => _DropdownOption(value: item.nameZh.trim(), label: item.nameZh.trim()),
+      ),
+    ];
+    final List<_DropdownOption> salaryOptions = salaryRanges
+        .map(
+          (_SalaryRangeOption item) =>
+              _DropdownOption(value: item.key, label: item.label),
+        )
+        .toList(growable: false);
+
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        _DropdownChip(label: '全部国家', width: 88),
-        _DropdownChip(label: '全部分类', width: 88),
-        _DropdownChip(label: '薪资要求', width: 88, highlighted: true),
-        _FilterActionChip(),
+        _DropdownChip(
+          value: selectedCountryCode ?? '',
+          options: countryOptions,
+          enabled: isCountryEnabled,
+          onChanged: onCountryChanged,
+        ),
+        _DropdownChip(
+          value: selectedPositionKeyword ?? '',
+          options: positionOptions,
+          enabled: isPositionEnabled,
+          onChanged: onPositionChanged,
+        ),
+        _DropdownChip(
+          value: selectedSalaryRangeKey ?? '',
+          options: salaryOptions,
+          enabled: true,
+          onChanged: onSalaryRangeChanged,
+          emphasized: true,
+        ),
+        const _FilterActionChip(),
       ],
     );
   }
@@ -364,17 +610,29 @@ class _FilterRow extends StatelessWidget {
 
 class _DropdownChip extends StatelessWidget {
   const _DropdownChip({
-    required this.label,
-    required this.width,
-    this.highlighted = false,
+    this.width = 88,
+    required this.value,
+    required this.options,
+    required this.enabled,
+    this.onChanged,
+    this.emphasized = false,
   });
 
-  final String label;
   final double width;
-  final bool highlighted;
+  final String value;
+  final List<_DropdownOption> options;
+  final bool enabled;
+  final ValueChanged<String?>? onChanged;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
+    final String effectiveValue = options.any(
+          (_DropdownOption option) => option.value == value,
+        )
+        ? value
+        : options.first.value;
+    final bool highlighted = emphasized || effectiveValue.isNotEmpty;
     final Color borderColor = highlighted
         ? const Color(0xFF096DD9)
         : Colors.transparent;
@@ -385,34 +643,69 @@ class _DropdownChip extends StatelessWidget {
     return Container(
       width: width,
       height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
-              height: 18 / 12,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton2<String>(
+          isExpanded: true,
+          valueListenable: ValueNotifier<String?>(effectiveValue),
+          items: options
+              .map(
+                (_DropdownOption option) => DropdownItem<String>(
+                  value: option.value,
+                  height: 40,
+                  child: Text(
+                    option.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: option.value == effectiveValue
+                          ? const Color(0xFF096DD9)
+                          : const Color(0xFF171A1D),
+                      fontSize: 12,
+                      fontWeight: option.value == effectiveValue
+                          ? FontWeight.w500
+                          : FontWeight.w400,
+                      height: 18 / 12,
+                    ),
+                  ),
+                ),
+              )
+              .toList(growable: false),
+          onChanged: enabled ? onChanged : null,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 12,
+            fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
+          ),
+          buttonStyleData: ButtonStyleData(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: borderColor),
             ),
           ),
-          const SizedBox(width: 4),
-          AppSvgIcon(
-            assetPath: 'assets/images/icon_arrow_down.svg',
-            fallback: Icons.arrow_drop_down,
-            size: 12,
-            color: textColor,
+          iconStyleData: IconStyleData(
+            icon: AppSvgIcon(
+              assetPath: 'assets/images/icon_arrow_down.svg',
+              fallback: Icons.arrow_drop_down,
+              size: 12,
+              color: textColor,
+            ),
+            iconSize: 12,
           ),
-        ],
+          dropdownStyleData: DropdownStyleData(
+            maxHeight: 280,
+            offset: const Offset(0, 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          menuItemStyleData: const MenuItemStyleData(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+          ),
+        ),
       ),
     );
   }
@@ -456,6 +749,27 @@ class _FilterActionChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DropdownOption {
+  const _DropdownOption({required this.value, required this.label});
+
+  final String value;
+  final String label;
+}
+
+class _SalaryRangeOption {
+  const _SalaryRangeOption({
+    required this.key,
+    required this.label,
+    this.min,
+    this.max,
+  });
+
+  final String key;
+  final String label;
+  final double? min;
+  final double? max;
 }
 
 class _JobsListSection extends StatelessWidget {

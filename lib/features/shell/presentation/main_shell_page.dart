@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
-import '../../../shared/widgets/app_svg_icon.dart';
 import '../application/shell_role_provider.dart';
 
 /// 主框架页：承载底部 5 个 Tab（go_router 的 StatefulShellRoute）。
@@ -61,104 +61,89 @@ class _BottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  static const Color _inactiveColor = Color(0xFF5B708E);
+  static const Color _inactiveTextColor = Color(0xFF5B708E);
 
   static const Map<ShellRole, List<_BottomItem>> _itemsByRole =
       <ShellRole, List<_BottomItem>>{
         ShellRole.jobSeeker: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            fallback: Icons.home_rounded,
+            activeAsset: 'assets/images/icon_home.svg',
+            inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
             label: '签证',
-            activeAsset: 'assets/images/mon1zl1k-8vikm4z.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-8vikm4z.svg',
-            fallback: Icons.assignment_rounded,
+            activeAsset: 'assets/images/icon_home_visa.svg',
+            inactiveAsset: 'assets/images/icon_home_visa_inactive.svg',
           ),
           _BottomItem(
             label: '招聘',
-            activeAsset: 'assets/images/mon1zl1k-loy1tez.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-loy1tez.svg',
-            fallback: Icons.work_rounded,
+            activeAsset: 'assets/images/icon_home_job.svg',
+            inactiveAsset: 'assets/images/icon_home_job_inactive.svg',
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            fallback: Icons.smart_toy_rounded,
+            activeAsset: 'assets/images/icon_home_ai_active.svg',
+            inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            fallback: Icons.person_rounded,
+            activeAsset: 'assets/images/icon_home_me.svg',
+            inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
         ],
         ShellRole.serviceProvider: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            fallback: Icons.home_rounded,
+            activeAsset: 'assets/images/icon_home.svg',
+            inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
             label: '订单',
-            activeAsset: 'assets/images/mon1zpec-q3kkmca.svg',
-            inactiveAsset: 'assets/images/mon1zpec-q3kkmca.svg',
-            fallback: Icons.receipt_long_rounded,
+            activeAsset: 'assets/images/icon_home_order.svg',
+            inactiveAsset: 'assets/images/icon_home_order_inactive.svg',
           ),
           _BottomItem(
             label: '套餐',
-            activeAsset: 'assets/images/mon1zpec-8rwalq7.svg',
-            inactiveAsset: 'assets/images/mon1zpec-8rwalq7.svg',
-            fallback: Icons.shopping_bag_rounded,
+            activeAsset: 'assets/images/icon_home_package.svg',
+            inactiveAsset: 'assets/images/icon_home_package_inactive.svg',
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            fallback: Icons.smart_toy_rounded,
+            activeAsset: 'assets/images/icon_home_ai_active.svg',
+            inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            fallback: Icons.person_rounded,
+            activeAsset: 'assets/images/icon_home_me.svg',
+            inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
         ],
         ShellRole.company: <_BottomItem>[
           _BottomItem(
             label: '首页',
-            activeAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xdjbb8t.svg',
-            fallback: Icons.home_rounded,
+            activeAsset: 'assets/images/icon_home.svg',
+            inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
             label: '岗位',
-            activeAsset: 'assets/images/mon1zl1k-loy1tez.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-loy1tez.svg',
-            fallback: Icons.work_outline_rounded,
+            activeAsset: 'assets/images/icon_home_job.svg',
+            inactiveAsset: 'assets/images/icon_home_job_inactive.svg',
           ),
           _BottomItem(
             label: '人才',
-            activeAsset: 'assets/images/mon1zsur-q8s6lmr.svg',
-            inactiveAsset: 'assets/images/mon1zsur-q8s6lmr.svg',
-            fallback: Icons.school_rounded,
+            activeAsset: 'assets/images/icon_home_talent.svg',
+            inactiveAsset: 'assets/images/icon_home_talent_inactive.svg',
           ),
           _BottomItem(
             label: 'AI助手',
-            activeAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-3r846kq.svg',
-            fallback: Icons.smart_toy_rounded,
+            activeAsset: 'assets/images/icon_home_ai_active.svg',
+            inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
             label: '我的',
-            activeAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            inactiveAsset: 'assets/images/mon1zl1k-xuo8q82.svg',
-            fallback: Icons.person_rounded,
+            activeAsset: 'assets/images/icon_home_me.svg',
+            inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
         ],
       };
@@ -176,7 +161,7 @@ class _BottomBar extends StatelessWidget {
           children: List<Widget>.generate(items.length, (index) {
             final item = items[index];
             final isActive = index == currentIndex;
-            final color = isActive ? AppColors.brand : _inactiveColor;
+            final textColor = isActive ? AppColors.brand : _inactiveTextColor;
 
             return Expanded(
               child: InkWell(
@@ -186,11 +171,10 @@ class _BottomBar extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      AppSvgIcon(
-                        assetPath: item.inactiveAsset,
-                        fallback: item.fallback,
-                        size: 24,
-                        color: color,
+                      SvgPicture.asset(
+                        isActive ? item.activeAsset : item.inactiveAsset,
+                        width: 24,
+                        height: 24,
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -200,7 +184,7 @@ class _BottomBar extends StatelessWidget {
                           fontSize: 10,
                           height: 1.2,
                           fontWeight: FontWeight.w500,
-                        ).copyWith(color: color),
+                        ).copyWith(color: textColor),
                       ),
                     ],
                   ),
@@ -219,11 +203,9 @@ class _BottomItem {
     required this.label,
     required this.activeAsset,
     required this.inactiveAsset,
-    required this.fallback,
   });
 
   final String label;
   final String activeAsset;
   final String inactiveAsset;
-  final IconData fallback;
 }

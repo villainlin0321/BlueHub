@@ -48,6 +48,7 @@ dependencies:
   easy_refresh: ^3.5.0
   cached_network_image: ^3.4.1
   chat_bottom_container: ^0.5.0
+  dropdown_button2: ^3.1.0
 
 
 dev_dependencies:

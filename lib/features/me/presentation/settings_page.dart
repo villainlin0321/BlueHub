@@ -35,37 +35,35 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: <Widget>[
                 _SettingsHeader(onBackTap: context.pop),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 24),
-                    child: Column(
-                      children: <Widget>[
-                        _SettingsCard(
-                          children: <Widget>[
-                            _LanguageRow(
-                              isChinese: _isChinese,
-                              onChanged: _handleLanguageChanged,
-                            ),
-                            _SettingsActionRow(
-                              title: '我的信息',
-                              onTap: _handleMyInfoTap,
-                            ),
-                            _SettingsActionRow(
-                              title: '黑名单',
-                              onTap: _handleBlacklistTap,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 396),
-                        _BottomTextButton(
-                          label: '退出登录',
-                          onTap: _isLoggingOut ? null : _handleLogoutTap,
-                        ),
-                        const SizedBox(height: 16),
-                        _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
-                      ],
-                    ),
+                  child: Column(
+                    children: <Widget>[
+                      _SettingsCard(
+                        children: <Widget>[
+                          _LanguageRow(
+                            isChinese: _isChinese,
+                            onChanged: _handleLanguageChanged,
+                          ),
+                          _SettingsActionRow(
+                            title: '我的信息',
+                            onTap: _handleMyInfoTap,
+                          ),
+                          _SettingsActionRow(
+                            title: '黑名单',
+                            onTap: _handleBlacklistTap,
+                          ),
+                        ],
+                      ),
+                      Expanded(child: SizedBox()),
+                      _BottomTextButton(
+                        label: '退出登录',
+                        onTap: _isLoggingOut ? null : _handleLogoutTap,
+                      ),
+                      const SizedBox(height: 16),
+                      _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 100),
               ],
             ),
             if (_isLoggingOut)
