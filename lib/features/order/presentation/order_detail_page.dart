@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -172,8 +174,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       uploadsByRequirement[requirement.id]!.add(
         PickedUploadFile(
-          id:
-              '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
+          id: '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
           name: _materialDisplayName(material),
           path: material.fileUrl,
           sourceType: UploadSourceType.file,
@@ -298,6 +299,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return (detail?.currentStep ?? 0) == _materialReviewStepNumber ||
         currentStepLabel.contains('材料审核') ||
         status.contains('review');
+  }
+
+  bool _isRejectedStatus(VisaOrderVO? detail) {
+    return (detail?.status.trim().toLowerCase() ?? '') == 'rejected';
   }
 
   bool _isEmbassySubmittedStage(VisaOrderVO? detail) {
@@ -774,61 +779,19 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<String?> _showRejectReasonDialog() async {
-    final TextEditingController controller = TextEditingController(
-      text: (_orderDetail?.rejectReason ?? '').trim(),
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext sheetContext) {
+        return _RejectReasonBottomSheet(
+          initialReason: (_orderDetail?.rejectReason ?? '').trim(),
+          onClose: () => Navigator.of(sheetContext).pop(),
+        );
+      },
     );
-    String? reason;
-    try {
-      reason = await showDialog<String>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          String? errorText;
-          return StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(VoidCallback fn) setDialogState,
-                ) {
-                  return AlertDialog(
-                    title: const Text('驳回重传'),
-                    content: TextField(
-                      controller: controller,
-                      maxLines: 3,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: '请输入驳回原因',
-                        errorText: errorText,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('取消'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final String value = controller.text.trim();
-                          if (value.isEmpty) {
-                            setDialogState(() {
-                              errorText = '请输入驳回原因';
-                            });
-                            return;
-                          }
-                          Navigator.of(dialogContext).pop(value);
-                        },
-                        child: const Text('确认'),
-                      ),
-                    ],
-                  );
-                },
-          );
-        },
-      );
-    } finally {
-      controller.dispose();
-    }
-    return reason;
   }
 
   Future<void> _processOrder({
@@ -911,9 +874,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
     final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
     final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
-    final bool shouldShowApplicantMaterialCard = _shouldShowApplicantMaterialCard(
-      detail,
-    );
+    final bool shouldShowApplicantMaterialCard =
+        _shouldShowApplicantMaterialCard(detail);
     final bool shouldShowProviderMaterialCard = _shouldShowProviderMaterialCard(
       detail,
     );
@@ -990,6 +952,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }) {
     if (detail == null) {
       return const SizedBox.shrink();
+    }
+    if (_isRejectedStatus(detail)) {
+      return const _RejectedStatusBar();
     }
     if (isUploadMaterialsStage) {
       if (isServiceProvider) {
@@ -1068,10 +1033,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           child: isServiceProvider
               ? shouldShowProviderMaterialCard
                     ? _ProviderMaterialReviewCard(
-                  materials: detail.materials,
-                  downloadingFileUrls: _downloadingMaterialUrls,
-                  onDownloadTap: _downloadMaterial,
-                )
+                        materials: detail.materials,
+                        downloadingFileUrls: _downloadingMaterialUrls,
+                        onDownloadTap: _downloadMaterial,
+                      )
                     : const SizedBox.shrink()
               : shouldShowApplicantMaterialCard
               ? _MaterialUploadCard(
@@ -1560,11 +1525,14 @@ class _MaterialUploadContent extends StatelessWidget {
             child: _UploadFileCard(
               file: file,
               showRemoveButton: allowDelete && onDeleteFile != null,
-              onRemoveTap: onDeleteFile == null ? null : () => onDeleteFile!(file),
+              onRemoveTap: onDeleteFile == null
+                  ? null
+                  : () => onDeleteFile!(file),
             ),
           );
         }),
-        if (allowUpload && onAddTap != null) _UploadPlaceholder(onTap: onAddTap!),
+        if (allowUpload && onAddTap != null)
+          _UploadPlaceholder(onTap: onAddTap!),
       ],
     );
   }
@@ -1849,6 +1817,337 @@ class _ReadonlyUploadPlaceholder extends StatelessWidget {
   }
 }
 
+class _RejectReasonBottomSheet extends StatefulWidget {
+  const _RejectReasonBottomSheet({
+    required this.initialReason,
+    required this.onClose,
+  });
+
+  final String initialReason;
+  final VoidCallback onClose;
+
+  @override
+  State<_RejectReasonBottomSheet> createState() =>
+      _RejectReasonBottomSheetState();
+}
+
+class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
+  static const int _maxReasonLength = 50;
+
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: _truncateReason(widget.initialReason.trim()),
+    )..addListener(_handleTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  String _truncateReason(String value) {
+    if (value.length <= _maxReasonLength) {
+      return value;
+    }
+    return value.substring(0, _maxReasonLength);
+  }
+
+  void _handleTextChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (_errorText != null && _controller.text.trim().isNotEmpty) {
+        _errorText = null;
+      }
+    });
+  }
+
+  void _handleConfirm() {
+    final String reason = _controller.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _errorText = '请输入驳回原因');
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final double bottomSafeArea = MediaQuery.paddingOf(context).bottom;
+    final double topSafeArea = MediaQuery.paddingOf(context).top;
+    final int currentLength = _controller.text.length;
+
+    return TapBlankToDismissKeyboard(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(top: topSafeArea + 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(
+                      height: 52,
+                      child: Stack(
+                        children: <Widget>[
+                          Align(
+                            child: Text(
+                              '驳回材料',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: const Color(0xFF171A1D),
+                                fontSize: 17,
+                                height: 25 / 17,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: InkWell(
+                              onTap: widget.onClose,
+                              borderRadius: BorderRadius.circular(10),
+                              child: const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Color(0xFF171A1D),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Text(
+                        '请填写驳回原因，客户将收到通知并重新上传材料',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF595959),
+                          fontSize: 14,
+                          height: 20 / 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _RejectReasonInputCard(
+                        controller: _controller,
+                        errorText: _errorText,
+                        currentLength: currentLength,
+                        maxLength: _maxReasonLength,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFF0F0F0)),
+                        ),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            12,
+                            12,
+                            12,
+                            12 + bottomSafeArea,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: _RejectReasonActionButton(
+                                  label: '取消',
+                                  backgroundColor: const Color(0xFFF0F0F0),
+                                  foregroundColor: const Color(0xFF262626),
+                                  onTap: widget.onClose,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _RejectReasonActionButton(
+                                  label: '确认驳回',
+                                  backgroundColor: const Color(0xFFD9363E),
+                                  foregroundColor: Colors.white,
+                                  onTap: _handleConfirm,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RejectReasonInputCard extends StatelessWidget {
+  const _RejectReasonInputCard({
+    required this.controller,
+    required this.errorText,
+    required this.currentLength,
+    required this.maxLength,
+  });
+
+  final TextEditingController controller;
+  final String? errorText;
+  final int currentLength;
+  final int maxLength;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: hasError
+                ? Border.all(color: const Color(0xFFD9363E))
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: controller,
+                autofocus: true,
+                minLines: 4,
+                maxLines: 4,
+                maxLength: maxLength,
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(maxLength),
+                ],
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF262626),
+                  fontSize: 14,
+                  height: 24 / 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  counterText: '',
+                  hintText: '例如：护照首页照片反光，请重新上传清晰照片…',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF8C8C8C),
+                    fontSize: 14,
+                    height: 24 / 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '$currentLength/$maxLength',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFBFBFBF),
+                    fontSize: 14,
+                    height: 20 / 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasError) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            errorText!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFFD9363E),
+              fontSize: 12,
+              height: 18 / 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RejectReasonActionButton extends StatelessWidget {
+  const _RejectReasonActionButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          backgroundColor: backgroundColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: foregroundColor,
+            fontSize: 16,
+            height: 22 / 16,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _UploadTypeBottomSheet extends StatelessWidget {
   const _UploadTypeBottomSheet({
     required this.onClose,
@@ -2069,6 +2368,51 @@ class _BottomSubmitBar extends StatelessWidget {
               label: label,
               onPressed: enabled ? onPressed : () {},
               enabled: enabled,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RejectedStatusBar extends StatelessWidget {
+  const _RejectedStatusBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFFF0F0F0),
+                offset: const Offset(0, -0.5),
+              ),
+            ],
+          ),
+          child: Container(
+            height: 44,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD9D9D9)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '已驳回',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF8C8C8C),
+                fontSize: 16,
+                height: 22 / 16,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
         ),
