@@ -6,7 +6,10 @@ import '../../app/router/route_paths.dart';
 
 /// 首页顶部统一的消息中心入口按钮。
 class MessageCenterIconButton extends StatelessWidget {
-  const MessageCenterIconButton({super.key});
+
+  final Color color;
+
+  const MessageCenterIconButton({super.key, this.color = Colors.white});
 
   static const String _assetPath = 'assets/images/home_message_center.svg';
 
@@ -23,6 +26,7 @@ class MessageCenterIconButton extends StatelessWidget {
           _assetPath,
           width: 24,
           height: 24,
+          color: color,
           fit: BoxFit.contain,
         ),
       ),

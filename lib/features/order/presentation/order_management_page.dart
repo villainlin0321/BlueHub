@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -537,8 +538,8 @@ class _FilterButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 2),
-            Image.asset(
-              'assets/images/dropdown_arrow.png',
+            SvgPicture.asset(
+              'assets/images/icon_arrow_down.svg',
               width: 12,
               height: 12,
             ),

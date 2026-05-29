@@ -250,7 +250,7 @@ class _HeaderProfileRow extends ConsumerWidget {
             ],
           ),
         ),
-        const MessageCenterIconButton(),
+        MessageCenterIconButton(color: Colors.black),
       ],
     );
   }
@@ -494,9 +494,9 @@ class _HomeLatestJobsSection extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(errorMessage ?? '投递成功')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(errorMessage ?? '投递成功')));
   }
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
