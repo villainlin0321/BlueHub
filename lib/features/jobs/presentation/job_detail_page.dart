@@ -260,31 +260,47 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           ),
         ),
         actions: <Widget>[
-          IconButton(
-            onPressed: _isCollecting || _detail == null
-                ? null
-                : _toggleCollection,
-            icon: AppSvgIcon(
-              assetPath: 'assets/images/service_detail_favorite.svg',
-              fallback: _isCollected
-                  ? Icons.star_rounded
-                  : Icons.star_border_rounded,
-              size: 20,
-              color: _isCollected
-                  ? const Color(0xFF096DD9)
-                  : const Color(0xFF262626),
+          Opacity(
+            opacity: _isCollecting || _detail == null ? 0.4 : 1,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _isCollecting || _detail == null
+                  ? null
+                  : _toggleCollection,
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: AppSvgIcon(
+                  assetPath: _isCollected
+                      ? 'assets/images/service_detail_favorite_fill.svg'
+                      : 'assets/images/service_detail_favorite.svg',
+                  fallback: _isCollected
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  size: 20,
+                  color: _isCollected
+                      ? const Color(0xFFFAAD14)
+                      : const Color(0xFF262626),
+                ),
+              ),
             ),
           ),
-          IconButton(
-            onPressed: () => _showMessage(context, '分享功能开发中'),
-            icon: const AppSvgIcon(
-              assetPath: 'assets/images/service_detail_share.svg',
-              fallback: Icons.share_outlined,
-              size: 20,
-              color: Color(0xFF262626),
+          const SizedBox(width: 20),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _showMessage(context, '分享功能开发中'),
+            child: const SizedBox(
+              width: 20,
+              height: 20,
+              child: AppSvgIcon(
+                assetPath: 'assets/images/service_detail_share.svg',
+                fallback: Icons.share_outlined,
+                size: 20,
+                color: Color(0xFF262626),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 20),
         ],
       ),
       body: _buildBody(),
