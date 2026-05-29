@@ -39,6 +39,14 @@ class _QualificationCertificationPageState
   final TextEditingController _websiteController = TextEditingController();
 
   final TextEditingController _companyNameController = TextEditingController();
+  final TextEditingController _companyIndustryController =
+      TextEditingController();
+  final TextEditingController _companySizeController = TextEditingController();
+  final TextEditingController _companyWebsiteController =
+      TextEditingController();
+  final TextEditingController _companyFoundedYearController =
+      TextEditingController();
+  final TextEditingController _companyCityController = TextEditingController();
   final TextEditingController _companyManagerNameController =
       TextEditingController();
   final TextEditingController _companyPhoneController = TextEditingController();
@@ -57,7 +65,12 @@ class _QualificationCertificationPageState
 
   bool get _isCompanyNextEnabled {
     return _companyNameController.text.trim().isNotEmpty &&
+        _companyIndustryController.text.trim().isNotEmpty &&
+        _companySizeController.text.trim().isNotEmpty &&
+        _companyWebsiteController.text.trim().isNotEmpty &&
+        _isValidFoundedYear(_companyFoundedYearController.text) &&
         (_selectedCompanyCountry?.trim().isNotEmpty ?? false) &&
+        _companyCityController.text.trim().isNotEmpty &&
         _companyManagerNameController.text.trim().isNotEmpty &&
         _companyPhoneController.text.trim().isNotEmpty &&
         _isValidEmail(_companyEmailController.text);
@@ -75,6 +88,11 @@ class _QualificationCertificationPageState
     _emailController.text = _draft.contactEmail;
     _websiteController.text = _draft.website;
     _companyNameController.text = _draft.companyName;
+    _companyIndustryController.text = _draft.companyIndustry;
+    _companySizeController.text = _draft.companySize;
+    _companyWebsiteController.text = _draft.companyWebsite;
+    _companyFoundedYearController.text = _draft.companyFoundedYear;
+    _companyCityController.text = _draft.companyCity;
     _companyManagerNameController.text = _draft.companyManagerName;
     _companyPhoneController.text = _draft.companyPhone;
     _companyEmailController.text = _draft.companyEmail;
@@ -107,6 +125,11 @@ class _QualificationCertificationPageState
       );
     }
     _companyNameController.addListener(_handleCompanyFormChanged);
+    _companyIndustryController.addListener(_handleCompanyFormChanged);
+    _companySizeController.addListener(_handleCompanyFormChanged);
+    _companyWebsiteController.addListener(_handleCompanyFormChanged);
+    _companyFoundedYearController.addListener(_handleCompanyFormChanged);
+    _companyCityController.addListener(_handleCompanyFormChanged);
     _companyManagerNameController.addListener(_handleCompanyFormChanged);
     _companyPhoneController.addListener(_handleCompanyFormChanged);
     _companyEmailController.addListener(_handleCompanyFormChanged);
@@ -122,6 +145,11 @@ class _QualificationCertificationPageState
     _emailController.dispose();
     _websiteController.dispose();
     _companyNameController.dispose();
+    _companyIndustryController.dispose();
+    _companySizeController.dispose();
+    _companyWebsiteController.dispose();
+    _companyFoundedYearController.dispose();
+    _companyCityController.dispose();
     _companyManagerNameController.dispose();
     _companyPhoneController.dispose();
     _companyEmailController.dispose();
@@ -140,6 +168,11 @@ class _QualificationCertificationPageState
       return false;
     }
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed);
+  }
+
+  bool _isValidFoundedYear(String value) {
+    final int? foundedYear = int.tryParse(value.trim());
+    return foundedYear != null && foundedYear > 0;
   }
 
   Future<void> _pickIdentityCardImage({required bool isEmblemSide}) async {
@@ -239,11 +272,16 @@ class _QualificationCertificationPageState
     _draft.website = _websiteController.text.trim();
 
     _draft.companyName = _companyNameController.text.trim();
+    _draft.companyIndustry = _companyIndustryController.text.trim();
+    _draft.companySize = _companySizeController.text.trim();
+    _draft.companyWebsite = _companyWebsiteController.text.trim();
+    _draft.companyFoundedYear = _companyFoundedYearController.text.trim();
     _draft.companyManagerName = _companyManagerNameController.text.trim();
     _draft.companyPhone = _companyPhoneController.text.trim();
     _draft.companyEmail = _companyEmailController.text.trim();
     _draft.companyCountryLabel = _selectedCompanyCountry?.trim() ?? '';
     _draft.companyCountryCode = _selectedCompanyCountryCode?.trim() ?? '';
+    _draft.companyCity = _companyCityController.text.trim();
 
     context.push(
       RoutePaths.qualificationCertificationStepTwo,
@@ -321,10 +359,15 @@ class _QualificationCertificationPageState
                   child: _isCompany
                       ? _CompanyBasicInfoForm(
                           companyNameController: _companyNameController,
+                          industryController: _companyIndustryController,
+                          companySizeController: _companySizeController,
+                          websiteController: _companyWebsiteController,
+                          foundedYearController: _companyFoundedYearController,
                           managerNameController: _companyManagerNameController,
                           phoneController: _companyPhoneController,
                           emailController: _companyEmailController,
                           selectedCountry: _selectedCompanyCountry,
+                          cityController: _companyCityController,
                           onCountryTap: _selectCompanyCountry,
                         )
                       : _ServiceProviderBasicInfoForm(
@@ -511,18 +554,28 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
 class _CompanyBasicInfoForm extends StatelessWidget {
   const _CompanyBasicInfoForm({
     required this.companyNameController,
+    required this.industryController,
+    required this.companySizeController,
+    required this.websiteController,
+    required this.foundedYearController,
     required this.managerNameController,
     required this.phoneController,
     required this.emailController,
     required this.selectedCountry,
+    required this.cityController,
     required this.onCountryTap,
   });
 
   final TextEditingController companyNameController;
+  final TextEditingController industryController;
+  final TextEditingController companySizeController;
+  final TextEditingController websiteController;
+  final TextEditingController foundedYearController;
   final TextEditingController managerNameController;
   final TextEditingController phoneController;
   final TextEditingController emailController;
   final String? selectedCountry;
+  final TextEditingController cityController;
   final VoidCallback onCountryTap;
 
   @override
@@ -537,6 +590,36 @@ class _CompanyBasicInfoForm extends StatelessWidget {
           required: true,
         ),
         const SizedBox(height: 16),
+        _QualificationTextField(
+          label: '所属行业',
+          hintText: '请输入',
+          controller: industryController,
+          required: true,
+        ),
+        const SizedBox(height: 16),
+        _QualificationTextField(
+          label: '公司规模',
+          hintText: '请输入',
+          controller: companySizeController,
+          required: true,
+        ),
+        const SizedBox(height: 16),
+        _QualificationTextField(
+          label: '官网地址',
+          hintText: '请输入',
+          controller: websiteController,
+          required: true,
+          keyboardType: TextInputType.url,
+        ),
+        const SizedBox(height: 16),
+        _QualificationTextField(
+          label: '成立年份',
+          hintText: '请输入',
+          controller: foundedYearController,
+          required: true,
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 16),
         _QualificationSelectorField(
           label: '注册国家',
           value: selectedCountry,
@@ -544,6 +627,13 @@ class _CompanyBasicInfoForm extends StatelessWidget {
           required: true,
           onTap: onCountryTap,
           fieldKey: const Key('qualification_company_country_selector'),
+        ),
+        const SizedBox(height: 16),
+        _QualificationTextField(
+          label: '所在城市',
+          hintText: '请输入',
+          controller: cityController,
+          required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(

@@ -77,6 +77,15 @@ class _CompanyMyInfoContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final List<_CompanyInfoField> basicInfoFields = <_CompanyInfoField>[
+      _CompanyInfoField(label: '企业名称', value: _companyName),
+      _CompanyInfoField(label: '注册国家', value: _registeredCountry),
+      _CompanyInfoField(label: '所在城市', value: _city),
+      _CompanyInfoField(label: '所属行业', value: _industry),
+      _CompanyInfoField(label: '公司规模', value: _companySize),
+      _CompanyInfoField(label: '成立年份', value: _foundedYear),
+      _CompanyInfoField(label: '官网地址', value: _website),
+    ];
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -97,35 +106,12 @@ class _CompanyMyInfoContent extends StatelessWidget {
                   avatarUrl: profile.logoUrl,
                   fallbackAssetPath: CompanyMyInfoPage._avatarFallbackAsset,
                 ),
-                CompanyMyInfoValueRow(
-                  label: '企业名称',
-                  value: _companyName,
-                ),
-                CompanyMyInfoValueRow(
-                  label: '注册国家',
-                  value: _registeredCountry,
-                ),
-                const CompanyMyInfoValueRow(
-                  label: '负责人姓名',
-                  value: '王晓晓',
-                ),
-                const CompanyMyInfoValueRow(
-                  label: '联系电话',
-                  value: '13290867643',
-                ),
-                const CompanyMyInfoValueRow(
-                  label: '联系邮箱',
-                  value: 'lksdoieu@126.com',
-                ),
-                const CompanyMyInfoValueRow(
-                  label: '从业年限',
-                  value: '12',
-                ),
-                const CompanyMyInfoValueRow(
-                  label: '主营国家',
-                  value: '德国/法国',
-                  showDivider: false,
-                ),
+                for (int index = 0; index < basicInfoFields.length; index++)
+                  CompanyMyInfoValueRow(
+                    label: basicInfoFields[index].label,
+                    value: basicInfoFields[index].value,
+                    showDivider: index != basicInfoFields.length - 1,
+                  ),
               ],
             ),
           ),
@@ -133,16 +119,20 @@ class _CompanyMyInfoContent extends StatelessWidget {
           CompanyMyInfoSectionCard(
             title: '材料资质',
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 CompanyQualificationPreview(
                   title: '营业执照',
-                  assetPath: CompanyMyInfoPage._qualificationPlaceholderAsset,
+                  imageUrl: _businessLicenseDoc?.fileUrl,
+                  fallbackAssetPath:
+                      CompanyMyInfoPage._qualificationPlaceholderAsset,
                 ),
                 CompanyQualificationPreview(
                   title: '特许经验许可',
-                  assetPath: CompanyMyInfoPage._qualificationPlaceholderAsset,
+                  imageUrl: _specialPermitDoc?.fileUrl,
+                  fallbackAssetPath:
+                      CompanyMyInfoPage._qualificationPlaceholderAsset,
                 ),
               ],
             ),
@@ -170,8 +160,7 @@ class _CompanyMyInfoContent extends StatelessWidget {
   }
 
   String get _companyName {
-    final String value = profile.companyName.trim();
-    return value.isEmpty ? '企业名称待完善' : value;
+    return _displayText(profile.companyName, placeholder: '企业名称待完善');
   }
 
   String get _registeredCountry {
@@ -181,6 +170,48 @@ class _CompanyMyInfoContent extends StatelessWidget {
     }
     return resolveCountryLabel(value, countryLabelMap);
   }
+
+  String get _city => _displayText(profile.city);
+
+  String get _industry => _displayText(profile.industry);
+
+  String get _companySize => _displayText(profile.companySize);
+
+  String get _foundedYear {
+    if (profile.foundedYear <= 0) {
+      return '未完善';
+    }
+    return '${profile.foundedYear}年';
+  }
+
+  String get _website => _displayText(profile.website);
+
+  QualificationDocVO? get _businessLicenseDoc =>
+      _qualificationDocByType(QualificationDocType.businessLicense.apiValue);
+
+  QualificationDocVO? get _specialPermitDoc =>
+      _qualificationDocByType(QualificationDocType.specialPermit.apiValue);
+
+  QualificationDocVO? _qualificationDocByType(String docType) {
+    for (final QualificationDocVO doc in profile.qualificationDocs) {
+      if (doc.docType.trim() == docType) {
+        return doc;
+      }
+    }
+    return null;
+  }
+
+  String _displayText(String value, {String placeholder = '未完善'}) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? placeholder : trimmed;
+  }
+}
+
+class _CompanyInfoField {
+  const _CompanyInfoField({required this.label, required this.value});
+
+  final String label;
+  final String value;
 }
 
 class _CompanyMyInfoErrorView extends StatelessWidget {

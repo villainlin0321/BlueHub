@@ -59,8 +59,13 @@ class QualificationCertificationDraft {
   String website = '';
 
   String companyName = '';
+  String companyIndustry = '';
+  String companySize = '';
+  String companyWebsite = '';
+  String companyFoundedYear = '';
   String companyCountryCode = '';
   String companyCountryLabel = '';
+  String companyCity = '';
   String companyManagerName = '';
   String companyPhone = '';
   String companyEmail = '';
@@ -97,9 +102,16 @@ class QualificationCertificationDraft {
     Map<String, String> countryLabelMap = const <String, String>{},
   }) {
     companyName = profile.companyName.trim();
+    companyIndustry = profile.industry.trim();
+    companySize = profile.companySize.trim();
+    companyWebsite = profile.website.trim();
+    companyFoundedYear = profile.foundedYear <= 0
+        ? ''
+        : profile.foundedYear.toString();
     companyCountryCode = profile.country.trim();
     companyCountryLabel =
         countryLabelMap[companyCountryCode] ?? companyCountryCode;
+    companyCity = profile.city.trim();
   }
 
   List<DocItemBO> qualificationDocs() {
@@ -128,15 +140,17 @@ class QualificationCertificationDraft {
   }
 
   UpdateEmployerBO toEmployerUpdateRequest() {
+    final int foundedYearValue =
+        int.tryParse(companyFoundedYear.trim()) ?? 0;
     return UpdateEmployerBO(
       companyName: companyName,
-      industry: '',
-      companySize: '',
+      industry: companyIndustry,
+      companySize: companySize,
       description: '',
-      website: '',
-      foundedYear: 0,
+      website: companyWebsite,
+      foundedYear: foundedYearValue,
       country: companyCountryCode,
-      city: '',
+      city: companyCity,
     );
   }
 }
