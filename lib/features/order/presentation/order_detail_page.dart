@@ -60,6 +60,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   static const int _visaIssuedStepNumber = 6;
   final Map<String, List<PickedUploadFile>> _uploadsByRequirement =
       <String, List<PickedUploadFile>>{};
+  final List<PickedUploadFile> _visaDocumentUploads = <PickedUploadFile>[];
   final Set<String> _downloadingMaterialUrls = <String>{};
   VisaOrderVO? _orderDetail;
   bool _isLoading = true;
@@ -100,6 +101,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         _isLoading = false;
       });
       _syncRequirements(detail.requiredMaterials);
+      _syncVisaDocuments(detail.visaDocuments);
     } catch (error) {
       if (!mounted) {
         return;
@@ -151,6 +153,37 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     });
   }
 
+  void _syncVisaDocuments(List<VisaDocVO>? visaDocuments) {
+    if (!mounted) {
+      return;
+    }
+    final List<PickedUploadFile> uploads = (visaDocuments ?? const <VisaDocVO>[])
+        .map(_buildPickedUploadFileFromVisaDocument)
+        .toList(growable: false);
+    setState(() {
+      _visaDocumentUploads
+        ..clear()
+        ..addAll(uploads);
+    });
+  }
+
+  PickedUploadFile _buildPickedUploadFileFromVisaDocument(VisaDocVO document) {
+    final String normalizedPath = _normalizedPathFromUrl(document.fileUrl);
+    final String fileName = document.docName.trim().isNotEmpty
+        ? document.docName
+        : _displayNameFromUrl(document.fileUrl, fallback: '出证材料');
+    return PickedUploadFile(
+      id: 'visa_doc_${document.fileUrl.hashCode}_${document.uploadedAt}',
+      name: fileName,
+      path: normalizedPath.isEmpty ? document.fileUrl : normalizedPath,
+      sourceType: UploadSourceType.file,
+      state: UploadItemState.success,
+      isImage: UploadPickerUtils.isImagePath(normalizedPath),
+      uploadedFileUrl: document.fileUrl,
+      progress: 1,
+    );
+  }
+
   Map<String, List<PickedUploadFile>> _buildReadonlyUploadsByRequirement({
     required List<_MaterialRequirement> requirements,
     required List<MaterialVO> materials,
@@ -188,6 +221,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
 
     return uploadsByRequirement;
+  }
+
+  String _normalizedPathFromUrl(String value) {
+    final Uri? uri = Uri.tryParse(value);
+    if (uri == null) {
+      return value;
+    }
+    return uri.path.isEmpty ? value : uri.path;
+  }
+
+  String _displayNameFromUrl(String value, {required String fallback}) {
+    final Uri? uri = Uri.tryParse(value);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    final String basename = UploadPickerUtils.basename(value);
+    return basename.trim().isEmpty ? fallback : basename;
   }
 
   List<ProgressStep> _buildProgressSteps(VisaOrderVO? detail) {
@@ -365,6 +415,33 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
+  Future<void> _openVisaDocumentUploadSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (BuildContext sheetContext) {
+        return _UploadTypeBottomSheet(
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromCamera();
+          },
+          onGalleryTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromGallery();
+          },
+          onFileTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickVisaDocumentsFromFiles();
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _pickFromCamera(_MaterialRequirement requirement) async {
     try {
       final List<PickedUploadFile> pickedFiles =
@@ -415,6 +492,55 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
+  Future<void> _pickVisaDocumentsFromCamera() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromCamera();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('打开相机失败，请稍后重试');
+    }
+  }
+
+  Future<void> _pickVisaDocumentsFromGallery() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromGallery();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('打开相册失败，请稍后重试');
+    }
+  }
+
+  Future<void> _pickVisaDocumentsFromFiles() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromFiles();
+      if (pickedFiles.isEmpty) {
+        _showMessage('未能读取所选文件');
+        return;
+      }
+      await _appendVisaDocumentFiles(pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('选择文件失败，请稍后重试');
+    }
+  }
+
   Future<void> _appendUploadFiles(
     _MaterialRequirement requirement,
     List<PickedUploadFile> files,
@@ -442,6 +568,27 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     await _uploadPickedFiles(requirement, pendingFiles);
   }
 
+  Future<void> _appendVisaDocumentFiles(List<PickedUploadFile> files) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final List<PickedUploadFile> pendingFiles = files
+        .map(
+          (file) => file.copyWith(
+            state: UploadItemState.uploading,
+            progress: 0,
+            errorMessage: null,
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        )
+        .toList(growable: false);
+    setState(() {
+      _visaDocumentUploads.addAll(pendingFiles);
+    });
+    await _uploadPickedVisaDocuments(pendingFiles);
+  }
+
   void _removeUploadFile(
     _MaterialRequirement requirement,
     PickedUploadFile file,
@@ -450,6 +597,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       _uploadsByRequirement[requirement.id] = _filesFor(
         requirement,
       ).where((item) => item.id != file.id).toList();
+    });
+  }
+
+  void _removeVisaDocumentFile(PickedUploadFile file) {
+    setState(() {
+      _visaDocumentUploads.removeWhere((item) => item.id == file.id);
     });
   }
 
@@ -467,6 +620,21 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             return update(item);
           })
           .toList(growable: false);
+    });
+  }
+
+  void _updateVisaDocumentFile(
+    String fileId,
+    PickedUploadFile Function(PickedUploadFile current) update,
+  ) {
+    setState(() {
+      for (int index = 0; index < _visaDocumentUploads.length; index++) {
+        final PickedUploadFile item = _visaDocumentUploads[index];
+        if (item.id == fileId) {
+          _visaDocumentUploads[index] = update(item);
+          break;
+        }
+      }
     });
   }
 
@@ -520,6 +688,66 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         }
         _updateUploadFile(
           requirement,
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.failure,
+            progress: 0,
+            errorMessage: _resolveErrorMessage(
+              error,
+              fallback: '上传失败，请删除后重新上传',
+            ),
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadPickedVisaDocuments(List<PickedUploadFile> files) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final fileService = ref.read(fileServiceProvider);
+    for (final PickedUploadFile file in files) {
+      try {
+        final uploaded = await fileService.uploadFile(
+          path: file.path,
+          scene: FileScene.visaDoc,
+          errorMessage: '出证材料上传失败，请稍后重试',
+          onSendProgress: (int sent, int total) {
+            if (!mounted || total <= 0) {
+              return;
+            }
+            final double progress = (sent / total).clamp(0, 1).toDouble();
+            _updateVisaDocumentFile(
+              file.id,
+              (current) => current.copyWith(
+                state: UploadItemState.uploading,
+                progress: progress,
+                errorMessage: null,
+              ),
+            );
+          },
+        );
+        if (!mounted) {
+          return;
+        }
+        _updateVisaDocumentFile(
+          file.id,
+          (current) => current.copyWith(
+            state: UploadItemState.success,
+            progress: 1,
+            errorMessage: null,
+            uploadedFileId: uploaded.fileId,
+            uploadedFileUrl: uploaded.fileUrl,
+          ),
+        );
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+        _updateVisaDocumentFile(
           file.id,
           (current) => current.copyWith(
             state: UploadItemState.failure,
@@ -621,6 +849,82 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       setState(() => _isSubmitting = false);
       _showMessage(_resolveErrorMessage(error, fallback: '提交材料失败，请稍后重试'));
+    }
+  }
+
+  Future<void> _completeOrderWithVisaDocuments() async {
+    if (_isSubmitting || _isProcessingOrder) {
+      return;
+    }
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单详情尚未加载完成');
+      return;
+    }
+    if (_visaDocumentUploads.isEmpty) {
+      _showMessage('请先上传出证材料');
+      return;
+    }
+    if (_visaDocumentUploads.any((file) => file.state != UploadItemState.success)) {
+      _showMessage('存在未上传成功的出证材料，请处理后再完结');
+      return;
+    }
+
+    final List<DocumentItemBO> newDocuments = _visaDocumentUploads
+        .where(
+          (file) =>
+              file.uploadedFileId != null &&
+              (file.uploadedFileUrl ?? '').trim().isNotEmpty,
+        )
+        .map(
+          (file) => DocumentItemBO(
+            docName: file.name,
+            fileId: file.uploadedFileId!,
+            fileUrl: file.uploadedFileUrl!.trim(),
+            fileType: FileService.resolveMimeType(file.path),
+          ),
+        )
+        .toList(growable: false);
+
+    setState(() {
+      _isSubmitting = true;
+      _isProcessingOrder = true;
+    });
+    try {
+      if (newDocuments.isNotEmpty) {
+        await ref
+            .read(visaOrderServiceProvider)
+            .uploadVisaDocuments(
+              orderId: detail.orderId,
+              request: UploadVisaDocumentsBO(documents: newDocuments),
+            );
+      }
+      await ref
+          .read(visaOrderServiceProvider)
+          .processOrder(
+            orderId: detail.orderId,
+            request: const ProcessOrderBO(
+              action: 'approve',
+              remark: '',
+              nextStatus: 'visa_issued',
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      context.pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '订单处理失败，请稍后重试'));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _isProcessingOrder = false;
+        });
+      }
     }
   }
 
@@ -874,6 +1178,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
     final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
     final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
+    final bool isEmbassySubmittedStage = _isEmbassySubmittedStage(detail);
     final bool shouldShowApplicantMaterialCard =
         _shouldShowApplicantMaterialCard(detail);
     final bool shouldShowProviderMaterialCard = _shouldShowProviderMaterialCard(
@@ -932,6 +1237,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         isServiceProvider: isServiceProvider,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
+        isEmbassySubmittedStage: isEmbassySubmittedStage,
         shouldShowApplicantMaterialCard: shouldShowApplicantMaterialCard,
         shouldShowProviderMaterialCard: shouldShowProviderMaterialCard,
       ),
@@ -940,6 +1246,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         isServiceProvider: isServiceProvider,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
+        isEmbassySubmittedStage: isEmbassySubmittedStage,
       ),
     );
   }
@@ -949,6 +1256,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required bool isServiceProvider,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
+    required bool isEmbassySubmittedStage,
   }) {
     if (detail == null) {
       return const SizedBox.shrink();
@@ -984,6 +1292,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         onPressed: _noopAction,
       );
     }
+    if (isEmbassySubmittedStage && isServiceProvider) {
+      return _BottomSubmitBar(
+        label: _isSubmitting || _isProcessingOrder ? '完结中...' : '完结',
+        enabled:
+            !_isLoading &&
+            _errorMessage == null &&
+            !_isSubmitting &&
+            !_isProcessingOrder,
+        onPressed: _completeOrderWithVisaDocuments,
+      );
+    }
     return const SizedBox.shrink();
   }
 
@@ -993,6 +1312,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required bool isServiceProvider,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
+    required bool isEmbassySubmittedStage,
     required bool shouldShowApplicantMaterialCard,
     required bool shouldShowProviderMaterialCard,
   }) {
@@ -1051,6 +1371,15 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 )
               : const SizedBox.shrink(),
         ),
+        if (isServiceProvider && isEmbassySubmittedStage)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: _ProviderVisaDocumentUploadCard(
+              files: _visaDocumentUploads,
+              onUploadTap: _openVisaDocumentUploadSheet,
+              onDeleteFile: _removeVisaDocumentFile,
+            ),
+          ),
         const SizedBox(height: 24),
       ],
     );
@@ -1204,6 +1533,51 @@ class _MaterialUploadCard extends StatelessWidget {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _ProviderVisaDocumentUploadCard extends StatelessWidget {
+  const _ProviderVisaDocumentUploadCard({
+    required this.files,
+    required this.onUploadTap,
+    required this.onDeleteFile,
+  });
+
+  final List<PickedUploadFile> files;
+  final VoidCallback onUploadTap;
+  final ValueChanged<PickedUploadFile> onDeleteFile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '添加出证材料',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF171A1D),
+              fontWeight: FontWeight.w400,
+              fontSize: 14,
+              height: 22 / 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MaterialUploadContent(
+            files: files,
+            allowUpload: true,
+            allowDelete: true,
+            onAddTap: onUploadTap,
+            onDeleteFile: onDeleteFile,
+          ),
+        ],
       ),
     );
   }
