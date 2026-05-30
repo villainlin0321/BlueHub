@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import '../../config/data/config_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/network/services/config_service.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
@@ -1063,12 +1065,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             .map(
               (String url) => ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  url,
+                child: CachedNetworkImage(
+                  imageUrl: url,
                   width: 88,
                   height: 88,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
+                  errorWidget: (_, __, ___) {
                     return Container(
                       width: 88,
                       height: 88,
@@ -1357,15 +1359,11 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   Widget _buildProfileAvatar(_EditorBasicInfoViewData basicInfoViewData) {
     final String avatarUrl = basicInfoViewData.avatarUrl;
     if (_isNetworkPath(avatarUrl)) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Image.network(
-          avatarUrl,
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              _buildAvatarPlaceholder(basicInfoViewData.avatarFallbackText),
+      return AppUserAvatar(
+        imageUrl: avatarUrl,
+        size: 48,
+        placeholder: _buildAvatarPlaceholder(
+          basicInfoViewData.avatarFallbackText,
         ),
       );
     }
@@ -2067,16 +2065,19 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     return result;
   }
 
-  Future<List<SelectableSheetOption<String>>> _loadLanguageSheetOptions() async {
+  Future<List<SelectableSheetOption<String>>>
+  _loadLanguageSheetOptions() async {
     final List<TagItemVO> tags = await ref.read(
       tagDictionaryProvider(TagCategory.languageCert).future,
     );
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _openExpectedCountrySheet() async {

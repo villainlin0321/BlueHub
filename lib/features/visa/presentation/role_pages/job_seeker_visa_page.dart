@@ -9,7 +9,6 @@ import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/visa_service_card.dart';
-import '../../../me/data/collection_models.dart' show CollectionBO;
 import '../../../me/data/collection_providers.dart';
 import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/provider_models.dart';
@@ -25,8 +24,6 @@ class JobSeekerVisaPage extends ConsumerStatefulWidget {
 
 class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
   int _selectedTabIndex = 0;
-  final Set<int> _collectingPackageIds = <int>{};
-  final Map<int, bool> _collectedOverrides = <int, bool>{};
   late final TextEditingController _searchController = TextEditingController();
   String? _submittedKeyword;
 
@@ -90,11 +87,9 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
               child: _VisaProviderListSection(
                 providersAsync: providersAsync,
                 collectedVisaPackageIdsAsync: collectedVisaPackageIdsAsync,
-                collectingPackageIds: _collectingPackageIds,
                 onRetry: () {
                   ref.invalidate(visaProviderListProvider(_query));
                 },
-                onToggleCollection: _handleToggleCollection,
               ),
             ),
           ],
@@ -112,77 +107,18 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
       _ => 'recommended',
     };
   }
-
-  /// 切换签证列表卡片的收藏状态，并同步刷新详情页与收藏页。
-  Future<void> _handleToggleCollection(VisaProviderListVO item) async {
-    final int packageId = item.latestPackage.packageId;
-    if (packageId <= 0 || _collectingPackageIds.contains(packageId)) {
-      return;
-    }
-
-    final Set<int>? collectedIds = ref
-        .read(collectedVisaPackageIdsProvider)
-        .asData
-        ?.value;
-    final bool isCollected =
-        _collectedOverrides[packageId] ??
-        collectedIds?.contains(packageId) ??
-        false;
-
-    setState(() {
-      _collectingPackageIds.add(packageId);
-    });
-
-    try {
-      final service = ref.read(collectionServiceProvider);
-      final request = CollectionBO(
-        targetType: 'visa_package',
-        targetId: packageId,
-      );
-      if (isCollected) {
-        await service.removeCollection(request: request);
-      } else {
-        await service.addCollection(request: request);
-      }
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _collectingPackageIds.remove(packageId);
-        _collectedOverrides[packageId] = !isCollected;
-      });
-      ref.read(collectionRefreshTickProvider.notifier).bump();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(isCollected ? '已取消收藏' : '收藏成功')));
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _collectingPackageIds.remove(packageId);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_resolveVisaCollectionErrorMessage(error))),
-      );
-    }
-  }
 }
 
 class _VisaProviderListSection extends StatelessWidget {
   const _VisaProviderListSection({
     required this.providersAsync,
     required this.collectedVisaPackageIdsAsync,
-    required this.collectingPackageIds,
     required this.onRetry,
-    required this.onToggleCollection,
   });
 
   final AsyncValue<PageResult<VisaProviderListVO>> providersAsync;
   final AsyncValue<Set<int>> collectedVisaPackageIdsAsync;
-  final Set<int> collectingPackageIds;
   final VoidCallback onRetry;
-  final Future<void> Function(VisaProviderListVO item) onToggleCollection;
 
   /// 根据接口状态切换签证列表区块的加载、错误、空态和正常列表。
   @override
@@ -200,23 +136,16 @@ class _VisaProviderListSection extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (BuildContext context, int index) {
             final VisaProviderListVO item = pageResult.list[index];
+            final bool isCollected = _resolveCollectedState(item);
             return VisaServiceCard(
-              data: item.toVisaServiceCardData(
-                isCollected: _resolveCollectedState(item),
-              ),
+              data: item.toVisaServiceCardData(),
               onTap: () => context.push(
                 RoutePaths.serviceDetail,
                 extra: ServiceDetailPageArgs(
                   packageId: item.latestPackage.packageId,
                   providerId: item.providerId,
-                  initialIsCollected: _resolveCollectedState(item),
+                  initialIsCollected: isCollected,
                 ),
-              ),
-              onFavoriteTap: () {
-                onToggleCollection(item);
-              },
-              isCollecting: collectingPackageIds.contains(
-                item.latestPackage.packageId,
               ),
             );
           },
@@ -302,17 +231,9 @@ String _resolveVisaProviderErrorMessage(Object error) {
   return '签证服务加载失败，请稍后重试';
 }
 
-/// 提取签证列表收藏操作的错误文案。
-String _resolveVisaCollectionErrorMessage(Object error) {
-  if (error is ApiException) {
-    return error.message;
-  }
-  return '收藏操作失败，请稍后重试';
-}
-
 extension on VisaProviderListVO {
   /// 将服务商列表项映射为签证卡片展示数据。
-  VisaServiceCardData toVisaServiceCardData({required bool isCollected}) {
+  VisaServiceCardData toVisaServiceCardData() {
     return VisaServiceCardData(
       title: name.trim().isEmpty ? '签证服务商' : name,
       avatarUrl: logoUrl.trim().isEmpty ? null : logoUrl.trim(),
@@ -329,7 +250,6 @@ extension on VisaProviderListVO {
         ),
       ],
       verified: isVerified,
-      isCollected: isCollected,
     );
   }
 }

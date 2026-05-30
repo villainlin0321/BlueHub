@@ -9,6 +9,7 @@ import '../../../features/me/data/dictionary_providers.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import '../../../shared/network/models/dictionary_models.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import 'order_detail_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
@@ -936,25 +937,11 @@ class _OrderAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String url = avatarUrl.trim();
-    if (url.isNotEmpty) {
-      return Image.network(
-        url,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallback(),
-      );
-    }
-    return _buildFallback();
-  }
-
-  Widget _buildFallback() {
-    return Image.asset(
-      'assets/images/order_management_customer_avatar-56586a.png',
-      width: 40,
-      height: 40,
-      fit: BoxFit.cover,
+    return AppUserAvatar(
+      imageUrl: avatarUrl,
+      size: 40,
+      placeholderAssetPath:
+          'assets/images/order_management_customer_avatar-56586a.png',
     );
   }
 }

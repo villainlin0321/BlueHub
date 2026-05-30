@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
@@ -31,6 +34,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
       ];
 
   bool _isSubmitting = false;
+  String? _localAvatarPreviewPath;
 
   @override
   /// 构建“我的信息”页面，并根据当前登录态刷新展示内容。
@@ -62,6 +66,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                           _InfoAvatarRow(
                             label: '头像',
                             avatarUrl: userViewData.avatarUrl,
+                            localAvatarPath: _localAvatarPreviewPath,
                             fallbackAssetPath: _avatarAsset,
                             onTap: _handleAvatarTap,
                           ),
@@ -227,6 +232,12 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
         }
       }
 
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = selectedFile.path;
+        });
+      }
+
       await _executeProfileAction(
         action: () async {
           final int avatarId = await _uploadAvatar(selectedFile.path);
@@ -236,10 +247,18 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
         },
         successMessage: '头像已更新',
       );
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = null;
+        });
+      }
     } catch (_) {
       if (!mounted) {
         return;
       }
+      setState(() {
+        _localAvatarPreviewPath = null;
+      });
       _showMessage(errorMessage);
     }
   }
@@ -403,12 +422,14 @@ class _InfoAvatarRow extends StatelessWidget {
   const _InfoAvatarRow({
     required this.label,
     required this.avatarUrl,
+    required this.localAvatarPath,
     required this.fallbackAssetPath,
     this.onTap,
   });
 
   final String label;
   final String avatarUrl;
+  final String? localAvatarPath;
   final String fallbackAssetPath;
   final VoidCallback? onTap;
 
@@ -432,6 +453,7 @@ class _InfoAvatarRow extends StatelessWidget {
             const Spacer(),
             _MyInfoAvatar(
               avatarUrl: avatarUrl,
+              localAvatarPath: localAvatarPath,
               fallbackAssetPath: fallbackAssetPath,
               size: 40,
             ),
@@ -501,44 +523,42 @@ class _InfoValueRow extends StatelessWidget {
 class _MyInfoAvatar extends StatelessWidget {
   const _MyInfoAvatar({
     required this.avatarUrl,
+    required this.localAvatarPath,
     required this.fallbackAssetPath,
     required this.size,
   });
 
   final String avatarUrl;
+  final String? localAvatarPath;
   final String fallbackAssetPath;
   final double size;
 
   @override
   /// 构建圆形头像，并兼容加载中与加载失败场景。
   Widget build(BuildContext context) {
-    final Widget fallback = ClipOval(
-      child: Image.asset(
-        fallbackAssetPath,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      ),
-    );
-    if (avatarUrl.isEmpty) {
-      return fallback;
+    final String resolvedLocalAvatarPath = localAvatarPath?.trim() ?? '';
+    if (resolvedLocalAvatarPath.isNotEmpty) {
+      return ClipOval(
+        child: Image.file(
+          File(resolvedLocalAvatarPath),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            return AppUserAvatar(
+              imageUrl: avatarUrl,
+              size: size,
+              placeholderAssetPath: fallbackAssetPath,
+            );
+          },
+        ),
+      );
     }
 
-    return ClipOval(
-      child: Image.network(
-        avatarUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder:
-            (BuildContext context, Widget child, ImageChunkEvent? event) {
-              if (event == null) {
-                return child;
-              }
-              return fallback;
-            },
-      ),
+    return AppUserAvatar(
+      imageUrl: avatarUrl,
+      size: size,
+      placeholderAssetPath: fallbackAssetPath,
     );
   }
 }

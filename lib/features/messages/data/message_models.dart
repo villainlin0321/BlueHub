@@ -198,42 +198,68 @@ class RelatedOrderVO {
 
 class SendMessageBO {
   const SendMessageBO({
-    required this.type,
-    required this.content,
-    required this.fileId,
-    required this.fileUrl,
-    required this.fileName,
-    required this.fileSize,
+    this.type,
+    this.content,
+    this.fileId,
+    this.fileUrl,
+    this.fileName,
+    this.fileSize,
   });
 
-  final String type;
-  final String content;
-  final int fileId;
-  final String fileUrl;
-  final String fileName;
-  final int fileSize;
+  final String? type;
+  final String? content;
+  final int? fileId;
+  final String? fileUrl;
+  final String? fileName;
+  final int? fileSize;
 
   factory SendMessageBO.fromJson(JsonMap json) {
     return SendMessageBO(
-      type: readString(json, 'type'),
-      content: readString(json, 'content'),
-      fileId: readInt(json, 'fileId'),
-      fileUrl: readString(json, 'fileUrl'),
-      fileName: readString(json, 'fileName'),
-      fileSize: readInt(json, 'fileSize'),
+      type: _readNullableString(json['type']),
+      content: _readNullableString(json['content']),
+      fileId: _readNullableInt(json['fileId']),
+      fileUrl: _readNullableString(json['fileUrl']),
+      fileName: _readNullableString(json['fileName']),
+      fileSize: _readNullableInt(json['fileSize']),
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'type': type,
-      'content': content,
-      'fileId': fileId,
-      'fileUrl': fileUrl,
-      'fileName': fileName,
-      'fileSize': fileSize,
+      if (type != null) 'type': type,
+      if (content != null) 'content': content,
+      if (fileId != null) 'fileId': fileId,
+      if (fileUrl != null) 'fileUrl': fileUrl,
+      if (fileName != null) 'fileName': fileName,
+      if (fileSize != null) 'fileSize': fileSize,
     };
   }
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
 }
 
 class TargetUserVO {

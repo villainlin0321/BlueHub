@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../shared/network/sse_models.dart';
+import '../../../shared/network/services/message_service.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -44,12 +46,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final ChatBottomPanelContainerController<_ChatPanelType>
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
+  late final MessageService _messageService;
   StreamSubscription<SseEvent>? _sseSubscription;
 
   @override
   void initState() {
     super.initState();
+    _messageService = ref.read(messageServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       ref
           .read(chatPageControllerProvider(widget.args).notifier)
           .loadInitialData();
@@ -61,7 +68,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void dispose() {
     _sseSubscription?.cancel();
-    unawaited(ref.read(messageServiceProvider).closeConversationStream());
+    unawaited(_messageService.closeConversationStream());
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
@@ -84,14 +91,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   void _subscribeRealtimeStream() {
     _sseSubscription?.cancel();
-    _sseSubscription = ref
-        .read(messageServiceProvider)
-        .connectConversationStream()
-        .listen((SseEvent event) {
-          ref
-              .read(chatPageControllerProvider(widget.args).notifier)
-              .handleSseEvent(event);
-        }, onError: (_) {});
+    _sseSubscription = _messageService.connectConversationStream().listen((
+      SseEvent event,
+    ) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(chatPageControllerProvider(widget.args).notifier)
+          .handleSseEvent(event);
+    }, onError: (_) {});
   }
 
   Future<void> _handleFileAction() async {
@@ -235,6 +244,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (previous?.newestMessageToken != next.newestMessageToken) {
         final bool animated = previous != null;
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
           _scrollToLatest(animated: animated);
         });
       }
@@ -738,10 +750,10 @@ class _ChatBubble extends StatelessWidget {
             color: backgroundColor,
             child: AspectRatio(
               aspectRatio: 1,
-              child: Image.network(
-                message.fileUrl,
+              child: CachedNetworkImage(
+                imageUrl: message.fileUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorWidget: (_, __, ___) => Container(
                   color: backgroundColor,
                   alignment: Alignment.center,
                   padding: const EdgeInsets.all(16),

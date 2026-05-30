@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../data/user_models.dart';
 import '../../application/blacklist/blacklist_state.dart';
 import '../blacklist_page_styles.dart';
@@ -38,7 +39,10 @@ class BlacklistPageView extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           onPressed: onBack,
-          icon: const Icon(Icons.chevron_left, color: BlacklistPageStyles.titleColor),
+          icon: const Icon(
+            Icons.chevron_left,
+            color: BlacklistPageStyles.titleColor,
+          ),
         ),
         title: const Text('黑名单', style: BlacklistPageStyles.navTitle),
       ),
@@ -106,10 +110,7 @@ class _BlacklistCountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      '已拉黑用户 $totalCount 人',
-      style: BlacklistPageStyles.countText,
-    );
+    return Text('已拉黑用户 $totalCount 人', style: BlacklistPageStyles.countText);
   }
 }
 
@@ -214,33 +215,10 @@ class _BlacklistAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget fallback = ClipOval(
-      child: Image.asset(
-        BlacklistPageView._avatarFallbackAsset,
-        width: BlacklistPageStyles.avatarSize,
-        height: BlacklistPageStyles.avatarSize,
-        fit: BoxFit.cover,
-      ),
-    );
-    final String trimmedUrl = avatarUrl.trim();
-    if (trimmedUrl.isEmpty) {
-      return fallback;
-    }
-    return ClipOval(
-      child: Image.network(
-        trimmedUrl,
-        width: BlacklistPageStyles.avatarSize,
-        height: BlacklistPageStyles.avatarSize,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder:
-            (BuildContext context, Widget child, ImageChunkEvent? progress) {
-              if (progress == null) {
-                return child;
-              }
-              return fallback;
-            },
-      ),
+    return AppUserAvatar(
+      imageUrl: avatarUrl.trim(),
+      size: BlacklistPageStyles.avatarSize,
+      placeholderAssetPath: BlacklistPageView._avatarFallbackAsset,
     );
   }
 }
@@ -263,18 +241,13 @@ class _BlacklistLoadMoreFooter extends StatelessWidget {
         : '没有更多了';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: Text(text, style: BlacklistPageStyles.footer),
-      ),
+      child: Center(child: Text(text, style: BlacklistPageStyles.footer)),
     );
   }
 }
 
 class _BlacklistErrorState extends StatelessWidget {
-  const _BlacklistErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _BlacklistErrorState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

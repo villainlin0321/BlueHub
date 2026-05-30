@@ -1,10 +1,12 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
@@ -907,12 +909,12 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
             .map(
               (String url) => ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  url,
+                child: CachedNetworkImage(
+                  imageUrl: url,
                   width: 88,
                   height: 88,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                  errorWidget: (_, __, ___) => _buildImagePlaceholder(),
                 ),
               ),
             )
@@ -1006,14 +1008,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   Widget _buildAvatar() {
     final String avatarUrl = _resolvedArgs.avatarUrl;
     if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return ClipOval(
-        child: Image.network(
-          avatarUrl,
-          width: 60,
-          height: 60,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
-        ),
+      return AppUserAvatar(
+        imageUrl: avatarUrl,
+        size: 60,
+        placeholder: _buildAvatarPlaceholder(),
       );
     }
     return _buildAvatarPlaceholder();

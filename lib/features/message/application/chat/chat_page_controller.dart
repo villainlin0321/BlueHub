@@ -17,7 +17,11 @@ import 'chat_page_args.dart';
 import 'chat_page_state.dart';
 
 final chatPageControllerProvider =
-    NotifierProvider.family<ChatPageController, ChatPageState, ChatPageArgs>(
+    NotifierProvider.autoDispose.family<
+      ChatPageController,
+      ChatPageState,
+      ChatPageArgs
+    >(
       ChatPageController.new,
     );
 
@@ -30,9 +34,14 @@ class ChatPageController extends Notifier<ChatPageState> {
   late final MessageService _messageService;
   late final FileService _fileService;
   late final int _currentUserId;
+  bool _isDisposed = false;
 
   @override
   ChatPageState build() {
+    _isDisposed = false;
+    ref.onDispose(() {
+      _isDisposed = true;
+    });
     _messageService = ref.read(messageServiceProvider);
     _fileService = ref.read(fileServiceProvider);
     _currentUserId = ref.read(authSessionProvider).user?.userId ?? 0;
@@ -40,26 +49,32 @@ class ChatPageController extends Notifier<ChatPageState> {
   }
 
   Future<void> loadInitialData() async {
-    state = state.copyWith(
-      isInitialLoading: true,
-      loadErrorMessage: null,
-      feedbackMessage: null,
+    _updateState(
+      (ChatPageState current) => current.copyWith(
+        isInitialLoading: true,
+        loadErrorMessage: null,
+        feedbackMessage: null,
+      ),
     );
 
     try {
       final _MessageHistoryPayload payload = await _loadHistory();
-      state = state.copyWith(
-        conversationId: payload.conversationId,
-        messages: payload.messages,
-        hasMore: payload.hasMore,
-        isInitialLoading: false,
-        newestMessageToken: state.newestMessageToken + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: payload.conversationId,
+          messages: payload.messages,
+          hasMore: payload.hasMore,
+          isInitialLoading: false,
+          newestMessageToken: current.newestMessageToken + 1,
+        ),
       );
       await _markCurrentConversationRead();
     } catch (error) {
-      state = state.copyWith(
-        isInitialLoading: false,
-        loadErrorMessage: _resolveErrorMessage(error),
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          isInitialLoading: false,
+          loadErrorMessage: _resolveErrorMessage(error),
+        ),
       );
     }
   }
@@ -75,7 +90,9 @@ class ChatPageController extends Notifier<ChatPageState> {
     }
 
     final int beforeId = state.messages.last.messageId;
-    state = state.copyWith(isLoadingMore: true);
+    _updateState(
+      (ChatPageState current) => current.copyWith(isLoadingMore: true),
+    );
 
     try {
       final _MessageHistoryPayload payload = await _loadHistory(
@@ -85,17 +102,21 @@ class ChatPageController extends Notifier<ChatPageState> {
         state.messages,
         payload.messages,
       );
-      state = state.copyWith(
-        conversationId: payload.conversationId,
-        messages: merged,
-        hasMore: payload.hasMore,
-        isLoadingMore: false,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: payload.conversationId,
+          messages: merged,
+          hasMore: payload.hasMore,
+          isLoadingMore: false,
+        ),
       );
     } catch (error) {
-      state = state.copyWith(
-        isLoadingMore: false,
-        feedbackMessage: _resolveErrorMessage(error),
-        feedbackId: state.feedbackId + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          isLoadingMore: false,
+          feedbackMessage: _resolveErrorMessage(error),
+          feedbackId: current.feedbackId + 1,
+        ),
       );
     }
   }
@@ -106,35 +127,40 @@ class ChatPageController extends Notifier<ChatPageState> {
       return;
     }
 
-    state = state.copyWith(isSending: true, feedbackMessage: null);
+    _updateState(
+      (ChatPageState current) => current.copyWith(
+        isSending: true,
+        feedbackMessage: null,
+      ),
+    );
     try {
       final int conversationId = await _ensureConversationId();
       final MessageVO message = await _messageService.sendMessage(
         conversationId: conversationId,
-        request: const SendMessageBO(
+        request: SendMessageBO(
           type: 'text',
-          content: '',
-          fileId: 0,
-          fileUrl: '',
-          fileName: '',
-          fileSize: 0,
-        ).copyWith(content: text),
+          content: text,
+        ),
       );
       final List<MessageVO> merged = _mergeMessages(state.messages, <MessageVO>[
         message,
       ]);
-      state = state.copyWith(
-        conversationId: conversationId,
-        messages: merged,
-        isSending: false,
-        newestMessageToken: state.newestMessageToken + 1,
-        clearComposerToken: state.clearComposerToken + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: conversationId,
+          messages: merged,
+          isSending: false,
+          newestMessageToken: current.newestMessageToken + 1,
+          clearComposerToken: current.clearComposerToken + 1,
+        ),
       );
     } catch (error) {
-      state = state.copyWith(
-        isSending: false,
-        feedbackMessage: _resolveErrorMessage(error),
-        feedbackId: state.feedbackId + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          isSending: false,
+          feedbackMessage: _resolveErrorMessage(error),
+          feedbackId: current.feedbackId + 1,
+        ),
       );
     }
   }
@@ -144,7 +170,12 @@ class ChatPageController extends Notifier<ChatPageState> {
       return;
     }
 
-    state = state.copyWith(isSending: true, feedbackMessage: null);
+    _updateState(
+      (ChatPageState current) => current.copyWith(
+        isSending: true,
+        feedbackMessage: null,
+      ),
+    );
 
     try {
       final int conversationId = await _ensureConversationId();
@@ -160,7 +191,7 @@ class ChatPageController extends Notifier<ChatPageState> {
           conversationId: conversationId,
           request: SendMessageBO(
             type: file.isImage ? 'image' : 'file',
-            content: file.isImage ? '' : file.name,
+            content: file.isImage ? null : file.name,
             fileId: uploaded.fileId,
             fileUrl: uploaded.fileUrl,
             fileName: file.name,
@@ -170,17 +201,21 @@ class ChatPageController extends Notifier<ChatPageState> {
         sentMessages.add(response);
       }
 
-      state = state.copyWith(
-        conversationId: conversationId,
-        messages: _mergeMessages(state.messages, sentMessages),
-        isSending: false,
-        newestMessageToken: state.newestMessageToken + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: conversationId,
+          messages: _mergeMessages(current.messages, sentMessages),
+          isSending: false,
+          newestMessageToken: current.newestMessageToken + 1,
+        ),
       );
     } catch (error) {
-      state = state.copyWith(
-        isSending: false,
-        feedbackMessage: _resolveErrorMessage(error),
-        feedbackId: state.feedbackId + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          isSending: false,
+          feedbackMessage: _resolveErrorMessage(error),
+          feedbackId: current.feedbackId + 1,
+        ),
       );
     }
   }
@@ -188,6 +223,9 @@ class ChatPageController extends Notifier<ChatPageState> {
   Future<void> markConversationRead() => _markCurrentConversationRead();
 
   void handleSseEvent(SseEvent event) {
+    if (_isDisposed) {
+      return;
+    }
     if (!event.hasData) {
       return;
     }
@@ -216,10 +254,12 @@ class ChatPageController extends Notifier<ChatPageState> {
       final int resolvedConversationId = message.conversationId > 0
           ? message.conversationId
           : state.conversationId;
-      state = state.copyWith(
-        conversationId: resolvedConversationId,
-        messages: _mergeMessages(state.messages, <MessageVO>[message]),
-        newestMessageToken: state.newestMessageToken + 1,
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: resolvedConversationId,
+          messages: _mergeMessages(current.messages, <MessageVO>[message]),
+          newestMessageToken: current.newestMessageToken + 1,
+        ),
       );
     } catch (_) {
       // 忽略不属于当前页面的数据格式，避免影响实时消息消费。
@@ -230,7 +270,9 @@ class ChatPageController extends Notifier<ChatPageState> {
     if (state.feedbackMessage == null) {
       return;
     }
-    state = state.copyWith(feedbackMessage: null);
+    _updateState(
+      (ChatPageState current) => current.copyWith(feedbackMessage: null),
+    );
   }
 
   Future<_MessageHistoryPayload> _loadHistory({int? beforeId}) async {
@@ -284,11 +326,17 @@ class ChatPageController extends Notifier<ChatPageState> {
     if (conversationId <= 0) {
       throw ApiException.parse('conversationId missing');
     }
-    state = state.copyWith(conversationId: conversationId);
+    _updateState(
+      (ChatPageState current) =>
+          current.copyWith(conversationId: conversationId),
+    );
     return conversationId;
   }
 
   Future<void> _markCurrentConversationRead() async {
+    if (_isDisposed) {
+      return;
+    }
     if (state.conversationId <= 0) {
       return;
     }
@@ -439,6 +487,13 @@ class ChatPageController extends Notifier<ChatPageState> {
     }
     return '消息加载失败，请稍后重试';
   }
+
+  void _updateState(ChatPageState Function(ChatPageState current) updater) {
+    if (_isDisposed) {
+      return;
+    }
+    state = updater(state);
+  }
 }
 
 class _MessageHistoryPayload {
@@ -451,24 +506,4 @@ class _MessageHistoryPayload {
   final int conversationId;
   final List<MessageVO> messages;
   final bool hasMore;
-}
-
-extension on SendMessageBO {
-  SendMessageBO copyWith({
-    String? type,
-    String? content,
-    int? fileId,
-    String? fileUrl,
-    String? fileName,
-    int? fileSize,
-  }) {
-    return SendMessageBO(
-      type: type ?? this.type,
-      content: content ?? this.content,
-      fileId: fileId ?? this.fileId,
-      fileUrl: fileUrl ?? this.fileUrl,
-      fileName: fileName ?? this.fileName,
-      fileSize: fileSize ?? this.fileSize,
-    );
-  }
 }

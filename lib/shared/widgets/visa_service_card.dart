@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'app_svg_icon.dart';
@@ -14,7 +15,6 @@ class VisaServiceCardData {
     this.avatarUrl,
     this.verified = false,
     this.archived = false,
-    this.isCollected = false,
     this.statusText,
   });
 
@@ -28,7 +28,6 @@ class VisaServiceCardData {
   final List<VisaServicePackageData> packages;
   final bool verified;
   final bool archived;
-  final bool isCollected;
   final String? statusText;
 }
 
@@ -47,18 +46,10 @@ class VisaServicePackageData {
 }
 
 class VisaServiceCard extends StatelessWidget {
-  const VisaServiceCard({
-    super.key,
-    required this.data,
-    this.onTap,
-    this.onFavoriteTap,
-    this.isCollecting = false,
-  });
+  const VisaServiceCard({super.key, required this.data, this.onTap});
 
   final VisaServiceCardData data;
   final VoidCallback? onTap;
-  final VoidCallback? onFavoriteTap;
-  final bool isCollecting;
 
   @override
   Widget build(BuildContext context) {
@@ -89,22 +80,29 @@ class VisaServiceCard extends StatelessWidget {
                           Row(
                             children: <Widget>[
                               Expanded(
-                                child: Text(
-                                  data.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF262626),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    height: 24 / 16,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Flexible(
+                                      child: Text(
+                                        data.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFF262626),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          height: 24 / 16,
+                                        ),
+                                      ),
+                                    ),
+                                    if (data.verified) ...<Widget>[
+                                      const SizedBox(width: 8),
+                                      const _VisaServiceVerifiedBadge(),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              if (data.verified) ...<Widget>[
-                                const SizedBox(width: 8),
-                                const _VisaServiceVerifiedBadge(),
-                              ],
                               if (data.statusText != null) ...<Widget>[
                                 const SizedBox(width: 8),
                                 Text(
@@ -117,12 +115,6 @@ class VisaServiceCard extends StatelessWidget {
                                   ),
                                 ),
                               ],
-                              const SizedBox(width: 8),
-                              _VisaFavoriteButton(
-                                isCollected: data.isCollected,
-                                isLoading: isCollecting,
-                                onTap: onFavoriteTap,
-                              ),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -231,46 +223,6 @@ class VisaServiceCard extends StatelessWidget {
   }
 }
 
-class _VisaFavoriteButton extends StatelessWidget {
-  const _VisaFavoriteButton({
-    required this.isCollected,
-    required this.isLoading,
-    this.onTap,
-  });
-
-  final bool isCollected;
-  final bool isLoading;
-  final VoidCallback? onTap;
-
-  /// 渲染签证服务卡片收藏按钮，展示真实收藏初始态。
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  isCollected ? Icons.star_rounded : Icons.star_border_rounded,
-                  size: 20,
-                  color: isCollected
-                      ? const Color(0xFFFE5815)
-                      : const Color(0xFFBFBFBF),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
 class _VisaServiceAvatar extends StatelessWidget {
   const _VisaServiceAvatar({this.assetPath, this.avatarUrl});
 
@@ -295,10 +247,10 @@ class _VisaServiceAvatar extends StatelessWidget {
   Widget _buildAvatar() {
     final String? trimmedUrl = avatarUrl?.trim();
     if (trimmedUrl != null && trimmedUrl.isNotEmpty) {
-      return Image.network(
-        trimmedUrl,
+      return CachedNetworkImage(
+        imageUrl: trimmedUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildAssetFallback(),
+        errorWidget: (_, __, ___) => _buildAssetFallback(),
       );
     }
     return _buildAssetFallback();
@@ -322,41 +274,16 @@ class _VisaServiceAvatar extends StatelessWidget {
 class _VisaServiceVerifiedBadge extends StatelessWidget {
   const _VisaServiceVerifiedBadge();
 
+  static const String _badgeAssetPath =
+      'assets/images/service_detail_verified_badge.png';
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 14,
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: <Color>[Color(0xFFFEEFC8), Color(0xFFF6C165)],
-        ),
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            'V',
-            style: TextStyle(
-              color: Color(0xFF784301),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              height: 10 / 10,
-            ),
-          ),
-          SizedBox(width: 2),
-          Text(
-            '认证',
-            style: TextStyle(
-              color: Color(0xFF784301),
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              height: 10 / 9,
-            ),
-          ),
-        ],
-      ),
+    return Image.asset(
+      _badgeAssetPath,
+      width: 55.67,
+      height: 16,
+      fit: BoxFit.contain,
     );
   }
 }

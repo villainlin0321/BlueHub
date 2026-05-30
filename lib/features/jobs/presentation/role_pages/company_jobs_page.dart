@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../application/company_applications/company_application_list_state.dart';
 import '../../application/company_applications/company_application_lists_controller.dart';
@@ -852,27 +853,10 @@ class _CandidateAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget fallback = ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Image.asset(
-        'assets/images/mou52cw6-js17mxu.png',
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-      ),
-    );
-    if (avatarUrl.isEmpty) {
-      return fallback;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Image.network(
-        avatarUrl,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-      ),
+    return AppUserAvatar(
+      imageUrl: avatarUrl,
+      size: 40,
+      placeholderAssetPath: 'assets/images/mou52cw6-js17mxu.png',
     );
   }
 }

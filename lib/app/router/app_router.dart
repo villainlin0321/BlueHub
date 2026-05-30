@@ -53,11 +53,17 @@ import 'route_paths.dart';
 
 /// 提供全局 `GoRouter` 实例，并在关键路由变化时输出日志。
 final routerProvider = Provider<GoRouter>((ref) {
-  final authSession = ref.watch(authSessionProvider);
+  final refreshNotifier = _RouterRefreshNotifier();
+  ref.onDispose(refreshNotifier.dispose);
+  ref.listen(authSessionProvider, (_, __) {
+    refreshNotifier.refresh();
+  });
 
   final router = GoRouter(
     initialLocation: RoutePaths.loginPhone,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
+      final authSession = ref.read(authSessionProvider);
       final location = state.matchedLocation;
       final isLoginRoute = location == RoutePaths.loginPhone;
       final isSelectRoleRoute = location == RoutePaths.selectRole;
@@ -449,6 +455,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() {
+    notifyListeners();
+  }
+}
 
 /// 安全读取当前路由地址，避免 go_router 在首轮匹配前访问 `state` 抛出异常。
 String _readCurrentLocation(

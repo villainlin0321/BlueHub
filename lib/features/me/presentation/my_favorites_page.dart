@@ -1036,7 +1036,6 @@ extension on collection_models.VisaPackageVO {
                   ),
                 )
                 .toList(growable: false),
-      isCollected: true,
     );
   }
 

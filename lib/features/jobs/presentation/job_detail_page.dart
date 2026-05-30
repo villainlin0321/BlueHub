@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -711,12 +712,12 @@ class _EmployerLogo extends StatelessWidget {
       );
     }
     if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-      return Image.network(
-        logoUrl,
+      return CachedNetworkImage(
+        imageUrl: logoUrl,
         width: 40,
         height: 40,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
+        errorWidget: (_, __, ___) {
           return Image.asset(
             fallbackAssetPath,
             width: 40,

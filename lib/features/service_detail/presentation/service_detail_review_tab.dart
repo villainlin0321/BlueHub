@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
@@ -449,12 +450,12 @@ class _ReviewPhotoRow extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              photoAssetPaths[index],
+            child: CachedNetworkImage(
+              imageUrl: photoAssetPaths[index],
               width: 106,
               height: 106,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
+              errorWidget: (_, __, ___) {
                 return Container(
                   width: 106,
                   height: 106,

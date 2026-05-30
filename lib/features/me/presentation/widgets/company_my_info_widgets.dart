@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_my_info_styles.dart';
 
 class CompanyMyInfoHeader extends StatelessWidget {
@@ -221,25 +223,16 @@ class _CompanyQualificationImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String resolvedImageUrl = imageUrl?.trim() ?? '';
-    final Widget fallback = Image.asset(
-      fallbackAssetPath,
-      fit: BoxFit.cover,
-    );
+    final Widget fallback = Image.asset(fallbackAssetPath, fit: BoxFit.cover);
     if (resolvedImageUrl.isEmpty) {
       return fallback;
     }
 
-    return Image.network(
-      resolvedImageUrl,
+    return CachedNetworkImage(
+      imageUrl: resolvedImageUrl,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => fallback,
-      loadingBuilder:
-          (BuildContext context, Widget child, ImageChunkEvent? progress) {
-            if (progress == null) {
-              return child;
-            }
-            return fallback;
-          },
+      placeholder: (_, __) => fallback,
+      errorWidget: (_, __, ___) => fallback,
     );
   }
 }
@@ -283,33 +276,10 @@ class _CompanyAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget fallback = ClipOval(
-      child: Image.asset(
-        fallbackAssetPath,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-      ),
-    );
-    if (avatarUrl.trim().isEmpty) {
-      return fallback;
-    }
-
-    return ClipOval(
-      child: Image.network(
-        avatarUrl,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder:
-            (BuildContext context, Widget child, ImageChunkEvent? progress) {
-              if (progress == null) {
-                return child;
-              }
-              return fallback;
-            },
-      ),
+    return AppUserAvatar(
+      imageUrl: avatarUrl,
+      size: 40,
+      placeholderAssetPath: fallbackAssetPath,
     );
   }
 }

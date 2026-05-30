@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import '../../auth/presentation/qualification_certification_flow.dart';
 import '../../visa/data/provider_models.dart';
 import '../../visa/data/provider_providers.dart';
@@ -26,8 +28,7 @@ class ServiceProviderMyInfoPage extends ConsumerWidget {
       'assets/images/qualification_id_portrait.png';
   static const String _licensePlaceholderAsset =
       'assets/images/qualification_license_placeholder.png';
-  static const String _noteText =
-      '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
+  static const String _noteText = '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,7 +98,10 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
         value: _textOrPlaceholder(profile.unifiedCreditCode),
       ),
       _InfoItem(label: '法人姓名', value: _textOrPlaceholder(profile.legalPerson)),
-      _InfoItem(label: '官方联系人', value: _textOrPlaceholder(profile.contactPerson)),
+      _InfoItem(
+        label: '官方联系人',
+        value: _textOrPlaceholder(profile.contactPerson),
+      ),
       _InfoItem(label: '联系电话', value: _textOrPlaceholder(profile.contactPhone)),
       _InfoItem(label: '邮箱', value: _textOrPlaceholder(profile.contactEmail)),
       _InfoItem(label: '官网', value: _textOrPlaceholder(profile.website)),
@@ -119,10 +123,7 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _InfoSection(
-            avatarUrl: profile.logoUrl,
-            items: infoItems,
-          ),
+          _InfoSection(avatarUrl: profile.logoUrl, items: infoItems),
           const SizedBox(height: 12),
           _QualificationSection(docs: docs),
           const SizedBox(height: 12),
@@ -269,25 +270,11 @@ class _AvatarRow extends StatelessWidget {
             ),
           ),
           ClipOval(
-            child: avatarUrl.trim().isEmpty
-                ? fallback
-                : Image.network(
-                    avatarUrl,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => fallback,
-                    loadingBuilder: (
-                      BuildContext context,
-                      Widget child,
-                      ImageChunkEvent? progress,
-                    ) {
-                      if (progress == null) {
-                        return child;
-                      }
-                      return fallback;
-                    },
-                  ),
+            child: AppUserAvatar(
+              imageUrl: avatarUrl,
+              size: 40,
+              placeholder: fallback,
+            ),
           ),
         ],
       ),
@@ -494,22 +481,13 @@ class _MaterialPreviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: imageUrl.trim().isEmpty
             ? fallback
-            : Image.network(
-                imageUrl,
+            : CachedNetworkImage(
+                imageUrl: imageUrl,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => fallback,
-                loadingBuilder: (
-                  BuildContext context,
-                  Widget child,
-                  ImageChunkEvent? progress,
-                ) {
-                  if (progress == null) {
-                    return child;
-                  }
-                  return fallback;
-                },
+                placeholder: (_, __) => fallback,
+                errorWidget: (_, __, ___) => fallback,
               ),
       ),
     );

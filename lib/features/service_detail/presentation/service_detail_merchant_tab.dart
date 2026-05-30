@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../../shared/widgets/app_user_avatar.dart';
 import '../../visa/data/provider_models.dart';
 
 class ServiceDetailMerchantTab extends StatelessWidget {
@@ -84,20 +85,19 @@ class _MerchantHeaderCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFFC8C7C7), width: 0.5),
             ),
             child: ClipOval(
-              child: Image.network(
-                provider.logoUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.white,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: Color(0xFF8C8C8C),
-                      size: 20,
-                    ),
-                  );
-                },
+              child: AppUserAvatar(
+                imageUrl: provider.logoUrl,
+                size: 40,
+                backgroundColor: Colors.white,
+                placeholder: Container(
+                  color: Colors.white,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.person_rounded,
+                    color: Color(0xFF8C8C8C),
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           ),

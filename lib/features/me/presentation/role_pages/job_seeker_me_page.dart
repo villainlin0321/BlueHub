@@ -7,6 +7,7 @@ import '../../../../app/router/route_paths.dart';
 import '../current_user_view_data.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 
 /// 求职者端我的页，按 Figma 设计图还原。
@@ -484,33 +485,10 @@ class _UserAvatar extends StatelessWidget {
   @override
   /// 构建圆形头像，统一处理网络图、占位图和异常态。
   Widget build(BuildContext context) {
-    final Widget fallback = ClipOval(
-      child: Image.asset(
-        fallbackAssetPath,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      ),
-    );
-    if (avatarUrl.isEmpty) {
-      return fallback;
-    }
-
-    return ClipOval(
-      child: Image.network(
-        avatarUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder:
-            (BuildContext context, Widget child, ImageChunkEvent? event) {
-              if (event == null) {
-                return child;
-              }
-              return fallback;
-            },
-      ),
+    return AppUserAvatar(
+      imageUrl: avatarUrl,
+      size: size,
+      placeholderAssetPath: fallbackAssetPath,
     );
   }
 }
