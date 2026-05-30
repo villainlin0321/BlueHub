@@ -108,70 +108,73 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 
     return SafeArea(
       bottom: false,
-      child: EasyRefresh(
-        onRefresh: _handleRefresh,
-        onLoad: _hasNext && _jobs.isNotEmpty ? _handleLoadMore : null,
-        child: CustomScrollView(
-          slivers: <Widget>[
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
-                child: Text(
-                  '欧洲招聘',
-                  style: TextStyle(
-                    color: Color(0xFF000000),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 17,
+      child: Column(
+        children: <Widget>[
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Text(
+              '欧洲招聘',
+              style: TextStyle(
+                color: Color(0xFF000000),
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+                height: 24 / 17,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _JobsSearchBar(
+              controller: _searchController,
+              onSubmitted: _handleSearchSubmitted,
+            ),
+          ),
+          const SizedBox(height: 13),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _FilterRow(
+              countries: countries,
+              positions: positions,
+              salaryRanges: _salaryRangeOptions,
+              selectedCountryCode: _selectedCountryCode,
+              selectedPositionKeyword: _selectedPositionKeyword,
+              selectedSalaryRangeKey: _selectedSalaryRangeKey,
+              isCountryEnabled: countriesAsync.hasValue,
+              isPositionEnabled: positionTreeAsync.hasValue,
+              onCountryChanged: _handleCountryChanged,
+              onPositionChanged: _handlePositionChanged,
+              onSalaryRangeChanged: _handleSalaryRangeChanged,
+            ),
+          ),
+          const SizedBox(height: 19),
+          Expanded(
+            child: EasyRefresh(
+              onRefresh: _handleRefresh,
+              onLoad: _hasNext && _jobs.isNotEmpty ? _handleLoadMore : null,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: <Widget>[
+                  _JobsListSection(
+                    jobs: _jobs,
+                    isInitialLoading: _isInitialLoading,
+                    initialErrorMessage: _initialErrorMessage,
+                    onRetry: _loadInitialJobs,
+                    applyingJobIds: _submittingJobIds,
+                    appliedJobIds: _appliedJobIds,
+                    collectingJobIds: _collectingJobIds,
+                    collectedJobIdsAsync: collectedJobIdsAsync,
+                    onApply: _handleApply,
+                    onToggleCollection: _handleToggleCollection,
                   ),
-                ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: bottomPadding + 24),
+                  ),
+                ],
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: _JobsSearchBar(
-                  controller: _searchController,
-                  onSubmitted: _handleSearchSubmitted,
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 13)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: _FilterRow(
-                  countries: countries,
-                  positions: positions,
-                  salaryRanges: _salaryRangeOptions,
-                  selectedCountryCode: _selectedCountryCode,
-                  selectedPositionKeyword: _selectedPositionKeyword,
-                  selectedSalaryRangeKey: _selectedSalaryRangeKey,
-                  isCountryEnabled: countriesAsync.hasValue,
-                  isPositionEnabled: positionTreeAsync.hasValue,
-                  onCountryChanged: _handleCountryChanged,
-                  onPositionChanged: _handlePositionChanged,
-                  onSalaryRangeChanged: _handleSalaryRangeChanged,
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 19)),
-            _JobsListSection(
-              jobs: _jobs,
-              isInitialLoading: _isInitialLoading,
-              initialErrorMessage: _initialErrorMessage,
-              onRetry: _loadInitialJobs,
-              applyingJobIds: _submittingJobIds,
-              appliedJobIds: _appliedJobIds,
-              collectingJobIds: _collectingJobIds,
-              collectedJobIdsAsync: collectedJobIdsAsync,
-              onApply: _handleApply,
-              onToggleCollection: _handleToggleCollection,
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: bottomPadding + 24)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
