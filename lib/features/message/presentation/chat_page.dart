@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
@@ -738,35 +739,67 @@ class _ChatBubble extends StatelessWidget {
     final Color foregroundColor = isMine
         ? Colors.white
         : _ChatPageState._titleColor;
+    const Color attachmentBackgroundColor = Colors.white;
+    const Color attachmentForegroundColor = _ChatPageState._titleColor;
     final BorderRadius borderRadius = BorderRadius.circular(12);
 
     if (message.type == 'image') {
+      final String imagePath = message.fileUrl.trim();
       return InkWell(
         borderRadius: borderRadius,
         onTap: () => onTapFileMessage(message),
         child: ClipRRect(
           borderRadius: borderRadius,
           child: Container(
-            color: backgroundColor,
+            color: attachmentBackgroundColor,
             child: AspectRatio(
               aspectRatio: 1,
-              child: CachedNetworkImage(
-                imageUrl: message.fileUrl,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(
-                  color: backgroundColor,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    '[图片加载失败]',
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontSize: 14,
-                      height: 20 / 14,
+              child: imagePath.isEmpty
+                  ? Container(
+                      color: attachmentBackgroundColor,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(16),
+                      child: const Text(
+                        '[图片加载失败]',
+                        style: TextStyle(
+                          color: attachmentForegroundColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : _isRemoteFileUrl(imagePath)
+                  ? CachedNetworkImage(
+                      imageUrl: imagePath,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        color: attachmentBackgroundColor,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(16),
+                        child: const Text(
+                          '[图片加载失败]',
+                          style: TextStyle(
+                            color: attachmentForegroundColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Image.file(
+                      File(imagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: attachmentBackgroundColor,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(16),
+                        child: const Text(
+                          '[图片加载失败]',
+                          style: TextStyle(
+                            color: attachmentForegroundColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
           ),
         ),
@@ -779,7 +812,7 @@ class _ChatBubble extends StatelessWidget {
         onTap: () => onTapFileMessage(message),
         child: Container(
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: attachmentBackgroundColor,
             borderRadius: borderRadius,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -797,8 +830,8 @@ class _ChatBubble extends StatelessWidget {
                   message.fileName.isEmpty ? '文件消息' : message.fileName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foregroundColor,
+                  style: const TextStyle(
+                    color: attachmentForegroundColor,
                     fontSize: 14,
                     height: 20 / 14,
                   ),
@@ -822,6 +855,14 @@ class _ChatBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isRemoteFileUrl(String value) {
+  final Uri? uri = Uri.tryParse(value);
+  if (uri == null) {
+    return false;
+  }
+  return uri.scheme == 'http' || uri.scheme == 'https';
 }
 
 class _ChatSystemMessage extends StatelessWidget {

@@ -3,6 +3,7 @@ import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
 import 'package:bluehub_app/shared/network/sse_client.dart';
 import 'package:bluehub_app/shared/network/sse_models.dart';
+import '../../logging/app_logger.dart';
 import '../../../features/messages/data/message_models.dart';
 
 /// 消息模块网络服务。
@@ -91,7 +92,19 @@ class MessageService {
   ///
   /// 订阅后可持续接收新消息、已读回执等服务端推送事件。
   Stream<SseEvent> connectConversationStream() {
-    return _sseClient.connect('/conversations/sse');
+    return _sseClient.connect('/conversations/sse').map((event) {
+      AppLogger.instance.info(
+        'MESSAGE_SSE',
+        '收到会话 SSE 消息',
+        context: <String, Object?>{
+          'id': event.id,
+          'event': event.event,
+          'retry': event.retry,
+          'data': event.data,
+        },
+      );
+      return event;
+    });
   }
 
   /// 主动关闭会话 SSE 长连接。

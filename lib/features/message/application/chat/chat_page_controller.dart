@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,6 +36,7 @@ class ChatPageController extends Notifier<ChatPageState> {
   late final FileService _fileService;
   late final int _currentUserId;
   bool _isDisposed = false;
+  int _nextTemporaryMessageId = -1;
 
   @override
   ChatPageState build() {
@@ -166,6 +168,91 @@ class ChatPageController extends Notifier<ChatPageState> {
   }
 
   Future<void> sendPickedFiles(List<PickedUploadFile> files) async {
+    if (files.isEmpty) {
+      return;
+    }
+
+    final List<PickedUploadFile> imageFiles = files
+        .where((PickedUploadFile file) => file.isImage)
+        .toList(growable: false);
+    final List<PickedUploadFile> regularFiles = files
+        .where((PickedUploadFile file) => !file.isImage)
+        .toList(growable: false);
+
+    if (imageFiles.isNotEmpty) {
+      final List<MessageVO> temporaryMessages = imageFiles
+          .map(_buildTemporaryImageMessage)
+          .toList(growable: false);
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          messages: _mergeMessages(current.messages, temporaryMessages),
+          feedbackMessage: null,
+          newestMessageToken: current.newestMessageToken + 1,
+        ),
+      );
+      unawaited(_uploadTemporaryImages(imageFiles, temporaryMessages));
+    }
+
+    if (regularFiles.isNotEmpty) {
+      await _sendRegularFiles(regularFiles);
+    }
+  }
+
+  Future<void> _uploadTemporaryImages(
+    List<PickedUploadFile> files,
+    List<MessageVO> temporaryMessages,
+  ) async {
+    try {
+      final int conversationId = await _ensureConversationId();
+      for (int index = 0; index < files.length; index++) {
+        final PickedUploadFile file = files[index];
+        final MessageVO temporaryMessage = temporaryMessages[index];
+        try {
+          final FilePresignVO uploaded = await _fileService.uploadFile(
+            path: file.path,
+            scene: FileScene.chat,
+            errorMessage: '图片上传失败，请稍后重试',
+          );
+          final MessageVO response = await _messageService.sendMessage(
+            conversationId: conversationId,
+            request: SendMessageBO(
+              type: 'image',
+              fileId: uploaded.fileId,
+              fileUrl: uploaded.fileUrl,
+              fileName: file.name,
+              fileSize: UploadPickerUtils.readFileSize(file.path),
+            ),
+          );
+          _replaceTemporaryMessage(
+            temporaryMessageId: temporaryMessage.messageId,
+            message: response,
+            conversationId: conversationId,
+          );
+        } catch (error) {
+          _removeTemporaryMessage(
+            temporaryMessageId: temporaryMessage.messageId,
+            feedbackMessage: _resolveErrorMessage(error),
+          );
+        }
+      }
+    } catch (error) {
+      final String feedbackMessage = _resolveErrorMessage(error);
+      for (final MessageVO temporaryMessage in temporaryMessages) {
+        _removeTemporaryMessage(
+          temporaryMessageId: temporaryMessage.messageId,
+          feedbackMessage: null,
+        );
+      }
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          feedbackMessage: feedbackMessage,
+          feedbackId: current.feedbackId + 1,
+        ),
+      );
+    }
+  }
+
+  Future<void> _sendRegularFiles(List<PickedUploadFile> files) async {
     if (files.isEmpty || state.isSending) {
       return;
     }
@@ -190,8 +277,8 @@ class ChatPageController extends Notifier<ChatPageState> {
         final MessageVO response = await _messageService.sendMessage(
           conversationId: conversationId,
           request: SendMessageBO(
-            type: file.isImage ? 'image' : 'file',
-            content: file.isImage ? null : file.name,
+            type: 'file',
+            content: file.name,
             fileId: uploaded.fileId,
             fileUrl: uploaded.fileUrl,
             fileName: file.name,
@@ -441,6 +528,56 @@ class ChatPageController extends Notifier<ChatPageState> {
       byId[message.messageId] = message;
     }
     return _sortMessages(byId.values.toList(growable: false));
+  }
+
+  MessageVO _buildTemporaryImageMessage(PickedUploadFile file) {
+    return MessageVO(
+      messageId: _nextTemporaryMessageId--,
+      conversationId: state.conversationId,
+      senderId: _currentUserId,
+      type: 'image',
+      content: '',
+      fileUrl: file.path,
+      fileName: file.name,
+      fileSize: UploadPickerUtils.readFileSize(file.path),
+      isRead: true,
+      isRetracted: false,
+      sentAt: DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
+  void _replaceTemporaryMessage({
+    required int temporaryMessageId,
+    required MessageVO message,
+    required int conversationId,
+  }) {
+    _updateState((ChatPageState current) {
+      final List<MessageVO> retained = current.messages
+          .where((MessageVO item) => item.messageId != temporaryMessageId)
+          .toList(growable: false);
+      return current.copyWith(
+        conversationId: conversationId,
+        messages: _mergeMessages(retained, <MessageVO>[message]),
+      );
+    });
+  }
+
+  void _removeTemporaryMessage({
+    required int temporaryMessageId,
+    String? feedbackMessage,
+  }) {
+    _updateState((ChatPageState current) {
+      final List<MessageVO> retained = current.messages
+          .where((MessageVO item) => item.messageId != temporaryMessageId)
+          .toList(growable: false);
+      return current.copyWith(
+        messages: retained,
+        feedbackMessage: feedbackMessage ?? current.feedbackMessage,
+        feedbackId: feedbackMessage == null
+            ? current.feedbackId
+            : current.feedbackId + 1,
+      );
+    });
   }
 
   List<MessageVO> _sortMessages(List<MessageVO> messages) {
