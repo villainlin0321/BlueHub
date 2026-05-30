@@ -593,6 +593,7 @@ class UserSimpleVO {
 
 class VisaPackageVO {
   const VisaPackageVO({
+    required this.providerId,
     required this.packageId,
     required this.name,
     required this.targetCountry,
@@ -604,6 +605,7 @@ class VisaPackageVO {
     required this.requiredMaterials,
   });
 
+  final int providerId;
   final int packageId;
   final String name;
   final String targetCountry;
@@ -617,6 +619,7 @@ class VisaPackageVO {
   /// 安全解析服务商详情中的签证套餐，避免缺少币种时影响页面价格展示。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
+      providerId: readInt(json, 'providerId'),
       packageId: readInt(json, 'packageId'),
       name: readString(json, 'name'),
       targetCountry: readString(json, 'targetCountry'),
@@ -635,6 +638,7 @@ class VisaPackageVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
+      'providerId': providerId,
       'packageId': packageId,
       'name': name,
       'targetCountry': targetCountry,

@@ -13,6 +13,7 @@ class TalentService {
     String? keyword,
     String? country,
     String? position,
+    String? sort,
     int? page,
     int? pageSize,
   }) async {
@@ -20,6 +21,7 @@ class TalentService {
       if (keyword != null) 'keyword': keyword,
       if (country != null) 'country': country,
       if (position != null) 'position': position,
+      if (sort != null) 'sort': sort,
       if (page != null) 'page': page,
       if (pageSize != null) 'page_size': pageSize,
     };

@@ -19,6 +19,7 @@ final talentListProvider =
         keyword: query.keyword,
         country: query.country,
         position: query.position,
+        sort: query.sort,
         page: query.page,
         pageSize: query.pageSize,
       );
@@ -29,6 +30,7 @@ class TalentListQuery {
     this.keyword,
     this.country,
     this.position,
+    this.sort,
     this.page = 1,
     this.pageSize = 20,
   });
@@ -36,6 +38,7 @@ class TalentListQuery {
   final String? keyword;
   final String? country;
   final String? position;
+  final String? sort;
   final int page;
   final int pageSize;
 
@@ -47,10 +50,18 @@ class TalentListQuery {
             keyword == other.keyword &&
             country == other.country &&
             position == other.position &&
+            sort == other.sort &&
             page == other.page &&
             pageSize == other.pageSize;
   }
 
   @override
-  int get hashCode => Object.hash(keyword, country, position, page, pageSize);
+  int get hashCode => Object.hash(
+    keyword,
+    country,
+    position,
+    sort,
+    page,
+    pageSize,
+  );
 }

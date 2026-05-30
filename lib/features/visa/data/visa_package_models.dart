@@ -246,6 +246,7 @@ class UpdatePackageStatusBO {
 
 class VisaPackageVO {
   const VisaPackageVO({
+    required this.providerId,
     required this.packageId,
     required this.name,
     required this.targetCountry,
@@ -257,6 +258,7 @@ class VisaPackageVO {
     required this.requiredMaterials,
   });
 
+  final int providerId;
   final int packageId;
   final String name;
   final String targetCountry;
@@ -270,6 +272,7 @@ class VisaPackageVO {
   /// 安全解析签证套餐详情，兼容后端返回币种和材料字段的类型波动。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
+      providerId: readInt(json, 'providerId'),
       packageId: readInt(json, 'packageId'),
       name: readString(json, 'name'),
       targetCountry: readString(json, 'targetCountry'),
@@ -288,6 +291,7 @@ class VisaPackageVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
+      'providerId': providerId,
       'packageId': packageId,
       'name': name,
       'targetCountry': targetCountry,
