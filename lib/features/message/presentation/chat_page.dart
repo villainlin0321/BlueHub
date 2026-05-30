@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../features/me/data/user_models.dart';
+import '../../../features/me/data/user_providers.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/sse_models.dart';
 import '../../../shared/network/services/message_service.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -49,6 +52,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
   late final MessageService _messageService;
   StreamSubscription<SseEvent>? _sseSubscription;
+  bool _isBlockingUser = false;
 
   @override
   void initState() {
@@ -201,6 +205,92 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ..showSnackBar(SnackBar(content: Text(label)));
   }
 
+  Future<void> _showMoreMenu(BuildContext buttonContext) async {
+    if (_isBlockingUser) {
+      return;
+    }
+
+    final RenderBox button = buttonContext.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final _ChatMoreMenuAction? action = await showMenu<_ChatMoreMenuAction>(
+      context: context,
+      position: position,
+      color: Colors.white,
+      elevation: 0,
+      shadowColor: Colors.black.withValues(alpha: 0.15),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      menuPadding: EdgeInsets.zero,
+      items: <PopupMenuEntry<_ChatMoreMenuAction>>[
+        PopupMenuItem<_ChatMoreMenuAction>(
+          value: _ChatMoreMenuAction.block,
+          padding: EdgeInsets.zero,
+          height: 48,
+          child: const _ChatMoreMenuItem(),
+        ),
+      ],
+    );
+
+    if (action == _ChatMoreMenuAction.block) {
+      await _handleBlockUser();
+    }
+  }
+
+  Future<void> _handleBlockUser() async {
+    if (_isBlockingUser) {
+      return;
+    }
+
+    setState(() {
+      _isBlockingUser = true;
+    });
+
+    try {
+      await ref.read(userServiceProvider).manageBlacklist(
+        request: BlacklistBO(
+          targetUserId: widget.args.targetUserId,
+          action: 'add',
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).maybePop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(_resolveBlockUserErrorMessage(error))),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBlockingUser = false;
+        });
+      }
+    }
+  }
+
+  String _resolveBlockUserErrorMessage(Object error) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return '拉黑失败，请稍后重试';
+  }
+
   Future<void> _scrollToLatest({required bool animated}) async {
     if (!_scrollController.hasClients) {
       return;
@@ -259,6 +349,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       appBar: _ChatPageAppBar(
         args: widget.args,
         onBack: () => Navigator.of(context).maybePop(),
+        onMoreTap: _showMoreMenu,
       ),
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -369,11 +460,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 enum _ChatPanelType { attachment }
 
+enum _ChatMoreMenuAction { block }
+
 class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _ChatPageAppBar({required this.args, required this.onBack});
+  const _ChatPageAppBar({
+    required this.args,
+    required this.onBack,
+    required this.onMoreTap,
+  });
 
   final ChatPageArgs args;
   final VoidCallback onBack;
+  final ValueChanged<BuildContext> onMoreTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(44);
@@ -444,31 +542,90 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List<Widget>.generate(
-                  3,
-                  (_) => Container(
-                    width: 3,
-                    height: 3,
-                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                    decoration: const BoxDecoration(
-                      color: _ChatPageState._titleColor,
-                      shape: BoxShape.circle,
-                    ),
+        Builder(
+          builder: (BuildContext buttonContext) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onMoreTap(buttonContext),
+                child: const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Center(
+                    child: _ChatMoreButtonDots(),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ],
+    );
+  }
+}
+
+class _ChatMoreButtonDots extends StatelessWidget {
+  const _ChatMoreButtonDots();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List<Widget>.generate(
+        3,
+        (_) => Container(
+          width: 3,
+          height: 3,
+          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+          decoration: const BoxDecoration(
+            color: _ChatPageState._titleColor,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatMoreMenuItem extends StatelessWidget {
+  const _ChatMoreMenuItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 112,
+      height: 48,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: const Row(
+        children: <Widget>[
+          Icon(
+            Icons.block_outlined,
+            size: 18,
+            color: _ChatPageState._titleColor,
+          ),
+          SizedBox(width: 10),
+          Text(
+            '拉黑',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              height: 20 / 14,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
