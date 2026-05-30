@@ -216,6 +216,7 @@ class TierVO {
 
 class VisaPackageVO {
   const VisaPackageVO({
+    required this.providerId,
     required this.packageId,
     required this.name,
     required this.targetCountry,
@@ -227,6 +228,7 @@ class VisaPackageVO {
     required this.requiredMaterials,
   });
 
+  final int providerId;
   final int packageId;
   final String name;
   final String targetCountry;
@@ -240,6 +242,7 @@ class VisaPackageVO {
   /// 安全解析收藏签证套餐，兼容后端币种字段缺失或类型漂移。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
+      providerId: readInt(json, 'providerId'),
       packageId: readInt(json, 'packageId'),
       name: readString(json, 'name'),
       targetCountry: readString(json, 'targetCountry'),
@@ -258,6 +261,7 @@ class VisaPackageVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
+      'providerId': providerId,
       'packageId': packageId,
       'name': name,
       'targetCountry': targetCountry,

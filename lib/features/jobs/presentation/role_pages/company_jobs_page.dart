@@ -38,17 +38,34 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     return value.isEmpty ? null : value;
   }
 
-  String? get _selectedPosition => _selectedTabIndex == 3 ? '中餐厨师' : null;
+  String _sortForTab(int index) => switch (index) {
+    1 => 'active',
+    2 => 'match',
+    _ => 'latest',
+  };
 
-  TalentListQuery get _query => TalentListQuery(
+  String get _selectedSort => _sortForTab(_selectedTabIndex);
+
+  TalentListQuery _buildQueryForTab(int index) => TalentListQuery(
     keyword: _keyword,
-    position: _selectedPosition,
+    position: index == 3 ? '中餐厨师' : null,
+    sort: _sortForTab(index),
     page: 1,
     pageSize: 20,
   );
 
+  TalentListQuery get _query => _buildQueryForTab(_selectedTabIndex);
+
   void _handleSearchChanged() {
     setState(() {});
+  }
+
+  void _handleTalentTabChanged(int index) {
+    final TalentListQuery nextQuery = _buildQueryForTab(index);
+    setState(() {
+      _selectedTabIndex = index;
+    });
+    ref.invalidate(talentListProvider(nextQuery));
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -165,11 +182,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
         _SearchBar(controller: _searchController),
         _TabBarSection(
           selectedIndex: _selectedTabIndex,
-          onTap: (int index) {
-            setState(() {
-              _selectedTabIndex = index;
-            });
-          },
+          onTap: _handleTalentTabChanged,
         ),
         const _AiBanner(),
         Padding(
@@ -187,11 +200,17 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (BuildContext context, int index) {
                   return _CandidateCard(
-                    data: _CandidateCardData.fromTalent(pageResult.list[index]),
+                    data: _CandidateCardData.fromTalent(
+                      pageResult.list[index],
+                      sort: _selectedSort,
+                    ),
                     onViewResumeTap: () =>
                         _openResumePreview(pageResult.list[index].userId),
                     onInviteTap: () => _handleInviteInterview(
-                      _CandidateCardData.fromTalent(pageResult.list[index]),
+                      _CandidateCardData.fromTalent(
+                        pageResult.list[index],
+                        sort: _selectedSort,
+                      ),
                     ),
                     isInviteLoading: _processingInviteUserIds.contains(
                       pageResult.list[index].userId,
@@ -773,17 +792,23 @@ class _CandidateCardData {
   final List<String> tags;
   final String updatedText;
 
-  factory _CandidateCardData.fromTalent(TalentVO talent) {
+  factory _CandidateCardData.fromTalent(TalentVO talent, {required String sort}) {
+    final bool isMatchSort = sort == 'match';
+    final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
       userId: talent.userId,
       avatarUrl: talent.avatarUrl,
       name: talent.nickname.isEmpty ? '未命名用户' : talent.nickname,
       ageGender: _buildAgeGender(talent),
       intention: _buildIntention(talent),
-      scoreText: '${talent.completeness}%',
-      scoreLabel: '完整度',
+      scoreText: isMatchSort && talent.matchScore != null
+          ? '${talent.matchScore!.clamp(0, 100)}%'
+          : '${talent.completeness}%',
+      scoreLabel: isMatchSort && talent.matchScore != null ? '匹配度' : '完整度',
       tags: _buildTags(talent),
-      updatedText: _buildUpdatedText(talent.updatedAt),
+      updatedText: isActiveSort
+          ? _buildActiveText(talent.lastLoginAt)
+          : _buildUpdatedText(talent.updatedAt),
     );
   }
 
@@ -836,13 +861,46 @@ class _CandidateCardData {
   }
 
   static String _buildUpdatedText(String updatedAt) {
-    final DateTime? parsed = DateTime.tryParse(updatedAt);
+    final DateTime? parsed = DateTime.tryParse(updatedAt)?.toLocal();
     if (parsed == null) {
       return updatedAt.isEmpty ? '更新时间未知' : updatedAt;
+    }
+    final Duration difference = DateTime.now().difference(parsed);
+    if (difference.inMinutes < 1) {
+      return '刚刚更新';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前更新';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}小时前更新';
     }
     final String month = parsed.month.toString().padLeft(2, '0');
     final String day = parsed.day.toString().padLeft(2, '0');
     return '$month-$day 更新';
+  }
+
+  static String _buildActiveText(String lastLoginAt) {
+    final DateTime? parsed = DateTime.tryParse(lastLoginAt)?.toLocal();
+    if (parsed == null) {
+      return lastLoginAt.isEmpty ? '活跃时间未知' : lastLoginAt;
+    }
+    final Duration difference = DateTime.now().difference(parsed);
+    if (difference.inMinutes < 1) {
+      return '刚刚活跃';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前活跃';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}小时前活跃';
+    }
+    if (difference.inDays < 30) {
+      return '${difference.inDays}天前活跃';
+    }
+    final String month = parsed.month.toString().padLeft(2, '0');
+    final String day = parsed.day.toString().padLeft(2, '0');
+    return '$month-$day 活跃';
   }
 }
 

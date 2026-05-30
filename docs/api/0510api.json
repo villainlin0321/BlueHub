@@ -5619,6 +5619,16 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "description": "排序方式，逗号分隔多值，靠前的优先级更高（默认 latest）：\n· latest — 简历更新时间降序\n· active — 用户最近活跃时间降序\n· match  — 匹配度得分降序（需传入过滤条件才有意义）\n示例：sort=match,active 先按匹配度，再按活跃时间，最后按更新时间兜底\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "latest"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "description": "页码",
@@ -9283,7 +9293,7 @@
           "targetUserId": {
             "type": "integer",
             "format": "int64",
-            "description": "目标用户 ID"
+            "description": "目标方 ID（worker=user_id；visa_provider=provider_profile_id；employer=employer_profile_id）"
           },
           "targetUserRole": {
             "type": "string",
@@ -10176,6 +10186,11 @@
       "VisaPackageVO": {
         "type": "object",
         "properties": {
+          "providerId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务商档案 ID"
+          },
           "packageId": {
             "type": "integer",
             "format": "int64",
@@ -10810,6 +10825,16 @@
             "type": "string",
             "format": "date-time",
             "description": "简历最后更新时间"
+          },
+          "last_login_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "用户最近活跃时间（最后登录时间）。\n\n <p>排序方式为 <code>active</code> 时返回，其余排序方式也返回供前端展示\"活跃于 X 天前\"。</p>"
+          },
+          "match_score": {
+            "type": "integer",
+            "format": "int32",
+            "description": "匹配度得分（仅排序方式为 <code>match</code> 时有值，其余为 null）。\n\n <p>由后端根据关键字/国家/职位过滤条件实时计算，分值越高越匹配。</p>"
           }
         }
       },

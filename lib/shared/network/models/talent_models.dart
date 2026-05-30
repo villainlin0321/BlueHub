@@ -17,6 +17,8 @@ class TalentVO {
     required this.salaryMax,
     required this.salaryCurrency,
     required this.updatedAt,
+    required this.lastLoginAt,
+    required this.matchScore,
   });
 
   final int resumeId;
@@ -34,6 +36,8 @@ class TalentVO {
   final double? salaryMax;
   final String salaryCurrency;
   final String updatedAt;
+  final String lastLoginAt;
+  final int? matchScore;
 
   factory TalentVO.fromJson(JsonMap json) {
     return TalentVO(
@@ -52,6 +56,8 @@ class TalentVO {
       salaryMax: _readNullableDouble(json['salary_max']),
       salaryCurrency: readString(json, 'salary_currency', fallback: 'EUR'),
       updatedAt: readString(json, 'updated_at'),
+      lastLoginAt: readString(json, 'last_login_at'),
+      matchScore: _readNullableInt(json['match_score']),
     );
   }
 
@@ -72,6 +78,8 @@ class TalentVO {
       'salary_max': salaryMax,
       'salary_currency': salaryCurrency,
       'updated_at': updatedAt,
+      'last_login_at': lastLoginAt,
+      'match_score': matchScore,
     };
   }
 }
