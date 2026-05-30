@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../me/presentation/current_user_view_data.dart';
@@ -260,11 +261,10 @@ class _ProviderProfileRow extends ConsumerWidget {
       borderRadius: BorderRadius.circular(16),
       child: Row(
         children: <Widget>[
-          Image.asset(
-            ServiceProviderMePage._avatarAsset,
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
+          AppUserAvatar(
+            imageUrl: providerProfile?.logoUrl ?? '',
+            size: 40,
+            placeholderAssetPath: ServiceProviderMePage._avatarAsset,
           ),
           const SizedBox(width: 12),
           Expanded(

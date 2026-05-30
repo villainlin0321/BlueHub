@@ -4,9 +4,14 @@ import 'package:bluehub_app/shared/network/page_result.dart';
 import '../../../features/visa/data/provider_models.dart';
 
 class ProviderService {
-  ProviderService({required ApiClient apiClient}) : _apiClient = apiClient;
+  ProviderService({
+    required ApiClient apiClient,
+    Future<void> Function()? onProfileUpdated,
+  }) : _apiClient = apiClient,
+       _onProfileUpdated = onProfileUpdated;
 
   final ApiClient _apiClient;
+  final Future<void> Function()? _onProfileUpdated;
 
   /// 获取签证服务商列表，支持分页以及国家、签证类型、关键词和标签筛选。
   Future<PageResult<VisaProviderListVO>> listProviders({
@@ -47,7 +52,8 @@ class ProviderService {
 
   /// 更新当前登录服务商的基础资料与服务信息。
   Future<void> updateMyProfile({required UpdateVisaProviderBO request}) async {
-    return _apiClient.putVoid('/visa-providers/me', data: request.toJson());
+    await _apiClient.putVoid('/visa-providers/me', data: request.toJson());
+    await _onProfileUpdated?.call();
   }
 
   /// 上传当前登录服务商的资质文档列表。

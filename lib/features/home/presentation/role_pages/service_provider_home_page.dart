@@ -13,6 +13,7 @@ import '../../../../features/order/data/visa_order_models.dart'
 import '../../../../features/visa/data/provider_models.dart' show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
@@ -279,10 +280,10 @@ class _ProviderInfoRow extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Image.asset(
-          'assets/images/mon6azmx-ecnf5h2.png',
-          width: 40,
-          height: 40,
+        AppUserAvatar(
+          imageUrl: providerProfile?.logoUrl ?? '',
+          size: 40,
+          placeholderAssetPath: 'assets/images/mon6azmx-ecnf5h2.png',
         ),
         const SizedBox(width: 12),
         Expanded(

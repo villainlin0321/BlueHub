@@ -1,15 +1,22 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../../utils/upload_picker_utils.dart';
 import '../../auth/presentation/qualification_certification_flow.dart';
+import '../../files/data/file_models.dart';
+import '../../files/data/file_providers.dart';
 import '../../visa/data/provider_models.dart';
 import '../../visa/data/provider_providers.dart';
 import '../data/dictionary_providers.dart';
 import 'country_options_bottom_sheet.dart';
+import 'widgets/company_my_info_widgets.dart';
 
 final _serviceProviderMyInfoProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
@@ -18,7 +25,7 @@ final _serviceProviderMyInfoProfileProvider =
     });
 
 /// 服务商“我的信息”页，使用当前登录服务商资料接口渲染。
-class ServiceProviderMyInfoPage extends ConsumerWidget {
+class ServiceProviderMyInfoPage extends ConsumerStatefulWidget {
   const ServiceProviderMyInfoPage({super.key});
 
   static const String _logoFallbackAsset = 'assets/images/mou588hj-vpl779h.png';
@@ -31,7 +38,17 @@ class ServiceProviderMyInfoPage extends ConsumerWidget {
   static const String _noteText = '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServiceProviderMyInfoPage> createState() =>
+      _ServiceProviderMyInfoPageState();
+}
+
+class _ServiceProviderMyInfoPageState
+    extends ConsumerState<ServiceProviderMyInfoPage> {
+  bool _isSubmitting = false;
+  String? _localAvatarPreviewPath;
+
+  @override
+  Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
     final AsyncValue<VisaProviderProfileVO> profileAsync = ref.watch(
       _serviceProviderMyInfoProfileProvider,
@@ -47,36 +64,214 @@ class ServiceProviderMyInfoPage extends ConsumerWidget {
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         bottom: false,
-        child: Column(
+        child: Stack(
           children: <Widget>[
-            _Header(onBackTap: context.pop),
-            Expanded(
-              child: profileAsync.when(
-                data: (VisaProviderProfileVO profile) =>
-                    _ServiceProviderMyInfoContent(
-                      profile: profile,
-                      countryLabelMap: countryLabelMap,
+            Column(
+              children: <Widget>[
+                _Header(onBackTap: context.pop),
+                Expanded(
+                  child: profileAsync.when(
+                    data: (VisaProviderProfileVO profile) =>
+                        _ServiceProviderMyInfoContent(
+                          profile: profile,
+                          countryLabelMap: countryLabelMap,
+                          localAvatarPreviewPath: _localAvatarPreviewPath,
+                          onAvatarTap: () => _handleAvatarTap(profile),
+                        ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => _ServiceProviderMyInfoErrorView(
+                      onRetry: () =>
+                          ref.invalidate(_serviceProviderMyInfoProfileProvider),
                     ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _ServiceProviderMyInfoErrorView(
-                  onRetry: () =>
-                      ref.invalidate(_serviceProviderMyInfoProfileProvider),
+                  ),
+                ),
+                _BottomActionBar(
+                  bottomInset: bottomInset,
+                  onTap: () => context.push(
+                    RoutePaths.qualificationCertification,
+                    extra: QualificationCertificationPageArgs(
+                      role: QualificationCertificationRole.serviceProvider,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_isSubmitting)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: const Color(0x33000000),
+                  child: Center(
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            _BottomActionBar(
-              bottomInset: bottomInset,
-              onTap: () => context.push(
-                RoutePaths.qualificationCertification,
-                extra: QualificationCertificationPageArgs(
-                  role: QualificationCertificationRole.serviceProvider,
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleAvatarTap(VisaProviderProfileVO profile) async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (BuildContext sheetContext) {
+        return CompanyImageSourceBottomSheet(
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickAndUploadAvatar(
+              profile: profile,
+              picker: UploadPickerUtils.pickFromCamera,
+              errorMessage: '打开相机失败，请稍后重试',
+            );
+          },
+          onGalleryTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickAndUploadAvatar(
+              profile: profile,
+              picker: UploadPickerUtils.pickFromGallery,
+              errorMessage: '打开相册失败，请稍后重试',
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar({
+    required VisaProviderProfileVO profile,
+    required Future<List<PickedUploadFile>> Function() picker,
+    required String errorMessage,
+  }) async {
+    try {
+      final List<PickedUploadFile> files = await picker();
+      if (!mounted || files.isEmpty) {
+        return;
+      }
+
+      PickedUploadFile selectedFile = files.first;
+      for (final PickedUploadFile item in files) {
+        if (item.isImage) {
+          selectedFile = item;
+          break;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = selectedFile.path;
+        });
+      }
+
+      await _executeProfileAction(
+        action: () async {
+          final int logoId = await _uploadAvatar(selectedFile.path);
+          await ref
+              .read(providerServiceProvider)
+              .updateMyProfile(
+                request: UpdateVisaProviderBO(
+                  companyName: profile.companyName,
+                  unifiedCreditCode: profile.unifiedCreditCode,
+                  legalPerson: profile.legalPerson,
+                  contactPerson: profile.contactPerson,
+                  contactPhone: profile.contactPhone,
+                  contactEmail: profile.contactEmail,
+                  website: profile.website,
+                  yearsOfService: profile.yearsOfService,
+                  logoId: logoId,
+                  brief: profile.brief,
+                  servicePromise: profile.servicePromise,
+                  serviceCountries: profile.serviceCountries,
+                ),
+              );
+        },
+        successMessage: '头像已更新',
+      );
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = null;
+        });
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _localAvatarPreviewPath = null;
+      });
+      _showMessage(errorMessage);
+    }
+  }
+
+  Future<void> _executeProfileAction({
+    required Future<void> Function() action,
+    required String successMessage,
+  }) async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      await action();
+      ref.invalidate(_serviceProviderMyInfoProfileProvider);
+      if (!mounted) {
+        return;
+      }
+      _showMessage(successMessage);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<int> _uploadAvatar(String path) async {
+    final FilePresignVO presign = await ref
+        .read(fileServiceProvider)
+        .uploadFile(
+          path: path,
+          scene: FileScene.avatar,
+          errorMessage: '头像上传失败，请稍后重试',
+        );
+    return presign.fileId;
+  }
+
+  String _resolveErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '保存失败，请稍后重试';
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -84,10 +279,14 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
   const _ServiceProviderMyInfoContent({
     required this.profile,
     required this.countryLabelMap,
+    required this.localAvatarPreviewPath,
+    required this.onAvatarTap,
   });
 
   final VisaProviderProfileVO profile;
   final Map<String, String> countryLabelMap;
+  final String? localAvatarPreviewPath;
+  final VoidCallback onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +322,12 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _InfoSection(avatarUrl: profile.logoUrl, items: infoItems),
+          _InfoSection(
+            avatarUrl: profile.logoUrl,
+            localAvatarPreviewPath: localAvatarPreviewPath,
+            onAvatarTap: onAvatarTap,
+            items: infoItems,
+          ),
           const SizedBox(height: 12),
           _QualificationSection(docs: docs),
           const SizedBox(height: 12),
@@ -200,9 +404,16 @@ class _Header extends StatelessWidget {
 }
 
 class _InfoSection extends StatelessWidget {
-  const _InfoSection({required this.avatarUrl, required this.items});
+  const _InfoSection({
+    required this.avatarUrl,
+    required this.localAvatarPreviewPath,
+    required this.onAvatarTap,
+    required this.items,
+  });
 
   final String avatarUrl;
+  final String? localAvatarPreviewPath;
+  final VoidCallback onAvatarTap;
   final List<_InfoItem> items;
 
   @override
@@ -227,7 +438,11 @@ class _InfoSection extends StatelessWidget {
               ),
             ),
           ),
-          _AvatarRow(avatarUrl: avatarUrl),
+          _AvatarRow(
+            avatarUrl: avatarUrl,
+            localAvatarPath: localAvatarPreviewPath,
+            onTap: onAvatarTap,
+          ),
           for (int index = 0; index < items.length; index++) ...<Widget>[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
@@ -242,9 +457,15 @@ class _InfoSection extends StatelessWidget {
 }
 
 class _AvatarRow extends StatelessWidget {
-  const _AvatarRow({required this.avatarUrl});
+  const _AvatarRow({
+    required this.avatarUrl,
+    required this.localAvatarPath,
+    required this.onTap,
+  });
 
   final String avatarUrl;
+  final String? localAvatarPath;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -255,28 +476,50 @@ class _AvatarRow extends StatelessWidget {
       fit: BoxFit.cover,
     );
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      child: Row(
-        children: <Widget>[
-          const Expanded(
-            child: Text(
-              '头像',
-              style: TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
+    final String resolvedLocalAvatarPath = localAvatarPath?.trim() ?? '';
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Row(
+          children: <Widget>[
+            const Expanded(
+              child: Text(
+                '头像',
+                style: TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 16,
+                  height: 22 / 16,
+                ),
               ),
             ),
-          ),
-          ClipOval(
-            child: AppUserAvatar(
-              imageUrl: avatarUrl,
-              size: 40,
-              placeholder: fallback,
-            ),
-          ),
-        ],
+            if (resolvedLocalAvatarPath.isNotEmpty)
+              ClipOval(
+                child: Image.file(
+                  File(resolvedLocalAvatarPath),
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) {
+                    return AppUserAvatar(
+                      imageUrl: avatarUrl,
+                      size: 40,
+                      placeholder: fallback,
+                    );
+                  },
+                ),
+              )
+            else
+              ClipOval(
+                child: AppUserAvatar(
+                  imageUrl: avatarUrl,
+                  size: 40,
+                  placeholder: fallback,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

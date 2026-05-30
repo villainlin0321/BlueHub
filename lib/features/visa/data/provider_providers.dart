@@ -2,11 +2,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/shared/network/providers.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
 
+import '../../auth/application/auth_session_provider.dart';
 import 'provider_models.dart';
 import '../../../shared/network/services/provider_service.dart';
 
 final providerServiceProvider = Provider<ProviderService>((ref) {
-  return ProviderService(apiClient: ref.watch(apiClientProvider));
+  return ProviderService(
+    apiClient: ref.watch(apiClientProvider),
+    onProfileUpdated: () async {
+      final authSession = ref.read(authSessionProvider);
+      await ref
+          .read(authSessionProvider.notifier)
+          .refreshCurrentUser(
+            fallbackUser: authSession.user,
+            preferredNeedSelectRole: authSession.needSelectRole,
+          );
+      ref.invalidateSelf();
+    },
+  );
 });
 
 /// 根据服务商 ID 获取服务商详情和套餐列表，供签证详情页商家模块使用。
