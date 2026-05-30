@@ -40,11 +40,13 @@ class ServiceProviderHomePage extends ConsumerWidget {
       label: '订单处理',
       assetPath: 'assets/images/mon6azmx-b7iu27t.svg',
       fallback: Icons.fact_check_outlined,
+      routePath: RoutePaths.orderManagement,
     ),
     _QuickActionItem(
       label: '人才中心',
       assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
+      routePath: RoutePaths.serviceProviderTalentCenter,
     ),
     _QuickActionItem(
       label: '财务结算',
@@ -463,85 +465,92 @@ class _AiAssistantBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(
-          child: SvgPicture.asset(
-            'assets/images/mon6azmx-n75bcra.svg',
-            fit: BoxFit.fill,
-          ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(RoutePaths.ai),
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: SvgPicture.asset(
+                'assets/images/mon6azmx-n75bcra.svg',
+                fit: BoxFit.fill,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
+              child: Row(
+                children: <Widget>[
+                  Image.asset(
+                    'assets/images/mon6azmx-7balpug.png',
+                    width: 40,
+                    height: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          'AI业务助手',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            height: 22 / 15,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '发现 3 个可能需要德国工签的人才',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 16 / 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    height: 28,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        const Text(
+                          '查看',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        SvgPicture.asset(
+                          'assets/images/chat_page_order_arrow.svg',
+                          width: 12,
+                          height: 12,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
-          child: Row(
-            children: <Widget>[
-              Image.asset(
-                'assets/images/mon6azmx-7balpug.png',
-                width: 40,
-                height: 40,
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      'AI业务助手',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        height: 22 / 15,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      '发现 3 个可能需要德国工签的人才',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                height: 28,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    const Text(
-                      '查看',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    SvgPicture.asset(
-                      'assets/images/chat_page_order_arrow.svg',
-                      width: 12,
-                      height: 12,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -15,6 +15,7 @@ import '../../features/jobs/presentation/company_application_management_page.dar
 import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/jobs/presentation/post_job_page.dart';
+import '../../features/jobs/presentation/service_provider_talent_center_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/me/presentation/add_education_experience_page.dart';
 import '../../features/me/presentation/add_education_school_page.dart';
@@ -328,6 +329,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.companyVisaService,
         builder: (context, state) => const CompanyVisaServicePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceProviderTalentCenter,
+        builder: (context, state) => const ServiceProviderTalentCenterPage(),
       ),
       GoRoute(
         path: RoutePaths.myResumeEditor,

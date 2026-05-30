@@ -443,58 +443,65 @@ class _AiBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: SvgPicture.asset(
-                'assets/images/mou52cw6-a9gamk4.svg',
-                fit: BoxFit.fill,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
-              child: Row(
-                children: <Widget>[
-                  Image.asset(
-                    'assets/images/mou52cw6-nklu474.png',
-                    width: 40,
-                    height: 40,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go(RoutePaths.ai),
+          borderRadius: BorderRadius.circular(12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: SvgPicture.asset(
+                    'assets/images/mou52cw6-a9gamk4.svg',
+                    fit: BoxFit.fill,
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          'AI业务助手',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 15,
-                          ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
+                  child: Row(
+                    children: <Widget>[
+                      Image.asset(
+                        'assets/images/mou52cw6-nklu474.png',
+                        width: 40,
+                        height: 40,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text(
+                              'AI业务助手',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
+                                height: 22 / 15,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              '为您精准推荐 5 名资深中餐厨师',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                height: 16 / 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          '为您精准推荐 5 名资深中餐厨师',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 16 / 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      _BannerAction(),
+                    ],
                   ),
-                  _BannerAction(),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

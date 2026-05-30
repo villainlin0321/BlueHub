@@ -101,6 +101,9 @@ class RoutePaths {
   /// 订单管理页。
   static const orderManagement = '/order/management';
 
+  /// 服务商人才中心页。
+  static const serviceProviderTalentCenter = '/service-provider/talent-center';
+
   /// 订单详情页。
   static const orderDetail = '/order/detail';
 
