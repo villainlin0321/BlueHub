@@ -57,6 +57,11 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _SalaryRangeOption(key: '9000-10000', label: '9000-10000', min: 9000, max: 10000),
         _SalaryRangeOption(key: '10000+', label: '10000以上', min: 10000),
       ];
+  static const List<_SortOption> _sortOptions = <_SortOption>[
+    _SortOption(key: 'latest', label: '最新'),
+    _SortOption(key: 'salary_desc', label: '薪资降序'),
+    _SortOption(key: 'salary_asc', label: '薪资升序'),
+  ];
 
   final List<JobListVO> _jobs = <JobListVO>[];
   final Set<int> _submittingJobIds = <int>{};
@@ -74,6 +79,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   String? _selectedCountryCode;
   String? _selectedPositionKeyword;
   String? _selectedSalaryRangeKey;
+  String _selectedSortKey = _sortOptions.first.key;
 
   @override
   void initState() {
@@ -140,11 +146,13 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               selectedCountryCode: _selectedCountryCode,
               selectedPositionKeyword: _selectedPositionKeyword,
               selectedSalaryRangeKey: _selectedSalaryRangeKey,
+              selectedSortKey: _selectedSortKey,
               isCountryEnabled: countriesAsync.hasValue,
               isPositionEnabled: positionTreeAsync.hasValue,
               onCountryChanged: _handleCountryChanged,
               onPositionChanged: _handlePositionChanged,
               onSalaryRangeChanged: _handleSalaryRangeChanged,
+              onSortChanged: _handleSortChanged,
             ),
           ),
           const SizedBox(height: 19),
@@ -253,6 +261,21 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
 
+  /// 切换排序方式后重新请求岗位列表。
+  void _handleSortChanged(String? value) {
+    final String nextSortKey = value?.trim().isNotEmpty == true
+        ? value!.trim()
+        : _sortOptions.first.key;
+    if (_selectedSortKey == nextSortKey) {
+      return;
+    }
+    setState(() {
+      _selectedSortKey = nextSortKey;
+    });
+    FocusScope.of(context).unfocus();
+    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
+  }
+
   /// 请求岗位列表，并根据刷新/加载更多场景合并页面状态。
   Future<void> _fetchJobs({
     required bool reset,
@@ -286,7 +309,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
             keyword: _buildKeywordQuery(),
             salaryMin: _selectedSalaryRange?.min,
             salaryMax: _selectedSalaryRange?.max,
-            sort: 'latest',
+            sort: _selectedSortKey,
           );
       if (!mounted) {
         return;
@@ -541,11 +564,13 @@ class _FilterRow extends StatelessWidget {
     required this.selectedCountryCode,
     required this.selectedPositionKeyword,
     required this.selectedSalaryRangeKey,
+    required this.selectedSortKey,
     required this.isCountryEnabled,
     required this.isPositionEnabled,
     required this.onCountryChanged,
     required this.onPositionChanged,
     required this.onSalaryRangeChanged,
+    required this.onSortChanged,
   });
 
   final List<CountryVO> countries;
@@ -554,11 +579,13 @@ class _FilterRow extends StatelessWidget {
   final String? selectedCountryCode;
   final String? selectedPositionKeyword;
   final String? selectedSalaryRangeKey;
+  final String selectedSortKey;
   final bool isCountryEnabled;
   final bool isPositionEnabled;
   final ValueChanged<String?>? onCountryChanged;
   final ValueChanged<String?>? onPositionChanged;
   final ValueChanged<String?> onSalaryRangeChanged;
+  final ValueChanged<String?> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -583,6 +610,11 @@ class _FilterRow extends StatelessWidget {
               _DropdownOption(value: item.key, label: item.label),
         )
         .toList(growable: false);
+    final List<_DropdownOption> sortOptions = _JobsPageBodyState._sortOptions
+        .map(
+          (_SortOption item) => _DropdownOption(value: item.key, label: item.label),
+        )
+        .toList(growable: false);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -604,9 +636,14 @@ class _FilterRow extends StatelessWidget {
           options: salaryOptions,
           enabled: true,
           onChanged: onSalaryRangeChanged,
-          emphasized: true,
         ),
-        const _FilterActionChip(),
+        _DropdownChip(
+          width: 76,
+          value: selectedSortKey,
+          options: sortOptions,
+          enabled: true,
+          onChanged: onSortChanged,
+        ),
       ],
     );
   }
@@ -619,7 +656,6 @@ class _DropdownChip extends StatelessWidget {
     required this.options,
     required this.enabled,
     this.onChanged,
-    this.emphasized = false,
   });
 
   final double width;
@@ -627,7 +663,6 @@ class _DropdownChip extends StatelessWidget {
   final List<_DropdownOption> options;
   final bool enabled;
   final ValueChanged<String?>? onChanged;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -636,7 +671,7 @@ class _DropdownChip extends StatelessWidget {
         )
         ? value
         : options.first.value;
-    final bool highlighted = emphasized || effectiveValue.isNotEmpty;
+    final bool highlighted = effectiveValue != options.first.value;
     final Color borderColor = highlighted
         ? const Color(0xFF096DD9)
         : Colors.transparent;
@@ -644,7 +679,7 @@ class _DropdownChip extends StatelessWidget {
         ? const Color(0xFF096DD9)
         : const Color(0xFF171A1D);
 
-    return Container(
+    return SizedBox(
       width: width,
       height: 30,
       child: DropdownButtonHideUnderline(
@@ -662,7 +697,7 @@ class _DropdownChip extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: option.value == effectiveValue
-                          ? const Color(0xFF096DD9)
+                          ? textColor
                           : const Color(0xFF171A1D),
                       fontSize: 12,
                       fontWeight: option.value == effectiveValue
@@ -715,46 +750,6 @@ class _DropdownChip extends StatelessWidget {
   }
 }
 
-class _FilterActionChip extends StatelessWidget {
-  const _FilterActionChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            '筛选',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 18 / 12,
-            ),
-          ),
-          SizedBox(width: 4),
-          AppSvgIcon(
-            assetPath: 'assets/images/mou2x9mw-6xvx4hp.svg',
-            fallback: Icons.tune_rounded,
-            size: 12,
-            color: Color(0xFF171A1D),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DropdownOption {
   const _DropdownOption({required this.value, required this.label});
 
@@ -774,6 +769,13 @@ class _SalaryRangeOption {
   final String label;
   final double? min;
   final double? max;
+}
+
+class _SortOption {
+  const _SortOption({required this.key, required this.label});
+
+  final String key;
+  final String label;
 }
 
 class _JobsListSection extends StatelessWidget {
