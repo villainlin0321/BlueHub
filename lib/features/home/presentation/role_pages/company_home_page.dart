@@ -30,11 +30,13 @@ class CompanyHomePage extends ConsumerStatefulWidget {
       label: '发布招聘',
       assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_business_outlined,
+      routePath: RoutePaths.postJob,
     ),
     _QuickActionItem(
       label: '人才中心',
       assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
+      tabRoutePath: RoutePaths.jobs,
     ),
     _QuickActionItem(
       label: '应聘管理',
@@ -46,6 +48,7 @@ class CompanyHomePage extends ConsumerStatefulWidget {
       label: '签证服务',
       assetPath: 'assets/images/mon6z4rt-44w61yz.svg',
       fallback: Icons.assignment_outlined,
+      routePath: RoutePaths.companyVisaService,
     ),
   ];
 
@@ -698,12 +701,16 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final VoidCallback? onTap = switch ((item.tabRoutePath, item.routePath)) {
+      (final String tabRoutePath?, _) => () => context.go(tabRoutePath),
+      (_, final String routePath?) => () => context.push(routePath),
+      _ => null,
+    };
+
     return SizedBox(
       width: 72,
       child: InkWell(
-        onTap: item.routePath == null
-            ? null
-            : () => context.push(item.routePath!),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           children: <Widget>[
@@ -1192,12 +1199,14 @@ class _QuickActionItem {
     required this.label,
     required this.assetPath,
     required this.fallback,
+    this.tabRoutePath,
     this.routePath,
   });
 
   final String label;
   final String assetPath;
   final IconData fallback;
+  final String? tabRoutePath;
   final String? routePath;
 }
 

@@ -27,8 +27,4 @@ abstract final class CompanyApplicationManagementStyles {
       'assets/images/icon_arrow_down.svg';
   static const String avatarPlaceholderAssetPath =
       'assets/images/company_application_avatar_placeholder.png';
-  static const String primaryCardBackgroundAssetPath =
-      'assets/images/company_application_card_bg_primary.svg';
-  static const String secondaryCardBackgroundAssetPath =
-      'assets/images/company_application_card_bg_secondary.svg';
 }

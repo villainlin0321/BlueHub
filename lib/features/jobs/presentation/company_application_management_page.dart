@@ -2,8 +2,10 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
@@ -19,19 +21,35 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
       length: _CompanyApplicationTab.values.length,
       child: Scaffold(
         backgroundColor: CompanyApplicationManagementStyles.pageBackground,
+        appBar: AppBar(
+          backgroundColor: CompanyApplicationManagementStyles.surface,
+          surfaceTintColor: CompanyApplicationManagementStyles.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+                return;
+              }
+              context.go(RoutePaths.home);
+            },
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          ),
+          title: const Text(
+            '应聘管理',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              height: 24 / 17,
+            ),
+          ),
+        ),
         body: Column(
           children: <Widget>[
-            CompanyApplicationTopBar(
-              title: '应聘管理',
-              onBackTap: () {
-                if (context.canPop()) {
-                  context.pop();
-                  return;
-                }
-                context.go(RoutePaths.home);
-              },
-              onSearchTap: () => _showPlaceholderSnackBar(context, '搜索功能'),
-            ),
             CompanyApplicationTabBar(
               tabs: _CompanyApplicationTab.values
                   .map((tab) => tab.label)
@@ -230,16 +248,106 @@ class _CompanyApplicationTabViewState
                 final ApplicationVO item = listState.applications[index];
                 return CompanyApplicationCard(
                   data: _buildCardData(item, index),
-                  onViewResumeTap: () =>
-                      _showPlaceholderSnackBar(context, '查看简历'),
-                  onSecondaryActionTap: () => _showPlaceholderSnackBar(
-                    context,
-                    widget.tab.secondaryActionLabel,
-                  ),
+                  onViewResumeTap: () => _openResumePreview(item.applicant.userId),
+                  onSecondaryActionTap: () => _handleSecondaryAction(item),
                 );
               },
             ),
     );
+  }
+
+  Future<void> _openResumePreview(int userId) async {
+    await context.push(RoutePaths.myResumePreview, extra: userId);
+  }
+
+  Future<void> _handleSecondaryAction(ApplicationVO item) async {
+    if (widget.tab.secondaryActionLabel == '邀约面试') {
+      final ApplicationStatusUpdateResult result = await ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .updateApplicationStatus(
+            sourceStatus: widget.tab.status,
+            applicationId: item.applicationId,
+            nextStatus: EmployerApplicationUpdateStatus.interview,
+            remark: '',
+          );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: result.success ? null : const Color(0xFFD9363E),
+          ),
+        );
+      if (!result.success) {
+        return;
+      }
+      return;
+    }
+
+    if (widget.tab.secondaryActionLabel == '电话联系') {
+      await _handlePhoneCall(item);
+      return;
+    }
+
+    _showPlaceholderSnackBar(context, widget.tab.secondaryActionLabel);
+  }
+
+  Future<void> _handlePhoneCall(ApplicationVO item) async {
+    final String fallbackName = item.applicant.nickname.trim().isEmpty
+        ? '候选人'
+        : item.applicant.nickname.trim();
+    try {
+      final String phone = (await ref
+              .read(resumeServiceProvider)
+              .getResumeByUserId(userId: item.applicant.userId))
+          .basicInfo
+          .phone
+          .trim();
+      if (!mounted) {
+        return;
+      }
+      if (phone.isEmpty) {
+        _showErrorSnackBar('未获取到$fallbackName的联系电话');
+        return;
+      }
+
+      final Uri telUri = Uri(scheme: 'tel', path: phone);
+      final bool launched = await launchUrl(telUri);
+      if (!mounted) {
+        return;
+      }
+      if (!launched) {
+        _showErrorSnackBar('暂时无法拨打电话，请稍后重试');
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showErrorSnackBar(_normalizeActionError(error, fallbackName));
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFD9363E),
+        ),
+      );
+  }
+
+  String _normalizeActionError(Object error, String fallbackName) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      final String normalized = message.substring('Exception: '.length).trim();
+      return normalized.isEmpty ? '获取$fallbackName联系电话失败，请稍后重试' : normalized;
+    }
+    return message.isEmpty ? '获取$fallbackName联系电话失败，请稍后重试' : message;
   }
 
   CompanyApplicationCardData _buildCardData(ApplicationVO item, int index) {
@@ -253,9 +361,6 @@ class _CompanyApplicationTabViewState
       tags: _buildTags(item.applicant),
       submittedText: _formatSubmittedText(item.submittedAt),
       secondaryActionLabel: widget.tab.secondaryActionLabel,
-      backgroundAssetPath: index.isEven
-          ? CompanyApplicationManagementStyles.primaryCardBackgroundAssetPath
-          : CompanyApplicationManagementStyles.secondaryCardBackgroundAssetPath,
     );
   }
 

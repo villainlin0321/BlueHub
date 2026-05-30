@@ -12,7 +12,6 @@ class CompanyApplicationCardData {
     required this.tags,
     required this.submittedText,
     required this.secondaryActionLabel,
-    required this.backgroundAssetPath,
   });
 
   final String positionTitle;
@@ -22,7 +21,6 @@ class CompanyApplicationCardData {
   final List<String> tags;
   final String submittedText;
   final String secondaryActionLabel;
-  final String backgroundAssetPath;
 }
 
 class CompanyApplicationTopBar extends StatelessWidget {
@@ -251,53 +249,38 @@ class CompanyApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(
-        CompanyApplicationManagementStyles.cardRadius,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          CompanyApplicationManagementStyles.cardRadius,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: CompanyApplicationManagementStyles.cardShadow,
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: SvgPicture.asset(
-                data.backgroundAssetPath,
-                fit: BoxFit.cover,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _CardTopRow(data: data),
+              const SizedBox(height: 14),
+              _CandidateInfoSection(data: data),
+              const SizedBox(height: 20),
+              _CardFooter(
+                data: data,
+                onViewResumeTap: onViewResumeTap,
+                onSecondaryActionTap: onSecondaryActionTap,
               ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(
-                  CompanyApplicationManagementStyles.cardRadius,
-                ),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: CompanyApplicationManagementStyles.cardShadow,
-                    blurRadius: 12,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _CardTopRow(data: data),
-                    const SizedBox(height: 14),
-                    _CandidateInfoSection(data: data),
-                    const SizedBox(height: 20),
-                    _CardFooter(
-                      data: data,
-                      onViewResumeTap: onViewResumeTap,
-                      onSecondaryActionTap: onSecondaryActionTap,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
