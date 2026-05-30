@@ -53,9 +53,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         ],
                       ),
                       Expanded(child: SizedBox()),
-                      _BottomTextButton(
-                        label: '退出登录',
-                        onTap: _isLoggingOut ? null : _handleLogoutTap,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _BottomTextButton(
+                          label: '退出登录',
+                          onTap: _isLoggingOut ? null : _handleLogoutTap,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
