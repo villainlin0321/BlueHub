@@ -4,9 +4,14 @@ import '../../../features/employer/data/employer_models.dart';
 import '../../../features/visa/data/provider_models.dart';
 
 class EmployerService {
-  EmployerService({required ApiClient apiClient}) : _apiClient = apiClient;
+  EmployerService({
+    required ApiClient apiClient,
+    Future<void> Function()? onProfileUpdated,
+  }) : _apiClient = apiClient,
+       _onProfileUpdated = onProfileUpdated;
 
   final ApiClient _apiClient;
+  final Future<void> Function()? _onProfileUpdated;
 
   /// 获取当前登录雇主的企业资料。
   Future<EmployerProfileVO> getEmployerProfile() async {
@@ -21,7 +26,8 @@ class EmployerService {
   Future<void> updateEmployerProfile({
     required UpdateEmployerBO request,
   }) async {
-    return _apiClient.putVoid('/employer/me', data: request.toJson());
+    await _apiClient.putVoid('/employer/me', data: request.toJson());
+    await _onProfileUpdated?.call();
   }
 
   /// 上传当前登录雇主的资质文档列表。

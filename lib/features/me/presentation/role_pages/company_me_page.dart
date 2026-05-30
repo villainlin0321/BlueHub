@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../employer/data/employer_models.dart';
 import '../../../employer/data/employer_providers.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
@@ -298,11 +299,10 @@ class _CompanyProfileRow extends ConsumerWidget {
       borderRadius: BorderRadius.circular(16),
       child: Row(
         children: <Widget>[
-          Image.asset(
-            CompanyMePage._avatarAsset,
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
+          AppUserAvatar(
+            imageUrl: profile?.logoUrl ?? '',
+            size: 40,
+            placeholderAssetPath: CompanyMePage._avatarAsset,
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../auth/presentation/qualification_certification_flow.dart';
 import '../../employer/data/employer_models.dart';
 import '../../employer/data/employer_providers.dart';
+import '../../files/data/file_models.dart';
+import '../../files/data/file_providers.dart';
+import '../../../utils/upload_picker_utils.dart';
 import '../data/dictionary_providers.dart';
 import 'company_my_info_styles.dart';
 import 'country_options_bottom_sheet.dart';
@@ -18,7 +22,7 @@ final _companyMyInfoProfileProvider =
     });
 
 /// 企业端“我的信息”页，按 Figma 设计展示企业基础资料与材料资质。
-class CompanyMyInfoPage extends ConsumerWidget {
+class CompanyMyInfoPage extends ConsumerStatefulWidget {
   const CompanyMyInfoPage({super.key});
 
   static const String _avatarFallbackAsset = 'assets/images/mou64ult-sj15mxj.png';
@@ -28,7 +32,15 @@ class CompanyMyInfoPage extends ConsumerWidget {
       '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CompanyMyInfoPage> createState() => _CompanyMyInfoPageState();
+}
+
+class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
+  bool _isSubmitting = false;
+  String? _localAvatarPreviewPath;
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<EmployerProfileVO> profileAsync = ref.watch(
       _companyMyInfoProfileProvider,
     );
@@ -43,25 +55,200 @@ class CompanyMyInfoPage extends ConsumerWidget {
       backgroundColor: CompanyMyInfoStyles.pageBackground,
       body: SafeArea(
         bottom: false,
-        child: Column(
+        child: Stack(
           children: <Widget>[
-            CompanyMyInfoHeader(onBackTap: context.pop),
-            Expanded(
-              child: profileAsync.when(
-                data: (EmployerProfileVO profile) => _CompanyMyInfoContent(
-                  profile: profile,
-                  countryLabelMap: countryLabelMap,
+            Column(
+              children: <Widget>[
+                CompanyMyInfoHeader(onBackTap: context.pop),
+                Expanded(
+                  child: profileAsync.when(
+                    data: (EmployerProfileVO profile) => _CompanyMyInfoContent(
+                      profile: profile,
+                      countryLabelMap: countryLabelMap,
+                      localAvatarPreviewPath: _localAvatarPreviewPath,
+                      onAvatarTap: () => _handleAvatarTap(profile),
+                    ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => _CompanyMyInfoErrorView(
+                      onRetry: () => ref.invalidate(_companyMyInfoProfileProvider),
+                    ),
+                  ),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _CompanyMyInfoErrorView(
-                  onRetry: () => ref.invalidate(_companyMyInfoProfileProvider),
+              ],
+            ),
+            if (_isSubmitting)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: const Color(0x33000000),
+                  child: Center(
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleAvatarTap(EmployerProfileVO profile) async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (BuildContext sheetContext) {
+        return CompanyImageSourceBottomSheet(
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickAndUploadAvatar(
+              profile: profile,
+              picker: UploadPickerUtils.pickFromCamera,
+              errorMessage: '打开相机失败，请稍后重试',
+            );
+          },
+          onGalleryTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickAndUploadAvatar(
+              profile: profile,
+              picker: UploadPickerUtils.pickFromGallery,
+              errorMessage: '打开相册失败，请稍后重试',
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar({
+    required EmployerProfileVO profile,
+    required Future<List<PickedUploadFile>> Function() picker,
+    required String errorMessage,
+  }) async {
+    try {
+      final List<PickedUploadFile> files = await picker();
+      if (!mounted || files.isEmpty) {
+        return;
+      }
+
+      PickedUploadFile selectedFile = files.first;
+      for (final PickedUploadFile item in files) {
+        if (item.isImage) {
+          selectedFile = item;
+          break;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = selectedFile.path;
+        });
+      }
+
+      await _executeProfileAction(
+        action: () async {
+          final int logoId = await _uploadAvatar(selectedFile.path);
+          await ref
+              .read(employerServiceProvider)
+              .updateEmployerProfile(
+                request: UpdateEmployerBO(
+                  companyName: profile.companyName,
+                  industry: profile.industry,
+                  companySize: profile.companySize,
+                  logoId: logoId,
+                  description: profile.description,
+                  website: profile.website,
+                  foundedYear: profile.foundedYear,
+                  country: profile.country,
+                  city: profile.city,
+                ),
+              );
+        },
+        successMessage: '头像已更新',
+      );
+      if (mounted) {
+        setState(() {
+          _localAvatarPreviewPath = null;
+        });
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _localAvatarPreviewPath = null;
+      });
+      _showMessage(errorMessage);
+    }
+  }
+
+  Future<void> _executeProfileAction({
+    required Future<void> Function() action,
+    required String successMessage,
+  }) async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      await action();
+      ref.invalidate(_companyMyInfoProfileProvider);
+      if (!mounted) {
+        return;
+      }
+      _showMessage(successMessage);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<int> _uploadAvatar(String path) async {
+    final FilePresignVO presign = await ref
+        .read(fileServiceProvider)
+        .uploadFile(
+          path: path,
+          scene: FileScene.avatar,
+          errorMessage: '头像上传失败，请稍后重试',
+        );
+    return presign.fileId;
+  }
+
+  String _resolveErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '保存失败，请稍后重试';
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -69,10 +256,14 @@ class _CompanyMyInfoContent extends StatelessWidget {
   const _CompanyMyInfoContent({
     required this.profile,
     required this.countryLabelMap,
+    required this.localAvatarPreviewPath,
+    required this.onAvatarTap,
   });
 
   final EmployerProfileVO profile;
   final Map<String, String> countryLabelMap;
+  final String? localAvatarPreviewPath;
+  final VoidCallback onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +295,9 @@ class _CompanyMyInfoContent extends StatelessWidget {
                 CompanyMyInfoAvatarRow(
                   label: '头像',
                   avatarUrl: profile.logoUrl,
+                  localAvatarPath: localAvatarPreviewPath,
                   fallbackAssetPath: CompanyMyInfoPage._avatarFallbackAsset,
+                  onTap: onAvatarTap,
                 ),
                 for (int index = 0; index < basicInfoFields.length; index++)
                   CompanyMyInfoValueRow(

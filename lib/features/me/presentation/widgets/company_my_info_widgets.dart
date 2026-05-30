@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -114,29 +116,37 @@ class CompanyMyInfoAvatarRow extends StatelessWidget {
   const CompanyMyInfoAvatarRow({
     required this.label,
     required this.avatarUrl,
+    this.localAvatarPath,
     required this.fallbackAssetPath,
+    this.onTap,
     super.key,
   });
 
   final String label;
   final String avatarUrl;
+  final String? localAvatarPath;
   final String fallbackAssetPath;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            children: <Widget>[
-              Text(label, style: CompanyMyInfoStyles.fieldLabel),
-              const Spacer(),
-              _CompanyAvatar(
-                avatarUrl: avatarUrl,
-                fallbackAssetPath: fallbackAssetPath,
-              ),
-            ],
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              children: <Widget>[
+                Text(label, style: CompanyMyInfoStyles.fieldLabel),
+                const Spacer(),
+                _CompanyAvatar(
+                  avatarUrl: avatarUrl,
+                  localAvatarPath: localAvatarPath,
+                  fallbackAssetPath: fallbackAssetPath,
+                ),
+              ],
+            ),
           ),
         ),
         const Divider(
@@ -265,21 +275,130 @@ class CompanyMyInfoPrimaryButton extends StatelessWidget {
   }
 }
 
+class CompanyImageSourceBottomSheet extends StatelessWidget {
+  const CompanyImageSourceBottomSheet({
+    required this.onClose,
+    required this.onCameraTap,
+    required this.onGalleryTap,
+    super.key,
+  });
+
+  final VoidCallback onClose;
+  final VoidCallback onCameraTap;
+  final VoidCallback onGalleryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.of(context).viewPadding.bottom;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD9D9D9),
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '选择头像',
+              style: TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+                height: 24 / 17,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _CompanyBottomSheetActionTile(label: '拍照', onTap: onCameraTap),
+            _CompanyBottomSheetActionTile(label: '从相册选择', onTap: onGalleryTap),
+            const SizedBox(height: 8),
+            _CompanyBottomSheetActionTile(label: '取消', onTap: onClose),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CompanyAvatar extends StatelessWidget {
   const _CompanyAvatar({
     required this.avatarUrl,
+    required this.localAvatarPath,
     required this.fallbackAssetPath,
   });
 
   final String avatarUrl;
+  final String? localAvatarPath;
   final String fallbackAssetPath;
 
   @override
   Widget build(BuildContext context) {
+    final String resolvedLocalAvatarPath = localAvatarPath?.trim() ?? '';
+    if (resolvedLocalAvatarPath.isNotEmpty) {
+      return ClipOval(
+        child: Image.file(
+          File(resolvedLocalAvatarPath),
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            return AppUserAvatar(
+              imageUrl: avatarUrl,
+              size: 40,
+              placeholderAssetPath: fallbackAssetPath,
+            );
+          },
+        ),
+      );
+    }
+
     return AppUserAvatar(
       imageUrl: avatarUrl,
       size: 40,
       placeholderAssetPath: fallbackAssetPath,
+    );
+  }
+}
+
+class _CompanyBottomSheetActionTile extends StatelessWidget {
+  const _CompanyBottomSheetActionTile({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        height: 52,
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF262626),
+              fontSize: 16,
+              height: 22 / 16,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

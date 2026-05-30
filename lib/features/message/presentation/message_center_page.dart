@@ -47,7 +47,7 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
     _chatItems = const <_ChatMessageItem>[];
     _systemItems = _buildInitialSystemItems();
     _loadConversations();
