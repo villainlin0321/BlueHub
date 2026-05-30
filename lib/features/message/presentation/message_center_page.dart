@@ -133,7 +133,7 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
       return;
     }
 
-    await context.push(
+    final Object? result = await context.push(
       RoutePaths.chat,
       extra: ChatPageArgs(
         targetUserId: item.targetUserId,
@@ -147,6 +147,10 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
         orderStatus: item.orderStatus,
       ),
     );
+
+    if (result == true && mounted) {
+      await _loadConversations();
+    }
   }
 
   void _markSystemAsRead(int index) {
