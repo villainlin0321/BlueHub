@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -5,59 +6,75 @@ import 'package:flutter_svg/flutter_svg.dart';
 class ServiceProviderVisaPage extends StatelessWidget {
   const ServiceProviderVisaPage({super.key});
 
-  static const List<_FilterItem> _filters = <_FilterItem>[
-    _FilterItem(label: '全部国家'),
-    _FilterItem(label: '订单状态'),
-  ];
+  /// 这页当前仍是静态示例数据，先统一走国际化文案，后续接真接口时可直接替换。
+  List<_FilterItem> _buildFilters() {
+    return <_FilterItem>[
+      _FilterItem(label: '订单.全部国家'.tr()),
+      _FilterItem(label: '订单.订单状态'.tr()),
+    ];
+  }
 
-  static const List<_OrderCardData> _orders = <_OrderCardData>[
-    _OrderCardData(
-      orderNo: 'SJEH9823964875',
-      customerName: '程*彬',
-      visaTitle: '德国厨师工签',
-      price: '¥15,000',
-      updateTime: '10分钟前更新',
-      status: '待审核',
-      statusType: _OrderStatusType.danger,
-      avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-      urgentTag: '紧急',
-    ),
-    _OrderCardData(
-      orderNo: 'SJEH9823964875',
-      customerName: '程*彬',
-      visaTitle: '法国建筑工签',
-      price: '¥22,000',
-      updateTime: '2小时前更新',
-      status: '待用户上传材料',
-      statusType: _OrderStatusType.info,
-      avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-    ),
-    _OrderCardData(
-      orderNo: 'SJEH9823964875',
-      customerName: '程*彬',
-      visaTitle: '法国建筑工签',
-      price: '¥15,000',
-      updateTime: '2小时前更新',
-      status: '使馆审核中',
-      statusType: _OrderStatusType.info,
-      avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-    ),
-    _OrderCardData(
-      orderNo: 'SJEH9823964875',
-      customerName: '程*彬',
-      visaTitle: '法国建筑工签',
-      price: '¥15,000',
-      updateTime: '2小时前更新',
-      status: '待付款',
-      statusType: _OrderStatusType.info,
-      avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-    ),
-  ];
+  /// 构建示例订单卡片，确保 Mock 文案在多语言环境下也可正确展示。
+  List<_OrderCardData> _buildOrders() {
+    return <_OrderCardData>[
+      _OrderCardData(
+        orderNo: 'SJEH9823964875',
+        customerName: '程*彬',
+        visaTitle: '服务商签证页.德国厨师工签'.tr(),
+        price: '¥15,000',
+        updateTime: '订单.分钟前更新'.tr(
+          namedArgs: <String, String>{'count': '10'},
+        ),
+        status: '首页.待审核'.tr(),
+        statusType: _OrderStatusType.danger,
+        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
+        urgentTag: '订单.紧急'.tr(),
+      ),
+      _OrderCardData(
+        orderNo: 'SJEH9823964875',
+        customerName: '程*彬',
+        visaTitle: '服务商签证页.法国建筑工签'.tr(),
+        price: '¥22,000',
+        updateTime: '订单.小时前更新'.tr(
+          namedArgs: <String, String>{'count': '2'},
+        ),
+        status: '订单.待用户上传材料'.tr(),
+        statusType: _OrderStatusType.info,
+        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
+      ),
+      _OrderCardData(
+        orderNo: 'SJEH9823964875',
+        customerName: '程*彬',
+        visaTitle: '服务商签证页.法国建筑工签'.tr(),
+        price: '¥15,000',
+        updateTime: '订单.小时前更新'.tr(
+          namedArgs: <String, String>{'count': '2'},
+        ),
+        status: '订单.使馆审核中'.tr(),
+        statusType: _OrderStatusType.info,
+        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
+      ),
+      _OrderCardData(
+        orderNo: 'SJEH9823964875',
+        customerName: '程*彬',
+        visaTitle: '服务商签证页.法国建筑工签'.tr(),
+        price: '¥15,000',
+        updateTime: '订单.小时前更新'.tr(
+          namedArgs: <String, String>{'count': '2'},
+        ),
+        status: '订单.待付款'.tr(),
+        statusType: _OrderStatusType.info,
+        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final List<_FilterItem> filters = _buildFilters();
+    final List<_OrderCardData> orders = _buildOrders();
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: bottomPadding + 36),
@@ -69,7 +86,7 @@ class ServiceProviderVisaPage extends StatelessWidget {
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(12, 7, 0, 7),
             child: Row(
-              children: _filters
+              children: filters
                   .map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(right: 11),
@@ -85,11 +102,11 @@ class ServiceProviderVisaPage extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _orders.length,
+              itemCount: orders.length,
               padding: EdgeInsets.zero,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (BuildContext context, int index) {
-                return _OrderCard(data: _orders[index]);
+                return _OrderCard(data: orders[index]);
               },
             ),
           ),
@@ -115,9 +132,9 @@ class _OrderTopSection extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: <Widget>[
-              const Expanded(
+              Expanded(
                 child: Text(
-                  '订单',
+                  '导航.订单'.tr(),
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 17,
@@ -203,7 +220,7 @@ class _OrderCard extends StatelessWidget {
                         height: 16 / 12,
                       ),
                       children: <InlineSpan>[
-                        const TextSpan(text: '订单号：'),
+                        TextSpan(text: '订单.订单号'.tr()),
                         TextSpan(text: data.orderNo),
                       ],
                     ),
@@ -274,9 +291,9 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const _GhostActionButton(label: '联系客户'),
+                _GhostActionButton(label: '订单.联系客户'.tr()),
                 const SizedBox(width: 8),
-                const _PrimaryActionButton(label: '处理订单'),
+                _PrimaryActionButton(label: '订单.处理订单'.tr()),
               ],
             ),
           ],

@@ -6,6 +6,7 @@
     "取消": "Cancel",
     "确定": "Confirm",
     "搜索": "Search",
+    "企业简称": "C",
     "重试": "Retry",
     "请输入": "Please enter",
     "请选择": "Please select",
@@ -465,6 +466,7 @@
     "订单状态": "Order Status",
     "待付款": "Pending Payment",
     "待用户上传材料": "Waiting for User Upload",
+    "使馆审核中": "Embassy Review",
     "材料审核中": "Under Material Review",
     "材料被驳回": "Materials Rejected",
     "已取消": "Canceled",
@@ -528,6 +530,9 @@
     "订单详情不存在": "Order details do not exist",
     "返回": "Back",
     "查看样例占位": "{title} sample preview (placeholder)",
+    "护照原件及复印件": "Passport original and copies",
+    "厨师资格证公证件": "Notarized chef qualification certificate",
+    "德语语言证明": "German language certificate",
     "未命名订单": "Untitled Order",
     "套餐价格": "Package Price",
     "添加出证材料": "Add Visa Issuance Materials",
@@ -827,6 +832,9 @@
     "待面试": "Pending Interviews",
     "已录用": "Hired",
     "企业名称待完善": "Company name pending completion",
+    "未设置昵称": "Nickname not set",
+    "未绑定手机号": "Phone number not linked",
+    "未填写": "Not provided",
     "行业待完善": "Industry pending completion",
     "我的信息": "My Info",
     "注意重新提交审核": "Note: After modifying company information, you need to resubmit for review. Please make sure current business is properly handled.",
@@ -991,6 +999,7 @@
     "未找到相关学校": "No matching schools found",
     "学校加载失败": "Failed to load schools",
     "请选择学校": "Please select a school",
+    "暂无可选国家": "No countries available right now. Please try again later.",
     "学历": "Degree",
     "学历字典加载失败": "Failed to load degree options",
     "暂无可选学历": "No degree options available",
@@ -1026,6 +1035,11 @@
     "待处理订单": "Pending Orders",
     "已上架套餐": "Published Packages",
     "累计服务": "Total Served",
-    "综合评分": "Overall Rating"
+    "综合评分": "Overall Rating",
+    "黑名单同步提示": "Blacklist updated. Personal info will sync shortly."
+  },
+  "服务商签证页": {
+    "德国厨师工签": "German Chef Work Visa",
+    "法国建筑工签": "French Construction Work Visa"
   }
 }

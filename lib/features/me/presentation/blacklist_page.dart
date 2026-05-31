@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,7 @@ class _BlacklistPageState extends ConsumerState<BlacklistPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('黑名单已更新，个人信息稍后同步');
+      _showMessage('我的.黑名单同步提示'.tr());
     }
   }
 

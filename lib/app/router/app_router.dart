@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -293,10 +294,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ChatPage(
             args:
                 args ??
-                const ChatPageArgs(
+                ChatPageArgs(
                   targetUserId: 0,
                   targetUserRole: '',
-                  nickname: '聊天',
+                  nickname: '消息.聊天'.tr(),
                   avatarUrl: '',
                 ),
           );
@@ -314,7 +315,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             return MyResumePreviewPage(args: extra);
           }
           if (extra is int) {
-            return MyResumePreviewPage(userId: extra, title: '简历详情');
+            return MyResumePreviewPage(
+              userId: extra,
+              title: '我的.我的简历标题'.tr(),
+            );
           }
           return const MyResumePreviewPage();
         },

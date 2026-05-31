@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 import '../../auth/application/auth_user.dart';
 
 /// 当前登录用户在“我的”相关页面里的展示态数据。
@@ -25,7 +27,7 @@ class CurrentUserViewData {
     final String phone = user?.phone.trim() ?? '';
     final String nickname = user?.nickname.trim() ?? '';
     return CurrentUserViewData(
-      nickname: nickname.isEmpty ? '未设置昵称' : nickname,
+      nickname: nickname.isEmpty ? '我的.未设置昵称'.tr() : nickname,
       avatarUrl: user?.avatarUrl.trim() ?? '',
       phone: phone,
       maskedPhone: _maskPhone(phone),
@@ -38,7 +40,7 @@ class CurrentUserViewData {
   /// 将服务端手机号脱敏，避免在“我的”页暴露完整号码。
   static String _maskPhone(String phone) {
     if (phone.length < 7) {
-      return phone.isEmpty ? '未绑定手机号' : phone;
+      return phone.isEmpty ? '我的.未绑定手机号'.tr() : phone;
     }
     return '${phone.substring(0, 3)}****${phone.substring(phone.length - 4)}';
   }
@@ -51,15 +53,15 @@ class CurrentUserViewData {
       case 'm':
       case '1':
       case '男':
-        return '男';
+        return '我的.男'.tr();
       case 'female':
       case 'woman':
       case 'f':
       case '0':
       case '女':
-        return '女';
+        return '我的.女'.tr();
       default:
-        return '未填写';
+        return '我的.未填写'.tr();
     }
   }
 
@@ -67,7 +69,7 @@ class CurrentUserViewData {
   static String _formatBirthday(String birthday) {
     final String value = birthday.trim();
     if (value.isEmpty) {
-      return '未填写';
+      return '我的.未填写'.tr();
     }
     return value.replaceAll('-', '.').replaceAll('/', '.');
   }

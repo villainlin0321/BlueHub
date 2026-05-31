@@ -40,19 +40,22 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 
   final OrderDetailPageArgs args;
 
-  static const List<_MaterialRequirement> _fallbackRequirements =
+  static final List<_MaterialRequirement> _fallbackRequirements =
       <_MaterialRequirement>[
         _MaterialRequirement(
           id: 'passport',
-          title: '护照原件及复印件',
+          title: '订单.护照原件及复印件'.tr(),
           required: true,
         ),
         _MaterialRequirement(
           id: 'chef_certificate',
-          title: '厨师资格证公证件',
+          title: '订单.厨师资格证公证件'.tr(),
           required: true,
         ),
-        _MaterialRequirement(id: 'german_certificate', title: '德语语言证明'),
+        _MaterialRequirement(
+          id: 'german_certificate',
+          title: '订单.德语语言证明'.tr(),
+        ),
       ];
 
   @override
@@ -2815,7 +2818,7 @@ class _RejectedStatusBar extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Text(
-              '已驳回',
+              '订单.已驳回'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: const Color(0xFF8C8C8C),
                 fontSize: 16,
@@ -2873,8 +2876,8 @@ class _ProviderBottomActionBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        '驳回重传',
+                      child: Text(
+                        '订单.驳回重传'.tr(),
                         style: TextStyle(
                           color: Color(0xFFD9363E),
                           fontSize: 16,
@@ -2899,8 +2902,8 @@ class _ProviderBottomActionBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        '审核通过',
+                      child: Text(
+                        '订单.审核通过'.tr(),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,

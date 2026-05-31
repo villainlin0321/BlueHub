@@ -430,8 +430,8 @@ class _CompanyBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       alignment: Alignment.center,
-      child: const Text(
-        '企',
+      child: Text(
+        '通用.企业简称'.tr(),
         style: TextStyle(
           color: Color(0xFF784301),
           fontSize: 9,

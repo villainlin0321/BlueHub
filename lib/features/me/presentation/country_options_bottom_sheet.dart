@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -99,8 +100,8 @@ Future<List<CountryVO>?> showCountryOptionsBottomSheet({
   required String title,
   Iterable<String> initialSelectedValues = const <String>[],
   bool multiple = true,
-  String emptyMessage = '暂无可选国家，请稍后重试',
-  String loadFailedMessage = '国家列表加载失败，请稍后重试',
+  String? emptyMessage,
+  String? loadFailedMessage,
 }) async {
   try {
     final List<CountryVO> countries = await loadCountries(ref);
@@ -112,7 +113,9 @@ Future<List<CountryVO>?> showCountryOptionsBottomSheet({
     if (options.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(emptyMessage)));
+      ).showSnackBar(
+        SnackBar(content: Text(emptyMessage ?? '我的.暂无可选国家'.tr())),
+      );
       return null;
     }
     final Set<String> validValues = options
@@ -142,7 +145,11 @@ Future<List<CountryVO>?> showCountryOptionsBottomSheet({
     }
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(loadFailedMessage)));
+    ).showSnackBar(
+      SnackBar(
+        content: Text(loadFailedMessage ?? '订单.国家列表加载失败'.tr()),
+      ),
+    );
     return null;
   }
 }
