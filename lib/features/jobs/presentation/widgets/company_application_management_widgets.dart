@@ -176,68 +176,6 @@ class CompanyApplicationJobFilterBar extends StatelessWidget {
   }
 }
 
-class CompanyApplicationListStateView extends StatelessWidget {
-  const CompanyApplicationListStateView({
-    super.key,
-    required this.message,
-    required this.icon,
-    this.buttonLabel,
-    this.onTap,
-  });
-
-  final String message;
-  final IconData icon;
-  final String? buttonLabel;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        96,
-        24,
-        MediaQuery.paddingOf(context).bottom + 24,
-      ),
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: <Widget>[
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          decoration: BoxDecoration(
-            color: CompanyApplicationManagementStyles.surface,
-            borderRadius: BorderRadius.circular(
-              CompanyApplicationManagementStyles.cardRadius,
-            ),
-          ),
-          child: Column(
-            children: <Widget>[
-              Icon(
-                icon,
-                size: 34,
-                color: CompanyApplicationManagementStyles.textSecondary,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: CompanyApplicationManagementStyles.textSecondary,
-                  fontSize: 14,
-                  height: 20 / 14,
-                ),
-              ),
-              if (buttonLabel != null && onTap != null) ...<Widget>[
-                const SizedBox(height: 14),
-                TextButton(onPressed: onTap, child: Text(buttonLabel!)),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class CompanyApplicationCard extends StatelessWidget {
   const CompanyApplicationCard({
     super.key,
@@ -460,75 +398,38 @@ class _CardFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final Widget actions = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            CompanyApplicationActionButton(
-              label: '招聘.查看简历'.tr(),
-              onTap: onViewResumeTap,
-            ),
-            const SizedBox(width: 8),
-            CompanyApplicationActionButton(
-              label: data.secondaryActionLabel,
-              primary: true,
-              onTap: onSecondaryActionTap,
-            ),
-          ],
-        );
+    final Widget actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        CompanyApplicationActionButton(
+          label: '招聘.查看简历'.tr(),
+          onTap: onViewResumeTap,
+        ),
+        const SizedBox(width: 8),
+        CompanyApplicationActionButton(
+          label: data.secondaryActionLabel,
+          primary: true,
+          onTap: onSecondaryActionTap,
+        ),
+      ],
+    );
 
-        if (constraints.maxWidth < 320) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                data.submittedText,
-                style: const TextStyle(
-                  color: CompanyApplicationManagementStyles.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: actions,
-                ),
-              ),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                data.submittedText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: CompanyApplicationManagementStyles.textSecondary,
-                  fontSize: 12,
-                  height: 16 / 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: actions,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          data.submittedText,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: CompanyApplicationManagementStyles.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(width: 8),
+        actions,
+      ],
     );
   }
 }

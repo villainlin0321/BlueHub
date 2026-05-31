@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
@@ -170,12 +171,6 @@ class _CompanyApplicationTabViewState
     super.dispose();
   }
 
-  Future<void> _loadInitial() async {
-    await ref
-        .read(companyApplicationListsControllerProvider.notifier)
-        .loadInitial(status: widget.tab.status, force: true);
-  }
-
   Future<void> _onRefresh() async {
     final bool success = await ref
         .read(companyApplicationListsControllerProvider.notifier)
@@ -236,15 +231,22 @@ class _CompanyApplicationTabViewState
       onRefresh: _onRefresh,
       onLoad: listState.hasMore ? _onLoadMore : null,
       child: listState.applications.isEmpty
-          ? CompanyApplicationListStateView(
-              message: listState.errorMessage ?? widget.tab.emptyText.tr(),
-              icon: listState.errorMessage == null
-                  ? Icons.assignment_outlined
-                  : Icons.error_outline_rounded,
-              buttonLabel: listState.errorMessage == null
-                  ? null
-                  : '我的.重新加载'.tr(),
-              onTap: listState.errorMessage == null ? null : _loadInitial,
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                96,
+                24,
+                MediaQuery.paddingOf(context).bottom + 24,
+              ),
+              children: <Widget>[
+                Center(
+                  child: AppEmptyState(
+                    message: listState.errorMessage ?? '暂无数据'.tr(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  ),
+                ),
+              ],
             )
           : ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -260,7 +262,8 @@ class _CompanyApplicationTabViewState
                 final ApplicationVO item = listState.applications[index];
                 return CompanyApplicationCard(
                   data: _buildCardData(item, index),
-                  onViewResumeTap: () => _openResumePreview(item.applicant.userId),
+                  onViewResumeTap: () =>
+                      _openResumePreview(item.applicant.userId),
                   onSecondaryActionTap: () => _handleSecondaryAction(item),
                 );
               },
@@ -314,12 +317,13 @@ class _CompanyApplicationTabViewState
         ? '应聘管理.候选人'.tr()
         : item.applicant.nickname.trim();
     try {
-      final String phone = (await ref
-              .read(resumeServiceProvider)
-              .getResumeByUserId(userId: item.applicant.userId))
-          .basicInfo
-          .phone
-          .trim();
+      final String phone =
+          (await ref
+                  .read(resumeServiceProvider)
+                  .getResumeByUserId(userId: item.applicant.userId))
+              .basicInfo
+              .phone
+              .trim();
       if (!mounted) {
         return;
       }
