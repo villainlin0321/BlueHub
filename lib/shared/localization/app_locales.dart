@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
 
+import '../app_icon/app_icon_switcher.dart';
+
 /// 应用语言配置：统一维护支持的语言、默认语言与切换方法。
 class AppLocales {
   const AppLocales._();
@@ -19,7 +21,9 @@ extension AppLocaleContextX on BuildContext {
   bool get isChineseLocale => AppLocales.isChinese(locale);
 
   /// 根据开关状态切换应用语言，true 为中文，false 为英文。
-  Future<void> switchAppLocale(bool isChinese) {
-    return setLocale(isChinese ? AppLocales.chinese : AppLocales.english);
+  Future<void> switchAppLocale(bool isChinese) async {
+    final nextLocale = isChinese ? AppLocales.chinese : AppLocales.english;
+    await setLocale(nextLocale);
+    await AppIconSwitcher.syncByLocale(nextLocale);
   }
 }
