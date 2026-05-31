@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/token_store.dart';
 import 'api_client.dart';
@@ -13,6 +14,10 @@ final appConfigProvider = Provider<AppConfig>((ref) {
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
   return TokenStore.inMemory();
+});
+
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('sharedPreferencesProvider 尚未在 ProviderScope 中注入');
 });
 
 final dioProvider = Provider<Dio>((ref) {

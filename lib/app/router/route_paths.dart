@@ -11,6 +11,9 @@ class RoutePaths {
   /// 签证页。
   static const visa = '/visa';
 
+  /// 签证服务商搜索页。
+  static const visaProviderSearch = '/visa/search';
+
   /// 企业首页直达求职者签证页。
   static const companyVisaService = '/company/visa-service';
 
