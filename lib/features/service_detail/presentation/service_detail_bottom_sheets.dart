@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,7 +94,7 @@ class _ApplyBottomSheetContentState
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: '张先生');
+    _nameController = TextEditingController();
     _phoneController = TextEditingController();
   }
 
@@ -141,7 +142,7 @@ class _ApplyBottomSheetContentState
                             children: <Widget>[
                               Align(
                                 child: Text(
-                                  '确认订单信息',
+                                  '服务详情.确认订单信息'.tr(),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     color: const Color(0xFF262626),
                                     fontSize: 18,
@@ -173,7 +174,7 @@ class _ApplyBottomSheetContentState
                         Padding(
                           padding: const EdgeInsets.fromLTRB(55.5, 0, 55.5, 34),
                           child: Text(
-                            '提交后将生成订单，请在订单详情页上传相关材料',
+                            '服务详情.下单提示'.tr(),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFFBFBFBF),
@@ -224,7 +225,9 @@ class _ApplyBottomSheetContentState
                     shadowColor: Colors.transparent,
                   ),
                   child: Text(
-                    _isSubmitting ? '提交中...' : '去支付',
+                    _isSubmitting
+                        ? '服务详情.提交中'.tr()
+                        : '服务详情.去支付'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
@@ -275,7 +278,12 @@ class _ApplyBottomSheetContentState
         return;
       }
       setState(() => _isSubmitting = false);
-      _showMessage(_resolveBottomSheetErrorMessage(error, fallback: '创建订单失败，请稍后重试'));
+      _showMessage(
+        _resolveBottomSheetErrorMessage(
+          error,
+          fallback: '服务详情.创建订单失败'.tr(),
+        ),
+      );
     }
   }
 
@@ -356,7 +364,7 @@ class _ConfirmPaymentBottomSheetContentState
                   children: <Widget>[
                     Align(
                       child: Text(
-                        '确认支付',
+                        '服务详情.确认支付'.tr(),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: const Color(0xFF171A1D),
                           fontSize: 17,
@@ -425,7 +433,7 @@ class _ConfirmPaymentBottomSheetContentState
               shadowColor: Colors.transparent,
             ),
             child: Text(
-              _isPaying ? '支付中...' : '立即支付',
+              _isPaying ? '服务详情.支付中'.tr() : '服务详情.立即支付'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -464,7 +472,12 @@ class _ConfirmPaymentBottomSheetContentState
         return;
       }
       setState(() => _isPaying = false);
-      _showMessage(_resolveBottomSheetErrorMessage(error, fallback: '支付发起失败，请稍后重试'));
+      _showMessage(
+        _resolveBottomSheetErrorMessage(
+          error,
+          fallback: '服务详情.支付发起失败'.tr(),
+        ),
+      );
     }
   }
 
@@ -528,41 +541,19 @@ class _PaymentAmountCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            RichText(
+            Text(
+              '服务详情.支付倒计时'.tr(
+                namedArgs: <String, String>{
+                  'minutes': minutes,
+                  'seconds': seconds,
+                },
+              ),
               textAlign: TextAlign.center,
-              text: TextSpan(
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontSize: 12,
-                  height: 18 / 12,
-                  fontWeight: FontWeight.w400,
-                ),
-                children: <InlineSpan>[
-                  const TextSpan(text: '请在 '),
-                  TextSpan(
-                    text: minutes,
-                    style: const TextStyle(
-                      color: Color(0xFFFE5815),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const TextSpan(
-                    text: '分钟',
-                    style: TextStyle(color: Color(0xFFFE5815)),
-                  ),
-                  TextSpan(
-                    text: seconds,
-                    style: const TextStyle(
-                      color: Color(0xFFFE5815),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const TextSpan(
-                    text: '秒',
-                    style: TextStyle(color: Color(0xFFFE5815)),
-                  ),
-                  const TextSpan(text: ' 内支付，过时将被取消'),
-                ],
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF262626),
+                fontSize: 12,
+                height: 18 / 12,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
@@ -595,14 +586,14 @@ class _PaymentMethodCard extends StatelessWidget {
         child: Column(
           children: <Widget>[
             _PaymentMethodRow(
-              label: '支付宝支付',
+              label: '服务详情.支付宝支付'.tr(),
               logoAsset: 'assets/images/service_detail_payment_alipay_logo.png',
               selected: selectedMethod == _PaymentMethod.alipay,
               showDivider: true,
               onTap: () => onSelected(_PaymentMethod.alipay),
             ),
             _PaymentMethodRow(
-              label: '微信支付',
+              label: '服务详情.微信支付'.tr(),
               logoAsset: 'assets/images/service_detail_payment_wechat_logo.png',
               selected: selectedMethod == _PaymentMethod.wechat,
               showDivider: false,
@@ -739,16 +730,16 @@ class _ApplyOrderSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _ApplySummaryRow(label: '套餐类型', value: package.title),
+          _ApplySummaryRow(label: '服务详情.套餐类型'.tr(), value: package.title),
           const SizedBox(height: 4),
           _ApplySummaryRow(
-            label: '预计费用',
+            label: '服务详情.预计费用'.tr(),
             value: package.price,
             valueColor: const Color(0xFFFE5815),
           ),
           const SizedBox(height: 12),
           Text(
-            '提示：当前仅为提交申请，需先上传材料供服务商审核，审核通过后方可支付。',
+            '服务详情.下单说明'.tr(),
             style: theme.textTheme.bodySmall?.copyWith(
               color: const Color(0xFF8C8C8C),
               fontSize: 12,
@@ -821,7 +812,7 @@ class _ApplyApplicantSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            '申请人信息',
+            '服务详情.申请人信息'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
               color: const Color(0xFF262626),
               fontSize: 16,
@@ -832,16 +823,16 @@ class _ApplyApplicantSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _ApplyLabeledInput(
-          label: '姓名',
+          label: '服务详情.姓名'.tr(),
           controller: nameController,
           textColor: const Color(0xFF262626),
           hintText: '',
         ),
         const SizedBox(height: 12),
         _ApplyLabeledInput(
-          label: '手机号',
+          label: '认证.手机号'.tr(),
           controller: phoneController,
-          hintText: '请输入',
+          hintText: '通用.请输入'.tr(),
           keyboardType: TextInputType.phone,
         ),
       ],

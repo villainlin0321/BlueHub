@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_models.dart';
@@ -20,10 +21,6 @@ class LoginFormController extends Notifier<LoginFormState> {
 
   void setLoginMode(bool isPhoneLogin) {
     state = state.copyWith(isPhoneLogin: isPhoneLogin);
-  }
-
-  void setLanguageSelected(bool isChineseSelected) {
-    state = state.copyWith(isChineseSelected: isChineseSelected);
   }
 
   void setAgreement(bool agreed) {
@@ -69,7 +66,7 @@ class LoginFormController extends Notifier<LoginFormState> {
             scene: 'login',
           ),
         );
-        _emitFeedback('已发送短信验证码');
+        _emitFeedback(tr('认证.已发送短信验证码'));
       } else {
         await authService.sendEmailCode(
           request: SendEmailBO(
@@ -77,10 +74,10 @@ class LoginFormController extends Notifier<LoginFormState> {
             scene: 'login',
           ),
         );
-        _emitFeedback('已发送邮箱验证码');
+        _emitFeedback(tr('认证.已发送邮箱验证码'));
       }
     } catch (_) {
-      _emitFeedback('验证码发送失败，请稍后重试', isError: true);
+      _emitFeedback(tr('认证.验证码发送失败'), isError: true);
     } finally {
       state = state.copyWith(isSendingCode: false);
     }
@@ -115,7 +112,7 @@ class LoginFormController extends Notifier<LoginFormState> {
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
       return login;
     } catch (_) {
-      _emitFeedback('登录失败，请检查验证码后重试', isError: true);
+      _emitFeedback(tr('认证.登录失败'), isError: true);
       return null;
     } finally {
       state = state.copyWith(isSubmitting: false);
@@ -145,7 +142,7 @@ class LoginFormController extends Notifier<LoginFormState> {
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
       return login;
     } catch (_) {
-      _emitFeedback('登录失败，请检查验证码后重试', isError: true);
+      _emitFeedback(tr('认证.登录失败'), isError: true);
       return null;
     } finally {
       state = state.copyWith(isSubmitting: false);
@@ -154,21 +151,21 @@ class LoginFormController extends Notifier<LoginFormState> {
 
   String? _validateBeforeSendingCode() {
     if (!state.agreed) {
-      return '请先同意用户协议与隐私政策';
+      return tr('认证.请先同意协议');
     }
 
     if (state.isPhoneLogin) {
       if (state.phone.trim().isEmpty) {
-        return '请输入手机号';
+        return tr('认证.请输入手机号校验');
       }
       return null;
     }
 
     if (state.email.trim().isEmpty) {
-      return '请输入邮箱';
+      return tr('认证.请输入邮箱校验');
     }
     if (!_emailPattern.hasMatch(state.email.trim())) {
-      return '请输入正确的邮箱地址';
+      return tr('认证.邮箱格式错误');
     }
     return null;
   }
@@ -179,7 +176,9 @@ class LoginFormController extends Notifier<LoginFormState> {
       return sendCodeError;
     }
     if (state.code.trim().isEmpty) {
-      return state.isPhoneLogin ? '请输入短信验证码' : '请输入邮箱验证码';
+      return state.isPhoneLogin
+          ? tr('认证.请输入短信验证码')
+          : tr('认证.请输入邮箱验证码校验');
     }
     return null;
   }

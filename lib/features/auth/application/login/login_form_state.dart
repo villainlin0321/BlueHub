@@ -3,7 +3,6 @@ const Object _feedbackSentinel = Object();
 class LoginFormState {
   const LoginFormState({
     this.isPhoneLogin = true,
-    this.isChineseSelected = true,
     this.agreed = false,
     this.regionCode = '+86',
     this.phone = '',
@@ -17,7 +16,6 @@ class LoginFormState {
   });
 
   final bool isPhoneLogin;
-  final bool isChineseSelected;
   final bool agreed;
   final String regionCode;
   final String phone;
@@ -38,7 +36,6 @@ class LoginFormState {
 
   LoginFormState copyWith({
     bool? isPhoneLogin,
-    bool? isChineseSelected,
     bool? agreed,
     String? regionCode,
     String? phone,
@@ -52,7 +49,6 @@ class LoginFormState {
   }) {
     return LoginFormState(
       isPhoneLogin: isPhoneLogin ?? this.isPhoneLogin,
-      isChineseSelected: isChineseSelected ?? this.isChineseSelected,
       agreed: agreed ?? this.agreed,
       regionCode: regionCode ?? this.regionCode,
       phone: phone ?? this.phone,

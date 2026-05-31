@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -27,28 +28,28 @@ class JobSeekerHomePage extends ConsumerWidget {
 
   static const List<_ShortcutItem> _shortcutItems = <_ShortcutItem>[
     _ShortcutItem(
-      label: 'AI招聘',
+      labelKey: '首页.AI招聘',
       assetPath: 'assets/images/mon5bjog-oey0vv1.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.auto_awesome_rounded,
       destination: _ShortcutDestination.aiAssistant,
     ),
     _ShortcutItem(
-      label: '欧洲招聘',
+      labelKey: '首页.欧洲招聘',
       assetPath: 'assets/images/mon5bjog-wp0nhm8.svg',
       colors: <Color>[Color(0xFFFF943C), Color(0xFFFF5900)],
       fallback: Icons.work_outline_rounded,
       destination: _ShortcutDestination.jobs,
     ),
     _ShortcutItem(
-      label: '签证服务',
+      labelKey: '首页.签证服务',
       assetPath: 'assets/images/mon5bjog-8hp521f.svg',
       colors: <Color>[Color(0xFF01D99B), Color(0xFF00B879)],
       fallback: Icons.assignment_outlined,
       destination: _ShortcutDestination.visa,
     ),
     _ShortcutItem(
-      label: '我的简历',
+      labelKey: '首页.我的简历',
       assetPath: 'assets/images/mon5bjog-wivq7ef.svg',
       colors: <Color>[Color(0xFF52A9FF), Color(0xFF0887FF)],
       fallback: Icons.badge_outlined,
@@ -91,7 +92,7 @@ class JobSeekerHomePage extends ConsumerWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 12),
           child: _HomeSectionHeader(
-            title: '热门签证套餐',
+            title: '首页.热门签证套餐'.tr(),
             onTap: () => _handleVisaMoreTap(context),
           ),
         ),
@@ -106,7 +107,7 @@ class JobSeekerHomePage extends ConsumerWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 12),
           child: _HomeSectionHeader(
-            title: '最新欧洲岗位',
+            title: '首页.最新欧洲岗位'.tr(),
             onTap: () => _handleJobsMoreTap(context),
           ),
         ),
@@ -222,7 +223,11 @@ class _HeaderProfileRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                '早上好，${userViewData.nickname}',
+                '首页.早上好'.tr(
+                  namedArgs: <String, String>{
+                    'name': userViewData.nickname,
+                  },
+                ),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: const Color(0xFF262626),
                   fontWeight: FontWeight.w500,
@@ -240,7 +245,7 @@ class _HeaderProfileRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: 2),
                   Text(
-                    '德国',
+                    '国家.德国'.tr(),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: const Color(0xFF595959),
                       fontSize: 12,
@@ -285,7 +290,7 @@ class _HomeSearchBar extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '搜索签证服务/欧洲岗位',
+                  '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -341,7 +346,7 @@ class _ShortcutButton extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                item.label,
+                item.labelKey.tr(),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF171A1D),
@@ -360,14 +365,14 @@ enum _ShortcutDestination { aiAssistant, jobs, visa, resumeList }
 
 class _ShortcutItem {
   const _ShortcutItem({
-    required this.label,
+    required this.labelKey,
     required this.assetPath,
     required this.colors,
     required this.fallback,
     required this.destination,
   });
 
-  final String label;
+  final String labelKey;
   final String assetPath;
   final List<Color> colors;
   final IconData fallback;
@@ -402,7 +407,7 @@ class _HomeSectionHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                '更多',
+                '首页.更多'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF8C8C8C),
                   fontSize: 14,
@@ -437,9 +442,9 @@ class _HomeVisaPackagesSection extends StatelessWidget {
     return packagesAsync.when(
       data: (List<HomeHotPackageVO> packages) {
         if (packages.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: _HomeSectionEmptyState(message: '暂无热门签证套餐'),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _HomeSectionEmptyState(message: '首页.暂无热门签证套餐'.tr()),
           );
         }
         return SizedBox(
@@ -474,7 +479,7 @@ class _HomeVisaPackagesSection extends StatelessWidget {
           child: _HomeSectionErrorState(
             message: _resolveHomeSectionErrorMessage(
               error,
-              fallback: '热门签证套餐加载失败，请稍后重试',
+              fallback: '首页.热门签证套餐加载失败'.tr(),
             ),
             onRetry: onRetry,
           ),
@@ -504,7 +509,9 @@ class _HomeLatestJobsSection extends StatelessWidget {
     }
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(errorMessage ?? '投递成功')));
+    ).showSnackBar(
+      SnackBar(content: Text(errorMessage ?? '首页.投递成功'.tr())),
+    );
   }
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
@@ -513,9 +520,9 @@ class _HomeLatestJobsSection extends StatelessWidget {
     return jobsAsync.when(
       data: (List<JobListVO> jobs) {
         if (jobs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: _HomeSectionEmptyState(message: '暂无最新欧洲岗位'),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _HomeSectionEmptyState(message: '首页.暂无最新欧洲岗位'.tr()),
           );
         }
         return Padding(
@@ -549,7 +556,7 @@ class _HomeLatestJobsSection extends StatelessWidget {
           child: _HomeSectionErrorState(
             message: _resolveHomeSectionErrorMessage(
               error,
-              fallback: '最新欧洲岗位加载失败，请稍后重试',
+              fallback: '首页.最新欧洲岗位加载失败'.tr(),
             ),
             onRetry: onRetry,
           ),
@@ -618,7 +625,10 @@ class _HomeSectionErrorState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+          OutlinedButton(
+            onPressed: onRetry,
+            child: Text('通用.重试'.tr()),
+          ),
         ],
       ),
     );
@@ -836,12 +846,16 @@ extension on HomeHotPackageVO {
   _VisaMiniCardData toVisaCardData() {
     final ({String prefix, String value}) priceDisplay = _buildPriceDisplay();
     return _VisaMiniCardData(
-      title: packageName.trim().isEmpty ? '签证套餐' : packageName.trim(),
+      title: packageName.trim().isEmpty ? '首页.签证套餐'.tr() : packageName.trim(),
       subtitle: _buildVisaSubtitle(),
       pricePrefix: priceDisplay.prefix,
       priceValue: priceDisplay.value,
       rating: _formatRating(),
-      casesText: caseCount > 0 ? '$caseCount案例' : '暂无案例',
+      casesText: caseCount > 0
+          ? '首页.案例数'.tr(
+              namedArgs: <String, String>{'count': caseCount.toString()},
+            )
+          : '首页.暂无案例'.tr(),
       country: _formatCountryName(),
       ribbonAssetPath: _resolveRibbonAssetPath(),
       actionAssetPath: 'assets/images/mon5bjog-9ler7sj.png',
@@ -852,16 +866,23 @@ extension on HomeHotPackageVO {
   String _buildVisaSubtitle() {
     final String descriptionText = description.trim();
     if (descriptionText.isNotEmpty && estimatedDays > 0) {
-      return '$descriptionText · 约$estimatedDays天';
+      return '首页.约天数'.tr(
+        namedArgs: <String, String>{
+          'description': descriptionText,
+          'days': estimatedDays.toString(),
+        },
+      );
     }
     if (descriptionText.isNotEmpty) {
       return descriptionText;
     }
     if (estimatedDays > 0) {
-      return '预计$estimatedDays天完成办理';
+      return '首页.预计天数完成办理'.tr(
+        namedArgs: <String, String>{'days': estimatedDays.toString()},
+      );
     }
     final String providerText = providerName.trim();
-    return providerText.isEmpty ? '专业服务商提供办理支持' : providerText;
+    return providerText.isEmpty ? '首页.专业服务商提供办理支持'.tr() : providerText;
   }
 
   /// 格式化签证套餐价格，兼容常见币种符号与整数价格展示。
@@ -882,24 +903,24 @@ extension on HomeHotPackageVO {
   /// 把 ISO 国家码转换为首页角标展示文案。
   String _formatCountryName() {
     return switch (targetCountry.trim().toUpperCase()) {
-      'DE' => '德国',
-      'FR' => '法国',
-      'IT' => '意大利',
-      'ES' => '西班牙',
-      'NL' => '荷兰',
-      'BE' => '比利时',
-      'AT' => '奥地利',
-      'CH' => '瑞士',
-      'PT' => '葡萄牙',
-      'SE' => '瑞典',
-      'NO' => '挪威',
-      'DK' => '丹麦',
-      'FI' => '芬兰',
-      'IE' => '爱尔兰',
-      'PL' => '波兰',
+      'DE' => '国家.德国'.tr(),
+      'FR' => '国家.法国'.tr(),
+      'IT' => '国家.意大利'.tr(),
+      'ES' => '国家.西班牙'.tr(),
+      'NL' => '国家.荷兰'.tr(),
+      'BE' => '国家.比利时'.tr(),
+      'AT' => '国家.奥地利'.tr(),
+      'CH' => '国家.瑞士'.tr(),
+      'PT' => '国家.葡萄牙'.tr(),
+      'SE' => '国家.瑞典'.tr(),
+      'NO' => '国家.挪威'.tr(),
+      'DK' => '国家.丹麦'.tr(),
+      'FI' => '国家.芬兰'.tr(),
+      'IE' => '国家.爱尔兰'.tr(),
+      'PL' => '国家.波兰'.tr(),
       _ =>
         targetCountry.trim().isEmpty
-            ? '签证'
+            ? '国家.签证'.tr()
             : targetCountry.trim().toUpperCase(),
     };
   }
@@ -921,9 +942,12 @@ extension on JobListVO {
         .toList(growable: false);
     final List<String> requirementTags = <String>[
       ...tagLabels.where((String label) => label != '急招'),
-      if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
+      if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
+        '招聘卡片.提供签证'.tr(),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) '急招'];
+    final List<String> highlightTags = <String>[
+      if (isUrgent) '招聘卡片.急招'.tr(),
+    ];
 
     return JobPositionCardData(
       title: title,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -199,7 +200,7 @@ class _MaterialsSection extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '所需材料',
+                  '服务详情.所需材料'.tr(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: const Color(0xFF262626),
                     fontWeight: FontWeight.w800,
@@ -214,7 +215,7 @@ class _MaterialsSection extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('查看样例'),
+                child: Text('服务详情.查看样例'.tr()),
               ),
             ],
           ),

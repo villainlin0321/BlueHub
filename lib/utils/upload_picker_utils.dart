@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -82,17 +83,22 @@ class UploadPickerUtils {
   /// 弹出通用图片来源选择面板，并返回用户最终选择的图片结果。
   static Future<List<PickedUploadFile>> pickImagesWithSourceSheet({
     required BuildContext context,
-    String title = '选择图片',
-    String cameraErrorMessage = '打开相机失败，请稍后重试',
-    String galleryErrorMessage = '打开相册失败，请稍后重试',
+    String? title,
+    String? cameraErrorMessage,
+    String? galleryErrorMessage,
   }) async {
+    final String resolvedTitle = title ?? tr('上传.选择图片');
+    final String resolvedCameraErrorMessage =
+        cameraErrorMessage ?? tr('上传.打开相机失败');
+    final String resolvedGalleryErrorMessage =
+        galleryErrorMessage ?? tr('上传.打开相册失败');
     final _ImageSourceOption? source = await showModalBottomSheet<_ImageSourceOption>(
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (BuildContext sheetContext) {
         return _UploadImageSourceBottomSheet(
-          title: title,
+          title: resolvedTitle,
           onClose: () => Navigator.of(sheetContext).pop(),
           onCameraTap: () {
             Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
@@ -120,8 +126,8 @@ class UploadPickerUtils {
         return const <PickedUploadFile>[];
       }
       final String message = source == _ImageSourceOption.camera
-          ? cameraErrorMessage
-          : galleryErrorMessage;
+          ? resolvedCameraErrorMessage
+          : resolvedGalleryErrorMessage;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -310,8 +316,11 @@ class _UploadImageSourceBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
-            _BottomSheetActionItem(label: '拍照', onTap: onCameraTap),
-            _BottomSheetActionItem(label: '从相册选择', onTap: onGalleryTap),
+            _BottomSheetActionItem(label: tr('上传.拍照'), onTap: onCameraTap),
+            _BottomSheetActionItem(
+              label: tr('上传.从相册选择'),
+              onTap: onGalleryTap,
+            ),
             const SizedBox(height: 8),
           ],
         ),

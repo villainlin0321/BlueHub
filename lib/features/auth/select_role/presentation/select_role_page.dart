@@ -1,8 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/localization/app_locales.dart';
 import '../../application/auth_session_provider.dart';
 import '../../application/auth_role_mapper.dart';
 import '../application/select_role_controller.dart';
@@ -19,8 +21,7 @@ class SelectRolePage extends ConsumerStatefulWidget {
 }
 
 class _SelectRolePageState extends ConsumerState<SelectRolePage> {
-  bool _isChineseSelected = true;
-
+  /// 处理返回行为：首次登录选角色时返回登录页，其他场景优先正常回退。
   Future<void> _handleBack() async {
     final authSession = ref.read(authSessionProvider);
     if (authSession.needSelectRole) {
@@ -41,6 +42,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
     context.goNamed(RoutePaths.loginPhoneName);
   }
 
+  /// 提交当前角色选择，成功后进入首页。
   Future<void> _handleConfirm() async {
     final success =
         await ref.read(selectRoleControllerProvider.notifier).submitSelection();
@@ -51,9 +53,11 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
   }
 
   @override
+  /// 构建角色选择页，并把顶部语言切换接到全局 Locale。
   Widget build(BuildContext context) {
     final state = ref.watch(selectRoleControllerProvider);
     final hasSelection = state.selectedRoleId != null;
+    final isChineseSelected = context.isChineseLocale;
 
     ref.listen(selectRoleControllerProvider, (previous, next) {
       if (previous?.feedbackId == next.feedbackId || next.feedbackMessage == null) {
@@ -82,7 +86,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
           ),
         ),
         title: Text(
-          '选择角色',
+          '认证.选择角色标题'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -92,9 +96,9 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.pagePadding),
             child: AuthLanguageSwitch(
-              isChineseSelected: _isChineseSelected,
-              onChanged: (isChineseSelected) {
-                setState(() => _isChineseSelected = isChineseSelected);
+              isChineseSelected: isChineseSelected,
+              onChanged: (isChineseSelected) async {
+                await context.switchAppLocale(isChineseSelected);
               },
             ),
           ),
@@ -113,7 +117,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        '不同角色将看到不同的首页与功能。后续可在 “我的” 中切换不同角色',
+                        '认证.选择角色说明'.tr(),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                           height: 1.6,
@@ -137,7 +141,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
               ),
               const SizedBox(height: 12),
               PrimaryButton(
-                label: state.isSubmitting ? '提交中...' : '确认选择',
+                label: state.isSubmitting ? '认证.提交中'.tr() : '认证.确认选择'.tr(),
                 enabled: hasSelection && !state.isSubmitting,
                 onPressed: hasSelection && !state.isSubmitting
                     ? _handleConfirm
@@ -164,6 +168,7 @@ class _RoleCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  /// 构建单个角色卡片，选中时提升边框和背景强调。
   Widget build(BuildContext context) {
     final borderColor = selected ? AppColors.brand : AppColors.divider;
     final backgroundColor = selected
@@ -213,7 +218,7 @@ class _RoleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      role.title,
+                      role.title.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -221,7 +226,7 @@ class _RoleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      role.description,
+                      role.description.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                         height: 1.5,
@@ -255,20 +260,20 @@ class _RoleItem {
 const List<_RoleItem> _roles = <_RoleItem>[
   _RoleItem(
     id: workerRoleId,
-    title: '工人/求职者',
-    description: '寻找海外工作、办理签证',
+    title: '认证.工人求职者',
+    description: '认证.工人求职者说明',
     icon: Icons.person_outline_rounded,
   ),
   _RoleItem(
     id: employerRoleId,
-    title: '企业/雇主',
-    description: '发布职位、筛选候选人',
+    title: '认证.企业雇主',
+    description: '认证.企业雇主说明',
     icon: Icons.business_center_outlined,
   ),
   _RoleItem(
     id: visaProviderRoleId,
-    title: '签证服务商',
-    description: '提供签证服务、管理案件',
+    title: '认证.签证服务商',
+    description: '认证.签证服务商说明',
     icon: Icons.fact_check_outlined,
   ),
 ];

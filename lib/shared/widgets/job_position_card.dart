@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -56,6 +57,9 @@ class JobPositionCard extends StatelessWidget {
   /// 构建职位卡片，并根据外部状态展示投递按钮的禁用或加载文案。
   @override
   Widget build(BuildContext context) {
+    final String resolvedApplyButtonText = applyButtonText == '一键投递'
+        ? '招聘卡片.一键投递'.tr()
+        : applyButtonText;
     final Widget cardBody = Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -174,7 +178,7 @@ class JobPositionCard extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(
-                        applyButtonText,
+                        resolvedApplyButtonText,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -236,8 +240,9 @@ class JobPositionCard extends StatelessWidget {
   }
 
   Widget _buildHighlightTag(String tag) {
-    if (tag == '急招') {
-      return const _JobPositionTagStyle.urgent().build('急招');
+    final String urgentLabel = '招聘卡片.急招'.tr();
+    if (tag == '急招' || tag == urgentLabel) {
+      return _JobPositionTagStyle.urgent().build(urgentLabel);
     }
     return const _JobPositionTagStyle.highlightBlue().build(tag);
   }

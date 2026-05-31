@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,81 +68,81 @@ class _BottomBar extends StatelessWidget {
       <ShellRole, List<_BottomItem>>{
         ShellRole.jobSeeker: <_BottomItem>[
           _BottomItem(
-            label: '首页',
+            labelKey: '导航.首页',
             activeAsset: 'assets/images/icon_home.svg',
             inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
-            label: '签证',
+            labelKey: '导航.签证',
             activeAsset: 'assets/images/icon_home_visa.svg',
             inactiveAsset: 'assets/images/icon_home_visa_inactive.svg',
           ),
           _BottomItem(
-            label: '招聘',
+            labelKey: '导航.招聘',
             activeAsset: 'assets/images/icon_home_job.svg',
             inactiveAsset: 'assets/images/icon_home_job_inactive.svg',
           ),
           _BottomItem(
-            label: 'AI助手',
+            labelKey: '导航.AI助手',
             activeAsset: 'assets/images/icon_home_ai_active.svg',
             inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
-            label: '我的',
+            labelKey: '导航.我的',
             activeAsset: 'assets/images/icon_home_me.svg',
             inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
         ],
         ShellRole.serviceProvider: <_BottomItem>[
           _BottomItem(
-            label: '首页',
+            labelKey: '导航.首页',
             activeAsset: 'assets/images/icon_home.svg',
             inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
-            label: '订单',
+            labelKey: '导航.订单',
             activeAsset: 'assets/images/icon_home_order.svg',
             inactiveAsset: 'assets/images/icon_home_order_inactive.svg',
           ),
           _BottomItem(
-            label: '套餐',
+            labelKey: '导航.套餐',
             activeAsset: 'assets/images/icon_home_package.svg',
             inactiveAsset: 'assets/images/icon_home_package_inactive.svg',
           ),
           _BottomItem(
-            label: 'AI助手',
+            labelKey: '导航.AI助手',
             activeAsset: 'assets/images/icon_home_ai_active.svg',
             inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
-            label: '我的',
+            labelKey: '导航.我的',
             activeAsset: 'assets/images/icon_home_me.svg',
             inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
         ],
         ShellRole.company: <_BottomItem>[
           _BottomItem(
-            label: '首页',
+            labelKey: '导航.首页',
             activeAsset: 'assets/images/icon_home.svg',
             inactiveAsset: 'assets/images/icon_home_inactive.svg',
           ),
           _BottomItem(
-            label: '岗位',
+            labelKey: '导航.岗位',
             activeAsset: 'assets/images/icon_home_job.svg',
             inactiveAsset: 'assets/images/icon_home_job_inactive.svg',
           ),
           _BottomItem(
-            label: '人才',
+            labelKey: '导航.人才',
             activeAsset: 'assets/images/icon_home_talent.svg',
             inactiveAsset: 'assets/images/icon_home_talent_inactive.svg',
           ),
           _BottomItem(
-            label: 'AI助手',
+            labelKey: '导航.AI助手',
             activeAsset: 'assets/images/icon_home_ai_active.svg',
             inactiveAsset: 'assets/images/icon_home_ai.svg',
           ),
           _BottomItem(
-            label: '我的',
+            labelKey: '导航.我的',
             activeAsset: 'assets/images/icon_home_me.svg',
             inactiveAsset: 'assets/images/icon_home_me_inactive.svg',
           ),
@@ -178,7 +179,7 @@ class _BottomBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        item.label,
+                        item.labelKey.tr(),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 10,
@@ -200,12 +201,12 @@ class _BottomBar extends StatelessWidget {
 
 class _BottomItem {
   const _BottomItem({
-    required this.label,
+    required this.labelKey,
     required this.activeAsset,
     required this.inactiveAsset,
   });
 
-  final String label;
+  final String labelKey;
   final String activeAsset;
   final String inactiveAsset;
 }

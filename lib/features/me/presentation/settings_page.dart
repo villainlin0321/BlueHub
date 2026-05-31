@@ -1,9 +1,12 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../auth/presentation/widgets/auth_language_switch.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/localization/app_locales.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -17,13 +20,12 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _isChinese = true;
   bool _isLoggingOut = false;
 
   @override
   /// 构建设置页主体，按设计稿组织顶部导航、列表项与底部操作区。
   Widget build(BuildContext context) {
-    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final bool isChinese = context.isChineseLocale;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
@@ -39,15 +41,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       _SettingsCard(
                         children: <Widget>[
                           _LanguageRow(
-                            isChinese: _isChinese,
+                            isChinese: isChinese,
                             onChanged: _handleLanguageChanged,
                           ),
                           _SettingsActionRow(
-                            title: '我的信息',
+                            title: '设置.我的信息'.tr(),
                             onTap: _handleMyInfoTap,
                           ),
                           _SettingsActionRow(
-                            title: '黑名单',
+                            title: '设置.黑名单'.tr(),
                             onTap: _handleBlacklistTap,
                           ),
                         ],
@@ -56,12 +58,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: _BottomTextButton(
-                          label: '退出登录',
+                          label: '设置.退出登录'.tr(),
                           onTap: _isLoggingOut ? null : _handleLogoutTap,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _BottomLinkButton(label: '注销', onTap: _handleDeleteTap),
+                      _BottomLinkButton(
+                        label: '设置.注销'.tr(),
+                        onTap: _handleDeleteTap,
+                      ),
                     ],
                   ),
                 ),
@@ -91,11 +96,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  /// 切换系统语言的本地展示状态，当前仅用于页面交互反馈。
-  void _handleLanguageChanged(bool isChinese) {
-    setState(() {
-      _isChinese = isChinese;
-    });
+  /// 切换应用全局语言，并让设置页与其他页面共享同一份 Locale 状态。
+  Future<void> _handleLanguageChanged(bool isChinese) async {
+    await context.switchAppLocale(isChinese);
   }
 
   /// 按当前角色分流“我的信息”入口，避免不同身份误入不匹配的资料页。
@@ -120,7 +123,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 注销能力尚未接入接口，先提示用户当前状态。
   void _handleDeleteTap() {
-    _showMessage('注销功能暂未开放');
+    _showMessage('设置.注销未开放'.tr());
   }
 
   /// 确认退出登录后调用服务端注销，并清空本地会话回到登录页。
@@ -166,16 +169,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('退出登录'),
-          content: const Text('确认退出当前账号吗？'),
+          title: Text('设置.退出登录标题'.tr()),
+          content: Text('设置.退出登录内容'.tr()),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('取消'),
+              child: Text('通用.取消'.tr()),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('确定'),
+              child: Text('通用.确定'.tr()),
             ),
           ],
         );
@@ -189,7 +192,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (error is ApiException) {
       return error.message;
     }
-    return '退出登录失败，请稍后重试';
+    return '设置.退出登录失败'.tr();
   }
 
   /// 统一通过页面级 Snackbar 反馈点击结果或异常信息。
@@ -221,9 +224,9 @@ class _SettingsHeader extends StatelessWidget {
         onPressed: onBackTap,
         icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
       ),
-      title: const Text(
-        '设置',
-        style: TextStyle(
+      title: Text(
+        '设置.标题'.tr(),
+        style: const TextStyle(
           color: Color(0xFF262626),
           fontSize: 17,
           fontWeight: FontWeight.w500,
@@ -265,79 +268,21 @@ class _LanguageRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
         children: <Widget>[
-          const Expanded(
+          Expanded(
             child: Text(
-              '系统语言',
-              style: TextStyle(
+              '设置.系统语言'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 16,
                 height: 22 / 16,
               ),
             ),
           ),
-          Container(
-            width: 48,
-            height: 24,
-            padding: const EdgeInsets.all(1),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              children: <Widget>[
-                _LanguageOption(
-                  label: '中',
-                  selected: isChinese,
-                  onTap: () => onChanged(true),
-                ),
-                _LanguageOption(
-                  label: 'En',
-                  selected: !isChinese,
-                  onTap: () => onChanged(false),
-                ),
-              ],
-            ),
+          AuthLanguageSwitch(
+            isChineseSelected: isChinese,
+            onChanged: onChanged,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LanguageOption extends StatelessWidget {
-  const _LanguageOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  /// 构建单个语言按钮，并根据选中态切换前景与背景色。
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1890FF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF262626),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 17 / 12,
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,9 +18,9 @@ class UploadImageGrid extends ConsumerStatefulWidget {
     this.initialImagePaths = const <String>[],
     this.maxImages = 9,
     this.uploadAssetPath = 'assets/images/service_detail_report_upload.svg',
-    this.uploadLabel = '上传图片',
-    this.sourceSheetTitle = '选择图片',
-    this.uploadErrorMessage = '图片上传失败，请稍后重试',
+    this.uploadLabel,
+    this.sourceSheetTitle,
+    this.uploadErrorMessage,
     this.onUploadingChanged,
   });
 
@@ -28,9 +29,9 @@ class UploadImageGrid extends ConsumerStatefulWidget {
   final List<String> initialImagePaths;
   final int maxImages;
   final String uploadAssetPath;
-  final String uploadLabel;
-  final String sourceSheetTitle;
-  final String uploadErrorMessage;
+  final String? uploadLabel;
+  final String? sourceSheetTitle;
+  final String? uploadErrorMessage;
   final ValueChanged<bool>? onUploadingChanged;
 
   @override
@@ -62,18 +63,18 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
 
   Future<void> _handleAddTap() async {
     if (_isUploading) {
-      _showMessage('图片上传中，请稍候');
+      _showMessage('上传.图片上传中'.tr());
       return;
     }
     if (_entries.length >= widget.maxImages) {
-      _showMessage('最多只能上传${widget.maxImages}张');
+      _showMaxImagesMessage();
       return;
     }
 
     final List<PickedUploadFile> pickedFiles =
         await UploadPickerUtils.pickImagesWithSourceSheet(
           context: context,
-          title: widget.sourceSheetTitle,
+          title: widget.sourceSheetTitle ?? '上传.选择图片'.tr(),
         );
     if (!mounted || pickedFiles.isEmpty) {
       return;
@@ -85,7 +86,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
         .take(availableCount)
         .toList(growable: false);
     if (acceptedFiles.isEmpty) {
-      _showMessage('最多只能上传${widget.maxImages}张');
+      _showMaxImagesMessage();
       return;
     }
 
@@ -97,7 +98,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
     });
 
     if (acceptedFiles.length < pickedFiles.length) {
-      _showMessage('最多只能上传${widget.maxImages}张');
+      _showMaxImagesMessage();
     }
 
     await _uploadEntries(
@@ -109,6 +110,8 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
     if (entryIds.isEmpty) {
       return;
     }
+    final String resolvedUploadErrorMessage =
+        widget.uploadErrorMessage ?? '上传.图片上传失败'.tr();
 
     _setUploading(true);
     for (final String entryId in entryIds) {
@@ -126,7 +129,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
             .uploadFile(
               path: entry.localPath!,
               scene: widget.scene,
-              errorMessage: widget.uploadErrorMessage,
+              errorMessage: resolvedUploadErrorMessage,
             );
         if (!mounted) {
           return;
@@ -209,12 +212,23 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// 统一提示图片数量上限，避免多处重复拼接带参数文案。
+  void _showMaxImagesMessage() {
+    _showMessage(
+      '上传.最多上传'.tr(namedArgs: <String, String>{
+        'count': widget.maxImages.toString(),
+      }),
+    );
+  }
+
   String _resolveErrorMessage(Object error) {
     final String message = error.toString().trim();
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? widget.uploadErrorMessage : message;
+    return message.isEmpty
+        ? (widget.uploadErrorMessage ?? '上传.图片上传失败'.tr())
+        : message;
   }
 
   _UploadImageEntry _buildInitialEntry(String path) {
@@ -240,6 +254,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final String resolvedUploadLabel = widget.uploadLabel ?? '上传.上传图片'.tr();
     final bool showAddTile = _entries.length < widget.maxImages;
     final int itemCount = _entries.length + (showAddTile ? 1 : 0);
 
@@ -257,7 +272,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
         if (index >= _entries.length) {
           return UploadPlaceholderTile(
             assetPath: widget.uploadAssetPath,
-            label: widget.uploadLabel,
+            label: resolvedUploadLabel,
             onTap: _handleAddTap,
           );
         }
