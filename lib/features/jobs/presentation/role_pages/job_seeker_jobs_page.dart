@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -20,6 +20,7 @@ import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import '../job_apply_helper.dart';
 import '../job_detail_page.dart';
+import '../widgets/filter_bottom_sheet_chip.dart';
 
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
 class JobSeekerJobsPage extends ConsumerWidget {
@@ -47,16 +48,9 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   static const List<_SalaryRangeOption> _salaryRangeOptions =
       <_SalaryRangeOption>[
         _SalaryRangeOption(key: '', labelKey: '招聘.薪资要求'),
-        _SalaryRangeOption(key: '1000-2000', label: '1000-2000', min: 1000, max: 2000),
-        _SalaryRangeOption(key: '2000-3000', label: '2000-3000', min: 2000, max: 3000),
-        _SalaryRangeOption(key: '3000-4000', label: '3000-4000', min: 3000, max: 4000),
-        _SalaryRangeOption(key: '4000-5000', label: '4000-5000', min: 4000, max: 5000),
-        _SalaryRangeOption(key: '5000-6000', label: '5000-6000', min: 5000, max: 6000),
-        _SalaryRangeOption(key: '6000-7000', label: '6000-7000', min: 6000, max: 7000),
-        _SalaryRangeOption(key: '7000-8000', label: '7000-8000', min: 7000, max: 8000),
-        _SalaryRangeOption(key: '8000-9000', label: '8000-9000', min: 8000, max: 9000),
-        _SalaryRangeOption(key: '9000-10000', label: '9000-10000', min: 9000, max: 10000),
-        _SalaryRangeOption(key: '10000+', labelKey: '招聘.以上', min: 10000, prefix: '10000'),
+        _SalaryRangeOption(key: '0-1500', label: '0~1500', min: 0, max: 1500),
+        _SalaryRangeOption(key: '1500-2500', label: '1500~2500', min: 1500, max: 2500),
+        _SalaryRangeOption(key: '2500+', label: '2500以上', min: 2500),
       ];
   static const List<_SortOption> _sortOptions = <_SortOption>[
     _SortOption(key: 'latest', labelKey: '招聘.最新'),
@@ -80,7 +74,9 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   String? _selectedCountryCode;
   String? _selectedPositionKeyword;
   String? _selectedSalaryRangeKey;
-  String _selectedSortKey = _sortOptions.first.key;
+  double? _selectedCustomSalaryMin;
+  double? _selectedCustomSalaryMax;
+  final String _selectedSortKey = _sortOptions.first.key;
 
   @override
   void initState() {
@@ -147,13 +143,14 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               selectedCountryCode: _selectedCountryCode,
               selectedPositionKeyword: _selectedPositionKeyword,
               selectedSalaryRangeKey: _selectedSalaryRangeKey,
-              selectedSortKey: _selectedSortKey,
+              selectedCustomSalaryMin: _selectedCustomSalaryMin,
+              selectedCustomSalaryMax: _selectedCustomSalaryMax,
               isCountryEnabled: countriesAsync.hasValue,
               isPositionEnabled: positionTreeAsync.hasValue,
               onCountryChanged: _handleCountryChanged,
               onPositionChanged: _handlePositionChanged,
-              onSalaryRangeChanged: _handleSalaryRangeChanged,
-              onSortChanged: _handleSortChanged,
+              onSalaryFilterChanged: _handleSalaryFilterChanged,
+              onCombinedFilterChanged: _handleCombinedFilterChanged,
             ),
           ),
           const SizedBox(height: 19),
@@ -249,29 +246,45 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
 
-  /// 切换薪资区间后重新请求岗位列表。
-  void _handleSalaryRangeChanged(String? value) {
-    final String? rangeKey = _normalizeFilterValue(value);
-    if (_selectedSalaryRangeKey == rangeKey) {
+  /// 应用薪资筛选后重新请求岗位列表。
+  void _handleSalaryFilterChanged(_SalaryFilterSelection selection) {
+    final String? rangeKey = _normalizeFilterValue(selection.presetKey);
+    if (_selectedSalaryRangeKey == rangeKey &&
+        _selectedCustomSalaryMin == selection.customMin &&
+        _selectedCustomSalaryMax == selection.customMax) {
       return;
     }
     setState(() {
       _selectedSalaryRangeKey = rangeKey;
+      _selectedCustomSalaryMin = selection.customMin;
+      _selectedCustomSalaryMax = selection.customMax;
     });
     FocusScope.of(context).unfocus();
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
 
-  /// 切换排序方式后重新请求岗位列表。
-  void _handleSortChanged(String? value) {
-    final String nextSortKey = value?.trim().isNotEmpty == true
-        ? value!.trim()
-        : _sortOptions.first.key;
-    if (_selectedSortKey == nextSortKey) {
+  /// 一次性应用国家、职位、薪资综合筛选后刷新岗位列表。
+  void _handleCombinedFilterChanged(_CombinedJobFilterSelection selection) {
+    final String? nextCountryCode = _normalizeFilterValue(selection.countryCode);
+    final String? nextPositionKeyword = _normalizeFilterValue(
+      selection.positionKeyword,
+    );
+    final String? nextSalaryRangeKey = _normalizeFilterValue(
+      selection.salarySelection.presetKey,
+    );
+    if (_selectedCountryCode == nextCountryCode &&
+        _selectedPositionKeyword == nextPositionKeyword &&
+        _selectedSalaryRangeKey == nextSalaryRangeKey &&
+        _selectedCustomSalaryMin == selection.salarySelection.customMin &&
+        _selectedCustomSalaryMax == selection.salarySelection.customMax) {
       return;
     }
     setState(() {
-      _selectedSortKey = nextSortKey;
+      _selectedCountryCode = nextCountryCode;
+      _selectedPositionKeyword = nextPositionKeyword;
+      _selectedSalaryRangeKey = nextSalaryRangeKey;
+      _selectedCustomSalaryMin = selection.salarySelection.customMin;
+      _selectedCustomSalaryMax = selection.salarySelection.customMax;
     });
     FocusScope.of(context).unfocus();
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
@@ -308,8 +321,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
             pageSize: _pageSize,
             country: _selectedCountryCode,
             keyword: _buildKeywordQuery(),
-            salaryMin: _selectedSalaryRange?.min,
-            salaryMax: _selectedSalaryRange?.max,
+            salaryMin: _effectiveSalaryMin,
+            salaryMax: _effectiveSalaryMax,
             sort: _selectedSortKey,
           );
       if (!mounted) {
@@ -388,6 +401,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     }
     return null;
   }
+
+  double? get _effectiveSalaryMin =>
+      _selectedSalaryRange?.min ?? _selectedCustomSalaryMin;
+
+  double? get _effectiveSalaryMax =>
+      _selectedSalaryRange?.max ?? _selectedCustomSalaryMax;
 
   List<PositionVO> _flattenPositions(List<PositionCategoryVO> categories) {
     final Set<String> seenLabels = <String>{};
@@ -571,13 +590,14 @@ class _FilterRow extends StatelessWidget {
     required this.selectedCountryCode,
     required this.selectedPositionKeyword,
     required this.selectedSalaryRangeKey,
-    required this.selectedSortKey,
+    required this.selectedCustomSalaryMin,
+    required this.selectedCustomSalaryMax,
     required this.isCountryEnabled,
     required this.isPositionEnabled,
     required this.onCountryChanged,
     required this.onPositionChanged,
-    required this.onSalaryRangeChanged,
-    required this.onSortChanged,
+    required this.onSalaryFilterChanged,
+    required this.onCombinedFilterChanged,
   });
 
   final List<CountryVO> countries;
@@ -586,13 +606,14 @@ class _FilterRow extends StatelessWidget {
   final String? selectedCountryCode;
   final String? selectedPositionKeyword;
   final String? selectedSalaryRangeKey;
-  final String selectedSortKey;
+  final double? selectedCustomSalaryMin;
+  final double? selectedCustomSalaryMax;
   final bool isCountryEnabled;
   final bool isPositionEnabled;
   final ValueChanged<String?>? onCountryChanged;
   final ValueChanged<String?>? onPositionChanged;
-  final ValueChanged<String?> onSalaryRangeChanged;
-  final ValueChanged<String?> onSortChanged;
+  final ValueChanged<_SalaryFilterSelection> onSalaryFilterChanged;
+  final ValueChanged<_CombinedJobFilterSelection> onCombinedFilterChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -617,141 +638,864 @@ class _FilterRow extends StatelessWidget {
               _DropdownOption(value: item.key, label: item.resolveLabel()),
         )
         .toList(growable: false);
-    final List<_DropdownOption> sortOptions = _JobsPageBodyState._sortOptions
+    final List<_DropdownOption> salaryPresetOptions = salaryOptions
+        .where((_DropdownOption option) => option.value.isNotEmpty)
+        .toList(growable: false);
+    final List<FilterBottomSheetOption> countrySheetOptions = countryOptions
         .map(
-          (_SortOption item) =>
-              _DropdownOption(value: item.key, label: item.labelKey.tr()),
+          (_DropdownOption option) =>
+              FilterBottomSheetOption(value: option.value, label: option.label),
+        )
+        .toList(growable: false);
+    final List<FilterBottomSheetOption> positionSheetOptions = positionOptions
+        .map(
+          (_DropdownOption option) =>
+              FilterBottomSheetOption(value: option.value, label: option.label),
         )
         .toList(growable: false);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        _DropdownChip(
+        FilterBottomSheetChip(
+          title: '选择国家'.tr(),
           value: selectedCountryCode ?? '',
-          options: countryOptions,
+          options: countrySheetOptions,
           enabled: isCountryEnabled,
           onChanged: onCountryChanged,
         ),
-        _DropdownChip(
+        FilterBottomSheetChip(
+          title: '选择分类'.tr(),
           value: selectedPositionKeyword ?? '',
-          options: positionOptions,
+          options: positionSheetOptions,
           enabled: isPositionEnabled,
           onChanged: onPositionChanged,
         ),
-        _DropdownChip(
-          value: selectedSalaryRangeKey ?? '',
-          options: salaryOptions,
-          enabled: true,
-          onChanged: onSalaryRangeChanged,
+        _SalaryBottomSheetChip(
+          title: '选择薪资'.tr(),
+          placeholderLabel: salaryOptions.first.label,
+          selectedPresetKey: selectedSalaryRangeKey,
+          selectedCustomMin: selectedCustomSalaryMin,
+          selectedCustomMax: selectedCustomSalaryMax,
+          presetOptions: salaryPresetOptions,
+          onChanged: onSalaryFilterChanged,
         ),
-        _DropdownChip(
+        _CombinedFilterBottomSheetChip(
           width: 76,
-          value: selectedSortKey,
-          options: sortOptions,
-          enabled: true,
-          onChanged: onSortChanged,
+          title: '筛选'.tr(),
+          enabled: isCountryEnabled && isPositionEnabled,
+          selectedCountryCode: selectedCountryCode,
+          selectedPositionKeyword: selectedPositionKeyword,
+          selectedSalaryRangeKey: selectedSalaryRangeKey,
+          selectedCustomSalaryMin: selectedCustomSalaryMin,
+          selectedCustomSalaryMax: selectedCustomSalaryMax,
+          countryOptions: countryOptions
+              .where((_DropdownOption option) => option.value.isNotEmpty)
+              .toList(growable: false),
+          positionOptions: positionOptions
+              .where((_DropdownOption option) => option.value.isNotEmpty)
+              .toList(growable: false),
+          salaryPresetOptions: salaryPresetOptions,
+          onChanged: onCombinedFilterChanged,
         ),
       ],
     );
   }
 }
 
-class _DropdownChip extends StatelessWidget {
-  const _DropdownChip({
-    this.width = 88,
-    required this.value,
-    required this.options,
-    required this.enabled,
-    this.onChanged,
+class _SalaryFilterSelection {
+  const _SalaryFilterSelection({
+    this.presetKey,
+    this.customMin,
+    this.customMax,
   });
 
-  final double width;
-  final String value;
-  final List<_DropdownOption> options;
-  final bool enabled;
-  final ValueChanged<String?>? onChanged;
+  final String? presetKey;
+  final double? customMin;
+  final double? customMax;
+}
+
+class _CombinedJobFilterSelection {
+  const _CombinedJobFilterSelection({
+    this.countryCode,
+    this.positionKeyword,
+    required this.salarySelection,
+  });
+
+  final String? countryCode;
+  final String? positionKeyword;
+  final _SalaryFilterSelection salarySelection;
+}
+
+class _SalaryBottomSheetChip extends StatelessWidget {
+  const _SalaryBottomSheetChip({
+    required this.title,
+    required this.placeholderLabel,
+    required this.selectedPresetKey,
+    required this.selectedCustomMin,
+    required this.selectedCustomMax,
+    required this.presetOptions,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String placeholderLabel;
+  final String? selectedPresetKey;
+  final double? selectedCustomMin;
+  final double? selectedCustomMax;
+  final List<_DropdownOption> presetOptions;
+  final ValueChanged<_SalaryFilterSelection> onChanged;
+
+  String _resolveLabel() {
+    if (selectedPresetKey?.isNotEmpty == true) {
+      for (final _DropdownOption option in presetOptions) {
+        if (option.value == selectedPresetKey) {
+          return option.label;
+        }
+      }
+    }
+    if (selectedCustomMin != null && selectedCustomMax != null) {
+      return '${_formatSalaryValue(selectedCustomMin!)}~${_formatSalaryValue(selectedCustomMax!)}';
+    }
+    return placeholderLabel;
+  }
+
+  bool get _highlighted =>
+      selectedPresetKey?.isNotEmpty == true ||
+      (selectedCustomMin != null && selectedCustomMax != null);
+
+  Future<void> _handleTap(BuildContext context) async {
+    final ValueNotifier<String?> selectedPresetNotifier = ValueNotifier<String?>(
+      selectedPresetKey?.isNotEmpty == true ? selectedPresetKey : null,
+    );
+    final TextEditingController minController = TextEditingController(
+      text: selectedCustomMin == null ? '' : _formatSalaryValue(selectedCustomMin!),
+    );
+    final TextEditingController maxController = TextEditingController(
+      text: selectedCustomMax == null ? '' : _formatSalaryValue(selectedCustomMax!),
+    );
+
+    void clearDraft() {
+      selectedPresetNotifier.value = null;
+      minController.clear();
+      maxController.clear();
+    }
+
+    final _SalaryFilterSelection? result =
+        await showFilterActionBottomSheet<_SalaryFilterSelection>(
+          context: context,
+          title: title,
+          onReset: clearDraft,
+          onConfirm: () {
+            final String? selectedPreset = selectedPresetNotifier.value;
+            if (selectedPreset?.isNotEmpty == true) {
+              Navigator.of(context).pop(
+                _SalaryFilterSelection(presetKey: selectedPreset),
+              );
+              return;
+            }
+
+            final String minText = minController.text.trim();
+            final String maxText = maxController.text.trim();
+            if (minText.isEmpty && maxText.isEmpty) {
+              Navigator.of(context).pop(const _SalaryFilterSelection());
+              return;
+            }
+            if (minText.isEmpty || maxText.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('请填写完整的薪资范围'.tr())),
+              );
+              return;
+            }
+
+            final double min = double.parse(minText);
+            final double max = double.parse(maxText);
+            if (min > max) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('最低薪资不能大于最高薪资'.tr())),
+              );
+              return;
+            }
+
+            Navigator.of(
+              context,
+            ).pop(_SalaryFilterSelection(customMin: min, customMax: max));
+          },
+          child: ValueListenableBuilder<String?>(
+            valueListenable: selectedPresetNotifier,
+            builder: (BuildContext context, String? selectedPreset, _) {
+              return _SalaryFilterSheetContent(
+                presetOptions: presetOptions,
+                selectedPresetKey: selectedPreset,
+                minController: minController,
+                maxController: maxController,
+                onPresetSelected: (String value) {
+                  selectedPresetNotifier.value = value;
+                  minController.clear();
+                  maxController.clear();
+                },
+                onCustomValueChanged: () {
+                  if (selectedPresetNotifier.value != null) {
+                    selectedPresetNotifier.value = null;
+                  }
+                },
+              );
+            },
+          ),
+        );
+
+    if (result == null) {
+      return;
+    }
+    onChanged(result);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final String effectiveValue = options.any(
-          (_DropdownOption option) => option.value == value,
-        )
-        ? value
-        : options.first.value;
-    final bool highlighted = effectiveValue != options.first.value;
-    final Color borderColor = highlighted
+    final Color borderColor = _highlighted
         ? const Color(0xFF096DD9)
         : Colors.transparent;
-    final Color textColor = highlighted
+    final Color textColor = _highlighted
+        ? const Color(0xFF096DD9)
+        : const Color(0xFF171A1D);
+
+    return SizedBox(
+      width: 88,
+      height: 30,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _handleTap(context),
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.only(left: 8, right: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    _resolveLabel(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12,
+                      fontWeight: _highlighted ? FontWeight.w500 : FontWeight.w400,
+                      height: 18 / 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AppSvgIcon(
+                  assetPath: 'assets/images/icon_arrow_down.svg',
+                  fallback: Icons.arrow_drop_down,
+                  size: 12,
+                  color: textColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CombinedFilterBottomSheetChip extends StatelessWidget {
+  const _CombinedFilterBottomSheetChip({
+    required this.title,
+    required this.width,
+    required this.enabled,
+    required this.selectedCountryCode,
+    required this.selectedPositionKeyword,
+    required this.selectedSalaryRangeKey,
+    required this.selectedCustomSalaryMin,
+    required this.selectedCustomSalaryMax,
+    required this.countryOptions,
+    required this.positionOptions,
+    required this.salaryPresetOptions,
+    required this.onChanged,
+  });
+
+  final String title;
+  final double width;
+  final bool enabled;
+  final String? selectedCountryCode;
+  final String? selectedPositionKeyword;
+  final String? selectedSalaryRangeKey;
+  final double? selectedCustomSalaryMin;
+  final double? selectedCustomSalaryMax;
+  final List<_DropdownOption> countryOptions;
+  final List<_DropdownOption> positionOptions;
+  final List<_DropdownOption> salaryPresetOptions;
+  final ValueChanged<_CombinedJobFilterSelection> onChanged;
+
+  bool get _highlighted =>
+      (selectedCountryCode ?? '').isNotEmpty ||
+      (selectedPositionKeyword ?? '').isNotEmpty ||
+      (selectedSalaryRangeKey ?? '').isNotEmpty ||
+      (selectedCustomSalaryMin != null && selectedCustomSalaryMax != null);
+
+  Future<void> _handleTap(BuildContext context) async {
+    String? draftCountryCode = selectedCountryCode;
+    String? draftPositionKeyword = selectedPositionKeyword;
+    String? draftSalaryPresetKey = selectedSalaryRangeKey;
+    final TextEditingController minController = TextEditingController(
+      text: selectedCustomSalaryMin == null
+          ? ''
+          : _formatSalaryValue(selectedCustomSalaryMin!),
+    );
+    final TextEditingController maxController = TextEditingController(
+      text: selectedCustomSalaryMax == null
+          ? ''
+          : _formatSalaryValue(selectedCustomSalaryMax!),
+    );
+    StateSetter? updateSheetState;
+
+    void resetDraft() {
+      draftCountryCode = null;
+      draftPositionKeyword = null;
+      draftSalaryPresetKey = null;
+      minController.clear();
+      maxController.clear();
+      updateSheetState?.call(() {});
+    }
+
+    final _CombinedJobFilterSelection? result =
+        await showFilterActionBottomSheet<_CombinedJobFilterSelection>(
+          context: context,
+          title: title,
+          onReset: resetDraft,
+          onConfirm: () {
+            final _SalaryFilterSelection? salarySelection =
+                _resolveSalarySelection(
+                  context,
+                  selectedPresetKey: draftSalaryPresetKey,
+                  minController: minController,
+                  maxController: maxController,
+                );
+            if (salarySelection == null) {
+              return;
+            }
+            Navigator.of(context).pop(
+              _CombinedJobFilterSelection(
+                countryCode: draftCountryCode,
+                positionKeyword: draftPositionKeyword,
+                salarySelection: salarySelection,
+              ),
+            );
+          },
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              updateSheetState = setState;
+              return _CombinedFilterSheetContent(
+                countryOptions: countryOptions,
+                selectedCountryCode: draftCountryCode,
+                onCountrySelected: (String value) {
+                  setState(() {
+                    draftCountryCode = value;
+                  });
+                },
+                positionOptions: positionOptions,
+                selectedPositionKeyword: draftPositionKeyword,
+                onPositionSelected: (String value) {
+                  setState(() {
+                    draftPositionKeyword = value;
+                  });
+                },
+                salaryPresetOptions: salaryPresetOptions,
+                selectedSalaryPresetKey: draftSalaryPresetKey,
+                minController: minController,
+                maxController: maxController,
+                onSalaryPresetSelected: (String value) {
+                  setState(() {
+                    draftSalaryPresetKey = value;
+                    minController.clear();
+                    maxController.clear();
+                  });
+                },
+                onCustomSalaryChanged: () {
+                  if (draftSalaryPresetKey != null) {
+                    setState(() {
+                      draftSalaryPresetKey = null;
+                    });
+                  }
+                },
+              );
+            },
+          ),
+        );
+
+    if (result == null) {
+      return;
+    }
+    onChanged(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color borderColor = _highlighted
+        ? const Color(0xFF096DD9)
+        : Colors.transparent;
+    final Color textColor = _highlighted
         ? const Color(0xFF096DD9)
         : const Color(0xFF171A1D);
 
     return SizedBox(
       width: width,
       height: 30,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton2<String>(
-          isExpanded: true,
-          valueListenable: ValueNotifier<String?>(effectiveValue),
-          items: options
-              .map(
-                (_DropdownOption option) => DropdownItem<String>(
-                  value: option.value,
-                  height: 40,
-                  child: Text(
-                    option.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: option.value == effectiveValue
-                          ? textColor
-                          : const Color(0xFF171A1D),
-                      fontSize: 12,
-                      fontWeight: option.value == effectiveValue
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                      height: 18 / 12,
-                    ),
-                  ),
-                ),
-              )
-              .toList(growable: false),
-          onChanged: enabled ? onChanged : null,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 12,
-            fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
-          ),
-          buttonStyleData: ButtonStyleData(
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? () => _handleTap(context) : null,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.only(left: 8, right: 6),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: borderColor),
             ),
-          ),
-          iconStyleData: IconStyleData(
-            icon: AppSvgIcon(
-              assetPath: 'assets/images/icon_arrow_down.svg',
-              fallback: Icons.arrow_drop_down,
-              size: 12,
-              color: textColor,
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12,
+                      fontWeight: _highlighted ? FontWeight.w500 : FontWeight.w400,
+                      height: 18 / 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AppSvgIcon(
+                  assetPath: 'assets/images/icon_arrow_down.svg',
+                  fallback: Icons.arrow_drop_down,
+                  size: 12,
+                  color: textColor,
+                ),
+              ],
             ),
-            iconSize: 12,
           ),
-          dropdownStyleData: DropdownStyleData(
-            maxHeight: 280,
-            offset: const Offset(0, 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatSalaryValue(double value) {
+  if (value % 1 == 0) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(1);
+}
+
+_SalaryFilterSelection? _resolveSalarySelection(
+  BuildContext context, {
+  required String? selectedPresetKey,
+  required TextEditingController minController,
+  required TextEditingController maxController,
+}) {
+  if (selectedPresetKey?.isNotEmpty == true) {
+    return _SalaryFilterSelection(presetKey: selectedPresetKey);
+  }
+
+  final String minText = minController.text.trim();
+  final String maxText = maxController.text.trim();
+  if (minText.isEmpty && maxText.isEmpty) {
+    return const _SalaryFilterSelection();
+  }
+  if (minText.isEmpty || maxText.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('请填写完整的薪资范围'.tr())),
+    );
+    return null;
+  }
+
+  final double min = double.parse(minText);
+  final double max = double.parse(maxText);
+  if (min > max) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('最低薪资不能大于最高薪资'.tr())),
+    );
+    return null;
+  }
+  return _SalaryFilterSelection(customMin: min, customMax: max);
+}
+
+class _CombinedFilterSheetContent extends StatelessWidget {
+  const _CombinedFilterSheetContent({
+    required this.countryOptions,
+    required this.selectedCountryCode,
+    required this.onCountrySelected,
+    required this.positionOptions,
+    required this.selectedPositionKeyword,
+    required this.onPositionSelected,
+    required this.salaryPresetOptions,
+    required this.selectedSalaryPresetKey,
+    required this.minController,
+    required this.maxController,
+    required this.onSalaryPresetSelected,
+    required this.onCustomSalaryChanged,
+  });
+
+  final List<_DropdownOption> countryOptions;
+  final String? selectedCountryCode;
+  final ValueChanged<String> onCountrySelected;
+  final List<_DropdownOption> positionOptions;
+  final String? selectedPositionKeyword;
+  final ValueChanged<String> onPositionSelected;
+  final List<_DropdownOption> salaryPresetOptions;
+  final String? selectedSalaryPresetKey;
+  final TextEditingController minController;
+  final TextEditingController maxController;
+  final ValueChanged<String> onSalaryPresetSelected;
+  final VoidCallback onCustomSalaryChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _CombinedFilterSection(
+          title: '招聘.国家'.tr(),
+          options: countryOptions,
+          selectedValue: selectedCountryCode,
+          onSelected: onCountrySelected,
+        ),
+        const SizedBox(height: 34),
+        _CombinedFilterSection(
+          title: '招聘.签证类型'.tr(),
+          options: positionOptions,
+          selectedValue: selectedPositionKeyword,
+          onSelected: onPositionSelected,
+        ),
+        const SizedBox(height: 34),
+        Text(
+          '招聘.薪资范围'.tr(),
+          style: const TextStyle(
+            color: Color(0xFF262626),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            height: 22 / 16,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 18,
+          children: salaryPresetOptions
+              .map(
+                (_DropdownOption option) => _SalaryPresetOptionTile(
+                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
+                  label: option.label,
+                  selected: option.value == selectedSalaryPresetKey,
+                  onTap: () => onSalaryPresetSelected(option.value),
+                ),
+              )
+              .toList(growable: false),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    '自定义薪资'.tr(),
+                    style: const TextStyle(
+                      color: Color(0xFF262626),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _SalaryInputField(
+                          controller: minController,
+                          hintText: '最低薪资'.tr(),
+                          onChanged: (_) => onCustomSalaryChanged(),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          '至'.tr(),
+                          style: const TextStyle(
+                            color: Color(0xFF262626),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            height: 20 / 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 32),
+                child: _SalaryInputField(
+                  controller: maxController,
+                  hintText: '最高薪资'.tr(),
+                  onChanged: (_) => onCustomSalaryChanged(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CombinedFilterSection extends StatelessWidget {
+  const _CombinedFilterSection({
+    required this.title,
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+  });
+
+  final String title;
+  final List<_DropdownOption> options;
+  final String? selectedValue;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF262626),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            height: 22 / 16,
           ),
-          menuItemStyleData: const MenuItemStyleData(
-            padding: EdgeInsets.symmetric(horizontal: 10),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 18,
+          children: options
+              .map(
+                (_DropdownOption option) => _SalaryPresetOptionTile(
+                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
+                  label: option.label,
+                  selected: option.value == selectedValue,
+                  onTap: () => onSelected(option.value),
+                ),
+              )
+              .toList(growable: false),
+        ),
+      ],
+    );
+  }
+}
+
+class _SalaryFilterSheetContent extends StatelessWidget {
+  const _SalaryFilterSheetContent({
+    required this.presetOptions,
+    required this.selectedPresetKey,
+    required this.minController,
+    required this.maxController,
+    required this.onPresetSelected,
+    required this.onCustomValueChanged,
+  });
+
+  final List<_DropdownOption> presetOptions;
+  final String? selectedPresetKey;
+  final TextEditingController minController;
+  final TextEditingController maxController;
+  final ValueChanged<String> onPresetSelected;
+  final VoidCallback onCustomValueChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Wrap(
+          spacing: 12,
+          runSpacing: 18,
+          children: presetOptions
+              .map(
+                (_DropdownOption option) => _SalaryPresetOptionTile(
+                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
+                  label: option.label,
+                  selected: option.value == selectedPresetKey,
+                  onTap: () => onPresetSelected(option.value),
+                ),
+              )
+              .toList(growable: false),
+        ),
+        const SizedBox(height: 30),
+        Text(
+          '自定义薪资'.tr(),
+          style: const TextStyle(
+            color: Color(0xFF262626),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            height: 20 / 14,
           ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _SalaryInputField(
+                controller: minController,
+                hintText: '最低薪资'.tr(),
+                onChanged: (_) => onCustomValueChanged(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                '至'.tr(),
+                style: const TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 14,
+                ),
+              ),
+            ),
+            Expanded(
+              child: _SalaryInputField(
+                controller: maxController,
+                hintText: '最高薪资'.tr(),
+                onChanged: (_) => onCustomValueChanged(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SalaryPresetOptionTile extends StatelessWidget {
+  const _SalaryPresetOptionTile({
+    required this.width,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final double width;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color borderColor = selected
+        ? const Color(0xFF91C3FF)
+        : const Color(0xFFBFBFBF);
+    final Color backgroundColor = selected
+        ? const Color(0xFFEDF4FF)
+        : Colors.white;
+    final Color textColor = selected
+        ? const Color(0xFF096DD9)
+        : const Color(0xFF171A1D);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: borderColor),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
+            height: 18 / 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SalaryInputField extends StatelessWidget {
+  const _SalaryInputField({
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        keyboardType: TextInputType.number,
+        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: const Color(0xFFF5F7FA),
+          hintText: hintText,
+          hintStyle: const TextStyle(
+            color: Color(0xFF8C8C8C),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            height: 20 / 14,
+          ),
+          border: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color(0xFF91C3FF)),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        style: const TextStyle(
+          color: Color(0xFF262626),
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 20 / 14,
         ),
       ),
     );
@@ -770,7 +1514,6 @@ class _SalaryRangeOption {
     required this.key,
     this.label,
     this.labelKey,
-    this.prefix,
     this.min,
     this.max,
   });
@@ -778,15 +1521,11 @@ class _SalaryRangeOption {
   final String key;
   final String? label;
   final String? labelKey;
-  final String? prefix;
   final double? min;
   final double? max;
 
   String resolveLabel() {
     if (labelKey != null) {
-      if (prefix != null) {
-        return '$prefix${tr(labelKey!)}';
-      }
       return tr(labelKey!);
     }
     return label ?? '';
