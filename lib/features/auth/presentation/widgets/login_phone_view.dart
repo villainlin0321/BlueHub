@@ -31,7 +31,9 @@ class LoginPhoneView extends StatelessWidget {
     required this.onCodeChanged,
     required this.onSendCode,
     required this.onLogin,
-    required this.onDirectEmailLogin,
+    required this.onTestWorkerLogin,
+    required this.onTestServiceProviderLogin,
+    required this.onTestEmployerLogin,
     required this.onAgreementChanged,
   });
 
@@ -48,7 +50,9 @@ class LoginPhoneView extends StatelessWidget {
   final ValueChanged<String> onCodeChanged;
   final VoidCallback onSendCode;
   final VoidCallback onLogin;
-  final VoidCallback onDirectEmailLogin;
+  final VoidCallback onTestWorkerLogin;
+  final VoidCallback onTestServiceProviderLogin;
+  final VoidCallback onTestEmployerLogin;
   final ValueChanged<bool> onAgreementChanged;
 
   @override
@@ -114,9 +118,21 @@ class LoginPhoneView extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(
-                    label: '认证.登录测试'.tr(),
+                    label: 'Test登录-求职者',
                     enabled: !state.isSendingCode && !state.isSubmitting,
-                    onPressed: onDirectEmailLogin,
+                    onPressed: onTestWorkerLogin,
+                  ),
+                  const SizedBox(height: 12),
+                  _LoginButton(
+                    label: 'Test登录-服务商',
+                    enabled: !state.isSendingCode && !state.isSubmitting,
+                    onPressed: onTestServiceProviderLogin,
+                  ),
+                  const SizedBox(height: 12),
+                  _LoginButton(
+                    label: 'Test登录-雇主',
+                    enabled: !state.isSendingCode && !state.isSubmitting,
+                    onPressed: onTestEmployerLogin,
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(

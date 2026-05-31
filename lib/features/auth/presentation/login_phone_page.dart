@@ -19,6 +19,11 @@ class LoginPhonePage extends ConsumerStatefulWidget {
 }
 
 class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
+  static const String _workerTestEmail = 'zhangwei@example.com';
+  static const String _employerTestEmail = 'berlin.food@example.de';
+  static const String _serviceProviderTestEmail = 'oulu@example.com';
+  static const String _testCode = '1234';
+
   final _phoneController = TextEditingController();
 
   // worker
@@ -31,8 +36,8 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   // oulu@example.com
   // zhongde@example.com
   // final _emailController = TextEditingController();
-  final _emailController = TextEditingController(text: 'zhangwei@example.com');
-  final _codeController = TextEditingController(text: '1234');
+  final _emailController = TextEditingController(text: _workerTestEmail);
+  final _codeController = TextEditingController(text: _testCode);
 
   @override
   void dispose() {
@@ -88,13 +93,21 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
     context.goNamed(RoutePaths.homeName);
   }
 
-  /// 保留测试邮箱登录入口，便于联调时直接验证邮箱验证码登录链路。
-  Future<void> _handleDirectEmailLogin() async {
+  /// 按测试角色填充邮箱与验证码，并直接发起邮箱验证码登录。
+  Future<void> _handleDirectEmailLogin(String email) async {
+    _emailController.text = email;
+    _codeController.text = _testCode;
+
+    final notifier = ref.read(loginFormControllerProvider.notifier);
+    notifier.setLoginMode(false);
+    notifier.updateEmail(email);
+    notifier.updateCode(_testCode);
+
     final login = await ref
         .read(loginFormControllerProvider.notifier)
         .submitEmailLoginWithoutValidation(
-          email: _emailController.text,
-          code: _codeController.text,
+          email: email,
+          code: _testCode,
         );
     if (!mounted || login == null) {
       return;
@@ -161,7 +174,15 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
                     ref.read(loginFormControllerProvider.notifier).sendCode();
                   },
                   onLogin: _handleLogin,
-                  onDirectEmailLogin: _handleDirectEmailLogin,
+                  onTestWorkerLogin: () {
+                    _handleDirectEmailLogin(_workerTestEmail);
+                  },
+                  onTestServiceProviderLogin: () {
+                    _handleDirectEmailLogin(_serviceProviderTestEmail);
+                  },
+                  onTestEmployerLogin: () {
+                    _handleDirectEmailLogin(_employerTestEmail);
+                  },
                   onAgreementChanged: (agreed) {
                     ref
                         .read(loginFormControllerProvider.notifier)
