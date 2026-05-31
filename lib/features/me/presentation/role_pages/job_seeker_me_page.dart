@@ -9,6 +9,7 @@ import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends ConsumerWidget {
@@ -17,7 +18,6 @@ class JobSeekerMePage extends ConsumerWidget {
   static const String _verifiedBadgeBgAsset =
       'assets/images/mou4gf12-gd4t3xy.svg';
   static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
-  static const String _messageAsset = 'assets/images/home_message_center.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
 
   static const List<_MenuActionItem> _menuItems = <_MenuActionItem>[
@@ -62,10 +62,7 @@ class JobSeekerMePage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _Header(
-                onMessageTap: () => context.push(RoutePaths.messageCenter),
-                onSettingsTap: () => _handleSettingsTap(context),
-              ),
+              _Header(onSettingsTap: () => _handleSettingsTap(context)),
               const SizedBox(height: 11),
               _ProfileCard(
                 userViewData: userViewData,
@@ -116,9 +113,8 @@ class JobSeekerMePage extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onMessageTap, required this.onSettingsTap});
+  const _Header({required this.onSettingsTap});
 
-  final VoidCallback onMessageTap;
   final VoidCallback onSettingsTap;
 
   @override
@@ -137,11 +133,7 @@ class _Header extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          _TopIconButton(
-            assetPath: JobSeekerMePage._messageAsset,
-            fallbackIcon: Icons.chat_bubble_outline,
-            onTap: onMessageTap,
-          ),
+          const MessageCenterIconButton(color: Colors.black),
           const SizedBox(width: 16),
           _TopIconButton(
             assetPath: JobSeekerMePage._settingsAsset,
@@ -178,7 +170,7 @@ class _TopIconButton extends StatelessWidget {
             assetPath,
             width: 24,
             height: 24,
-            color: Colors.black,
+            colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, size: 20, color: const Color(0xFF262626)),
           ),

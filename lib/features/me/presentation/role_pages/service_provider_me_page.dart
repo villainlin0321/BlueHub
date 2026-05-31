@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
 import '../../../me/presentation/current_user_view_data.dart';
@@ -15,9 +16,9 @@ import '../../../visa/data/provider_providers.dart';
 
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
-  final service = ref.watch(providerServiceProvider);
-  return service.getMyProfile();
-});
+      final service = ref.watch(providerServiceProvider);
+      return service.getMyProfile();
+    });
 
 /// 服务商端个人中心，按 Figma 设计图还原。
 class ServiceProviderMePage extends ConsumerWidget {
@@ -25,7 +26,6 @@ class ServiceProviderMePage extends ConsumerWidget {
 
   static const String _headerBgAsset = 'assets/images/mou588hj-8pcermw.png';
   static const String _avatarAsset = 'assets/images/mou588hj-vpl779h.png';
-  static const String _messageAsset = 'assets/images/home_message_center.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _badgeBgAsset = 'assets/images/mou588hj-umrxyv9.svg';
   static const String _badgeVAsset = 'assets/images/mou588hj-j0ju7dc.svg';
@@ -130,7 +130,9 @@ class ServiceProviderMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '资料加载失败，请稍后重试';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }
@@ -190,11 +192,7 @@ class _HeaderActions extends StatelessWidget {
     return Row(
       children: <Widget>[
         const Spacer(),
-        _TopIconButton(
-          assetPath: ServiceProviderMePage._messageAsset,
-          fallbackIcon: Icons.chat_bubble_outline,
-          onTap: () => context.push(RoutePaths.messageCenter),
-        ),
+        const MessageCenterIconButton(),
         const SizedBox(width: 16),
         _TopIconButton(
           assetPath: ServiceProviderMePage._settingsAsset,
@@ -230,10 +228,7 @@ class _TopIconButton extends StatelessWidget {
             assetPath,
             width: 24,
             height: 24,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, color: Colors.white, size: 20),
           ),

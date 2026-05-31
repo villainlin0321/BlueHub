@@ -1,13 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../application/message_session/message_session_controller.dart';
 import '../../messages/data/message_models.dart';
-import '../../messages/data/message_providers.dart';
 import '../application/chat/chat_page_args.dart';
-import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 
@@ -39,18 +40,13 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
       'assets/images/mpflx21r-qvw8ip7.svg';
 
   late final TabController _tabController;
-  late List<_ChatMessageItem> _chatItems;
   late List<_SystemNoticeItem> _systemItems;
-  bool _isLoadingChat = true;
-  String? _chatError;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
-    _chatItems = const <_ChatMessageItem>[];
     _systemItems = _buildInitialSystemItems();
-    _loadConversations();
   }
 
   @override
@@ -59,74 +55,28 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     super.dispose();
   }
 
-  bool get _hasUnreadChat => _chatItems.any((item) => item.isUnread);
-
   bool get _hasUnreadSystem => _systemItems.any((item) => item.isUnread);
 
-  void _markAllAsRead() {
-    final List<int> unreadConversationIds = _chatItems
+  Future<void> _markAllAsRead(List<_ChatMessageItem> chatItems) async {
+    final List<int> unreadConversationIds = chatItems
         .where((item) => item.isUnread)
         .map((item) => item.conversationId)
         .toList(growable: false);
     setState(() {
-      _chatItems = _chatItems
-          .map((item) => item.copyWith(unreadCount: 0))
-          .toList(growable: false);
       _systemItems = _systemItems
           .map((item) => item.copyWith(isUnread: false))
           .toList(growable: false);
     });
-    _markChatListAsRead(unreadConversationIds);
+    await ref
+        .read(messageSessionControllerProvider.notifier)
+        .markAllConversationsRead(unreadConversationIds);
   }
 
-  Future<void> _loadConversations() async {
-    setState(() {
-      _isLoadingChat = true;
-      _chatError = null;
-    });
-
-    try {
-      final PageResult<ConversationVO> response = await ref
-          .read(messageServiceProvider)
-          .listConversations(page: 1, pageSize: 50);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _chatItems = response.list
-            .map(_ChatMessageItem.fromConversation)
-            .toList(growable: false);
-        _isLoadingChat = false;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isLoadingChat = false;
-        _chatError = '消息加载失败，请稍后重试';
-      });
-    }
-  }
-
-  Future<void> _openChat(int index) async {
-    final _ChatMessageItem item = _chatItems[index];
+  Future<void> _openChat(_ChatMessageItem item) async {
     if (item.isUnread) {
-      final int previousUnreadCount = item.unreadCount;
-      setState(() {
-        _chatItems[index] = item.copyWith(unreadCount: 0);
-      });
-      try {
-        await ref
-            .read(messageServiceProvider)
-            .markRead(conversationId: item.conversationId);
-      } catch (_) {
-        if (mounted) {
-          setState(() {
-            _chatItems[index] = item.copyWith(unreadCount: previousUnreadCount);
-          });
-        }
-      }
+      await ref
+          .read(messageSessionControllerProvider.notifier)
+          .markConversationRead(item.conversationId);
     }
 
     if (!mounted) {
@@ -149,7 +99,9 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     );
 
     if (result == true && mounted) {
-      await _loadConversations();
+      await ref
+          .read(messageSessionControllerProvider.notifier)
+          .refreshConversations();
     }
   }
 
@@ -160,21 +112,6 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     setState(() {
       _systemItems[index] = _systemItems[index].copyWith(isUnread: false);
     });
-  }
-
-  Future<void> _markChatListAsRead(List<int> conversationIds) async {
-    if (conversationIds.isEmpty) {
-      return;
-    }
-    for (final int conversationId in conversationIds) {
-      try {
-        await ref
-            .read(messageServiceProvider)
-            .markRead(conversationId: conversationId);
-      } catch (_) {
-        // 忽略单个会话的已读同步失败，避免打断当前页面交互。
-      }
-    }
   }
 
   List<_SystemNoticeItem> _buildInitialSystemItems() {
@@ -203,11 +140,16 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
 
   @override
   Widget build(BuildContext context) {
+    final sessionState = ref.watch(messageSessionControllerProvider);
+    final List<_ChatMessageItem> chatItems = sessionState.conversations
+        .map(_ChatMessageItem.fromConversation)
+        .toList(growable: false);
+
     return Scaffold(
       backgroundColor: _pageBackground,
       appBar: _MessageHeader(
         onBack: () => Navigator.of(context).maybePop(),
-        onMarkAllRead: _markAllAsRead,
+        onMarkAllRead: () => unawaited(_markAllAsRead(chatItems)),
       ),
       body: Column(
         children: <Widget>[
@@ -215,7 +157,7 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
             color: Colors.white,
             child: _MessageTabBar(
               controller: _tabController,
-              hasUnreadChat: _hasUnreadChat,
+              hasUnreadChat: chatItems.any((item) => item.isUnread),
               hasUnreadSystem: _hasUnreadSystem,
             ),
           ),
@@ -224,11 +166,13 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
               controller: _tabController,
               children: <Widget>[
                 _ChatTabView(
-                  items: _chatItems,
-                  isLoading: _isLoadingChat,
-                  errorText: _chatError,
+                  items: chatItems,
+                  isLoading: sessionState.isInitializing,
+                  errorText: sessionState.loadErrorMessage,
                   onTapItem: _openChat,
-                  onRetry: _loadConversations,
+                  onRetry: () => ref
+                      .read(messageSessionControllerProvider.notifier)
+                      .refreshConversations(),
                 ),
                 _SystemTabView(
                   items: _systemItems,
@@ -433,7 +377,7 @@ class _ChatTabView extends StatelessWidget {
   final List<_ChatMessageItem> items;
   final bool isLoading;
   final String? errorText;
-  final Future<void> Function(int index) onTapItem;
+  final Future<void> Function(_ChatMessageItem item) onTapItem;
   final Future<void> Function() onRetry;
 
   @override
@@ -464,7 +408,7 @@ class _ChatTabView extends StatelessWidget {
           final _ChatMessageItem item = items[index];
           return _ChatConversationTile(
             item: item,
-            onTap: () => onTapItem(index),
+            onTap: () => onTapItem(item),
           );
         },
       ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
+import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../employer/data/employer_models.dart';
 import '../../../employer/data/employer_providers.dart';
 import '../../../auth/presentation/qualification_certification_flow.dart';
@@ -23,7 +24,6 @@ final _currentEmployerProfileProvider =
 class CompanyMePage extends ConsumerWidget {
   const CompanyMePage({super.key});
 
-  static const String _messageAsset = 'assets/images/home_message_center.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
 
@@ -138,7 +138,9 @@ class CompanyMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '资料加载失败，请稍后重试';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }
@@ -231,11 +233,7 @@ class _HeaderActions extends StatelessWidget {
     return Row(
       children: <Widget>[
         const Spacer(),
-        _TopIconButton(
-          assetPath: CompanyMePage._messageAsset,
-          fallbackIcon: Icons.chat_bubble_outline,
-          onTap: () => context.push(RoutePaths.messageCenter),
-        ),
+        const MessageCenterIconButton(),
         const SizedBox(width: 12),
         _TopIconButton(
           assetPath: CompanyMePage._settingsAsset,
@@ -271,7 +269,7 @@ class _TopIconButton extends StatelessWidget {
             assetPath,
             width: 24,
             height: 24,
-            color: Colors.white,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
             placeholderBuilder: (_) =>
                 Icon(fallbackIcon, color: Colors.white, size: 20),
           ),

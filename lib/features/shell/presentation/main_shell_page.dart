@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,43 +6,80 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/application/auth_session_provider.dart';
+import '../../message/application/message_session/message_session_controller.dart';
 import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../application/shell_role_provider.dart';
 
 /// 主框架页：承载底部 5 个 Tab（go_router 的 StatefulShellRoute）。
-class MainShellPage extends ConsumerWidget {
+class MainShellPage extends ConsumerStatefulWidget {
   const MainShellPage({super.key, required this.navigationShell, this.role});
 
   final StatefulNavigationShell navigationShell;
   final ShellRole? role;
 
   @override
+  ConsumerState<MainShellPage> createState() => _MainShellPageState();
+}
+
+class _MainShellPageState extends ConsumerState<MainShellPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(
+        ref.read(messageSessionControllerProvider.notifier).startSession(),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(
+      ref.read(messageSessionControllerProvider.notifier).stopSession(),
+    );
+    super.dispose();
+  }
+
+  @override
   /// 构建主壳层，并在 Tab 切换时记录当前角色和目标索引。
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ShellRole currentRole = role ?? ref.watch(shellRoleProvider);
+  Widget build(BuildContext context) {
+    ref.listen(authSessionProvider, (previous, next) {
+      if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+        unawaited(
+          ref
+              .read(messageSessionControllerProvider.notifier)
+              .stopSession(clearState: true),
+        );
+      }
+    });
+    final ShellRole currentRole = widget.role ?? ref.watch(shellRoleProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: _BottomBar(
         key: ValueKey(currentRole),
         role: currentRole,
-        currentIndex: navigationShell.currentIndex,
+        currentIndex: widget.navigationShell.currentIndex,
         onTap: (index) {
           AppLogger.instance.info(
             'SHELL',
             '底部 Tab 切换',
             context: <String, Object?>{
               'role': currentRole.name,
-              'fromIndex': navigationShell.currentIndex,
+              'fromIndex': widget.navigationShell.currentIndex,
               'toIndex': index,
             },
           );
           // 切换分支时保留各 Tab 的导航栈，符合 Figma 对应业务场景的保活体验。
-          navigationShell.goBranch(
+          widget.navigationShell.goBranch(
             index,
-            initialLocation: index == navigationShell.currentIndex,
+            initialLocation: index == widget.navigationShell.currentIndex,
           );
         },
       ),

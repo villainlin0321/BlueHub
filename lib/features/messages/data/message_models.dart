@@ -18,16 +18,12 @@ class ConversationVO {
   factory ConversationVO.fromJson(JsonMap json) {
     return ConversationVO(
       conversationId: readInt(json, 'conversationId'),
-      targetUser: TargetUserVO.fromJson(
-        readJsonMap(json, 'targetUser'),
-      ),
+      targetUser: TargetUserVO.fromJson(readJsonMap(json, 'targetUser')),
       // 0510 接口文档标注该字段可能为 null，需避免强解析导致列表页崩溃。
       relatedOrder: json['relatedOrder'] == null
           ? null
           : RelatedOrderVO.fromJson(readJsonMap(json, 'relatedOrder')),
-      lastMessage: LastMessageVO.fromJson(
-        readJsonMap(json, 'lastMessage'),
-      ),
+      lastMessage: LastMessageVO.fromJson(readJsonMap(json, 'lastMessage')),
       unreadCount: readInt(json, 'unreadCount'),
     );
   }
@@ -40,6 +36,22 @@ class ConversationVO {
       'lastMessage': lastMessage.toJson(),
       'unreadCount': unreadCount,
     };
+  }
+
+  ConversationVO copyWith({
+    int? conversationId,
+    TargetUserVO? targetUser,
+    RelatedOrderVO? relatedOrder,
+    LastMessageVO? lastMessage,
+    int? unreadCount,
+  }) {
+    return ConversationVO(
+      conversationId: conversationId ?? this.conversationId,
+      targetUser: targetUser ?? this.targetUser,
+      relatedOrder: relatedOrder ?? this.relatedOrder,
+      lastMessage: lastMessage ?? this.lastMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
   }
 }
 
@@ -101,6 +113,20 @@ class LastMessageVO {
       'sentAt': sentAt,
       'isRead': isRead,
     };
+  }
+
+  LastMessageVO copyWith({
+    String? content,
+    String? type,
+    String? sentAt,
+    bool? isRead,
+  }) {
+    return LastMessageVO(
+      content: content ?? this.content,
+      type: type ?? this.type,
+      sentAt: sentAt ?? this.sentAt,
+      isRead: isRead ?? this.isRead,
+    );
   }
 }
 
@@ -193,6 +219,20 @@ class RelatedOrderVO {
       'packageName': packageName,
       'status': status,
     };
+  }
+
+  RelatedOrderVO copyWith({
+    int? orderId,
+    String? orderNo,
+    String? packageName,
+    String? status,
+  }) {
+    return RelatedOrderVO(
+      orderId: orderId ?? this.orderId,
+      orderNo: orderNo ?? this.orderNo,
+      packageName: packageName ?? this.packageName,
+      status: status ?? this.status,
+    );
   }
 }
 
