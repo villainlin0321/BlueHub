@@ -10,14 +10,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../features/me/data/user_models.dart';
 import '../../../features/me/data/user_providers.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../../shared/network/sse_models.dart';
-import '../../../shared/network/services/message_service.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
+import '../application/message_session/message_session_controller.dart';
 import '../../messages/data/message_models.dart';
-import '../../messages/data/message_providers.dart';
 import '../application/chat/chat_page_args.dart';
 import '../application/chat/chat_page_controller.dart';
 import '../application/chat/chat_page_state.dart';
@@ -50,14 +48,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final ChatBottomPanelContainerController<_ChatPanelType>
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
-  late final MessageService _messageService;
-  StreamSubscription<SseEvent>? _sseSubscription;
   bool _isBlockingUser = false;
 
   @override
   void initState() {
     super.initState();
-    _messageService = ref.read(messageServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -65,15 +60,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ref
           .read(chatPageControllerProvider(widget.args).notifier)
           .loadInitialData();
-      _subscribeRealtimeStream();
     });
     _scrollController.addListener(_handleScroll);
   }
 
   @override
   void dispose() {
-    _sseSubscription?.cancel();
-    unawaited(_messageService.closeConversationStream());
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
@@ -92,20 +84,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           .read(chatPageControllerProvider(widget.args).notifier)
           .loadMoreMessages();
     }
-  }
-
-  void _subscribeRealtimeStream() {
-    _sseSubscription?.cancel();
-    _sseSubscription = _messageService.connectConversationStream().listen((
-      SseEvent event,
-    ) {
-      if (!mounted) {
-        return;
-      }
-      ref
-          .read(chatPageControllerProvider(widget.args).notifier)
-          .handleSseEvent(event);
-    }, onError: (_) {});
   }
 
   Future<void> _handleFileAction() async {
@@ -216,7 +194,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final RelativeRect position = RelativeRect.fromRect(
       Rect.fromPoints(
         button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
       ),
       Offset.zero & overlay.size,
     );
@@ -255,12 +236,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
 
     try {
-      await ref.read(userServiceProvider).manageBlacklist(
-        request: BlacklistBO(
-          targetUserId: widget.args.targetUserId,
-          action: 'add',
-        ),
-      );
+      await ref
+          .read(userServiceProvider)
+          .manageBlacklist(
+            request: BlacklistBO(
+              targetUserId: widget.args.targetUserId,
+              action: 'add',
+            ),
+          );
 
       if (!mounted) {
         return;
@@ -341,6 +324,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           _scrollToLatest(animated: animated);
         });
       }
+    });
+    ref.listen(messageSessionControllerProvider, (previous, next) {
+      if (previous?.latestEventToken == next.latestEventToken) {
+        return;
+      }
+      final event = next.latestEvent;
+      if (event == null) {
+        return;
+      }
+      chatController.handleSseEvent(event);
     });
 
     return Scaffold(
@@ -552,9 +545,7 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: const SizedBox(
                   width: 24,
                   height: 24,
-                  child: Center(
-                    child: _ChatMoreButtonDots(),
-                  ),
+                  child: Center(child: _ChatMoreButtonDots()),
                 ),
               ),
             );
