@@ -9,6 +9,7 @@ import '../../../shared/network/api_exception.dart';
 import '../../../shared/localization/app_locales.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../message/application/message_session/message_session_controller.dart';
 import '../../shell/application/shell_role_provider.dart';
 
 /// 设置页：承接企业端“我的”页右上角设置入口，并提供基础账号操作。
@@ -139,7 +140,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     setState(() {
       _isLoggingOut = true;
     });
+    bool hasStoppedMessageSession = false;
     try {
+      // 关键流程：退出登录前先关闭消息 SSE，避免登出过程中继续消费推送。
+      await ref.read(messageSessionControllerProvider.notifier).stopSession();
+      hasStoppedMessageSession = true;
       // 关键流程：先通知服务端登出，再清理本地登录态。
       await ref.read(authServiceProvider).logout();
       await ref
@@ -152,6 +157,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error) {
       if (!mounted) {
         return;
+      }
+      if (hasStoppedMessageSession) {
+        await ref.read(messageSessionControllerProvider.notifier).startSession();
       }
       _showMessage(_resolveErrorMessage(error));
     } finally {

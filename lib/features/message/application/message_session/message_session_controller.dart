@@ -22,6 +22,11 @@ final messageSessionControllerProvider =
 
 class MessageSessionController extends Notifier<MessageSessionState> {
   static const int _pageSize = 50;
+  static int _activeChatConversationId = 0;
+
+  static void setActiveChatConversationId(int conversationId) {
+    _activeChatConversationId = conversationId > 0 ? conversationId : 0;
+  }
 
   StreamSubscription<SseEvent>? _sseSubscription;
   bool _isDisposed = false;
@@ -217,16 +222,15 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         return;
       }
       final JsonMap messageJson = _extractMessageJson(payload);
-      if (messageJson.isEmpty || messageJson['messageId'] == null) {
-        return;
-      }
-
-      final MessageVO message = MessageVO.fromJson(messageJson);
-      if (message.conversationId <= 0) {
+      final int conversationId = _extractConversationId(
+        payload,
+        messageJson: messageJson,
+      );
+      if (conversationId <= 0) {
         return;
       }
       final int index = state.conversations.indexWhere(
-        (ConversationVO item) => item.conversationId == message.conversationId,
+        (ConversationVO item) => item.conversationId == conversationId,
       );
       if (index == -1) {
         unawaited(refreshConversations());
@@ -234,14 +238,25 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       }
 
       final ConversationVO current = state.conversations[index];
+      final MessageVO? message = _parseMessage(
+        messageJson,
+        conversationId: conversationId,
+      );
+      final bool isActiveChatConversation = _isActiveChatConversation(
+        conversationId,
+      );
       final ConversationVO updated = current.copyWith(
-        lastMessage: current.lastMessage.copyWith(
-          content: message.content,
-          type: message.type,
-          sentAt: message.sentAt,
-          isRead: message.isRead,
-        ),
-        unreadCount: _resolveUnreadCount(current, message, payload),
+        lastMessage: message == null
+            ? current.lastMessage
+            : current.lastMessage.copyWith(
+                content: message.content,
+                type: message.type,
+                sentAt: message.sentAt,
+                isRead: message.isRead,
+              ),
+        unreadCount: isActiveChatConversation
+            ? 0
+            : _resolveUnreadCount(current, message, payload),
         relatedOrder: _extractRelatedOrder(payload) ?? current.relatedOrder,
       );
       _replaceConversation(updated);
@@ -319,6 +334,89 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     return asJsonMap(payload['data']);
   }
 
+  int _extractConversationId(
+    JsonMap payload, {
+    JsonMap? messageJson,
+  }) {
+    final int directConversationId = readInt(payload, 'conversationId');
+    if (directConversationId > 0) {
+      return directConversationId;
+    }
+
+    final int snakeConversationId = readInt(payload, 'conversation_id');
+    if (snakeConversationId > 0) {
+      return snakeConversationId;
+    }
+
+    final JsonMap conversation = asJsonMap(payload['conversation']);
+    final int nestedConversationId = readInt(conversation, 'conversationId');
+    if (nestedConversationId > 0) {
+      return nestedConversationId;
+    }
+
+    final int nestedSnakeConversationId = readInt(
+      conversation,
+      'conversation_id',
+    );
+    if (nestedSnakeConversationId > 0) {
+      return nestedSnakeConversationId;
+    }
+
+    final JsonMap payloadData = asJsonMap(payload['data']);
+    final int dataConversationId = readInt(payloadData, 'conversationId');
+    if (dataConversationId > 0) {
+      return dataConversationId;
+    }
+
+    final int dataSnakeConversationId = readInt(payloadData, 'conversation_id');
+    if (dataSnakeConversationId > 0) {
+      return dataSnakeConversationId;
+    }
+
+    final JsonMap message = messageJson ?? const <String, dynamic>{};
+    final int messageConversationId = readInt(message, 'conversationId');
+    if (messageConversationId > 0) {
+      return messageConversationId;
+    }
+
+    final int messageSnakeConversationId = readInt(message, 'conversation_id');
+    if (messageSnakeConversationId > 0) {
+      return messageSnakeConversationId;
+    }
+
+    final JsonMap messageConversation = asJsonMap(message['conversation']);
+    final int nestedMessageConversationId = readInt(
+      messageConversation,
+      'conversationId',
+    );
+    if (nestedMessageConversationId > 0) {
+      return nestedMessageConversationId;
+    }
+
+    return readInt(messageConversation, 'conversation_id');
+  }
+
+  MessageVO? _parseMessage(
+    JsonMap messageJson, {
+    required int conversationId,
+  }) {
+    if (messageJson.isEmpty || messageJson['messageId'] == null) {
+      return null;
+    }
+
+    final JsonMap normalizedMessage = <String, dynamic>{
+      ...messageJson,
+      if (readInt(messageJson, 'conversationId') <= 0 &&
+          readInt(messageJson, 'conversation_id') <= 0)
+        'conversationId': conversationId,
+    };
+    return MessageVO.fromJson(normalizedMessage);
+  }
+
+  bool _isActiveChatConversation(int conversationId) {
+    return conversationId > 0 && conversationId == _activeChatConversationId;
+  }
+
   RelatedOrderVO? _extractRelatedOrder(JsonMap payload) {
     final JsonMap direct = asJsonMap(payload['relatedOrder']);
     if (direct.isNotEmpty) {
@@ -334,12 +432,15 @@ class MessageSessionController extends Notifier<MessageSessionState> {
 
   int _resolveUnreadCount(
     ConversationVO current,
-    MessageVO message,
+    MessageVO? message,
     JsonMap payload,
   ) {
     final int directUnreadCount = _readUnreadCount(payload);
     if (directUnreadCount >= 0) {
       return directUnreadCount;
+    }
+    if (message == null) {
+      return current.unreadCount;
     }
     if (message.senderId == _currentUserId) {
       return current.unreadCount;

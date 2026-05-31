@@ -16,11 +16,15 @@ class MessageCenterIconButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool hasUnread = ref.watch(
+    final ({bool hasUnread, int latestEventToken}) unreadState = ref.watch(
       messageSessionControllerProvider.select(
-        (state) => state.hasUnreadConversations,
+        (state) => (
+          hasUnread: state.hasUnreadConversations,
+          latestEventToken: state.latestEventToken,
+        ),
       ),
     );
+    final bool hasUnread = unreadState.hasUnread;
     return SizedBox(
       width: 24,
       height: 24,

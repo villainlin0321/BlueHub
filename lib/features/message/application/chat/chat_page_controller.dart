@@ -310,6 +310,17 @@ class ChatPageController extends Notifier<ChatPageState> {
 
   Future<void> markConversationRead() => _markCurrentConversationRead();
 
+  Future<void> markConversationReadById(int conversationId) async {
+    if (_isDisposed || conversationId <= 0) {
+      return;
+    }
+    try {
+      await _messageService.markRead(conversationId: conversationId);
+    } catch (_) {
+      // 已读失败不阻断消息展示。
+    }
+  }
+
   void handleSseEvent(SseEvent event) {
     if (_isDisposed) {
       return;

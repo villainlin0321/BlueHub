@@ -50,23 +50,35 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final ChatBottomPanelContainerController<_ChatPanelType>
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
   bool _isBlockingUser = false;
+  late final ChatPageController _chatController;
+  int _activeConversationId = 0;
 
   @override
   void initState() {
     super.initState();
+    _chatController = ref.read(chatPageControllerProvider(widget.args).notifier);
+    if (widget.args.conversationId > 0) {
+      _activeConversationId = widget.args.conversationId;
+      MessageSessionController.setActiveChatConversationId(
+        widget.args.conversationId,
+      );
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      ref
-          .read(chatPageControllerProvider(widget.args).notifier)
-          .loadInitialData();
+      _chatController.loadInitialData();
     });
     _scrollController.addListener(_handleScroll);
   }
 
   @override
   void dispose() {
+    final int conversationId = _activeConversationId;
+    if (conversationId > 0) {
+      unawaited(_chatController.markConversationReadById(conversationId));
+    }
+    MessageSessionController.setActiveChatConversationId(0);
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
@@ -81,9 +93,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
     final ScrollPosition position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 120) {
-      ref
-          .read(chatPageControllerProvider(widget.args).notifier)
-          .loadMoreMessages();
+      _chatController.loadMoreMessages();
     }
   }
 
@@ -297,21 +307,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final ChatPageState state = ref.watch(
       chatPageControllerProvider(widget.args),
     );
-    final chatController = ref.read(
-      chatPageControllerProvider(widget.args).notifier,
-    );
     final authUser = ref.watch(authSessionProvider).user;
 
     ref.listen<ChatPageState>(chatPageControllerProvider(widget.args), (
       previous,
       next,
     ) {
+      if (previous?.conversationId != next.conversationId &&
+          next.conversationId > 0) {
+        _activeConversationId = next.conversationId;
+        MessageSessionController.setActiveChatConversationId(
+          next.conversationId,
+        );
+      }
+
       if (previous?.feedbackId != next.feedbackId &&
           next.feedbackMessage != null) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(next.feedbackMessage!)));
-        chatController.clearFeedback();
+        _chatController.clearFeedback();
       }
 
       if (previous?.clearComposerToken != next.clearComposerToken) {
@@ -336,7 +351,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (event == null) {
         return;
       }
-      chatController.handleSseEvent(event);
+      _chatController.handleSseEvent(event);
     });
 
     return Scaffold(
@@ -401,7 +416,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         : state.loadErrorMessage != null
                         ? _ChatLoadError(
                             message: state.loadErrorMessage!,
-                            onRetry: chatController.retry,
+                            onRetry: _chatController.retry,
                           )
                         : _ChatMessageList(
                             messages: state.messages,
@@ -423,7 +438,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     onVoiceTap: _handleVoiceTap,
                     onFileTap: _handleFileAction,
                     onSend: () =>
-                        chatController.sendTextMessage(_inputController.text),
+                        _chatController.sendTextMessage(_inputController.text),
                   ),
                   ChatBottomPanelContainer<_ChatPanelType>(
                     controller: _bottomPanelController,
