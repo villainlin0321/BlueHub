@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,11 +65,11 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
       _commentController.text.trim().isNotEmpty && !_isUploadingImages;
 
   String get _ratingLabel {
-    if (_rating <= 1.5) return '很差';
-    if (_rating <= 2.5) return '一般';
-    if (_rating <= 3.5) return '满意';
-    if (_rating <= 4.5) return '不错';
-    return '很棒';
+    if (_rating <= 1.5) return '评价.很差'.tr();
+    if (_rating <= 2.5) return '评价.一般'.tr();
+    if (_rating <= 3.5) return '评价.满意'.tr();
+    if (_rating <= 4.5) return '评价.不错'.tr();
+    return '评价.很棒'.tr();
   }
 
   void _showPlaceholder(String message) {
@@ -116,7 +117,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '评价发布失败，请稍后重试' : message;
+    return message.isEmpty ? '评价.评价发布失败'.tr() : message;
   }
 
   @override
@@ -134,7 +135,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
             if (context.canPop()) {
               context.pop();
             } else {
-              _showPlaceholder('暂无可返回页面');
+              _showPlaceholder('订单.暂无可返回页面'.tr());
             }
           },
           icon: const AppSvgIcon(
@@ -145,7 +146,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
           ),
         ),
         title: Text(
-          '评价',
+          '评价.标题'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: const Color(0xE6000000),
             fontWeight: FontWeight.w500,
@@ -169,7 +170,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    '综合评价',
+                    '评价.综合评价'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
                       fontSize: 14,
@@ -202,8 +203,8 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
-                            decoration: const InputDecoration(
-                              hintText: '写评论...',
+                            decoration: InputDecoration(
+                              hintText: '评价.写评论'.tr(),
                               hintStyle: TextStyle(
                                 color: Color(0xFF8C8C8C),
                                 fontSize: 13,
@@ -272,7 +273,10 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               opacity: _canPublish && !_isSubmitting ? 1 : 0.3,
               child: IgnorePointer(
                 ignoring: !_canPublish || _isSubmitting,
-                child: PrimaryButton(label: '发布', onPressed: _handlePublish),
+                  child: PrimaryButton(
+                    label: '评价.发布'.tr(),
+                    onPressed: _handlePublish,
+                  ),
               ),
             ),
           ),
@@ -299,11 +303,11 @@ class _ReviewOrderCard extends StatelessWidget {
         children: <Widget>[
           _ReviewTitleRow(title: args.title, price: args.price),
           const SizedBox(height: 12),
-          _ReviewInfoRow(label: '服务商', value: args.providerName),
+          _ReviewInfoRow(label: '订单.服务商'.tr(), value: args.providerName),
           const SizedBox(height: 4),
-          _ReviewInfoRow(label: '套餐类型', value: args.packageType),
+          _ReviewInfoRow(label: '我的.套餐类型'.tr(), value: args.packageType),
           const SizedBox(height: 4),
-          _ReviewInfoRow(label: '订单号', value: args.orderNo),
+          _ReviewInfoRow(label: '我的.订单号'.tr(), value: args.orderNo),
         ],
       ),
     );
@@ -403,7 +407,7 @@ class _RatingRow extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Text(
-            '服务评价',
+            '评价.服务评价'.tr(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: const Color(0xFF8C8C8C),
               fontSize: 13,

@@ -300,20 +300,22 @@ class _SearchResultSection extends StatelessWidget {
 
   VisaServiceCardData _buildCardData(VisaProviderListVO item) {
     return VisaServiceCardData(
-      title: item.name.trim().isEmpty ? '首页.签证服务商'.tr() : item.name,
+      title: item.name.trim().isEmpty ? '签证页.签证服务商'.tr() : item.name,
       avatarUrl: item.logoUrl.trim().isEmpty ? null : item.logoUrl.trim(),
       rating: item.rating.toStringAsFixed(1),
       cases: item.caseCount > 0
-          ? '首页.服务案例数'.tr(
+          ? '签证页.服务案例数'.tr(
               namedArgs: <String, String>{'count': item.caseCount.toString()},
             )
-          : '首页.暂无服务案例'.tr(),
+          : '签证页.暂无服务案例'.tr(),
       tags: item.tags.isEmpty ? <String>['首页.签证服务'.tr()] : item.tags,
-      description: item.brief.trim().isEmpty ? '首页.暂无服务商简介'.tr() : item.brief.trim(),
+      description: item.brief.trim().isEmpty
+          ? '签证页.暂无服务商简介'.tr()
+          : item.brief.trim(),
       packages: <VisaServicePackageData>[
         VisaServicePackageData(
           title: item.latestPackage.name.trim().isEmpty
-              ? '首页.推荐套餐'.tr()
+              ? '签证页.推荐套餐'.tr()
               : item.latestPackage.name,
           price: _formatVisaListPrice(item.latestPackage.priceFrom),
         ),
@@ -333,6 +335,6 @@ class _SearchResultSection extends StatelessWidget {
     if (error is ApiException) {
       return error.message;
     }
-    return '首页.签证服务加载失败'.tr();
+    return '签证页.签证服务加载失败'.tr();
   }
 }

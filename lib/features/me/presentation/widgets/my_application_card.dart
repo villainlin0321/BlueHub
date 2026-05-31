@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/my_applications_models.dart';
@@ -73,7 +74,7 @@ class MyApplicationCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   _StatusTag(
-                    label: item.status.label,
+                    label: item.status.localizedLabel,
                     backgroundColor: statusColors.$1,
                     foregroundColor: statusColors.$2,
                     borderColor: statusColors.$3,
@@ -94,7 +95,7 @@ class MyApplicationCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _ActionButton(
-                    label: item.actionLabel,
+                    label: item.actionLabel.tr(),
                     filled: !isApplied,
                     onPressed: onActionTap,
                   ),

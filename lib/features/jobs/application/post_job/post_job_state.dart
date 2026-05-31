@@ -5,8 +5,8 @@ const Object _requirementTagsErrorSentinel = Object();
 
 class PostJobState {
   const PostJobState({
-    this.selectedJobType = '不限',
-    this.selectedSalaryUnit = '月薪',
+    this.selectedJobType = 'any',
+    this.selectedSalaryUnit = 'month',
     this.requirementTags = const <TagItemVO>[],
     this.selectedRequirementTagCodes = const <String>{},
     this.customTags = const <String>[],

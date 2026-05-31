@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,8 +45,8 @@ class PostJobPage extends ConsumerStatefulWidget {
 }
 
 class _PostJobPageState extends ConsumerState<PostJobPage> {
-  static const List<String> _jobTypes = <String>['不限', '全职', '兼职'];
-  static const List<String> _salaryUnits = <String>['月薪', '周薪', '日薪', '时薪'];
+  static const List<String> _jobTypes = <String>['any', 'full_time', 'part_time'];
+  static const List<String> _salaryUnits = <String>['month', 'week', 'day', 'hour'];
 
   final TextEditingController _packageNameController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
@@ -113,6 +114,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// 加载编辑态需要的岗位详情，并把接口数据回填到表单控制器。
   Future<void> _loadEditJob() async {
     final int? jobId = widget.args.jobId;
     if (jobId == null || _isLoadingEditData) {
@@ -140,7 +142,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     if (initialData == null) {
       setState(() {
         _isLoadingEditData = false;
-        _editLoadError = '岗位详情加载失败，请稍后重试';
+        _editLoadError = '岗位发布.岗位详情加载失败'.tr();
       });
       return;
     }
@@ -222,7 +224,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
-          title: const Text('编辑岗位'),
+          title: Text('岗位发布.编辑岗位'.tr()),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -236,7 +238,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
-          title: const Text('编辑岗位'),
+          title: Text('岗位发布.编辑岗位'.tr()),
         ),
         body: Center(
           child: Padding(
@@ -256,7 +258,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _loadEditJob,
-                  child: const Text('重新加载'),
+                  child: Text('通用.重试'.tr()),
                 ),
               ],
             ),
@@ -266,8 +268,10 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     }
 
     return PostJobPageView(
-      title: widget.args.isEdit ? '编辑岗位' : '发布岗位',
-      publishButtonLabel: '立即发布',
+      title: widget.args.isEdit
+          ? '岗位发布.编辑岗位'.tr()
+          : '岗位发布.发布岗位'.tr(),
+      publishButtonLabel: '岗位发布.立即发布'.tr(),
       packageNameController: _packageNameController,
       countryController: _countryController,
       headcountController: _headcountController,

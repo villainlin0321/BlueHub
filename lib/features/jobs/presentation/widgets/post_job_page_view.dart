@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -70,6 +71,27 @@ class PostJobPageView extends StatelessWidget {
   final ValueChanged<String> onCustomTagSubmitted;
   final String Function(TagItemVO) tagLabelBuilder;
 
+  /// 将岗位类型 code 转成当前语言下的展示文案。
+  String _jobTypeLabel(String value) {
+    return switch (value) {
+      'any' => '岗位发布.不限'.tr(),
+      'full_time' => '岗位发布.全职'.tr(),
+      'part_time' => '岗位发布.兼职'.tr(),
+      _ => value,
+    };
+  }
+
+  /// 将薪资周期 code 转成当前语言下的展示文案。
+  String _salaryUnitLabel(String value) {
+    return switch (value) {
+      'month' => '岗位发布.月薪'.tr(),
+      'week' => '岗位发布.周薪'.tr(),
+      'day' => '岗位发布.日薪'.tr(),
+      'hour' => '岗位发布.时薪'.tr(),
+      _ => value,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
@@ -104,7 +126,7 @@ class PostJobPageView extends StatelessWidget {
                 foregroundColor: PostJobPageStyles.titleText,
                 textStyle: PostJobPageStyles.navAction,
               ),
-              child: const Text('存草稿'),
+              child: Text('岗位发布.存草稿'.tr()),
             ),
           ),
         ],
@@ -123,37 +145,37 @@ class PostJobPageView extends StatelessWidget {
                   child: Column(
                     children: <Widget>[
                       PostJobSectionCard(
-                        title: '基础信息',
+                        title: '岗位发布.基础信息'.tr(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             PostJobFieldGroup(
-                              label: '套餐名称',
+                              label: '岗位发布.套餐名称'.tr(),
                               child: PostJobInputField(
                                 controller: packageNameController,
-                                hintText: '例如：中餐厨师',
+                                hintText: '岗位发布.套餐名称示例'.tr(),
                                 textInputAction: TextInputAction.next,
                               ),
                             ),
                             const SizedBox(height: 16),
                             PostJobFieldGroup(
-                              label: '服务国家',
+                              label: '岗位发布.服务国家'.tr(),
                               child: PostJobInputField(
                                 controller: countryController,
-                                hintText: '如：德国柏林',
+                                hintText: '岗位发布.服务国家示例'.tr(),
                                 textInputAction: TextInputAction.next,
                               ),
                             ),
                             const SizedBox(height: 16),
                             PostJobFieldGroup(
-                              label: '招聘类型',
+                              label: '岗位发布.招聘类型'.tr(),
                               child: Wrap(
                                 spacing: 0,
                                 runSpacing: 12,
                                 children: jobTypes
                                     .map(
                                       (String item) => PostJobRadioOption(
-                                        label: item,
+                                        label: _jobTypeLabel(item),
                                         selected: item == selectedJobType,
                                         onTap: () => onJobTypeChanged(item),
                                       ),
@@ -163,17 +185,17 @@ class PostJobPageView extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             PostJobFieldGroup(
-                              label: '招聘人数',
+                              label: '岗位发布.招聘人数'.tr(),
                               child: PostJobInputField(
                                 controller: headcountController,
-                                hintText: '请输入数字',
+                                hintText: '岗位发布.请输入数字'.tr(),
                                 keyboardType: TextInputType.number,
                                 textInputAction: TextInputAction.next,
                               ),
                             ),
                             const SizedBox(height: 16),
                             PostJobFieldGroup(
-                              label: '薪资范围 (€)',
+                              label: '岗位发布.薪资范围欧元'.tr(),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
@@ -183,7 +205,7 @@ class PostJobPageView extends StatelessWidget {
                                     children: salaryUnits
                                         .map(
                                           (String item) => PostJobRadioOption(
-                                            label: item,
+                                            label: _salaryUnitLabel(item),
                                             selected:
                                                 item == selectedSalaryUnit,
                                             onTap: () =>
@@ -198,21 +220,21 @@ class PostJobPageView extends StatelessWidget {
                                       Expanded(
                                         child: PostJobInputField(
                                           controller: minSalaryController,
-                                          hintText: '最低薪资',
+                                          hintText: '岗位发布.最低薪资'.tr(),
                                           keyboardType: TextInputType.number,
                                           textInputAction: TextInputAction.next,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text(
-                                        '至',
+                                      Text(
+                                        '岗位发布.至'.tr(),
                                         style: PostJobPageStyles.fieldLabel,
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: PostJobInputField(
                                           controller: maxSalaryController,
-                                          hintText: '最高薪资',
+                                          hintText: '岗位发布.最高薪资'.tr(),
                                           keyboardType: TextInputType.number,
                                           textInputAction: TextInputAction.next,
                                         ),
@@ -227,7 +249,7 @@ class PostJobPageView extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       PostJobSectionCard(
-                        title: '任职要求',
+                        title: '岗位发布.任职要求'.tr(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
@@ -261,7 +283,7 @@ class PostJobPageView extends StatelessWidget {
                             const SizedBox(height: 12),
                             PostJobInputField(
                               controller: customTagController,
-                              hintText: '+ 自定义标签（如：回国探亲机票）8个字',
+                              hintText: '岗位发布.自定义标签提示'.tr(),
                               maxLength: 8,
                               textInputAction: TextInputAction.done,
                               onSubmitted: onCustomTagSubmitted,
@@ -271,9 +293,9 @@ class PostJobPageView extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       PostJobSectionCard(
-                        title: '工作描述',
-                        trailing: const Text(
-                          '选填',
+                        title: '岗位发布.工作描述'.tr(),
+                        trailing: Text(
+                          '通用.选填'.tr(),
                           style: PostJobPageStyles.optional,
                         ),
                         child: DecoratedBox(
@@ -303,8 +325,8 @@ class PostJobPageView extends StatelessWidget {
                                         return const SizedBox.shrink();
                                       },
                                   style: PostJobPageStyles.optionText,
-                                  decoration: const InputDecoration(
-                                    hintText: '请详细描述工作内容、排版情况等...',
+                                  decoration: InputDecoration(
+                                    hintText: '岗位发布.详细描述提示'.tr(),
                                     hintStyle: PostJobPageStyles.placeholder,
                                     border: InputBorder.none,
                                     isCollapsed: true,
@@ -434,14 +456,17 @@ class _RequirementTagContent extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetryLoadRequirementTags,
-            child: const Text('重试'),
+            child: Text('通用.重试'.tr()),
           ),
         ],
       );
     }
 
     if (requirementTags.isEmpty) {
-      return const Text('暂无任职要求标签', style: PostJobPageStyles.placeholder);
+      return Text(
+        '岗位发布.暂无任职要求标签'.tr(),
+        style: PostJobPageStyles.placeholder,
+      );
     }
 
     return GridView.builder(

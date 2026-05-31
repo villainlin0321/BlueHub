@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -57,6 +58,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
     }
   }
 
+  /// 打开新增银行卡弹窗，提交成功后刷新列表并同步财务页数据。
   Future<void> _openAddBankCardSheet() async {
     final bool? added = await showModalBottomSheet<bool>(
       context: context,
@@ -72,7 +74,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
             if (!mounted) {
               return;
             }
-            _showMessage('添加成功');
+            _showMessage('财务.添加成功'.tr());
             ref.read(financeRefreshTickProvider.notifier).bump();
           },
         );
@@ -83,22 +85,27 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
     }
   }
 
+  /// 删除前先做二次确认，避免误删默认银行卡。
   Future<bool> _confirmDeleteBankCard(ProviderBankCardVO card) async {
     final String label = '${card.bankName} ${card.cardNoMask}'.trim();
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('删除银行卡'),
-          content: Text('确认删除“$label”吗？'),
+          title: Text('财务.删除银行卡'.tr()),
+          content: Text(
+            '财务.确认删除银行卡'.tr(
+              namedArgs: <String, String>{'label': label},
+            ),
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('取消'),
+              child: Text('通用.取消'.tr()),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('删除'),
+              child: Text('财务.删除'.tr()),
             ),
           ],
         );
@@ -119,7 +126,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('删除成功');
+      _showMessage('财务.删除成功'.tr());
       ref.read(financeRefreshTickProvider.notifier).bump();
       await _refresh();
     } catch (error) {
@@ -140,8 +147,8 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text(
-          '银行卡管理',
+        title: Text(
+          '财务.银行卡管理'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -170,8 +177,8 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                '新增银行卡',
+              child: Text(
+                '财务.新增银行卡'.tr(),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -208,9 +215,9 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
         },
         itemBuilder: (BuildContext context, int index) {
           if (_items.isEmpty) {
-            return const SizedBox(
+            return SizedBox(
               height: 300,
-              child: FinanceEmptyState(message: '暂未绑定银行卡'),
+              child: FinanceEmptyState(message: '财务.暂未绑定银行卡'.tr()),
             );
           }
           final ProviderBankCardVO card = _items[index];

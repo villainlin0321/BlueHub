@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/data/config_models.dart';
@@ -50,16 +51,16 @@ class PostJobEditInitialData {
 }
 
 class PostJobController extends Notifier<PostJobState> {
-  static const Map<String, String> _employmentTypeMap = <String, String>{
-    '不限': 'any',
-    '全职': 'full_time',
-    '兼职': 'part_time',
+  static const Set<String> _employmentTypes = <String>{
+    'any',
+    'full_time',
+    'part_time',
   };
-  static const Map<String, String> _salaryPeriodMap = <String, String>{
-    '月薪': 'month',
-    '周薪': 'week',
-    '日薪': 'day',
-    '时薪': 'hour',
+  static const Set<String> _salaryPeriods = <String>{
+    'month',
+    'week',
+    'day',
+    'hour',
   };
   static const Map<String, String> _countryCodeMap = <String, String>{
     '德国': 'DE',
@@ -75,12 +76,6 @@ class PostJobController extends Notifier<PostJobState> {
     '捷克': 'CZ',
     '匈牙利': 'HU',
   };
-  static final Map<String, String> _employmentTypeReverseMap =
-      _employmentTypeMap.map(
-        (String key, String value) => MapEntry<String, String>(value, key),
-      );
-  static final Map<String, String> _salaryPeriodReverseMap = _salaryPeriodMap
-      .map((String key, String value) => MapEntry<String, String>(value, key));
   static final Map<String, String> _countryNameMap = _countryCodeMap.map(
     (String key, String value) => MapEntry<String, String>(value, key),
   );
@@ -176,7 +171,7 @@ class PostJobController extends Notifier<PostJobState> {
     } catch (error, stackTrace) {
       state = state.copyWith(
         isLoadingRequirementTags: false,
-        requirementTagsError: '任职要求标签加载失败',
+        requirementTagsError: '岗位发布.任职要求标签加载失败'.tr(),
       );
       AppLogger.instance.error(
         'POST_JOB',
@@ -229,7 +224,7 @@ class PostJobController extends Notifier<PostJobState> {
     }
 
     if (state.customTags.contains(customTag)) {
-      _emitFeedback('该自定义标签已添加', isError: true);
+      _emitFeedback('岗位发布.该自定义标签已添加'.tr(), isError: true);
       return;
     }
 
@@ -247,7 +242,7 @@ class PostJobController extends Notifier<PostJobState> {
   }
 
   void saveDraft() {
-    _emitFeedback('草稿已保存');
+    _emitFeedback('岗位发布.草稿已保存'.tr());
   }
 
   void clearFeedback() {
@@ -278,11 +273,17 @@ class PostJobController extends Notifier<PostJobState> {
         isPublishing: false,
         publishSuccessId: state.publishSuccessId + 1,
       );
-      _emitFeedback(editingJobId == null ? '岗位发布成功' : '岗位更新成功');
+      _emitFeedback(
+        editingJobId == null
+            ? '岗位发布.岗位发布成功'.tr()
+            : '岗位发布.岗位更新成功'.tr(),
+      );
     } catch (_) {
       state = state.copyWith(isPublishing: false);
       _emitFeedback(
-        editingJobId == null ? '岗位发布失败，请稍后重试' : '岗位更新失败，请稍后重试',
+        editingJobId == null
+            ? '岗位发布.岗位发布失败'.tr()
+            : '岗位发布.岗位更新失败'.tr(),
         isError: true,
       );
     }
@@ -308,7 +309,7 @@ class PostJobController extends Notifier<PostJobState> {
         stackTrace: stackTrace,
         context: <String, Object?>{'jobId': jobId},
       );
-      _emitFeedback('岗位详情加载失败，请稍后重试', isError: true);
+      _emitFeedback('岗位发布.岗位详情加载失败'.tr(), isError: true);
       return null;
     }
   }
@@ -338,12 +339,12 @@ class PostJobController extends Notifier<PostJobState> {
         .toList(growable: false);
 
     state = state.copyWith(
-      selectedJobType:
-          _employmentTypeReverseMap[detail.employmentType] ??
-          state.selectedJobType,
-      selectedSalaryUnit:
-          _salaryPeriodReverseMap[detail.salaryPeriod] ??
-          state.selectedSalaryUnit,
+      selectedJobType: _employmentTypes.contains(detail.employmentType)
+          ? detail.employmentType
+          : state.selectedJobType,
+      selectedSalaryUnit: _salaryPeriods.contains(detail.salaryPeriod)
+          ? detail.salaryPeriod
+          : state.selectedSalaryUnit,
       selectedRequirementTagCodes: selectedCodes,
       customTags: customTags,
     );
@@ -365,34 +366,35 @@ class PostJobController extends Notifier<PostJobState> {
     return tag.tagNameEn.trim();
   }
 
+  /// 构建发布请求，并在校验失败时直接给页面抛出可展示的国际化提示。
   CreateJobBO? _buildPublishRequest(PostJobFormDraft draft) {
     final String title = draft.title.trim();
     if (title.isEmpty) {
-      _emitFeedback('请填写套餐名称', isError: true);
+      _emitFeedback('岗位发布.请填写套餐名称'.tr(), isError: true);
       return null;
     }
 
     final _JobLocationDraft location = _parseLocation(draft.countryOrCity);
     final String countryCode = _normalizeCountryCode(location.countryText);
     if (countryCode.isEmpty) {
-      _emitFeedback('请填写服务国家，示例：德国·柏林 或 DE', isError: true);
+      _emitFeedback('岗位发布.请填写服务国家'.tr(), isError: true);
       return null;
     }
 
     final int? headcount = int.tryParse(draft.headcount.trim());
     if (headcount == null || headcount <= 0) {
-      _emitFeedback('请填写正确的招聘人数', isError: true);
+      _emitFeedback('岗位发布.请填写正确的招聘人数'.tr(), isError: true);
       return null;
     }
 
     final double? salaryMin = double.tryParse(draft.minSalary.trim());
     final double? salaryMax = double.tryParse(draft.maxSalary.trim());
     if (salaryMin == null || salaryMax == null) {
-      _emitFeedback('请填写完整的薪资范围', isError: true);
+      _emitFeedback('岗位发布.请填写完整的薪资范围'.tr(), isError: true);
       return null;
     }
     if (salaryMin > salaryMax) {
-      _emitFeedback('最低薪资不能大于最高薪资', isError: true);
+      _emitFeedback('岗位发布.最低薪资不能大于最高薪资'.tr(), isError: true);
       return null;
     }
 
@@ -415,11 +417,15 @@ class PostJobController extends Notifier<PostJobState> {
       latitude: 0,
       longitude: 0,
       headcount: headcount,
-      employmentType: _employmentTypeMap[state.selectedJobType] ?? 'any',
+      employmentType: _employmentTypes.contains(state.selectedJobType)
+          ? state.selectedJobType
+          : 'any',
       salaryMin: salaryMin,
       salaryMax: salaryMax,
       salaryCurrency: 'EUR',
-      salaryPeriod: _salaryPeriodMap[state.selectedSalaryUnit] ?? 'month',
+      salaryPeriod: _salaryPeriods.contains(state.selectedSalaryUnit)
+          ? state.selectedSalaryUnit
+          : 'month',
       requirementTags: selectedRequirementTags
           .map((TagItemVO tag) => tag.tagCode)
           .toList(growable: false),
