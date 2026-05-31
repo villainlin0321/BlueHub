@@ -251,7 +251,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => AppResultPage(
           args:
               state.extra as AppResultPageArgs? ??
-              const AppResultPageArgs.paymentSuccess(),
+              AppResultPageArgs.paymentSuccess(),
         ),
       ),
       GoRoute(

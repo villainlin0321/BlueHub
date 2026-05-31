@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -176,7 +177,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     if (error is ApiException) {
       return error.message;
     }
-    return '收藏岗位加载失败，请稍后重试';
+    return '我的.收藏岗位加载失败'.tr();
   }
 
   /// 统一提取收藏签证列表的错误文案。
@@ -184,7 +185,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     if (error is ApiException) {
       return error.message;
     }
-    return '收藏签证加载失败，请稍后重试';
+    return '我的.收藏签证加载失败'.tr();
   }
 
   /// 处理收藏页岗位投递，真实岗位有 `jobId` 时直接调用接口。
@@ -211,7 +212,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         _submittingJobIds.remove(itemId);
         _appliedJobIds.add(itemId);
       });
-      _showMessage('投递成功');
+      _showMessage('首页.投递成功'.tr());
       return;
     }
 
@@ -318,7 +319,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         );
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(jobIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
+      _showMessage(
+        jobIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -357,7 +360,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         );
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(packageIds.length == 1 ? '已取消收藏' : '已批量取消收藏');
+      _showMessage(
+        packageIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -409,8 +414,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
             color: Color(0xFF262626),
           ),
         ),
-        title: const Text(
-          '我的收藏',
+        title: Text(
+          '我的.我的收藏'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -429,7 +434,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                _isManaging ? '退出管理' : '管理',
+                _isManaging ? '我的.退出管理'.tr() : '我的.管理'.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 14,
@@ -469,9 +474,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               indicatorSize: TabBarIndicatorSize.label,
               indicatorColor: const Color(0xFF096DD9),
               indicatorWeight: 2,
-              tabs: const <Widget>[
-                Tab(text: '签证服务'),
-                Tab(text: '招聘岗位'),
+              tabs: <Widget>[
+                Tab(text: '我的.签证服务'.tr()),
+                Tab(text: '我的.招聘岗位'.tr()),
               ],
             ),
           ),
@@ -662,8 +667,8 @@ class _SelectableWrapper extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  '删除',
+                child: Text(
+                  '我的.删除'.tr(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -769,7 +774,7 @@ class _FavoriteJobCard extends StatelessWidget {
             }
           : null,
       isApplying: isApplying,
-      applyButtonText: isApplied ? '已投递' : '一键投递',
+      applyButtonText: isApplied ? '招聘.已投递'.tr() : '招聘卡片.一键投递'.tr(),
     );
   }
 }
@@ -780,9 +785,9 @@ class _FavoriteServicesEmptyState extends StatelessWidget {
   /// 收藏签证为空时展示空态提示。
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Text(
-        '还没有收藏签证服务',
+        '我的.还没有收藏签证服务'.tr(),
         style: TextStyle(
           color: Color(0xFF8C8C8C),
           fontSize: 14,
@@ -821,7 +826,7 @@ class _FavoriteServicesErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),
@@ -835,9 +840,9 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
   /// 收藏岗位为空时展示空态提示。
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Text(
-        '还没有收藏岗位',
+        '我的.还没有收藏岗位'.tr(),
         style: TextStyle(
           color: Color(0xFF8C8C8C),
           fontSize: 14,
@@ -883,7 +888,7 @@ class _FavoriteJobsErrorState extends StatelessWidget {
               onPressed: () {
                 onRetry();
               },
-              child: const Text('重试'),
+              child: Text('通用.重试'.tr()),
             ),
           ],
         ),
@@ -925,8 +930,8 @@ class _FavoritesManageBar extends StatelessWidget {
                 children: <Widget>[
                   _SelectionIcon(selected: allSelected),
                   const SizedBox(width: 8),
-                  const Text(
-                    '全选',
+                  Text(
+                    '我的.全选'.tr(),
                     style: TextStyle(
                       color: Color(0xFF262626),
                       fontSize: 14,
@@ -950,7 +955,7 @@ class _FavoritesManageBar extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  hasSelection ? '删除' : '删除',
+                  '我的.删除'.tr(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -974,10 +979,13 @@ extension on collection_models.JobListVO {
         .where((String label) => label.isNotEmpty)
         .toList(growable: false);
     final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '急招'),
-      if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
+      ...tagLabels.where((String label) => label != '招聘卡片.急招'.tr()),
+      if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
+        '招聘卡片.提供签证'.tr(),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) '急招'];
+    final List<String> highlightTags = <String>[
+      if (isUrgent) '招聘卡片.急招'.tr(),
+    ];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),
@@ -1016,22 +1024,28 @@ extension on collection_models.VisaPackageVO {
     ].where((String value) => value.isNotEmpty).toList(growable: false);
 
     return VisaServiceCardData(
-      title: name.trim().isEmpty ? '签证套餐' : name,
+      title: name.trim().isEmpty ? '首页.签证套餐'.tr() : name,
       rating: '0.0',
-      cases: estimatedDays > 0 ? '预计$estimatedDays天' : '已收藏套餐',
-      tags: tags.isEmpty ? <String>['签证服务'] : tags,
+      cases: estimatedDays > 0
+          ? '服务详情.预计办理天数'.tr(namedArgs: <String, String>{
+              'days': estimatedDays.toString(),
+            })
+          : '我的.已收藏套餐'.tr(),
+      tags: tags.isEmpty ? <String>['我的.签证服务'.tr()] : tags,
       description: _buildFavoriteDescription(),
       packages: tiers.isEmpty
           ? <VisaServicePackageData>[
               VisaServicePackageData(
-                title: '默认档位',
+                title: '我的.默认档位'.tr(),
                 price: _formatFavoritePrice(0, currency),
               ),
             ]
           : tiers
                 .map(
                   (collection_models.TierVO tier) => VisaServicePackageData(
-                    title: tier.name.trim().isEmpty ? '套餐档位' : tier.name,
+                    title: tier.name.trim().isEmpty
+                        ? '服务详情.套餐档位'.tr()
+                        : tier.name,
                     price: _formatFavoritePrice(tier.price, currency),
                   ),
                 )
@@ -1042,11 +1056,17 @@ extension on collection_models.VisaPackageVO {
   /// 拼装收藏签证卡片简介，优先展示材料数量和办理时长。
   String _buildFavoriteDescription() {
     final List<String> parts = <String>[
-      if (requiredMaterials.isNotEmpty) '所需材料${requiredMaterials.length}项',
-      if (estimatedDays > 0) '预计办理$estimatedDays天',
+      if (requiredMaterials.isNotEmpty)
+        '我的.所需材料项'.tr(namedArgs: <String, String>{
+          'count': requiredMaterials.length.toString(),
+        }),
+      if (estimatedDays > 0)
+        '我的.预计办理天数'.tr(namedArgs: <String, String>{
+          'days': estimatedDays.toString(),
+        }),
     ];
     if (parts.isEmpty) {
-      return '已收藏签证套餐，可进入详情查看完整服务说明';
+      return '我的.已收藏签证套餐说明'.tr();
     }
     return parts.join('，');
   }
@@ -1069,9 +1089,9 @@ String _formatFavoritePrice(double price, String currency) {
 /// 将收藏签证国家代码转为展示文案。
 String _formatFavoriteCountry(String country) {
   return switch (country.trim().toUpperCase()) {
-    'DE' => '德国',
-    'FR' => '法国',
-    'IT' => '意大利',
+    'DE' => '国家.德国'.tr(),
+    'FR' => '国家.法国'.tr(),
+    'IT' => '国家.意大利'.tr(),
     _ => country.trim(),
   };
 }
@@ -1079,11 +1099,11 @@ String _formatFavoriteCountry(String country) {
 /// 将收藏签证类型代码转为展示文案。
 String _formatFavoriteVisaType(String visaType) {
   return switch (visaType.trim().toLowerCase()) {
-    'work' => '工作签',
-    'travel' => '旅游签',
-    'tech' => '技术签',
-    'nursing' => '护理签',
-    'study' => '留学签',
+    'work' => '服务详情.工作签'.tr(),
+    'travel' => '服务详情.旅游签'.tr(),
+    'tech' => '服务详情.技术签'.tr(),
+    'nursing' => '服务详情.护理签'.tr(),
+    'study' => '服务详情.留学签'.tr(),
     _ => visaType.trim(),
   };
 }

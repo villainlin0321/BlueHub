@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -49,13 +50,23 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         if (published == true && mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('评价发布成功')));
+          ).showSnackBar(
+            SnackBar(content: Text('我的.评价发布成功'.tr())),
+          );
         }
         return;
       case _OrderActionType.contactMerchant:
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
+        ).showSnackBar(
+          SnackBar(
+            content: Text(
+              '我的.占位提示'.tr(namedArgs: <String, String>{
+                'label': action.label.tr(),
+              }),
+            ),
+          ),
+        );
         return;
       case _OrderActionType.uploadMaterials:
       case _OrderActionType.viewProgress:
@@ -69,7 +80,15 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       case _OrderActionType.supplementMaterials:
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('${action.label}（占位）')));
+        ).showSnackBar(
+          SnackBar(
+            content: Text(
+              '我的.占位提示'.tr(namedArgs: <String, String>{
+                'label': action.label.tr(),
+              }),
+            ),
+          ),
+        );
         return;
     }
   }
@@ -117,7 +136,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '订单加载失败，请稍后重试' : message;
+    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
   }
 
   Future<bool?> _openOrderDetail(int orderId) {
@@ -152,8 +171,8 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
             color: Color(0xFF262626),
           ),
         ),
-        title: const Text(
-          '我的订单',
+        title: Text(
+          '我的.我的订单'.tr(),
           style: TextStyle(
             color: Color(0xE6262626),
             fontSize: 17,
@@ -188,13 +207,13 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     if (_errorMessage != null) {
       return _OrderStateView(
         message: _errorMessage!,
-        buttonLabel: '重试',
+        buttonLabel: '通用.重试'.tr(),
         onTap: _loadOrders,
       );
     }
 
     if (_orders.isEmpty) {
-      return const _OrderStateView(message: '暂无订单数据');
+      return _OrderStateView(message: '我的.暂无订单数据'.tr());
     }
 
     final List<_OrderItem> visibleOrders = _orders
@@ -217,11 +236,11 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
 }
 
 enum _OrderFilter {
-  all('全部', 'all'),
-  pendingUpload('待上传', 'pending_upload'),
-  pendingPayment('待支付', 'pending_payment'),
-  processing('办理中', 'processing'),
-  completed('已完成', 'completed');
+  all('订单.全部', 'all'),
+  pendingUpload('我的.待上传', 'pending_upload'),
+  pendingPayment('我的.待支付', 'pending_payment'),
+  processing('订单.办理中', 'processing'),
+  completed('订单.已完成', 'completed');
 
   const _OrderFilter(this.label, this.apiValue);
 
@@ -288,7 +307,7 @@ class _OrderItem {
       tagLabel: tag.label,
       tagStyle: tag.style,
       timeText: _formatTime(order.createdAt),
-      title: order.packageName.isEmpty ? '未命名订单' : order.packageName,
+      title: order.packageName.isEmpty ? '订单.未命名订单'.tr() : order.packageName,
       price: _formatAmount(order.amount),
       provider: order.providerName,
       packageType: order.tierName,
@@ -301,7 +320,7 @@ class _OrderItem {
 
   static ({String? label, _OrderTagStyle? style}) _buildTag(VisaOrderVO order) {
     if (order.isUrgent) {
-      return (label: '紧急', style: _OrderTagStyle.urgent);
+      return (label: '订单.紧急'.tr(), style: _OrderTagStyle.urgent);
     }
     final String label = order.statusLabel.trim();
     if (label.isEmpty) {
@@ -325,7 +344,10 @@ class _OrderItem {
             .cast<String?>()
             .firstWhere((label) => label != null, orElse: () => null) ??
         order.statusLabel.trim();
-    return (label: '当前进度', value: stepLabel.isEmpty ? '处理中' : stepLabel);
+    return (
+      label: '我的.当前进度'.tr(),
+      value: stepLabel.isEmpty ? '订单.处理中'.tr() : stepLabel,
+    );
   }
 
   static List<_OrderAction> _buildActions(VisaOrderVO order) {
@@ -333,28 +355,28 @@ class _OrderItem {
     switch (filter) {
       case _OrderFilter.pendingPayment:
         return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
-          _OrderAction.filled(_OrderActionType.goPay, '去支付'),
+          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
+          _OrderAction.filled(_OrderActionType.goPay, '我的.去支付'),
         ];
       case _OrderFilter.pendingUpload:
         return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
-          _OrderAction.filled(_OrderActionType.uploadMaterials, '上传材料'),
+          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
+          _OrderAction.filled(_OrderActionType.uploadMaterials, '订单.上传材料'),
         ];
       case _OrderFilter.processing:
         return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
-          _OrderAction.filled(_OrderActionType.viewProgress, '查看进度'),
+          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
+          _OrderAction.filled(_OrderActionType.viewProgress, '我的.查看进度'),
         ];
       case _OrderFilter.completed:
         return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
-          _OrderAction.filled(_OrderActionType.goReview, '去评价'),
+          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
+          _OrderAction.filled(_OrderActionType.goReview, '我的.去评价'),
         ];
       case _OrderFilter.all:
         return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '联系商家'),
-          _OrderAction.filled(_OrderActionType.viewDetail, '查看详情'),
+          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
+          _OrderAction.filled(_OrderActionType.viewDetail, '我的.查看详情'),
         ];
     }
   }
@@ -369,7 +391,7 @@ class _OrderItem {
   static String _formatTime(String raw) {
     final DateTime? parsed = DateTime.tryParse(raw);
     if (parsed == null) {
-      return raw.isEmpty ? '时间未知' : raw;
+      return raw.isEmpty ? '我的.时间未知'.tr() : raw;
     }
     final String year = parsed.year.toString();
     final String month = parsed.month.toString().padLeft(2, '0');
@@ -449,7 +471,7 @@ class _OrderStatusTabs extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   Text(
-                    filter.label,
+                    filter.label.tr(),
                     style: TextStyle(
                       color: isSelected
                           ? const Color(0xFF096DD9)
@@ -620,11 +642,11 @@ class _OrderCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _OrderMetaRow(label: '服务商', value: order.provider),
+                      _OrderMetaRow(label: '订单.服务商'.tr(), value: order.provider),
                       const SizedBox(height: 4),
-                      _OrderMetaRow(label: '套餐类型', value: order.packageType),
+                      _OrderMetaRow(label: '我的.套餐类型'.tr(), value: order.packageType),
                       const SizedBox(height: 4),
-                      _OrderMetaRow(label: '订单号', value: order.orderNo),
+                      _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
                       if (order.hasProgress) ...<Widget>[
                         const SizedBox(height: 12),
                         Container(
@@ -807,7 +829,7 @@ class _OrderActionButton extends StatelessWidget {
             ),
           ),
           child: Text(
-            action.label,
+            action.label.tr(),
             style: TextStyle(
               color: foregroundColor,
               fontSize: 12,

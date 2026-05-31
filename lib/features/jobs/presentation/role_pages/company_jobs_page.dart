@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
@@ -28,8 +29,6 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   int _selectedTabIndex = 0;
   final Set<int> _processingInviteUserIds = <int>{};
 
-  static const List<String> _tabs = <String>['全部人才', '近期活跃', '高匹配度', '厨师岗位'];
-
   late final TextEditingController _searchController = TextEditingController()
     ..addListener(_handleSearchChanged);
 
@@ -48,7 +47,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
 
   TalentListQuery _buildQueryForTab(int index) => TalentListQuery(
     keyword: _keyword,
-    position: index == 3 ? '中餐厨师' : null,
+    position: index == 3 ? tr('招聘.中餐厨师') : null,
     sort: _sortForTab(index),
     page: 1,
     pageSize: 20,
@@ -137,7 +136,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     try {
       final int? applicationId = await _findPendingApplicationId(data.userId);
       if (applicationId == null) {
-        _showMessage('未找到待处理应聘记录', isError: true);
+        _showMessage('招聘.未找到待处理应聘记录'.tr(), isError: true);
         return;
       }
 
@@ -262,23 +261,23 @@ class _RemarkDialogState extends State<_RemarkDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('${widget.actionLabel}备注'),
+      title: Text('${widget.actionLabel}${'招聘.备注'.tr()}'),
       content: TextField(
         controller: _controller,
         maxLines: 4,
-        decoration: const InputDecoration(
-          hintText: '请输入备注（选填）',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText: '招聘.请输入备注选填'.tr(),
+          border: const OutlineInputBorder(),
         ),
       ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text('通用.取消'.tr()),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          child: const Text('确认'),
+          child: Text('通用.确定'.tr()),
         ),
       ],
     );
@@ -295,12 +294,12 @@ class _Header extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(16, topPadding + 10, 16, 10),
-      child: const Row(
+      child: Row(
         children: <Widget>[
           Expanded(
             child: Text(
-              '人才中心',
-              style: TextStyle(
+              '招聘.人才中心'.tr(),
+              style: const TextStyle(
                 color: Color(0xE6000000),
                 fontSize: 17,
                 fontWeight: FontWeight.w500,
@@ -311,8 +310,8 @@ class _Header extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(top: 2),
             child: Text(
-              '筛选',
-              style: TextStyle(
+              '招聘.筛选'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
@@ -360,11 +359,11 @@ class _SearchBar extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   height: 20 / 14,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   isDense: true,
                   border: InputBorder.none,
-                  hintText: '搜索岗位/技能/经验',
-                  hintStyle: TextStyle(
+                  hintText: '招聘.搜索岗位技能经验'.tr(),
+                  hintStyle: const TextStyle(
                     color: Color(0xFFBFBFBF),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -385,13 +384,19 @@ class _TabBarSection extends StatelessWidget {
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
+  List<String> get _tabs => <String>[
+    tr('招聘.全部人才'),
+    tr('招聘.近期活跃'),
+    tr('招聘.高匹配度'),
+    tr('招聘.厨师岗位'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
       child: Row(
-        children: List<Widget>.generate(_CompanyJobsPageState._tabs.length, (
+        children: List<Widget>.generate(_tabs.length, (
           int index,
         ) {
           final bool selected = index == selectedIndex;
@@ -404,7 +409,7 @@ class _TabBarSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      _CompanyJobsPageState._tabs[index],
+                      _tabs[index],
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: selected
@@ -468,14 +473,14 @@ class _AiBanner extends StatelessWidget {
                         height: 40,
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             Text(
-                              'AI业务助手',
-                              style: TextStyle(
+                              '招聘.AI业务助手'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w400,
@@ -484,8 +489,8 @@ class _AiBanner extends StatelessWidget {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '为您精准推荐 5 名资深中餐厨师',
-                              style: TextStyle(
+                              '招聘.AI推荐文案'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
@@ -528,9 +533,9 @@ class _BannerAction extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const Text(
-                  '查看',
-                  style: TextStyle(
+                Text(
+                  '招聘.查看'.tr(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -672,13 +677,13 @@ class _CandidateCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 _ResumeActionButton(
-                  label: '查看简历',
+                  label: '招聘.查看简历'.tr(),
                   primary: false,
                   onTap: onViewResumeTap,
                 ),
                 const SizedBox(width: 8),
                 _ResumeActionButton(
-                  label: '邀约面试',
+                  label: '招聘.邀约面试'.tr(),
                   primary: true,
                   onTap: isInviteLoading ? null : onInviteTap,
                   isLoading: isInviteLoading,
@@ -805,13 +810,15 @@ class _CandidateCardData {
     return _CandidateCardData(
       userId: talent.userId,
       avatarUrl: talent.avatarUrl,
-      name: talent.nickname.isEmpty ? '未命名用户' : talent.nickname,
+      name: talent.nickname.isEmpty ? '招聘.未命名用户'.tr() : talent.nickname,
       ageGender: _buildAgeGender(talent),
       intention: _buildIntention(talent),
       scoreText: isMatchSort && talent.matchScore != null
           ? '${talent.matchScore!.clamp(0, 100)}%'
           : '${talent.completeness}%',
-      scoreLabel: isMatchSort && talent.matchScore != null ? '匹配度' : '完整度',
+      scoreLabel: isMatchSort && talent.matchScore != null
+          ? '招聘.匹配度'.tr()
+          : '招聘.完整度'.tr(),
       tags: _buildTags(talent),
       updatedText: isActiveSort
           ? _buildActiveText(talent.lastLoginAt)
@@ -822,38 +829,44 @@ class _CandidateCardData {
   static String _buildAgeGender(TalentVO talent) {
     final List<String> parts = <String>[];
     if (talent.age != null) {
-      parts.add('${talent.age}岁');
+      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': talent.age.toString()}));
     }
     final String genderText = switch (talent.gender.trim().toLowerCase()) {
-      'male' => '男',
-      'female' => '女',
+      'male' => '招聘.男'.tr(),
+      'female' => '招聘.女'.tr(),
       _ => '',
     };
     if (genderText.isNotEmpty) {
       parts.add(genderText);
     }
-    return parts.isEmpty ? '信息待完善' : parts.join('·');
+    return parts.isEmpty ? '招聘.信息待完善'.tr() : parts.join('·');
   }
 
   static String _buildIntention(TalentVO talent) {
     final String countries = talent.targetCountries.join(' / ');
     final String positions = talent.targetPositions.join(' / ');
     if (countries.isEmpty && positions.isEmpty) {
-      return '意向：待完善';
+      return '招聘.意向待完善'.tr();
     }
     if (countries.isEmpty) {
-      return '意向：$positions';
+      return '招聘.意向内容'.tr(namedArgs: <String, String>{'content': positions});
     }
     if (positions.isEmpty) {
-      return '意向：$countries';
+      return '招聘.意向内容'.tr(namedArgs: <String, String>{'content': countries});
     }
-    return '意向：$countries / $positions';
+    return '招聘.意向内容'.tr(
+      namedArgs: <String, String>{'content': '$countries / $positions'},
+    );
   }
 
   static List<String> _buildTags(TalentVO talent) {
     final List<String> tags = <String>[];
     if (talent.yearsOfExperience > 0) {
-      tags.add('${talent.yearsOfExperience}年经验');
+      tags.add(
+        '招聘.年经验'.tr(
+          namedArgs: <String, String>{'count': talent.yearsOfExperience.toString()},
+        ),
+      );
     }
     if (talent.targetPositions.isNotEmpty) {
       tags.add(talent.targetPositions.first);
@@ -862,7 +875,7 @@ class _CandidateCardData {
       tags.add(talent.targetCountries.first);
     }
     if (tags.isEmpty && talent.selfEvaluation.trim().isNotEmpty) {
-      tags.add('有自我评价');
+      tags.add('招聘.有自我评价'.tr());
     }
     return tags;
   }
@@ -870,44 +883,58 @@ class _CandidateCardData {
   static String _buildUpdatedText(String updatedAt) {
     final DateTime? parsed = DateTime.tryParse(updatedAt)?.toLocal();
     if (parsed == null) {
-      return updatedAt.isEmpty ? '更新时间未知' : updatedAt;
+      return updatedAt.isEmpty ? '招聘.更新时间未知'.tr() : updatedAt;
     }
     final Duration difference = DateTime.now().difference(parsed);
     if (difference.inMinutes < 1) {
-      return '刚刚更新';
+      return '招聘.刚刚更新'.tr();
     }
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前更新';
+      return '招聘.分钟前更新'.tr(
+        namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+      );
     }
     if (difference.inHours < 24) {
-      return '${difference.inHours}小时前更新';
+      return '招聘.小时前更新'.tr(
+        namedArgs: <String, String>{'count': difference.inHours.toString()},
+      );
     }
     final String month = parsed.month.toString().padLeft(2, '0');
     final String day = parsed.day.toString().padLeft(2, '0');
-    return '$month-$day 更新';
+    return '招聘.月日更新'.tr(
+      namedArgs: <String, String>{'month': month, 'day': day},
+    );
   }
 
   static String _buildActiveText(String lastLoginAt) {
     final DateTime? parsed = DateTime.tryParse(lastLoginAt)?.toLocal();
     if (parsed == null) {
-      return lastLoginAt.isEmpty ? '活跃时间未知' : lastLoginAt;
+      return lastLoginAt.isEmpty ? '招聘.活跃时间未知'.tr() : lastLoginAt;
     }
     final Duration difference = DateTime.now().difference(parsed);
     if (difference.inMinutes < 1) {
-      return '刚刚活跃';
+      return '招聘.刚刚活跃'.tr();
     }
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前活跃';
+      return '招聘.分钟前活跃'.tr(
+        namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+      );
     }
     if (difference.inHours < 24) {
-      return '${difference.inHours}小时前活跃';
+      return '招聘.小时前活跃'.tr(
+        namedArgs: <String, String>{'count': difference.inHours.toString()},
+      );
     }
     if (difference.inDays < 30) {
-      return '${difference.inDays}天前活跃';
+      return '招聘.天前活跃'.tr(
+        namedArgs: <String, String>{'count': difference.inDays.toString()},
+      );
     }
     final String month = parsed.month.toString().padLeft(2, '0');
     final String day = parsed.day.toString().padLeft(2, '0');
-    return '$month-$day 活跃';
+    return '招聘.月日活跃'.tr(
+      namedArgs: <String, String>{'month': month, 'day': day},
+    );
   }
 }
 
@@ -931,12 +958,12 @@ class _TalentsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 48),
+      return Padding(
+      padding: const EdgeInsets.only(top: 48),
       child: Center(
         child: AppEmptyState(
-          message: '暂无人才数据',
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          message: '招聘.暂无人才数据'.tr(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );
@@ -956,16 +983,16 @@ class _TalentLoadError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text(
-              '人才列表加载失败',
-              style: TextStyle(
+            Text(
+              '招聘.人才列表加载失败'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF8C8C8C),
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('重试')),
+            TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),

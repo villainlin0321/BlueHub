@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -441,7 +442,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       return '';
     }
     if (isCurrent) {
-      return startDate.isEmpty ? '至今' : '$startDate - 至今';
+      final String currentLabel = '我的.至今'.tr();
+      return startDate.isEmpty ? currentLabel : '$startDate - $currentLabel';
     }
     if (startDate.isEmpty) {
       return endDate;
@@ -491,8 +493,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           color: Color(0xFF262626),
         ),
       ),
-      title: const Text(
-        '我的简历',
+      title: Text(
+        '我的.我的简历'.tr(),
         style: TextStyle(
           color: Color(0xE6000000),
           fontSize: 17,
@@ -505,8 +507,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           child: Center(
             child: GestureDetector(
               onTap: _openPreview,
-              child: const Text(
-                '预览',
+              child: Text(
+                '我的.预览'.tr(),
                 style: TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 14,
@@ -561,8 +563,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 children: <Widget>[
                   Row(
                     children: <Widget>[
-                      const Text(
-                        '简历完整度',
+                      Text(
+                        '我的.简历完整度'.tr(),
                         style: TextStyle(
                           color: Color(0xFF262626),
                           fontSize: 16,
@@ -602,8 +604,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    '完善简历可以提高 50% 的匹配成功率',
+                  Text(
+                    '我的.完善简历提示'.tr(),
                     style: TextStyle(
                       color: Color(0xFF8C8C8C),
                       fontSize: 10,
@@ -634,7 +636,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         _buildMetaText(
           [
             if (basicInfoViewData.gender.isNotEmpty) basicInfoViewData.gender,
-            if (basicInfoViewData.age.isNotEmpty) '${basicInfoViewData.age}岁',
+            if (basicInfoViewData.age.isNotEmpty)
+              '招聘.岁'.tr(namedArgs: {'count': basicInfoViewData.age}),
           ].join('·'),
         ),
       if (basicInfoViewData.phone.isNotEmpty)
@@ -651,11 +654,11 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _buildSectionHeader(title: '基础信息'),
+                _buildSectionHeader(title: '我的.基础信息'.tr()),
                 const SizedBox(height: 20),
                 Text(
                   basicInfoViewData.name.isEmpty
-                      ? '未填写姓名'
+                      ? '我的.未填写姓名'.tr()
                       : basicInfoViewData.name,
                   style: const TextStyle(
                     color: Color(0xFF262626),
@@ -666,7 +669,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 ),
                 const SizedBox(height: 10),
                 if (metaWidgets.isEmpty)
-                  _buildMetaText('暂无基础信息')
+                  _buildMetaText('我的.暂无基础信息'.tr())
                 else
                   Wrap(spacing: 12, runSpacing: 6, children: metaWidgets),
               ],
@@ -702,7 +705,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       orElse: () => const <String, String>{},
     );
     final String currencyLabel = _draft.salaryCurrency.trim().isEmpty
-        ? '币种未设置'
+        ? '我的.币种未设置'.tr()
         : _draft.salaryCurrency;
 
     return Container(
@@ -711,10 +714,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildSectionHeader(title: '求职意向', showRedDot: true),
+          _buildSectionHeader(title: '我的.求职意向'.tr(), showRedDot: true),
           const SizedBox(height: 20),
           _buildLabeledRow(
-            label: '期望职位',
+            label: '我的.期望职位'.tr(),
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
               onTap: _openExpectedJobSheet,
@@ -725,7 +728,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             spacing: 8,
             runSpacing: 12,
             children: _jobTags.isEmpty
-                ? <Widget>[_buildEmptyStateChip('暂无期望职位')]
+                ? <Widget>[_buildEmptyStateChip('我的.暂无期望职位'.tr())]
                 : _jobTags
                       .map(
                         (String item) => _buildTagChip(
@@ -739,7 +742,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 12),
           _buildTagChip(
-            label: '自定义',
+            label: '我的.自定义'.tr(),
             iconPath: _ResumeEditorAssets.tagAdd,
             backgroundColor: const Color(0xFFF5F7FA),
             textColor: const Color(0xFF171A1D),
@@ -747,7 +750,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 24),
           _buildLabeledRow(
-            label: '期望国家/地区',
+            label: '我的.期望国家地区'.tr(),
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
               onTap: _openExpectedCountrySheet,
@@ -758,7 +761,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             spacing: 8,
             runSpacing: 12,
             children: _countryTags.isEmpty
-                ? <Widget>[_buildEmptyStateChip('暂无期望国家/地区')]
+                ? <Widget>[_buildEmptyStateChip('我的.暂无期望国家地区'.tr())]
                 : _countryTags
                       .map(
                         (String item) => _buildTagChip(
@@ -772,7 +775,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 24),
           _buildLabeledRow(
-            label: '期望薪资 (月)',
+            label: '我的.期望薪资月'.tr(),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -789,7 +792,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   'assets/images/icon_arrow_down.svg',
                   width: 16,
                   height: 16,
-                  color: Colors.black,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.black,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ],
             ),
@@ -800,12 +806,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               Expanded(
                 child: _buildSalaryInputField(
                   controller: _salaryValueController,
-                  hintText: '最低期望',
+                  hintText: '我的.最低期望'.tr(),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                '至',
+              Text(
+                '我的.至'.tr(),
                 style: TextStyle(
                   color: Color(0xFF8C8C8C),
                   fontSize: 13,
@@ -817,7 +823,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               Expanded(
                 child: _buildSalaryInputField(
                   controller: _salaryMaxValueController,
-                  hintText: '最高期望',
+                  hintText: '我的.最高期望'.tr(),
                 ),
               ),
             ],
@@ -875,7 +881,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildSectionHeader(
-            title: '工作经历',
+            title: '我的.工作经历'.tr(),
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
               onTap: _openAddWorkExperiencePage,
@@ -883,7 +889,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 20),
           if (_experiences.isEmpty)
-            _buildEmptySectionText('暂无工作经历')
+            _buildEmptySectionText('我的.暂无工作经历'.tr())
           else
             for (
               int index = 0;
@@ -907,7 +913,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildSectionHeader(
-            title: '语言能力',
+            title: '我的.语言能力'.tr(),
             trailing: _buildChevronActionIcon(onTap: _openLanguageSheet),
           ),
           const SizedBox(height: 16),
@@ -915,7 +921,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             spacing: 8,
             runSpacing: 12,
             children: _languages.isEmpty
-                ? <Widget>[_buildEmptySectionText('暂无语言能力')]
+                ? <Widget>[_buildEmptySectionText('我的.暂无语言能力'.tr())]
                 : _languages
                       .map(
                         (_ResumeLanguage item) => _buildTagChip(
@@ -941,7 +947,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildSectionHeader(
-            title: '技能证书',
+            title: '我的.技能证书'.tr(),
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
               onTap: _openAddSkillCertificatePage,
@@ -949,7 +955,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 20),
           if (_certificates.isEmpty)
-            _buildEmptySectionText('暂无技能证书')
+            _buildEmptySectionText('我的.暂无技能证书'.tr())
           else
             for (
               int index = 0;
@@ -1076,8 +1082,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                       height: 88,
                       alignment: Alignment.center,
                       color: const Color(0xFFF5F7FA),
-                      child: const Text(
-                        '加载失败',
+                      child: Text(
+                        '我的.加载失败'.tr(),
                         style: TextStyle(
                           color: Color(0xFF8C8C8C),
                           fontSize: 12,
@@ -1100,8 +1106,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        '暂无图片',
+      child: Text(
+        '我的.暂无图片'.tr(),
         style: TextStyle(
           color: Color(0xFF8C8C8C),
           fontSize: 12,
@@ -1120,7 +1126,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildSectionHeader(
-            title: '教育经历',
+            title: '我的.教育经历'.tr(),
             trailing: _buildActionIcon(
               _ResumeEditorAssets.addCircle,
               onTap: _openAddEducationExperiencePage,
@@ -1128,7 +1134,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           const SizedBox(height: 20),
           if (_educations.isEmpty)
-            _buildEmptySectionText('暂无教育经历')
+            _buildEmptySectionText('我的.暂无教育经历'.tr())
           else
             for (
               int index = 0;
@@ -1223,12 +1229,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildSectionHeader(
-            title: '自我评价',
+            title: '我的.自我评价'.tr(),
             trailing: _buildChevronActionIcon(onTap: _openSelfEvaluationPage),
           ),
           const SizedBox(height: 14),
           if (_selfEvaluation.trim().isEmpty)
-            _buildEmptySectionText('暂无自我评价')
+            _buildEmptySectionText('我的.暂无自我评价'.tr())
           else
             Text(
               _selfEvaluation,
@@ -1441,13 +1447,13 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       case 'm':
       case '1':
       case '男':
-        return '男';
+        return '我的.男'.tr();
       case 'female':
       case 'woman':
       case 'f':
       case '0':
       case '女':
-        return '女';
+        return '我的.女'.tr();
       default:
         return '';
     }
@@ -1486,7 +1492,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   String _buildAvatarFallbackText(String name) {
     final String trimmed = name.trim();
     if (trimmed.isEmpty) {
-      return '我';
+      return '消息.我'.tr();
     }
     final List<int> runes = trimmed.runes.toList(growable: false);
     final int takeCount = runes.length >= 2 ? 2 : 1;
@@ -1665,8 +1671,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '保存',
+                    child: Text(
+                      '我的.保存'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -1690,8 +1696,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '提交并预览',
+                    child: Text(
+                      '我的.提交并预览'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -1713,7 +1719,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   void _showComingSoon() {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('编辑功能开发中')));
+    ).showSnackBar(SnackBar(content: Text('我的.编辑功能开发中'.tr())));
   }
 
   /// 提交保存接口，并在成功后把结果回传上一页用于刷新。
@@ -1729,7 +1735,11 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       }
       _didSave = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isCreateMode ? '创建简历已保存' : '简历修改已保存')),
+        SnackBar(
+          content: Text(
+            _isCreateMode ? '我的.创建简历已保存'.tr() : '我的.简历修改已保存'.tr(),
+          ),
+        ),
       );
       context.pop(true);
     } catch (error) {
@@ -1870,7 +1880,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     if (error is ApiException) {
       return error.message;
     }
-    return '简历保存失败，请稍后重试';
+    return '我的.简历保存失败'.tr();
   }
 
   /// 替换当前编辑页进入简历预览页，避免返回栈保留已提交的编辑页。
@@ -1980,16 +1990,16 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   /// 从证书名中尽量提取语言名称，证书原文仍保留到 certificate 字段。
   String _resolveLanguageName(String label) {
     if (label.contains('德')) {
-      return '德语';
+      return '我的.德语'.tr();
     }
     if (label.contains('法')) {
-      return '法语';
+      return '我的.法语'.tr();
     }
     if (label.contains('英')) {
-      return '英语';
+      return '我的.英语'.tr();
     }
     if (label.contains('西班牙')) {
-      return '西班牙语';
+      return '我的.西班牙语'.tr();
     }
     return label;
   }
@@ -2005,7 +2015,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('职位字典加载失败')));
+      ).showSnackBar(SnackBar(content: Text('我的.职位字典加载失败'.tr())));
       return;
     }
 
@@ -2015,7 +2025,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('暂无可选职位')));
+      ).showSnackBar(SnackBar(content: Text('我的.暂无可选职位'.tr())));
       return;
     }
 
@@ -2031,7 +2041,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '期望职位',
+      title: '我的.期望职位'.tr(),
       options: positionOptions,
       initialSelectedValues: currentSelected,
     );
@@ -2084,7 +2094,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     final List<CountryVO>? result = await showCountryOptionsBottomSheet(
       context: context,
       ref: ref,
-      title: '期望国家/地区',
+      title: '我的.期望国家地区'.tr(),
       initialSelectedValues: _countryTags,
     );
     if (!mounted || result == null) {
@@ -2107,7 +2117,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('语言字典加载失败')));
+      ).showSnackBar(SnackBar(content: Text('我的.语言字典加载失败'.tr())));
       return;
     }
     if (languageOptions.isEmpty) {
@@ -2116,7 +2126,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('暂无可选语言能力')));
+      ).showSnackBar(SnackBar(content: Text('我的.暂无可选语言能力'.tr())));
       return;
     }
     if (!mounted) {
@@ -2129,7 +2139,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         };
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '语言能力',
+      title: '我的.语言能力'.tr(),
       options: languageOptions,
       initialSelectedValues: _languages
           .map((item) => item.displayLabel)
@@ -2330,14 +2340,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   _ResumeCertificate _buildResumeCertificateFromFormResult(
     ResumeCertificateFormResult result, {
     int certId = 0,
-    String authority = '技能证书',
+    String authority = '',
     String level = '',
   }) {
     return _ResumeCertificate(
       certId: certId,
       title: result.title,
       level: level,
-      authority: authority,
+      authority: authority.isEmpty ? '我的.技能证书'.tr() : authority,
       issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
       previewFilePaths: List<String>.of(result.localImagePaths),
       previewImageUrls: List<String>.of(result.networkImageUrls),
@@ -2382,7 +2392,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       period: _buildEmploymentPeriodValue(item),
       jobTitle: item.position,
       department: item.department,
-      description: item.summary == '未填写工作内容' ? '' : item.summary,
+      description: item.summary == '我的.未填写工作内容'.tr() ? '' : item.summary,
     );
   }
 
@@ -2406,7 +2416,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               result.period.endMonth ?? result.period.startMonth,
             ),
       isCurrent: result.period.isCurrent,
-      summary: result.description.isEmpty ? '未填写工作内容' : result.description,
+      summary: result.description.isEmpty
+          ? '我的.未填写工作内容'.tr()
+          : result.description,
     );
   }
 
@@ -2503,7 +2515,8 @@ class _ResumeExperience {
       return '';
     }
     if (isCurrent) {
-      return startDate.isEmpty ? '至今' : '$startDate - 至今';
+      final String currentLabel = '我的.至今'.tr();
+      return startDate.isEmpty ? currentLabel : '$startDate - $currentLabel';
     }
     if (startDate.isEmpty) {
       return endDate;
@@ -2591,7 +2604,7 @@ class _ResumeEducation {
       return '';
     }
     if (endYear <= 0) {
-      return '$startYear - 至今';
+      return '$startYear - ${'我的.至今'.tr()}';
     }
     return '$startYear - $endYear';
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../application/message_session/message_session_controller.dart';
@@ -115,24 +116,24 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
   }
 
   List<_SystemNoticeItem> _buildInitialSystemItems() {
-    return const <_SystemNoticeItem>[
+    return <_SystemNoticeItem>[
       _SystemNoticeItem(
-        title: '资质审核通过',
+        title: '消息.资质审核通过'.tr(),
         time: '10-22 12:23:21',
-        content: '您的企业资料审核已通过，赶紧去发布您的岗位套餐吧！赶紧去发布您的企业的岗位招聘信息吧',
+        content: '消息.资质审核通过内容'.tr(),
         cardAssetPath: _noticeCardPrimaryAsset,
         isUnread: true,
       ),
       _SystemNoticeItem(
-        title: '资质审核未通过',
+        title: '消息.资质审核未通过'.tr(),
         time: '09-22 12:23:21',
-        content: '您的企业资料审核未通过，请重新编辑后提交！',
+        content: '消息.资质审核未通过内容'.tr(),
         cardAssetPath: _noticeCardSecondaryAsset,
       ),
       _SystemNoticeItem(
-        title: '资质审核中',
+        title: '消息.资质审核中'.tr(),
         time: '09-18 12:23:21',
-        content: '您的企业资料已提交，正在审核中，成功后将会有消息提示，您可以先去编辑相关岗位信息。',
+        content: '消息.资质审核中内容'.tr(),
         cardAssetPath: _noticeCardPendingAsset,
       ),
     ];
@@ -218,7 +219,7 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       title: Text(
-        '消息中心',
+        '消息.消息中心'.tr(),
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.black.withValues(alpha: 0.9),
@@ -250,7 +251,7 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '全部已读',
+                    '消息.全部已读'.tr(),
                     style: TextStyle(
                       color: _MessageCenterPageState._secondaryText,
                       fontSize: 14,
@@ -294,12 +295,12 @@ class _MessageTabBar extends StatelessWidget {
       labelPadding: EdgeInsets.zero,
       tabs: <Widget>[
         _MessageTab(
-          label: '聊天',
+          label: '消息.聊天'.tr(),
           isSelected: controller.index == 0,
           hasUnread: hasUnreadChat,
         ),
         _MessageTab(
-          label: '系统通知',
+          label: '消息.系统通知'.tr(),
           isSelected: controller.index == 1,
           hasUnread: hasUnreadSystem,
         ),
@@ -389,13 +390,13 @@ class _ChatTabView extends StatelessWidget {
     if (errorText != null) {
       return _ChatStatusView(
         message: errorText!,
-        actionLabel: '重新加载',
+        actionLabel: '消息.重新加载'.tr(),
         onAction: onRetry,
       );
     }
 
     if (items.isEmpty) {
-      return const _ChatStatusView(message: '暂无聊天消息');
+      return _ChatStatusView(message: '消息.暂无聊天消息'.tr());
     }
 
     return ColoredBox(
@@ -818,7 +819,7 @@ class _ChatMessageItem {
 
   factory _ChatMessageItem.fromConversation(ConversationVO conversation) {
     final String nickname = conversation.targetUser.nickname.trim().isEmpty
-        ? '未命名用户'
+        ? '消息.未命名用户'.tr()
         : conversation.targetUser.nickname.trim();
     final RelatedOrderVO? relatedOrder = conversation.relatedOrder;
     return _ChatMessageItem(
@@ -881,11 +882,11 @@ String _buildConversationPreview(LastMessageVO message) {
 
   switch (message.type) {
     case 'image':
-      return '[图片]';
+      return '消息.图片'.tr();
     case 'file':
-      return '[文件]';
+      return '消息.文件'.tr();
     default:
-      return '[暂无内容]';
+      return '消息.暂无内容'.tr();
   }
 }
 
@@ -907,7 +908,7 @@ String _formatConversationTime(String sentAt) {
 String _buildAvatarFallbackText(String nickname) {
   final String trimmed = nickname.trim();
   if (trimmed.isEmpty) {
-    return '用户';
+    return '消息.用户'.tr();
   }
 
   final String compact = trimmed.replaceAll(' ', '');

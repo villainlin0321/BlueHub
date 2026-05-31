@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +18,7 @@ class MyResumePreviewPage extends ConsumerStatefulWidget {
     super.key,
     this.args,
     this.userId,
-    this.title = '预览',
+    this.title = '',
   });
 
   final ResumePreviewArgs? args;
@@ -82,13 +83,13 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
     if (_roleName.isNotEmpty) {
       return _roleName;
     }
-    return '暂无期望职位';
+    return '我的.暂无期望职位'.tr();
   }
 
   /// 求职意向的国家地区展示只使用真实标签。
   String get _countryText {
     if (_resolvedArgs.countries.isEmpty) {
-      return '暂无期望国家/地区';
+      return '我的.暂无期望国家地区'.tr();
     }
     return _resolvedArgs.countries.join(' · ');
   }
@@ -96,7 +97,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   /// 薪资展示保留真实币种与区间，不再补任何默认值。
   String get _salaryText {
     if (_draft.salary.trim().isEmpty) {
-      return '薪资待完善';
+      return '我的.薪资待完善'.tr();
     }
     if (_draft.salaryCurrency.trim().isEmpty) {
       return _draft.salary.trim();
@@ -158,7 +159,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '简历加载失败，请稍后重试' : message;
+    return message.isEmpty ? '我的.简历加载失败'.tr() : message;
   }
 
   ResumePreviewArgs _mapResumeToPreviewArgs(ResumeVO resume) {
@@ -282,7 +283,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
     bool isCurrent,
   ) {
     final String start = startDate.trim();
-    final String end = isCurrent ? '至今' : endDate.trim();
+    final String end = isCurrent ? '我的.至今'.tr() : endDate.trim();
     if (start.isEmpty && end.isEmpty) {
       return '';
     }
@@ -339,6 +340,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   @override
   Widget build(BuildContext context) {
     final EdgeInsets viewPadding = MediaQuery.paddingOf(context);
+    final String pageTitle = widget.title.isEmpty ? '我的.预览'.tr() : widget.title;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -358,7 +360,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
           ),
         ),
         title: Text(
-          widget.title,
+          pageTitle,
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -399,7 +401,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              _errorMessage ?? '简历加载失败，请稍后重试',
+              _errorMessage ?? '我的.简历加载失败'.tr(),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF8C8C8C),
@@ -410,7 +412,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _loadResumeDetail,
-              child: const Text('重新加载'),
+              child: Text('我的.重新加载'.tr()),
             ),
           ],
         ),
@@ -420,7 +422,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
 
   /// 构建顶部资料区，只展示真实姓名、头像和岗位信息。
   Widget _buildProfileSection() {
-    final String name = _draft.name.trim().isEmpty ? '未填写姓名' : _draft.name;
+    final String name = _draft.name.trim().isEmpty ? '我的.未填写姓名'.tr() : _draft.name;
 
     return Container(
       color: Colors.white,
@@ -444,7 +446,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                   ),
                   const SizedBox(height: 4),
                   if (_companyName.isEmpty && _roleName.isEmpty)
-                    _buildEmptyText('暂无岗位信息')
+                    _buildEmptyText('我的.暂无岗位信息'.tr())
                   else
                     Row(
                       children: <Widget>[
@@ -499,7 +501,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('求职意向'),
+            _buildSectionTitle('我的.求职意向'.tr()),
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
@@ -566,10 +568,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('工作经历'),
+            _buildSectionTitle('我的.工作经历'.tr()),
             const SizedBox(height: 20),
             if (experiences.isEmpty)
-              _buildEmptyText('暂无工作经历')
+              _buildEmptyText('我的.暂无工作经历'.tr())
             else
               for (
                 int index = 0;
@@ -594,10 +596,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('语言能力'),
+            _buildSectionTitle('我的.语言能力'.tr()),
             const SizedBox(height: 20),
             if (languages.isEmpty)
-              _buildEmptyText('暂无语言能力')
+              _buildEmptyText('我的.暂无语言能力'.tr())
             else
               Wrap(
                 spacing: 8,
@@ -620,10 +622,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('技能证书'),
+            _buildSectionTitle('我的.技能证书'.tr()),
             const SizedBox(height: 20),
             if (certificates.isEmpty)
-              _buildEmptyText('暂无技能证书')
+              _buildEmptyText('我的.暂无技能证书'.tr())
             else
               for (
                 int index = 0;
@@ -649,10 +651,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('教育经历'),
+            _buildSectionTitle('我的.教育经历'.tr()),
             const SizedBox(height: 20),
             if (educations.isEmpty)
-              _buildEmptyText('暂无教育经历')
+              _buildEmptyText('我的.暂无教育经历'.tr())
             else
               for (
                 int index = 0;
@@ -676,10 +678,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildSectionTitle('自我评价'),
+            _buildSectionTitle('我的.自我评价'.tr()),
             const SizedBox(height: 20),
             if (_draft.summary.trim().isEmpty)
-              _buildEmptyText('暂无自我评价')
+              _buildEmptyText('我的.暂无自我评价'.tr())
             else
               Text(
                 _draft.summary,
@@ -706,7 +708,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
           children: <Widget>[
             Expanded(
               child: Text(
-                experience.company.isEmpty ? '未填写公司名称' : experience.company,
+                experience.company.isEmpty
+                    ? '我的.未填写公司名称'.tr()
+                    : experience.company,
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -731,7 +735,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          experience.role.isEmpty ? '未填写职位' : experience.role,
+          experience.role.isEmpty ? '我的.未填写职位'.tr() : experience.role,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -741,7 +745,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          experience.summary.isEmpty ? '未填写工作内容' : experience.summary,
+          experience.summary.isEmpty
+              ? '我的.未填写工作内容'.tr()
+              : experience.summary,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -791,7 +797,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          certificate.issuer.isEmpty ? '未填写发证机构' : certificate.issuer,
+          certificate.issuer.isEmpty
+              ? '我的.未填写发证机构'.tr()
+              : certificate.issuer,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -835,7 +843,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        education.school.isEmpty ? '未填写学校' : education.school,
+                        education.school.isEmpty
+                            ? '我的.未填写学校'.tr()
+                            : education.school,
                         style: const TextStyle(
                           color: Color(0xFF262626),
                           fontSize: 16,
@@ -863,7 +873,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  education.major.isEmpty ? '未填写专业/学历' : education.major,
+                  education.major.isEmpty
+                      ? '我的.未填写专业学历'.tr()
+                      : education.major,
                   style: const TextStyle(
                     color: Color(0xFF595959),
                     fontSize: 14,
@@ -934,8 +946,8 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        '暂无图片',
+      child: Text(
+        '我的.暂无图片'.tr(),
         style: TextStyle(
           color: Color(0xFF8C8C8C),
           fontSize: 12,

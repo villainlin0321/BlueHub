@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -118,8 +119,8 @@ class _FinanceTransactionsPageState
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text(
-          '账单明细',
+        title: Text(
+          '财务.账单明细'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -153,9 +154,9 @@ class _FinanceTransactionsPageState
         },
         itemBuilder: (BuildContext context, int index) {
           if (_items.isEmpty) {
-            return const SizedBox(
+            return SizedBox(
               height: 300,
-              child: FinanceEmptyState(message: '暂无账单明细'),
+              child: FinanceEmptyState(message: '财务.暂无账单明细'.tr()),
             );
           }
           if (index == _items.length) {
@@ -189,10 +190,10 @@ class _LoadMoreFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String text = isLoadingMore
-        ? '加载中...'
+        ? '财务.加载中'.tr()
         : hasNext
-        ? '上滑加载更多'
-        : '没有更多了';
+        ? '财务.上滑加载更多'.tr()
+        : '财务.没有更多了'.tr();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(

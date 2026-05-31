@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -109,7 +110,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _handleCameraPick() async {
     await _pickAndSendFiles(
       picker: UploadPickerUtils.pickFromCamera,
-      errorMessage: '打开相机失败，请稍后重试',
+      errorMessage: '消息.打开相机失败'.tr(),
       emptyMessage: null,
     );
   }
@@ -117,7 +118,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _handleGalleryPick() async {
     await _pickAndSendFiles(
       picker: UploadPickerUtils.pickFromGallery,
-      errorMessage: '打开相册失败，请稍后重试',
+      errorMessage: '消息.打开相册失败'.tr(),
       emptyMessage: null,
     );
   }
@@ -125,8 +126,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _handleLocalFilePick() async {
     await _pickAndSendFiles(
       picker: UploadPickerUtils.pickFromFiles,
-      errorMessage: '选择文件失败，请稍后重试',
-      emptyMessage: '未能读取所选文件',
+      errorMessage: '消息.选择文件失败'.tr(),
+      emptyMessage: '消息.未能读取所选文件'.tr(),
     );
   }
 
@@ -167,17 +168,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _handleVoiceTap() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('语音消息功能开发中')));
+      ..showSnackBar(SnackBar(content: Text('消息.语音消息开发中'.tr())));
   }
 
   void _handleOrderCardTap() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('订单详情功能开发中')));
+      ..showSnackBar(SnackBar(content: Text('消息.订单详情开发中'.tr())));
   }
 
   Future<void> _handleFileMessageTap(MessageVO message) async {
-    final String label = message.type == 'image' ? '图片预览功能开发中' : '文件预览功能开发中';
+    final String label = message.type == 'image'
+        ? '消息.图片预览开发中'.tr()
+        : '消息.文件预览开发中'.tr();
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(label)));
@@ -271,7 +274,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (error is ApiException && error.message.trim().isNotEmpty) {
       return error.message;
     }
-    return '拉黑失败，请稍后重试';
+    return '消息.拉黑失败'.tr();
   }
 
   Future<void> _scrollToLatest({required bool animated}) async {
@@ -370,7 +373,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        '对方已接收您的签证申请，现在可以开始沟通了',
+                        '消息.签证申请沟通提示'.tr(),
                         style: const TextStyle(
                           color: _subtleTextColor,
                           fontSize: 11,
@@ -405,7 +408,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                             currentUserId: authUser?.userId ?? 0,
                             targetNickname: widget.args.nickname,
                             targetAvatarUrl: widget.args.avatarUrl,
-                            currentUserNickname: authUser?.nickname ?? '我',
+                            currentUserNickname:
+                                authUser?.nickname ?? '消息.我'.tr(),
                             currentUserAvatarUrl: authUser?.avatarUrl ?? '',
                             scrollController: _scrollController,
                             isLoadingMore: state.isLoadingMore,
@@ -520,7 +524,7 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  args.isOnline ? '在线' : '离线',
+                  args.isOnline ? '消息.在线'.tr() : '消息.离线'.tr(),
                   style: TextStyle(
                     color: args.isOnline
                         ? _ChatPageState._onlineGreen
@@ -599,7 +603,7 @@ class _ChatMoreMenuItem extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
           Icon(
             Icons.block_outlined,
@@ -608,8 +612,8 @@ class _ChatMoreMenuItem extends StatelessWidget {
           ),
           SizedBox(width: 10),
           Text(
-            '拉黑',
-            style: TextStyle(
+            '消息.拉黑'.tr(),
+            style: const TextStyle(
               color: Colors.black,
               fontSize: 14,
               height: 20 / 14,
@@ -669,7 +673,9 @@ class _OrderSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '订单状态：$orderStatus',
+                      '消息.订单状态'.tr(
+                        namedArgs: <String, String>{'status': orderStatus},
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -719,7 +725,7 @@ class _ChatLoadError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('重新加载')),
+            TextButton(onPressed: onRetry, child: Text('消息.重新加载'.tr())),
           ],
         ),
       ),
@@ -753,10 +759,10 @@ class _ChatMessageList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return const Center(
+      return Center(
         child: AppEmptyState(
-          message: '暂无聊天记录',
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          message: '消息.暂无聊天记录'.tr(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
       );
     }
@@ -907,9 +913,9 @@ class _ChatBubble extends StatelessWidget {
                       color: attachmentBackgroundColor,
                       alignment: Alignment.center,
                       padding: const EdgeInsets.all(16),
-                      child: const Text(
-                        '[图片加载失败]',
-                        style: TextStyle(
+                      child: Text(
+                        '消息.图片加载失败'.tr(),
+                        style: const TextStyle(
                           color: attachmentForegroundColor,
                           fontSize: 14,
                         ),
@@ -923,9 +929,9 @@ class _ChatBubble extends StatelessWidget {
                         color: attachmentBackgroundColor,
                         alignment: Alignment.center,
                         padding: const EdgeInsets.all(16),
-                        child: const Text(
-                          '[图片加载失败]',
-                          style: TextStyle(
+                        child: Text(
+                          '消息.图片加载失败'.tr(),
+                          style: const TextStyle(
                             color: attachmentForegroundColor,
                             fontSize: 14,
                           ),
@@ -939,9 +945,9 @@ class _ChatBubble extends StatelessWidget {
                         color: attachmentBackgroundColor,
                         alignment: Alignment.center,
                         padding: const EdgeInsets.all(16),
-                        child: const Text(
-                          '[图片加载失败]',
-                          style: TextStyle(
+                        child: Text(
+                          '消息.图片加载失败'.tr(),
+                          style: const TextStyle(
                             color: attachmentForegroundColor,
                             fontSize: 14,
                           ),
@@ -975,7 +981,7 @@ class _ChatBubble extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  message.fileName.isEmpty ? '文件消息' : message.fileName,
+                  message.fileName.isEmpty ? '消息.文件消息'.tr() : message.fileName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -998,7 +1004,7 @@ class _ChatBubble extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Text(
-        message.isRetracted ? '[消息已撤回]' : message.content,
+        message.isRetracted ? '消息.消息已撤回'.tr() : message.content,
         style: TextStyle(color: foregroundColor, fontSize: 15, height: 22 / 15),
       ),
     );
@@ -1096,10 +1102,10 @@ class _ChatComposer extends StatelessWidget {
                   textInputAction: TextInputAction.send,
                   keyboardType: TextInputType.multiline,
                   onSubmitted: (_) => onSend(),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     isCollapsed: true,
-                    hintText: '发消息...',
-                    hintStyle: TextStyle(
+                    hintText: '消息.发消息'.tr(),
+                    hintStyle: const TextStyle(
                       color: _ChatPageState._subtleTextColor,
                       fontSize: 15,
                       height: 22 / 15,
@@ -1130,7 +1136,7 @@ class _ChatComposer extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
-                              '发送',
+                              '消息.发送'.tr(),
                               style: TextStyle(
                                 color: isSending
                                     ? const Color(0xFFBFBFBF)
@@ -1202,19 +1208,19 @@ class _ChatAttachmentPanel extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       _ChatAttachmentAction(
-                        label: '拍照上传',
+                        label: '消息.拍照上传'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_camera.svg',
                         onTap: onCameraTap,
                       ),
                       _ChatAttachmentAction(
-                        label: '本地相册',
+                        label: '消息.本地相册'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_gallery.svg',
                         onTap: onGalleryTap,
                       ),
                       _ChatAttachmentAction(
-                        label: '本地文件',
+                        label: '消息.本地文件'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_file.svg',
                         onTap: onFileTap,
@@ -1287,30 +1293,30 @@ bool _shouldShowOrderCard(ChatPageArgs args) {
 String _resolveRoleLabel(String role) {
   switch (role.trim()) {
     case 'worker':
-      return '求职者';
+      return '消息.求职者'.tr();
     case 'employer':
-      return '企业';
+      return '招聘.企业'.tr();
     case 'visa_provider':
-      return '服务商';
+      return '消息.服务商'.tr();
     default:
-      return '客户';
+      return '消息.客户'.tr();
   }
 }
 
 String _resolveOrderStatusLabel(String status) {
   final String trimmed = status.trim();
   if (trimmed.isEmpty) {
-    return '处理中';
+    return '消息.处理中'.tr();
   }
   switch (trimmed) {
     case 'pending_material':
-      return '待审核材料';
+      return '消息.待审核材料'.tr();
     case 'pending_pay':
-      return '待支付';
+      return '消息.待支付'.tr();
     case 'processing':
-      return '办理中';
+      return '消息.办理中'.tr();
     case 'completed':
-      return '已完成';
+      return '消息.已完成'.tr();
     default:
       return trimmed;
   }
@@ -1328,7 +1334,7 @@ String _formatChatDateTime(String raw) {
 String _buildAvatarFallbackText(String nickname) {
   final String compact = nickname.trim().replaceAll(' ', '');
   if (compact.isEmpty) {
-    return '用户';
+    return '消息.用户'.tr();
   }
   final bool isAsciiWord = compact.codeUnits.every((int codeUnit) {
     return (codeUnit >= 48 && codeUnit <= 57) ||

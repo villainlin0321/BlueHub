@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -73,7 +74,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     if (jobId == null || jobId <= 0) {
       setState(() {
         _isLoading = false;
-        _errorMessage = '岗位信息缺失，暂无法加载详情';
+        _errorMessage = '招聘.岗位信息缺失'.tr();
       });
       return;
     }
@@ -111,7 +112,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     if (error is ApiException) {
       return error.message;
     }
-    return '岗位详情加载失败，请稍后重试';
+    return '招聘.岗位详情加载失败'.tr();
   }
 
   /// 当前收藏状态，优先采用本地交互后的覆盖值。
@@ -147,7 +148,10 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isCollectedOverride = !wasCollected;
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(context, wasCollected ? '已取消收藏' : '收藏成功');
+      _showMessage(
+        context,
+        wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -166,7 +170,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       return;
     }
     if (detail.employer.employerId <= 0) {
-      _showMessage(context, '雇主信息缺失，暂无法发起沟通');
+      _showMessage(context, '招聘.雇主信息缺失'.tr());
       return;
     }
 
@@ -196,7 +200,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           targetUserId: detail.employer.employerId,
           targetUserRole: 'employer',
           nickname: detail.employer.name.trim().isEmpty
-              ? '企业'
+              ? '招聘.企业'.tr()
               : detail.employer.name,
           avatarUrl: detail.employer.logoUrl,
           conversationId: conversationId,
@@ -266,7 +270,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isApplying = false;
         _isApplied = true;
       });
-      _showMessage(context, '投递成功');
+      _showMessage(context, '招聘.投递成功'.tr());
       return;
     }
 
@@ -296,7 +300,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           ),
         ),
         title: Text(
-          '招聘详情',
+          '招聘.招聘详情'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: const Color(0xE6000000),
             fontWeight: FontWeight.w600,
@@ -332,7 +336,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           const SizedBox(width: 20),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => _showMessage(context, '分享功能开发中'),
+            onTap: () => _showMessage(context, '招聘.分享开发中'.tr()),
             child: const SizedBox(
               width: 20,
               height: 20,
@@ -374,7 +378,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     final detail = _detail;
     if (detail == null) {
       return _JobDetailErrorState(
-        message: '岗位详情为空，请稍后重试',
+        message: '招聘.岗位详情为空'.tr(),
         onRetry: _loadJobDetail,
       );
     }
@@ -573,13 +577,13 @@ class _JobDescriptionSection extends StatelessWidget {
         children: <Widget>[
           if (detail.description.trim().isNotEmpty) ...<Widget>[
             _DescriptionBlock(
-              title: '岗位描述：',
+              title: '招聘.岗位描述'.tr(),
               items: <String>[detail.description.trim()],
             ),
             const SizedBox(height: 20),
           ],
           Text(
-            '职位详情',
+            '招聘.职位详情'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: const Color(0xFF262626),
               fontWeight: FontWeight.w600,
@@ -588,11 +592,11 @@ class _JobDescriptionSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _DescriptionBlock(title: '岗位职责：', items: detail.responsibilities),
+          _DescriptionBlock(title: '招聘.岗位职责'.tr(), items: detail.responsibilities),
           const SizedBox(height: 20),
-          _DescriptionBlock(title: '任职要求：', items: detail.requirements),
+          _DescriptionBlock(title: '招聘.任职要求'.tr(), items: detail.requirements),
           const SizedBox(height: 20),
-          _DescriptionBlock(title: '福利待遇：', items: detail.benefits),
+          _DescriptionBlock(title: '招聘.福利待遇'.tr(), items: detail.benefits),
         ],
       ),
     );
@@ -649,7 +653,7 @@ class _LocationSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '工作地点',
+            '招聘.工作地点'.tr(),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: const Color(0xFF262626),
               fontWeight: FontWeight.w500,
@@ -771,7 +775,7 @@ class _JobDetailErrorState extends StatelessWidget {
               onPressed: () {
                 onRetry();
               },
-              child: const Text('重试'),
+              child: Text('通用.重试'.tr()),
             ),
           ],
         ),
@@ -833,7 +837,7 @@ class _BottomActionBar extends StatelessWidget {
                   backgroundColor: Colors.white,
                 ),
                 child: Text(
-                  isChatting ? '创建会话中...' : '立即沟通',
+                  isChatting ? '招聘.创建会话中'.tr() : '招聘.立即沟通'.tr(),
                   style: secondaryStyle,
                 ),
               ),
@@ -852,7 +856,9 @@ class _BottomActionBar extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  isApplied ? '已投递' : (isApplying ? '投递中...' : '投递简历'),
+                  isApplied
+                      ? '招聘.已投递'.tr()
+                      : (isApplying ? '招聘.投递中'.tr() : '招聘.投递简历'.tr()),
                   style: primaryStyle,
                 ),
               ),
@@ -883,10 +889,10 @@ extension on JobDetailVO {
         .where((String label) => label.isNotEmpty)
         .toList(growable: true);
     if (hasVisaSupport && !labels.contains('提供签证')) {
-      labels.add('提供签证');
+      labels.add('招聘卡片.提供签证'.tr());
     }
     if (isUrgent && !labels.contains('急招')) {
-      labels.insert(0, '急招');
+      labels.insert(0, '招聘卡片.急招'.tr());
     }
     if (employmentType.trim().isNotEmpty &&
         !labels.contains(employmentType.trim())) {
@@ -901,7 +907,7 @@ extension on JobDetailVO {
       country.trim(),
       city.trim(),
     ].where((String value) => value.isNotEmpty).toList(growable: false);
-    return parts.isEmpty ? '地点待更新' : parts.join('·');
+    return parts.isEmpty ? '招聘.地点待更新'.tr() : parts.join('·');
   }
 
   /// 组装详细地址文案。
@@ -915,7 +921,12 @@ extension on JobDetailVO {
     if (latitude == 0 && longitude == 0) {
       return null;
     }
-    return '坐标：${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+    return '招聘.坐标'.tr(
+      namedArgs: <String, String>{
+        'lat': latitude.toStringAsFixed(4),
+        'lng': longitude.toStringAsFixed(4),
+      },
+    );
   }
 
   String _formatNumber(double value) {
@@ -933,6 +944,6 @@ extension on EmployerInfoVO {
       industry.trim(),
       size.trim(),
     ].where((String value) => value.isNotEmpty).toList(growable: false);
-    return parts.isEmpty ? '企业信息待更新' : parts.join('·');
+    return parts.isEmpty ? '招聘.企业信息待更新'.tr() : parts.join('·');
   }
 }

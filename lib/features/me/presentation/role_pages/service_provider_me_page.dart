@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -32,17 +33,17 @@ class ServiceProviderMePage extends ConsumerWidget {
 
   static const List<_MenuData> _menus = <_MenuData>[
     _MenuData(
-      label: '资质管理',
+      labelKey: '我的.资质管理',
       iconAsset: 'assets/images/mou588hj-xulqbsk.svg',
       fallbackIcon: Icons.assignment_ind_outlined,
     ),
     _MenuData(
-      label: '订单管理',
+      labelKey: '我的.订单管理',
       iconAsset: 'assets/images/mou588hj-2n6zjy8.svg',
       fallbackIcon: Icons.checklist_rounded,
     ),
     _MenuData(
-      label: '财务结算',
+      labelKey: '我的.财务结算',
       iconAsset: 'assets/images/mou588hj-e95qx7y.svg',
       fallbackIcon: Icons.currency_yen_rounded,
     ),
@@ -63,7 +64,7 @@ class ServiceProviderMePage extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String label) => _handleMenuTap(context, ref, label),
+              onTap: (String labelKey) => _handleMenuTap(context, ref, labelKey),
             ),
           ),
         ],
@@ -71,30 +72,40 @@ class ServiceProviderMePage extends ConsumerWidget {
     );
   }
 
-  void _showPlaceholderToast(BuildContext context, String label) {
+  /// 展示暂未接入功能的占位提示。
+  void _showPlaceholderToast(BuildContext context, String labelKey) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('$label（占位）')));
+    ).showSnackBar(
+      SnackBar(
+        content: Text(
+          '我的.占位提示'.tr(namedArgs: <String, String>{
+            'label': labelKey.tr(),
+          }),
+        ),
+      ),
+    );
   }
 
+  /// 处理功能菜单点击，根据菜单 key 跳转到对应页面。
   Future<void> _handleMenuTap(
     BuildContext context,
     WidgetRef ref,
-    String label,
+    String labelKey,
   ) async {
-    if (label == '资质管理') {
+    if (labelKey == '我的.资质管理') {
       await _openQualificationCertification(context, ref);
       return;
     }
-    if (label == '订单管理') {
+    if (labelKey == '我的.订单管理') {
       context.push(RoutePaths.orderManagement);
       return;
     }
-    if (label == '财务结算') {
+    if (labelKey == '我的.财务结算') {
       context.push(RoutePaths.financeSettlement);
       return;
     }
-    _showPlaceholderToast(context, label);
+    _showPlaceholderToast(context, labelKey);
   }
 
   void _handleSettingsTap(BuildContext context) {
@@ -129,7 +140,7 @@ class ServiceProviderMePage extends ConsumerWidget {
       }
       final String message = error is ApiException
           ? error.message
-          : '资料加载失败，请稍后重试';
+          : '我的.加载服务商资料失败'.tr();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -249,7 +260,10 @@ class _ProviderProfileRow extends ConsumerWidget {
         ?.value;
     final String providerSummary = providerProfile == null
         ? ''
-        : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
+        : '我的.服务商摘要'.tr(namedArgs: <String, String>{
+            'rating': _formatProviderRating(providerProfile.rating),
+            'count': _formatProviderCaseCount(providerProfile.caseCount),
+          });
 
     return InkWell(
       onTap: () => context.push(RoutePaths.serviceProviderMyInfo),
@@ -350,11 +364,11 @@ class _ProviderNameRow extends ConsumerWidget {
                     height: 14,
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   left: 18,
                   top: 2,
                   child: Text(
-                    '认证',
+                    '我的.认证'.tr(),
                     style: TextStyle(
                       color: Color(0xFF784301),
                       fontSize: 9,
@@ -394,7 +408,7 @@ class _StatCard extends ConsumerWidget {
         children: stats
             .map(
               (_StatData item) => Expanded(
-                child: _StatItem(value: item.value, label: item.label),
+                child: _StatItem(value: item.value, label: item.labelKey.tr()),
               ),
             )
             .toList(),
@@ -442,19 +456,19 @@ List<_StatData> _buildProviderStats(VisaProviderProfileVO? providerProfile) {
   return <_StatData>[
     _StatData(
       value: _formatProviderInteger(providerProfile?.pendingOrderCount ?? 0),
-      label: '待处理订单',
+      labelKey: '我的.待处理订单',
     ),
     _StatData(
       value: _formatProviderInteger(providerProfile?.activePackageCount ?? 0),
-      label: '已上架套餐',
+      labelKey: '我的.已上架套餐',
     ),
     _StatData(
       value: _formatProviderCaseCount(providerProfile?.caseCount ?? 0),
-      label: '累计服务',
+      labelKey: '我的.累计服务',
     ),
     _StatData(
       value: _formatProviderRating(providerProfile?.rating ?? 0),
-      label: '综合评分',
+      labelKey: '我的.综合评分',
     ),
   ];
 }
@@ -494,7 +508,7 @@ class _MenuCard extends StatelessWidget {
         children: items
             .map(
               (_MenuData item) =>
-                  _MenuTile(item: item, onTap: () => onTap(item.label)),
+                  _MenuTile(item: item, onTap: () => onTap(item.labelKey)),
             )
             .toList(),
       ),
@@ -534,7 +548,7 @@ class _MenuTile extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                item.label,
+                item.labelKey.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -555,20 +569,20 @@ class _MenuTile extends StatelessWidget {
 }
 
 class _StatData {
-  const _StatData({required this.value, required this.label});
+  const _StatData({required this.value, required this.labelKey});
 
   final String value;
-  final String label;
+  final String labelKey;
 }
 
 class _MenuData {
   const _MenuData({
-    required this.label,
+    required this.labelKey,
     required this.iconAsset,
     required this.fallbackIcon,
   });
 
-  final String label;
+  final String labelKey;
   final String iconAsset;
   final IconData fallbackIcon;
 }

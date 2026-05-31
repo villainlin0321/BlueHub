@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -44,7 +45,7 @@ class BlacklistPageView extends StatelessWidget {
             color: BlacklistPageStyles.titleColor,
           ),
         ),
-        title: const Text('黑名单', style: BlacklistPageStyles.navTitle),
+        title: Text('我的.黑名单'.tr(), style: BlacklistPageStyles.navTitle),
       ),
       body: _buildBody(context),
     );
@@ -77,11 +78,11 @@ class BlacklistPageView extends StatelessWidget {
           _BlacklistCountHeader(totalCount: state.totalCount),
           const SizedBox(height: 12),
           if (state.items.isEmpty)
-            const SizedBox(
+            SizedBox(
               height: 320,
               child: Center(
                 child: AppEmptyState(
-                  message: '暂无黑名单用户',
+                  message: '我的.暂无黑名单用户'.tr(),
                   padding: EdgeInsets.symmetric(horizontal: 24),
                 ),
               ),
@@ -110,7 +111,12 @@ class _BlacklistCountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text('已拉黑用户 $totalCount 人', style: BlacklistPageStyles.countText);
+    return Text(
+      '我的.已拉黑用户统计'.tr(namedArgs: <String, String>{
+        'count': totalCount.toString(),
+      }),
+      style: BlacklistPageStyles.countText,
+    );
   }
 }
 
@@ -173,7 +179,9 @@ class _BlacklistUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String nickname = user.nickname.trim().isEmpty
-        ? '用户${user.userId}'
+        ? '我的.用户占位昵称'.tr(
+            namedArgs: <String, String>{'userId': user.userId.toString()},
+          )
         : user.nickname.trim();
     return SizedBox(
       height: BlacklistPageStyles.tileHeight,
@@ -198,7 +206,7 @@ class _BlacklistUserTile extends StatelessWidget {
               foregroundColor: BlacklistPageStyles.actionColor,
             ),
             child: Text(
-              isRemoving ? '移除中...' : '移除',
+              isRemoving ? '我的.移除中'.tr() : '我的.移除'.tr(),
               style: BlacklistPageStyles.action,
             ),
           ),
@@ -235,10 +243,10 @@ class _BlacklistLoadMoreFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String text = isLoadingMore
-        ? '加载中...'
+        ? '我的.加载中'.tr()
         : hasNext
-        ? '上滑加载更多'
-        : '没有更多了';
+        ? '我的.上滑加载更多'.tr()
+        : '我的.没有更多了'.tr();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(child: Text(text, style: BlacklistPageStyles.footer)),
@@ -266,7 +274,7 @@ class _BlacklistErrorState extends StatelessWidget {
               style: BlacklistPageStyles.errorText,
             ),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(onPressed: onRetry, child: Text('我的.重试'.tr())),
           ],
         ),
       ),

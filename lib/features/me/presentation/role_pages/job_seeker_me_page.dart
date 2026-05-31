@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../current_user_view_data.dart';
@@ -22,22 +23,22 @@ class JobSeekerMePage extends ConsumerWidget {
 
   static const List<_MenuActionItem> _menuItems = <_MenuActionItem>[
     _MenuActionItem(
-      label: '简历管理',
+      labelKey: '我的.简历管理',
       iconAsset: 'assets/images/mou4gf13-1hzw3yt.svg',
       fallbackIcon: Icons.badge_outlined,
     ),
     _MenuActionItem(
-      label: '订单进度',
+      labelKey: '我的.订单进度',
       iconAsset: 'assets/images/mou4gf13-o2ya2qn.svg',
       fallbackIcon: Icons.assignment_outlined,
     ),
     _MenuActionItem(
-      label: '我的收藏',
+      labelKey: '我的.我的收藏',
       iconAsset: 'assets/images/mou4gf13-2yasg57.svg',
       fallbackIcon: Icons.star_outline_rounded,
     ),
     _MenuActionItem(
-      label: '客服中心',
+      labelKey: '我的.客服中心',
       iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
       fallbackIcon: Icons.support_agent_outlined,
     ),
@@ -87,13 +88,13 @@ class JobSeekerMePage extends ConsumerWidget {
   /// 根据菜单名称分发跳转行为。
   void _handleMenuTap(BuildContext context, String label) {
     switch (label) {
-      case '简历管理':
+      case '我的.简历管理':
         context.push(RoutePaths.myResume);
-      case '订单进度':
+      case '我的.订单进度':
         context.push(RoutePaths.myOrders);
-      case '我的收藏':
+      case '我的.我的收藏':
         context.push(RoutePaths.myFavorites);
-      case '客服中心':
+      case '我的.客服中心':
         _showPlaceholderToast(context, label);
     }
   }
@@ -108,7 +109,13 @@ class JobSeekerMePage extends ConsumerWidget {
   void _showPlaceholderToast(BuildContext context, String label) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('$label（占位）')));
+    ).showSnackBar(
+      SnackBar(
+        content: Text(
+          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
+        ),
+      ),
+    );
   }
 }
 
@@ -124,7 +131,7 @@ class _Header extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Text(
-            '我的',
+            '我的.我的'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: const Color(0xE5000000),
               fontSize: 17,
@@ -252,10 +259,10 @@ class _ProfileCard extends StatelessWidget {
                                     JobSeekerMePage._verifiedBadgeBgAsset,
                                     fit: BoxFit.fill,
                                   ),
-                                  const Center(
+                                  Center(
                                     child: Text(
-                                      '已实名',
-                                      style: TextStyle(
+                                      '我的.已实名'.tr(),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
@@ -294,26 +301,26 @@ class _ProfileCard extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: _StatItem(value: '3', label: '我的订单', onTap: onOrderTap),
+                child: _StatItem(value: '3', label: '我的.我的订单'.tr(), onTap: onOrderTap),
               ),
               Expanded(
                 child: _StatItem(
                   value: '85%',
-                  label: '我的简历',
+                  label: '我的.我的简历'.tr(),
                   onTap: onResumeTap,
                 ),
               ),
               Expanded(
                 child: _StatItem(
                   value: '3',
-                  label: '我的应聘',
+                  label: '我的.我的应聘'.tr(),
                   onTap: onApplicationTap,
                 ),
               ),
               Expanded(
                 child: _StatItem(
                   value: '24',
-                  label: '我的收藏',
+                  label: '我的.我的收藏'.tr(),
                   onTap: onFavoriteTap,
                 ),
               ),
@@ -389,7 +396,7 @@ class _MenuCard extends StatelessWidget {
       child: Column(
         children: List<Widget>.generate(items.length, (int index) {
           final _MenuActionItem item = items[index];
-          return _MenuTile(item: item, onTap: () => onItemTap(item.label));
+          return _MenuTile(item: item, onTap: () => onItemTap(item.labelKey));
         }),
       ),
     );
@@ -430,7 +437,7 @@ class _MenuTile extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                item.label,
+                item.labelKey.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -452,12 +459,12 @@ class _MenuTile extends StatelessWidget {
 
 class _MenuActionItem {
   const _MenuActionItem({
-    required this.label,
+    required this.labelKey,
     required this.iconAsset,
     required this.fallbackIcon,
   });
 
-  final String label;
+  final String labelKey;
   final String iconAsset;
   final IconData fallbackIcon;
 }

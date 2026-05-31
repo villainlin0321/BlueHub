@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
@@ -78,15 +79,15 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
     final String company = _companyController.text.trim();
     final String jobTitle = _jobTitleController.text.trim();
     if (company.isEmpty) {
-      _showMessage('请输入公司名称');
+      _showMessage('我的.请输入公司名称'.tr());
       return;
     }
     if (_selectedPeriod == null) {
-      _showMessage('请选择在职时间');
+      _showMessage('我的.请选择在职时间'.tr());
       return;
     }
     if (jobTitle.isEmpty) {
-      _showMessage('请输入职位名称');
+      _showMessage('我的.请输入职位名称'.tr());
       return;
     }
 
@@ -133,8 +134,8 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
             color: Color(0xFF171A1D),
           ),
         ),
-        title: const Text(
-          '工作经历',
+        title: Text(
+          '我的.工作经历'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -151,23 +152,23 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
             child: Column(
               children: <Widget>[
                 _UnderlinedInputField(
-                  label: '公司名称',
+                  label: '我的.公司名称'.tr(),
                   controller: _companyController,
                 ),
                 const SizedBox(height: 16),
                 _UnderlinedSelectorField(
-                  label: '在职时间',
+                  label: '我的.在职时间'.tr(),
                   value: _selectedPeriod?.displayText,
                   onTap: _openEmploymentPeriodSheet,
                 ),
                 const SizedBox(height: 16),
                 _UnderlinedInputField(
-                  label: '职位名称',
+                  label: '我的.职位名称'.tr(),
                   controller: _jobTitleController,
                 ),
                 const SizedBox(height: 16),
                 _UnderlinedInputField(
-                  label: '所在部门',
+                  label: '我的.所在部门'.tr(),
                   controller: _departmentController,
                 ),
                 const SizedBox(height: 16),
@@ -205,8 +206,8 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        '删除',
+                      child: Text(
+                        '我的.删除'.tr(),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -232,8 +233,8 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '保存',
+                    child: Text(
+                      '我的.保存'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -319,7 +320,7 @@ class EmploymentPeriodValue {
     final String start =
         '${startYear.toString().padLeft(4, '0')}.${startMonth.toString().padLeft(2, '0')}';
     if (isCurrent) {
-      return '$start - 至今';
+      return '$start - ${'我的.至今'.tr()}';
     }
     return '$start - ${endYear.toString().padLeft(4, '0')}.${endMonth.toString().padLeft(2, '0')}';
   }
@@ -358,7 +359,7 @@ Future<EmploymentPeriodValue?> showEmploymentPeriodBottomSheet({
   return showResumeTimePickerBottomSheet(
     context: context,
     type: ResumeTimePickerType.period,
-    title: '时间段',
+    title: '我的.时间段'.tr(),
     initialValue: ResumeTimePickerValue(
       startYear: initialValue.startYear,
       startMonth: initialValue.startMonth,
@@ -504,8 +505,8 @@ class _EmploymentPeriodBottomSheetState
                       ),
                     ),
                   ),
-                  const Text(
-                    '时间段',
+                  Text(
+                    '我的.时间段'.tr(),
                     style: TextStyle(
                       color: Color(0xFF171A1D),
                       fontSize: 17,
@@ -518,10 +519,10 @@ class _EmploymentPeriodBottomSheetState
                     child: GestureDetector(
                       onTap: _handleConfirm,
                       behavior: HitTestBehavior.opaque,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
-                          '确定',
+                          '通用.确定'.tr(),
                           style: TextStyle(
                             color: Color(0xFF096DD9),
                             fontSize: 16,
@@ -618,7 +619,7 @@ class _EmploymentPeriodBottomSheetState
                             selectedValue: _endYear,
                             itemExtent: _itemExtent,
                             labelBuilder: (int? value) =>
-                                value == null ? '至今' : '$value',
+                                value == null ? '我的.至今'.tr() : '$value',
                             onSelected: (int? value) {
                               setState(() {
                                 _endYear = value;
@@ -786,8 +787,8 @@ class _UnderlinedInputField extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   height: 22 / 16,
                 ),
-                decoration: const InputDecoration(
-                  hintText: '请输入',
+                decoration: InputDecoration(
+                  hintText: '通用.请输入'.tr(),
                   hintStyle: TextStyle(
                     color: Color(0xFFBFBFBF),
                     fontSize: 16,
@@ -849,7 +850,7 @@ class _UnderlinedSelectorField extends StatelessWidget {
                     children: <Widget>[
                       Expanded(
                         child: Text(
-                          value ?? '请选择',
+                          value ?? '通用.请选择'.tr(),
                           style: TextStyle(
                             color: value == null
                                 ? const Color(0xFFBFBFBF)
@@ -893,8 +894,8 @@ class _WorkContentField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            '工作内容',
+          Text(
+            '我的.工作内容'.tr(),
             style: TextStyle(
               color: Color(0xFF595959),
               fontSize: 14,
@@ -914,8 +915,8 @@ class _WorkContentField extends StatelessWidget {
                 fontWeight: FontWeight.w400,
                 height: 24 / 16,
               ),
-              decoration: const InputDecoration(
-                hintText: '请输入',
+              decoration: InputDecoration(
+                hintText: '通用.请输入'.tr(),
                 hintStyle: TextStyle(
                   color: Color(0xFFBFBFBF),
                   fontSize: 16,

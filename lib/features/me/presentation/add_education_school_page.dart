@@ -1,4 +1,5 @@
 import 'package:bluehub_app/shared/network/models/dictionary_models.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +29,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
 
   static String _initialKeyword(String? initialSchool) {
     if ((initialSchool ?? '').trim().isEmpty) {
-      return '南京';
+      return '';
     }
     final String normalized = initialSchool!.trim();
     return normalized.length <= 2 ? normalized : normalized.substring(0, 2);
@@ -77,7 +78,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
     if (result == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请选择学校')));
+      ).showSnackBar(SnackBar(content: Text('我的.请选择学校'.tr())));
       return;
     }
 
@@ -105,8 +106,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
             color: Color(0xFF171A1D),
           ),
         ),
-        title: const Text(
-          '学校',
+        title: Text(
+          '我的.学校'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -121,8 +122,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
               foregroundColor: const Color(0xFF262626),
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
-            child: const Text(
-              '确定',
+            child: Text(
+              '通用.确定'.tr(),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -156,8 +157,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                         fontWeight: FontWeight.w400,
                         height: 20 / 14,
                       ),
-                      decoration: const InputDecoration(
-                        hintText: '请输入学校名称',
+                      decoration: InputDecoration(
+                        hintText: '我的.请输入学校名称'.tr(),
                         hintStyle: TextStyle(
                           color: Color(0xFFBFBFBF),
                           fontSize: 14,
@@ -180,7 +181,9 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                     if (pageResult.list.isEmpty) {
                       return Center(
                         child: Text(
-                          _keyword.isEmpty ? '暂无学校数据' : '未找到相关学校',
+                          _keyword.isEmpty
+                              ? '我的.暂无学校数据'.tr()
+                              : '我的.未找到相关学校'.tr(),
                           style: const TextStyle(
                             color: Color(0xFF8C8C8C),
                             fontSize: 14,
@@ -237,8 +240,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        const Text(
-                          '学校加载失败',
+                        Text(
+                          '我的.学校加载失败'.tr(),
                           style: TextStyle(
                             color: Color(0xFF8C8C8C),
                             fontSize: 14,
@@ -250,7 +253,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                           onPressed: () {
                             ref.invalidate(schoolSearchProvider(_query));
                           },
-                          child: const Text('重试'),
+                          child: Text('通用.重试'.tr()),
                         ),
                       ],
                     ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,15 +27,17 @@ class MyInfoPage extends ConsumerStatefulWidget {
 
 class _MyInfoPageState extends ConsumerState<MyInfoPage> {
   static const String _avatarAsset = 'assets/images/mou4gf12-gby6i3c.png';
-  static const List<SelectableSheetOption<String>> _genderOptions =
-      <SelectableSheetOption<String>>[
-        SelectableSheetOption<String>(value: 'male', label: '男'),
-        SelectableSheetOption<String>(value: 'female', label: '女'),
-        SelectableSheetOption<String>(value: 'unknown', label: '未填写'),
-      ];
 
   bool _isSubmitting = false;
   String? _localAvatarPreviewPath;
+
+  /// 返回性别选择项，运行时读取国际化文案。
+  List<SelectableSheetOption<String>> get _genderOptions =>
+      <SelectableSheetOption<String>>[
+        SelectableSheetOption<String>(value: 'male', label: '我的.男'.tr()),
+        SelectableSheetOption<String>(value: 'female', label: '我的.女'.tr()),
+        SelectableSheetOption<String>(value: 'unknown', label: '我的.未完善'.tr()),
+      ];
 
   @override
   /// 构建“我的信息”页面，并根据当前登录态刷新展示内容。
@@ -64,7 +67,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                       child: Column(
                         children: <Widget>[
                           _InfoAvatarRow(
-                            label: '头像',
+                            label: '我的.头像'.tr(),
                             avatarUrl: userViewData.avatarUrl,
                             localAvatarPath: _localAvatarPreviewPath,
                             fallbackAssetPath: _avatarAsset,
@@ -76,7 +79,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             color: Color(0xFFF0F0F0),
                           ),
                           _InfoValueRow(
-                            label: '出生日期',
+                            label: '我的.出生日期'.tr(),
                             value: userViewData.birthdayText,
                             onTap: _handleBirthdayTap,
                           ),
@@ -86,7 +89,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             color: Color(0xFFF0F0F0),
                           ),
                           _InfoValueRow(
-                            label: '性别',
+                            label: '我的.性别'.tr(),
                             value: userViewData.genderText,
                             onTap: _handleGenderTap,
                           ),
@@ -96,7 +99,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             color: Color(0xFFF0F0F0),
                           ),
                           _InfoValueRow(
-                            label: '手机号',
+                            label: '我的.手机号'.tr(),
                             value: userViewData.maskedPhone,
                             showChevron: false,
                           ),
@@ -147,14 +150,14 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
             Navigator.of(sheetContext).pop();
             await _pickAndUploadAvatar(
               picker: UploadPickerUtils.pickFromCamera,
-              errorMessage: '打开相机失败，请稍后重试',
+              errorMessage: '我的.打开相机失败'.tr(),
             );
           },
           onGalleryTap: () async {
             Navigator.of(sheetContext).pop();
             await _pickAndUploadAvatar(
               picker: UploadPickerUtils.pickFromGallery,
-              errorMessage: '打开相册失败，请稍后重试',
+              errorMessage: '我的.打开相册失败'.tr(),
             );
           },
         );
@@ -185,7 +188,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
           .updateMe(
             request: UpdateUserBO(birthday: _formatBirthdayForApi(pickedDate)),
           ),
-      successMessage: '出生日期已更新',
+      successMessage: '我的.出生日期已更新'.tr(),
     );
   }
 
@@ -194,7 +197,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
     final AuthUser? currentUser = ref.read(authSessionProvider).user;
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '选择性别',
+      title: '我的.选择性别'.tr(),
       options: _genderOptions,
       initialSelectedValues: <String>[
         _normalizeGenderValue(currentUser?.gender),
@@ -209,7 +212,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
       action: () => ref
           .read(userServiceProvider)
           .updateMe(request: UpdateUserBO(gender: result.first)),
-      successMessage: '性别已更新',
+      successMessage: '我的.性别已更新'.tr(),
     );
   }
 
@@ -245,7 +248,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
               .read(userServiceProvider)
               .updateMe(request: UpdateUserBO(avatarId: avatarId));
         },
-        successMessage: '头像已更新',
+        successMessage: '我的.头像已更新'.tr(),
       );
       if (mounted) {
         setState(() {
@@ -309,7 +312,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
         .uploadFile(
           path: path,
           scene: FileScene.avatar,
-          errorMessage: '头像上传失败，请稍后重试',
+          errorMessage: '我的.头像上传失败'.tr(),
         );
     return presign.fileId;
   }
@@ -371,7 +374,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
     if (error is ApiException) {
       return error.message;
     }
-    return '保存失败，请稍后重试';
+    return '我的.保存失败'.tr();
   }
 
   /// 统一通过页面级 Snackbar 提示保存结果与异常信息。
@@ -403,8 +406,8 @@ class _MyInfoHeader extends StatelessWidget {
               icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
             ),
           ),
-          const Text(
-            '我的信息',
+          Text(
+            '我的.我的信息'.tr(),
             style: TextStyle(
               color: Color(0xFF262626),
               fontSize: 17,
@@ -599,8 +602,8 @@ class _ImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '选择头像',
+            Text(
+              '我的.选择头像'.tr(),
               style: TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 17,
@@ -609,10 +612,13 @@ class _ImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _BottomSheetActionTile(label: '拍照', onTap: onCameraTap),
-            _BottomSheetActionTile(label: '从相册选择', onTap: onGalleryTap),
+            _BottomSheetActionTile(label: '我的.拍照'.tr(), onTap: onCameraTap),
+            _BottomSheetActionTile(
+              label: '我的.从相册选择'.tr(),
+              onTap: onGalleryTap,
+            ),
             const SizedBox(height: 8),
-            _BottomSheetActionTile(label: '取消', onTap: onClose),
+            _BottomSheetActionTile(label: '通用.取消'.tr(), onTap: onClose),
           ],
         ),
       ),

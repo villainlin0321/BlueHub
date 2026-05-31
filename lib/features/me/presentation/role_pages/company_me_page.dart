@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -28,30 +29,30 @@ class CompanyMePage extends ConsumerWidget {
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
 
   static const List<_StatData> _stats = <_StatData>[
-    _StatData(value: '88', label: '在招岗位'),
-    _StatData(value: '24', label: '收到简历'),
-    _StatData(value: '1.2k', label: '待面试'),
-    _StatData(value: '4.87', label: '已录用'),
+    _StatData(value: '88', labelKey: '我的.在招岗位'),
+    _StatData(value: '24', labelKey: '我的.收到简历'),
+    _StatData(value: '1.2k', labelKey: '我的.待面试'),
+    _StatData(value: '4.87', labelKey: '我的.已录用'),
   ];
 
   static const List<_MenuData> _menus = <_MenuData>[
     _MenuData(
-      label: '企业资质',
+      labelKey: '我的.企业资质',
       iconAsset: 'assets/images/mou64ult-bsnw92y.svg',
       fallbackIcon: Icons.assignment_ind_outlined,
     ),
     _MenuData(
-      label: '应聘管理',
+      labelKey: '我的.应聘管理',
       iconAsset: 'assets/images/mou64ulu-ebnjjum.svg',
       fallbackIcon: Icons.business_center_outlined,
     ),
     _MenuData(
-      label: '人才中心',
+      labelKey: '我的.人才中心',
       iconAsset: 'assets/images/mou64ulu-1l37egn.svg',
       fallbackIcon: Icons.groups_outlined,
     ),
     _MenuData(
-      label: '订单管理',
+      labelKey: '我的.订单管理',
       iconAsset: 'assets/images/mou64ulu-l17h9p8.svg',
       fallbackIcon: Icons.checklist_rounded,
     ),
@@ -82,7 +83,13 @@ class CompanyMePage extends ConsumerWidget {
   void _showPlaceholderToast(BuildContext context, String label) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('$label（占位）')));
+    ).showSnackBar(
+      SnackBar(
+        content: Text(
+          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleMenuTap(
@@ -90,19 +97,19 @@ class CompanyMePage extends ConsumerWidget {
     WidgetRef ref,
     String label,
   ) async {
-    if (label == '企业资质') {
+    if (label == '我的.企业资质') {
       await _openQualificationCertification(context, ref);
       return;
     }
-    if (label == '订单管理') {
+    if (label == '我的.订单管理') {
       context.push(RoutePaths.orderManagement);
       return;
     }
-    if (label == '应聘管理') {
+    if (label == '我的.应聘管理') {
       context.push(RoutePaths.companyApplications);
       return;
     }
-    if (label == '人才中心') {
+    if (label == '我的.人才中心') {
       context.go(RoutePaths.jobs);
       return;
     }
@@ -137,7 +144,7 @@ class CompanyMePage extends ConsumerWidget {
       }
       final String message = error is ApiException
           ? error.message
-          : '资料加载失败，请稍后重试';
+          : '我的.资料加载失败'.tr();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -381,12 +388,12 @@ class _CompanyInfo extends StatelessWidget {
 
   String _buildCompanyName(EmployerProfileVO? profile) {
     final String name = profile?.companyName.trim() ?? '';
-    return name.isEmpty ? '企业名称待完善' : name;
+    return name.isEmpty ? '我的.企业名称待完善'.tr() : name;
   }
 
   String _buildIndustry(EmployerProfileVO? profile) {
     final String industry = profile?.industry.trim() ?? '';
-    return industry.isEmpty ? '行业待完善' : industry;
+    return industry.isEmpty ? '我的.行业待完善'.tr() : industry;
   }
 
   String _buildLocation(EmployerProfileVO? profile) {
@@ -450,17 +457,17 @@ class _StatCard extends ConsumerWidget {
         : <_StatData>[
             _StatData(
               value: _formatCompanyCount(stats.activeJobs),
-              label: '在招岗位',
+              labelKey: '我的.在招岗位',
             ),
             _StatData(
               value: _formatCompanyCount(stats.receivedResumes),
-              label: '收到简历',
+              labelKey: '我的.收到简历',
             ),
             _StatData(
               value: _formatCompanyCount(stats.pendingInterviews),
-              label: '待面试',
+              labelKey: '我的.待面试',
             ),
-            _StatData(value: _formatCompanyCount(stats.hired), label: '已录用'),
+            _StatData(value: _formatCompanyCount(stats.hired), labelKey: '我的.已录用'),
           ];
 
     return Container(
@@ -475,7 +482,7 @@ class _StatCard extends ConsumerWidget {
         children: items
             .map(
               (_StatData item) => Expanded(
-                child: _StatItem(value: item.value, label: item.label),
+                child: _StatItem(value: item.value, label: item.labelKey.tr()),
               ),
             )
             .toList(),
@@ -537,7 +544,7 @@ class _MenuCard extends StatelessWidget {
         children: items
             .map(
               (_MenuData item) =>
-                  _MenuTile(item: item, onTap: () => onTap(item.label)),
+                  _MenuTile(item: item, onTap: () => onTap(item.labelKey)),
             )
             .toList(),
       ),
@@ -577,7 +584,7 @@ class _MenuTile extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                item.label,
+                item.labelKey.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -598,22 +605,22 @@ class _MenuTile extends StatelessWidget {
 }
 
 class _StatData {
-  const _StatData({required this.value, required this.label});
+  const _StatData({required this.value, required this.labelKey});
 
   final String value;
-  final String label;
+  final String labelKey;
 }
 
 String _formatCompanyCount(int? value) => (value ?? 0).toString();
 
 class _MenuData {
   const _MenuData({
-    required this.label,
+    required this.labelKey,
     required this.iconAsset,
     required this.fallbackIcon,
   });
 
-  final String label;
+  final String labelKey;
   final String iconAsset;
   final IconData fallbackIcon;
 }

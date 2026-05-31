@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,17 +30,17 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
 
   static const List<_FinanceMenuItem> _menuItems = <_FinanceMenuItem>[
     _FinanceMenuItem(
-      label: '账单明细',
+      labelKey: '财务.账单明细',
       assetPath: _billDetailAsset,
       fallbackIcon: Icons.receipt_long_outlined,
     ),
     _FinanceMenuItem(
-      label: '提现记录',
+      labelKey: '财务.提现记录',
       assetPath: _withdrawRecordAsset,
       fallbackIcon: Icons.account_balance_wallet_outlined,
     ),
     _FinanceMenuItem(
-      label: '银行卡管理',
+      labelKey: '财务.银行卡管理',
       assetPath: _bankCardAsset,
       fallbackIcon: Icons.credit_card_outlined,
     ),
@@ -115,7 +116,7 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
     if (!mounted) {
       return;
     }
-    _showMessage('添加成功');
+    _showMessage('财务.添加成功'.tr());
     ref.read(financeRefreshTickProvider.notifier).bump();
   }
 
@@ -131,19 +132,19 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
     if (!mounted) {
       return;
     }
-    _showMessage('提现申请已提交');
+    _showMessage('财务.提现申请已提交'.tr());
     ref.read(financeRefreshTickProvider.notifier).bump();
   }
 
-  Future<void> _handleMenuTap(String label) async {
-    switch (label) {
-      case '账单明细':
+  Future<void> _handleMenuTap(String labelKey) async {
+    switch (labelKey) {
+      case '财务.账单明细':
         context.push(RoutePaths.financeTransactions);
         return;
-      case '提现记录':
+      case '财务.提现记录':
         context.push(RoutePaths.financeWithdrawals);
         return;
-      case '银行卡管理':
+      case '财务.银行卡管理':
         context.push(RoutePaths.financeBankCards);
         return;
     }
@@ -167,7 +168,7 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
 
   Future<void> _openWithdrawSheet() async {
     if (_overview == null) {
-      _showMessage('财务数据加载中，请稍后再试');
+      _showMessage('财务.财务数据加载中'.tr());
       return;
     }
     await showModalBottomSheet<void>(
@@ -217,8 +218,8 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
             color: Color(0xFF262626),
           ),
         ),
-        title: const Text(
-          '财务结算',
+        title: Text(
+          '财务.财务结算'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -319,10 +320,10 @@ class _FinanceBalanceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const Opacity(
+                    Opacity(
                       opacity: 0.8,
                       child: Text(
-                        '可体现余额 (元)',
+                        '财务.可提现余额元'.tr(),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -355,8 +356,8 @@ class _FinanceBalanceCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(17),
                   ),
                 ),
-                child: const Text(
-                  '提现',
+                child: Text(
+                  '财务.提现'.tr(),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -371,14 +372,14 @@ class _FinanceBalanceCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: _BalanceValueBlock(
-                  label: '未到账 (元)',
+                  label: '财务.未到账元'.tr(),
                   value: pendingAmount,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _BalanceValueBlock(
-                  label: '累计收入 (元)',
+                  label: '财务.累计收入元'.tr(),
                   value: totalEarned,
                 ),
               ),
@@ -446,7 +447,7 @@ class _FinanceMenuCard extends StatelessWidget {
             .map(
               (_FinanceMenuItem item) => _FinanceMenuTile(
                 item: item,
-                onTap: () => onItemTap(item.label),
+                onTap: () => onItemTap(item.labelKey),
               ),
             )
             .toList(growable: false),
@@ -479,7 +480,7 @@ class _FinanceMenuTile extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                item.label,
+                item.labelKey.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
@@ -519,8 +520,8 @@ class _TransactionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            '最近交易',
+          Text(
+            '财务.最近交易'.tr(),
             style: TextStyle(
               color: Color(0xFF262626),
               fontSize: 16,
@@ -530,9 +531,9 @@ class _TransactionCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (items.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 10),
-              child: _SheetEmptyState(message: '暂无最近交易'),
+              child: _SheetEmptyState(message: '财务.暂无最近交易'.tr()),
             )
           else
             for (int index = 0; index < items.length; index++) ...<Widget>[
@@ -589,7 +590,9 @@ class _TransactionTile extends StatelessWidget {
                 Text(
                   item.orderNo.trim().isEmpty
                       ? _mapTransactionType(item.txType)
-                      : '订单号: ${item.orderNo}',
+                      : '财务.订单号前缀'.tr(
+                          namedArgs: <String, String>{'orderNo': item.orderNo},
+                        ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -657,7 +660,7 @@ class _FinanceStateView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),
@@ -805,7 +808,7 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
     final String cardNoMask = _cardNoMaskController.text.trim();
     final String cardHolder = _cardHolderController.text.trim();
     if (bankName.isEmpty || cardNoMask.isEmpty || cardHolder.isEmpty) {
-      setState(() => _errorMessage = '请完整填写银行卡信息');
+      setState(() => _errorMessage = '财务.请完整填写银行卡信息'.tr());
       return;
     }
 
@@ -840,7 +843,7 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
   @override
   Widget build(BuildContext context) {
     return _FinanceSheetScaffold(
-      title: '新增银行卡',
+      title: '财务.新增银行卡'.tr(),
       bottomAction: FilledButton(
         onPressed: _isSubmitting ? null : _handleSubmit,
         style: FilledButton.styleFrom(
@@ -851,34 +854,36 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Text(_isSubmitting ? '提交中...' : '确认添加'),
+        child: Text(
+          _isSubmitting ? '认证.提交中'.tr() : '财务.确认添加'.tr(),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _SheetTextField(
             controller: _bankNameController,
-            label: '银行名称',
-            hintText: '例如：中国工商银行',
+            label: '财务.银行名称'.tr(),
+            hintText: '财务.银行名称示例'.tr(),
           ),
           const SizedBox(height: 12),
           _SheetTextField(
             controller: _cardHolderController,
-            label: '持卡人姓名',
-            hintText: '请输入持卡人姓名',
+            label: '财务.持卡人姓名'.tr(),
+            hintText: '财务.请输入持卡人姓名'.tr(),
           ),
           const SizedBox(height: 12),
           _SheetTextField(
             controller: _cardNoMaskController,
-            label: '卡号掩码',
-            hintText: '例如：**** 1234',
+            label: '财务.卡号掩码'.tr(),
+            hintText: '财务.卡号掩码示例'.tr(),
           ),
           const SizedBox(height: 4),
           SwitchListTile(
             value: _isDefault,
             contentPadding: EdgeInsets.zero,
-            title: const Text(
-              '设为默认提现卡',
+            title: Text(
+              '财务.设为默认提现卡'.tr(),
               style: TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 14,
@@ -953,16 +958,16 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
       return;
     }
     if (widget.bankCards.isEmpty || _selectedCardId == null) {
-      setState(() => _errorMessage = '请先添加银行卡');
+      setState(() => _errorMessage = '财务.请先添加银行卡'.tr());
       return;
     }
     final double? amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      setState(() => _errorMessage = '请输入正确的提现金额');
+      setState(() => _errorMessage = '财务.请输入正确的提现金额'.tr());
       return;
     }
     if (amount > widget.availableAmount) {
-      setState(() => _errorMessage = '提现金额不能超过可提现余额');
+      setState(() => _errorMessage = '财务.提现金额不能超过可提现余额'.tr());
       return;
     }
 
@@ -995,7 +1000,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
   @override
   Widget build(BuildContext context) {
     return _FinanceSheetScaffold(
-      title: '申请提现',
+      title: '财务.申请提现'.tr(),
       bottomAction: FilledButton(
         onPressed: _isSubmitting ? null : _handleSubmit,
         style: FilledButton.styleFrom(
@@ -1006,15 +1011,17 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Text(_isSubmitting ? '提交中...' : '确认提现'),
+        child: Text(
+          _isSubmitting ? '认证.提交中'.tr() : '财务.确认提现'.tr(),
+        ),
       ),
       child: widget.bankCards.isEmpty
           ? Column(
               children: <Widget>[
-                const _SheetEmptyState(message: '暂未绑定银行卡，请先新增银行卡'),
+                _SheetEmptyState(message: '财务.暂未绑定银行卡请先新增银行卡'.tr()),
                 OutlinedButton(
                   onPressed: _handleAddBankCard,
-                  child: const Text('新增银行卡'),
+                  child: Text('财务.新增银行卡'.tr()),
                 ),
               ],
             )
@@ -1029,7 +1036,14 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '可提现余额：${_formatAmount(widget.availableAmount, widget.currency)}',
+                    '财务.可提现余额'.tr(
+                      namedArgs: <String, String>{
+                        'amount': _formatAmount(
+                          widget.availableAmount,
+                          widget.currency,
+                        ),
+                      },
+                    ),
                     style: const TextStyle(
                       color: Color(0xFF262626),
                       fontSize: 14,
@@ -1041,8 +1055,8 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _selectedCardId,
-                  decoration: const InputDecoration(
-                    labelText: '提现银行卡',
+                  decoration: InputDecoration(
+                    labelText: '财务.提现银行卡'.tr(),
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
@@ -1066,9 +1080,9 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: '提现金额',
-                    hintText: '请输入提现金额',
+                  decoration: InputDecoration(
+                    labelText: '财务.提现金额'.tr(),
+                    hintText: '财务.请输入提现金额'.tr(),
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
@@ -1118,12 +1132,12 @@ class _SheetTextField extends StatelessWidget {
 
 class _FinanceMenuItem {
   const _FinanceMenuItem({
-    required this.label,
+    required this.labelKey,
     required this.assetPath,
     required this.fallbackIcon,
   });
 
-  final String label;
+  final String labelKey;
   final String assetPath;
   final IconData fallbackIcon;
 }
@@ -1131,13 +1145,13 @@ class _FinanceMenuItem {
 String _normalizeError(Object error) {
   if (error is ApiException) {
     final String message = error.message.trim();
-    return message.isEmpty ? '请求失败，请稍后重试' : message;
+    return message.isEmpty ? '财务.请求失败'.tr() : message;
   }
   final String message = error.toString().trim();
   if (message.startsWith('Exception: ')) {
     return message.substring('Exception: '.length);
   }
-  return message.isEmpty ? '请求失败，请稍后重试' : message;
+  return message.isEmpty ? '财务.请求失败'.tr() : message;
 }
 
 String _formatCurrencySymbol(String currency) {
@@ -1194,9 +1208,9 @@ String _formatCompactDateTime(String raw) {
 
 String _mapTransactionType(String txType) {
   return switch (txType.trim().toLowerCase()) {
-    'income' => '收入',
-    'refund' => '退款冲销',
-    _ => txType.trim().isEmpty ? '结算流水' : txType.trim(),
+    'income' => '财务.收入'.tr(),
+    'refund' => '财务.退款冲销'.tr(),
+    _ => txType.trim().isEmpty ? '财务.结算流水'.tr() : txType.trim(),
   };
 }
 
@@ -1204,10 +1218,11 @@ String _buildTransactionTitle(ProviderTransactionVO item) {
   final String name = item.clientNameMasked.trim();
   final String type = item.txType.trim().toLowerCase();
   if (type == 'refund') {
-    return name.isEmpty ? '退款冲销' : '退款冲销-$name';
+    final String label = '财务.退款冲销'.tr();
+    return name.isEmpty ? label : '$label-$name';
   }
   if (name.isEmpty) {
-    return '结算流水';
+    return '财务.结算流水'.tr();
   }
-  return '结算订单-$name';
+  return '${'财务.结算订单'.tr()}-$name';
 }

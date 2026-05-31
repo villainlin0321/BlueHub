@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -45,7 +46,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   static const int _pageSize = 20;
   static const List<_SalaryRangeOption> _salaryRangeOptions =
       <_SalaryRangeOption>[
-        _SalaryRangeOption(key: '', label: '薪资要求'),
+        _SalaryRangeOption(key: '', labelKey: '招聘.薪资要求'),
         _SalaryRangeOption(key: '1000-2000', label: '1000-2000', min: 1000, max: 2000),
         _SalaryRangeOption(key: '2000-3000', label: '2000-3000', min: 2000, max: 3000),
         _SalaryRangeOption(key: '3000-4000', label: '3000-4000', min: 3000, max: 4000),
@@ -55,12 +56,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _SalaryRangeOption(key: '7000-8000', label: '7000-8000', min: 7000, max: 8000),
         _SalaryRangeOption(key: '8000-9000', label: '8000-9000', min: 8000, max: 9000),
         _SalaryRangeOption(key: '9000-10000', label: '9000-10000', min: 9000, max: 10000),
-        _SalaryRangeOption(key: '10000+', label: '10000以上', min: 10000),
+        _SalaryRangeOption(key: '10000+', labelKey: '招聘.以上', min: 10000, prefix: '10000'),
       ];
   static const List<_SortOption> _sortOptions = <_SortOption>[
-    _SortOption(key: 'latest', label: '最新'),
-    _SortOption(key: 'salary_desc', label: '薪资降序'),
-    _SortOption(key: 'salary_asc', label: '薪资升序'),
+    _SortOption(key: 'latest', labelKey: '招聘.最新'),
+    _SortOption(key: 'salary_desc', labelKey: '招聘.薪资降序'),
+    _SortOption(key: 'salary_asc', labelKey: '招聘.薪资升序'),
   ];
 
   final List<JobListVO> _jobs = <JobListVO>[];
@@ -116,11 +117,11 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       bottom: false,
       child: Column(
         children: <Widget>[
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: Text(
-              '欧洲招聘',
-              style: TextStyle(
+              '招聘.欧洲招聘'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF000000),
                 fontSize: 17,
                 fontWeight: FontWeight.w500,
@@ -355,7 +356,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     if (error is ApiException) {
       return error.message;
     }
-    return '岗位列表加载失败，请稍后重试';
+    return '招聘.岗位列表加载失败'.tr();
   }
 
   String? _normalizeFilterValue(String? value) {
@@ -428,7 +429,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       });
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('投递成功')));
+      ).showSnackBar(SnackBar(content: Text('招聘.投递成功'.tr())));
     } else {
       setState(() {
         _submittingJobIds.remove(job.jobId);
@@ -476,7 +477,13 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       ref.read(collectionRefreshTickProvider.notifier).bump();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(isCollected ? '已取消收藏' : '收藏成功')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            isCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr(),
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -495,7 +502,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     if (error is ApiException) {
       return error.message;
     }
-    return '收藏操作失败，请稍后重试';
+    return '招聘.收藏操作失败'.tr();
   }
 }
 
@@ -537,11 +544,11 @@ class _JobsSearchBar extends StatelessWidget {
                 fontWeight: FontWeight.w400,
                 height: 20 / 14,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: '搜索签证服务/欧洲岗位',
-                hintStyle: TextStyle(
+                hintText: '招聘.搜索岗位占位'.tr(),
+                hintStyle: const TextStyle(
                   color: Color(0xFFBFBFBF),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -590,7 +597,7 @@ class _FilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<_DropdownOption> countryOptions = <_DropdownOption>[
-      const _DropdownOption(value: '', label: '全部国家'),
+      _DropdownOption(value: '', label: '招聘.全部国家'.tr()),
       ...countries.map(
         (CountryVO item) => _DropdownOption(
           value: item.countryCode.trim(),
@@ -599,7 +606,7 @@ class _FilterRow extends StatelessWidget {
       ),
     ];
     final List<_DropdownOption> positionOptions = <_DropdownOption>[
-      const _DropdownOption(value: '', label: '全部分类'),
+      _DropdownOption(value: '', label: '招聘.全部分类'.tr()),
       ...positions.map(
         (PositionVO item) => _DropdownOption(value: item.nameZh.trim(), label: item.nameZh.trim()),
       ),
@@ -607,12 +614,13 @@ class _FilterRow extends StatelessWidget {
     final List<_DropdownOption> salaryOptions = salaryRanges
         .map(
           (_SalaryRangeOption item) =>
-              _DropdownOption(value: item.key, label: item.label),
+              _DropdownOption(value: item.key, label: item.resolveLabel()),
         )
         .toList(growable: false);
     final List<_DropdownOption> sortOptions = _JobsPageBodyState._sortOptions
         .map(
-          (_SortOption item) => _DropdownOption(value: item.key, label: item.label),
+          (_SortOption item) =>
+              _DropdownOption(value: item.key, label: item.labelKey.tr()),
         )
         .toList(growable: false);
 
@@ -760,22 +768,36 @@ class _DropdownOption {
 class _SalaryRangeOption {
   const _SalaryRangeOption({
     required this.key,
-    required this.label,
+    this.label,
+    this.labelKey,
+    this.prefix,
     this.min,
     this.max,
   });
 
   final String key;
-  final String label;
+  final String? label;
+  final String? labelKey;
+  final String? prefix;
   final double? min;
   final double? max;
+
+  String resolveLabel() {
+    if (labelKey != null) {
+      if (prefix != null) {
+        return '$prefix${tr(labelKey!)}';
+      }
+      return tr(labelKey!);
+    }
+    return label ?? '';
+  }
 }
 
 class _SortOption {
-  const _SortOption({required this.key, required this.label});
+  const _SortOption({required this.key, required this.labelKey});
 
   final String key;
-  final String label;
+  final String labelKey;
 }
 
 class _JobsListSection extends StatelessWidget {
@@ -828,9 +850,9 @@ class _JobsListSection extends StatelessWidget {
     }
 
     if (jobs.isEmpty) {
-      return const SliverToBoxAdapter(
+      return SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: _JobsEmptyState(),
         ),
       );
@@ -860,8 +882,8 @@ class _JobsListSection extends StatelessWidget {
               isApplying: applyingJobIds.contains(item.jobId),
               isCollecting: collectingJobIds.contains(item.jobId),
               applyButtonText: appliedJobIds.contains(item.jobId)
-                  ? '已投递'
-                  : '一键投递',
+                  ? '招聘.已投递'.tr()
+                  : '招聘卡片.一键投递'.tr(),
             ),
           );
         }, childCount: jobs.length),
@@ -902,10 +924,10 @@ class _JobsEmptyState extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
+      child: Center(
         child: AppEmptyState(
-          message: '暂无岗位数据',
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          message: '招聘.暂无岗位数据'.tr(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );
@@ -949,7 +971,7 @@ class _JobsErrorState extends StatelessWidget {
             onPressed: () {
               onRetry();
             },
-            child: const Text('重试'),
+            child: Text('通用.重试'.tr()),
           ),
         ],
       ),
@@ -965,10 +987,15 @@ extension on JobListVO {
         .where((String label) => label.isNotEmpty)
         .toList(growable: false);
     final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '急招'),
-      if (hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
+      ...tagLabels.where((String label) => label != '招聘卡片.急招'.tr() && label != '急招'),
+      if (hasVisaSupport &&
+          !tagLabels.contains('招聘卡片.提供签证'.tr()) &&
+          !tagLabels.contains('提供签证'))
+        '招聘卡片.提供签证'.tr(),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) '急招'];
+    final List<String> highlightTags = <String>[
+      if (isUrgent) '招聘卡片.急招'.tr(),
+    ];
 
     return JobPositionCardData(
       title: title,

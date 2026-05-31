@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -28,8 +29,6 @@ class CompanyMyInfoPage extends ConsumerStatefulWidget {
   static const String _avatarFallbackAsset = 'assets/images/mou64ult-sj15mxj.png';
   static const String _qualificationPlaceholderAsset =
       'assets/images/qualification_license_placeholder.png';
-  static const String _noteText =
-      '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
 
   @override
   ConsumerState<CompanyMyInfoPage> createState() => _CompanyMyInfoPageState();
@@ -117,7 +116,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
             await _pickAndUploadAvatar(
               profile: profile,
               picker: UploadPickerUtils.pickFromCamera,
-              errorMessage: '打开相机失败，请稍后重试',
+              errorMessage: '我的.打开相机失败'.tr(),
             );
           },
           onGalleryTap: () async {
@@ -125,7 +124,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
             await _pickAndUploadAvatar(
               profile: profile,
               picker: UploadPickerUtils.pickFromGallery,
-              errorMessage: '打开相册失败，请稍后重试',
+              errorMessage: '我的.打开相册失败'.tr(),
             );
           },
         );
@@ -177,7 +176,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
                 ),
               );
         },
-        successMessage: '头像已更新',
+        successMessage: '我的.头像已更新'.tr(),
       );
       if (mounted) {
         setState(() {
@@ -233,7 +232,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
         .uploadFile(
           path: path,
           scene: FileScene.avatar,
-          errorMessage: '头像上传失败，请稍后重试',
+          errorMessage: '我的.头像上传失败'.tr(),
         );
     return presign.fileId;
   }
@@ -242,7 +241,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
     if (error is ApiException) {
       return error.message;
     }
-    return '保存失败，请稍后重试';
+    return '我的.保存失败'.tr();
   }
 
   void _showMessage(String message) {
@@ -269,13 +268,13 @@ class _CompanyMyInfoContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
     final List<_CompanyInfoField> basicInfoFields = <_CompanyInfoField>[
-      _CompanyInfoField(label: '企业名称', value: _companyName),
-      _CompanyInfoField(label: '注册国家', value: _registeredCountry),
-      _CompanyInfoField(label: '所在城市', value: _city),
-      _CompanyInfoField(label: '所属行业', value: _industry),
-      _CompanyInfoField(label: '公司规模', value: _companySize),
-      _CompanyInfoField(label: '成立年份', value: _foundedYear),
-      _CompanyInfoField(label: '官网地址', value: _website),
+      _CompanyInfoField(label: '我的.企业名称'.tr(), value: _companyName),
+      _CompanyInfoField(label: '我的.注册国家'.tr(), value: _registeredCountry),
+      _CompanyInfoField(label: '我的.所在城市'.tr(), value: _city),
+      _CompanyInfoField(label: '我的.所属行业'.tr(), value: _industry),
+      _CompanyInfoField(label: '我的.公司规模'.tr(), value: _companySize),
+      _CompanyInfoField(label: '我的.成立年份'.tr(), value: _foundedYear),
+      _CompanyInfoField(label: '我的.官网地址'.tr(), value: _website),
     ];
 
     return SingleChildScrollView(
@@ -289,11 +288,11 @@ class _CompanyMyInfoContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           CompanyMyInfoSectionCard(
-            title: '基础信息',
+            title: '我的.基础信息'.tr(),
             child: Column(
               children: <Widget>[
                 CompanyMyInfoAvatarRow(
-                  label: '头像',
+                  label: '我的.头像'.tr(),
                   avatarUrl: profile.logoUrl,
                   localAvatarPath: localAvatarPreviewPath,
                   fallbackAssetPath: CompanyMyInfoPage._avatarFallbackAsset,
@@ -310,19 +309,19 @@ class _CompanyMyInfoContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           CompanyMyInfoSectionCard(
-            title: '材料资质',
+            title: '我的.材料资质'.tr(),
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 CompanyQualificationPreview(
-                  title: '营业执照',
+                  title: '我的.营业执照'.tr(),
                   imageUrl: _businessLicenseDoc?.fileUrl,
                   fallbackAssetPath:
                       CompanyMyInfoPage._qualificationPlaceholderAsset,
                 ),
                 CompanyQualificationPreview(
-                  title: '特许经验许可',
+                  title: '我的.特许经验许可'.tr(),
                   imageUrl: _specialPermitDoc?.fileUrl,
                   fallbackAssetPath:
                       CompanyMyInfoPage._qualificationPlaceholderAsset,
@@ -331,13 +330,13 @@ class _CompanyMyInfoContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            CompanyMyInfoPage._noteText,
+          Text(
+            '我的.注意重新提交审核'.tr(),
             style: CompanyMyInfoStyles.noteText,
           ),
           const SizedBox(height: 24),
           CompanyMyInfoPrimaryButton(
-            label: '修改信息',
+            label: '我的.修改信息'.tr(),
             onTap: () {
               context.push(
                 RoutePaths.qualificationCertification,
@@ -353,13 +352,13 @@ class _CompanyMyInfoContent extends StatelessWidget {
   }
 
   String get _companyName {
-    return _displayText(profile.companyName, placeholder: '企业名称待完善');
+    return _displayText(profile.companyName, placeholder: '我的.企业名称待完善'.tr());
   }
 
   String get _registeredCountry {
     final String value = profile.country.trim();
     if (value.isEmpty) {
-      return '未完善';
+      return '我的.未完善'.tr();
     }
     return resolveCountryLabel(value, countryLabelMap);
   }
@@ -372,9 +371,9 @@ class _CompanyMyInfoContent extends StatelessWidget {
 
   String get _foundedYear {
     if (profile.foundedYear <= 0) {
-      return '未完善';
+      return '我的.未完善'.tr();
     }
-    return '${profile.foundedYear}年';
+    return '${profile.foundedYear}${'我的.年份后缀'.tr()}';
   }
 
   String get _website => _displayText(profile.website);
@@ -394,9 +393,10 @@ class _CompanyMyInfoContent extends StatelessWidget {
     return null;
   }
 
-  String _displayText(String value, {String placeholder = '未完善'}) {
+  /// 返回字段展示文本，空值时统一回退到国际化占位文案。
+  String _displayText(String value, {String? placeholder}) {
     final String trimmed = value.trim();
-    return trimmed.isEmpty ? placeholder : trimmed;
+    return trimmed.isEmpty ? (placeholder ?? '我的.未完善'.tr()) : trimmed;
   }
 }
 
@@ -420,8 +420,8 @@ class _CompanyMyInfoErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text(
-              '加载企业资料失败，请稍后重试',
+            Text(
+              '我的.加载企业资料失败'.tr(),
               style: TextStyle(
                 color: CompanyMyInfoStyles.secondaryText,
                 fontSize: 14,
@@ -429,7 +429,7 @@ class _CompanyMyInfoErrorView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('重试')),
+            TextButton(onPressed: onRetry, child: Text('我的.重试'.tr())),
           ],
         ),
       ),

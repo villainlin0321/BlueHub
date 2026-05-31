@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,8 +36,6 @@ class ServiceProviderMyInfoPage extends ConsumerStatefulWidget {
       'assets/images/qualification_id_portrait.png';
   static const String _licensePlaceholderAsset =
       'assets/images/qualification_license_placeholder.png';
-  static const String _noteText = '注意：修改企业信息后需要重新提交审核，请确保xxxx当前业务是否都处理完成。';
-
   @override
   ConsumerState<ServiceProviderMyInfoPage> createState() =>
       _ServiceProviderMyInfoPageState();
@@ -137,7 +136,7 @@ class _ServiceProviderMyInfoPageState
             await _pickAndUploadAvatar(
               profile: profile,
               picker: UploadPickerUtils.pickFromCamera,
-              errorMessage: '打开相机失败，请稍后重试',
+              errorMessage: '我的.打开相机失败'.tr(),
             );
           },
           onGalleryTap: () async {
@@ -145,7 +144,7 @@ class _ServiceProviderMyInfoPageState
             await _pickAndUploadAvatar(
               profile: profile,
               picker: UploadPickerUtils.pickFromGallery,
-              errorMessage: '打开相册失败，请稍后重试',
+              errorMessage: '我的.打开相册失败'.tr(),
             );
           },
         );
@@ -200,7 +199,7 @@ class _ServiceProviderMyInfoPageState
                 ),
               );
         },
-        successMessage: '头像已更新',
+        successMessage: '我的.头像已更新'.tr(),
       );
       if (mounted) {
         setState(() {
@@ -256,7 +255,7 @@ class _ServiceProviderMyInfoPageState
         .uploadFile(
           path: path,
           scene: FileScene.avatar,
-          errorMessage: '头像上传失败，请稍后重试',
+          errorMessage: '我的.头像上传失败'.tr(),
         );
     return presign.fileId;
   }
@@ -265,7 +264,7 @@ class _ServiceProviderMyInfoPageState
     if (error is ApiException) {
       return error.message;
     }
-    return '保存失败，请稍后重试';
+    return '我的.保存失败'.tr();
   }
 
   void _showMessage(String message) {
@@ -291,25 +290,25 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<_InfoItem> infoItems = <_InfoItem>[
-      _InfoItem(label: '企业名称', value: _textOrPlaceholder(profile.companyName)),
+      _InfoItem(label: '我的.企业名称'.tr(), value: _textOrPlaceholder(profile.companyName)),
       _InfoItem(
-        label: '统一社会\n信用代码',
+        label: '我的.统一社会信用代码'.tr(),
         value: _textOrPlaceholder(profile.unifiedCreditCode),
       ),
-      _InfoItem(label: '法人姓名', value: _textOrPlaceholder(profile.legalPerson)),
+      _InfoItem(label: '我的.法人姓名'.tr(), value: _textOrPlaceholder(profile.legalPerson)),
       _InfoItem(
-        label: '官方联系人',
+        label: '我的.官方联系人'.tr(),
         value: _textOrPlaceholder(profile.contactPerson),
       ),
-      _InfoItem(label: '联系电话', value: _textOrPlaceholder(profile.contactPhone)),
-      _InfoItem(label: '邮箱', value: _textOrPlaceholder(profile.contactEmail)),
-      _InfoItem(label: '官网', value: _textOrPlaceholder(profile.website)),
+      _InfoItem(label: '我的.联系电话'.tr(), value: _textOrPlaceholder(profile.contactPhone)),
+      _InfoItem(label: '我的.邮箱'.tr(), value: _textOrPlaceholder(profile.contactEmail)),
+      _InfoItem(label: '我的.官网'.tr(), value: _textOrPlaceholder(profile.website)),
       _InfoItem(
-        label: '从业年限',
-        value: profile.yearsOfService > 0 ? '${profile.yearsOfService}' : '未完善',
+        label: '我的.从业年限'.tr(),
+        value: profile.yearsOfService > 0 ? '${profile.yearsOfService}' : '我的.未完善'.tr(),
       ),
       _InfoItem(
-        label: '国家/地区',
+        label: '我的.国家地区'.tr(),
         value: _serviceCountriesText(profile.serviceCountries, countryLabelMap),
       ),
     ];
@@ -331,11 +330,11 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
           const SizedBox(height: 12),
           _QualificationSection(docs: docs),
           const SizedBox(height: 12),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              ServiceProviderMyInfoPage._noteText,
-              style: TextStyle(
+              '我的.注意重新提交审核'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF8C8C8C),
                 fontSize: 12,
                 height: 18 / 12,
@@ -349,7 +348,7 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
 
   static String _textOrPlaceholder(String value) {
     final String trimmed = value.trim();
-    return trimmed.isEmpty ? '未完善' : trimmed;
+    return trimmed.isEmpty ? '我的.未完善'.tr() : trimmed;
   }
 
   static String _serviceCountriesText(
@@ -362,7 +361,7 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
         .toSet()
         .toList(growable: false);
     if (labels.isEmpty) {
-      return '未完善';
+      return '我的.未完善'.tr();
     }
     return labels.join('/');
   }
@@ -388,9 +387,9 @@ class _Header extends StatelessWidget {
               icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
             ),
           ),
-          const Text(
-            '我的信息',
-            style: TextStyle(
+          Text(
+            '我的.我的信息'.tr(),
+            style: const TextStyle(
               color: Color(0xFF262626),
               fontSize: 17,
               fontWeight: FontWeight.w500,
@@ -426,11 +425,11 @@ class _InfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Text(
-              '基础信息',
-              style: TextStyle(
+              '我的.基础信息'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -484,10 +483,10 @@ class _AvatarRow extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         child: Row(
           children: <Widget>[
-            const Expanded(
+            Expanded(
               child: Text(
-                '头像',
-                style: TextStyle(
+                '我的.头像'.tr(),
+                style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
                   height: 22 / 16,
@@ -584,9 +583,9 @@ class _QualificationSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            '材料资质',
-            style: TextStyle(
+          Text(
+            '我的.材料资质'.tr(),
+            style: const TextStyle(
               color: Color(0xFF262626),
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -594,9 +593,9 @@ class _QualificationSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '身份证',
-            style: TextStyle(
+          Text(
+            '我的.身份证'.tr(),
+            style: const TextStyle(
               color: Color(0xFF262626),
               fontSize: 14,
               height: 20 / 14,
@@ -630,7 +629,7 @@ class _QualificationSection extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: _DocumentBlock(
-                  label: '营业执照',
+                  label: '我的.营业执照'.tr(),
                   child: _MaterialPreviewCard(
                     imageUrl: docs.businessLicense?.fileUrl ?? '',
                     placeholderAsset:
@@ -642,7 +641,7 @@ class _QualificationSection extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _DocumentBlock(
-                  label: '特许经验许可',
+                  label: '我的.特许经验许可'.tr(),
                   child: _MaterialPreviewCard(
                     imageUrl: docs.specialPermit?.fileUrl ?? '',
                     placeholderAsset:
@@ -750,16 +749,16 @@ class _ServiceProviderMyInfoErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text(
-              '加载服务商资料失败，请稍后重试',
-              style: TextStyle(
+            Text(
+              '我的.加载服务商资料失败'.tr(),
+              style: const TextStyle(
                 color: Color(0xFF8C8C8C),
                 fontSize: 14,
                 height: 20 / 14,
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('重试')),
+            TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),
@@ -804,7 +803,7 @@ class _BottomActionBar extends StatelessWidget {
               height: 22 / 16,
             ),
           ),
-          child: const Text('修改信息'),
+          child: Text('我的.修改信息'.tr()),
         ),
       ),
     );

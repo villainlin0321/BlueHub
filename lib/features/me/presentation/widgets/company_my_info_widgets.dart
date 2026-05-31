@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -26,7 +27,7 @@ class CompanyMyInfoHeader extends StatelessWidget {
               icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
             ),
           ),
-          const Text('我的信息', style: CompanyMyInfoStyles.navTitle),
+          Text('我的.我的信息'.tr(), style: CompanyMyInfoStyles.navTitle),
         ],
       ),
     );
@@ -311,8 +312,8 @@ class CompanyImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '选择头像',
+            Text(
+              '我的.选择头像'.tr(),
               style: TextStyle(
                 color: Color(0xFF262626),
                 fontSize: 17,
@@ -321,10 +322,19 @@ class CompanyImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _CompanyBottomSheetActionTile(label: '拍照', onTap: onCameraTap),
-            _CompanyBottomSheetActionTile(label: '从相册选择', onTap: onGalleryTap),
+            _CompanyBottomSheetActionTile(
+              label: '我的.拍照'.tr(),
+              onTap: onCameraTap,
+            ),
+            _CompanyBottomSheetActionTile(
+              label: '我的.从相册选择'.tr(),
+              onTap: onGalleryTap,
+            ),
             const SizedBox(height: 8),
-            _CompanyBottomSheetActionTile(label: '取消', onTap: onClose),
+            _CompanyBottomSheetActionTile(
+              label: '我的.取消'.tr(),
+              onTap: onClose,
+            ),
           ],
         ),
       ),

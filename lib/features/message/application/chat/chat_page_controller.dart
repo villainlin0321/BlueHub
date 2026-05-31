@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../features/auth/application/auth_session_provider.dart';
@@ -211,7 +212,7 @@ class ChatPageController extends Notifier<ChatPageState> {
           final FilePresignVO uploaded = await _fileService.uploadFile(
             path: file.path,
             scene: FileScene.chat,
-            errorMessage: '图片上传失败，请稍后重试',
+            errorMessage: '上传.图片上传失败'.tr(),
           );
           final MessageVO response = await _messageService.sendMessage(
             conversationId: conversationId,
@@ -272,7 +273,7 @@ class ChatPageController extends Notifier<ChatPageState> {
         final FilePresignVO uploaded = await _fileService.uploadFile(
           path: file.path,
           scene: FileScene.chat,
-          errorMessage: '文件上传失败，请稍后重试',
+          errorMessage: '消息.选择文件失败'.tr(),
         );
         final MessageVO response = await _messageService.sendMessage(
           conversationId: conversationId,
@@ -622,7 +623,7 @@ class ChatPageController extends Notifier<ChatPageState> {
     if (error is ApiException && error.message.trim().isNotEmpty) {
       return error.message;
     }
-    return '消息加载失败，请稍后重试';
+    return '消息.消息加载失败'.tr();
   }
 
   void _updateState(ChatPageState Function(ChatPageState current) updater) {

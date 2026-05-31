@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,14 +91,14 @@ class _AddEducationExperiencePageState
       if (!mounted) {
         return;
       }
-      _showMessage('学历字典加载失败');
+      _showMessage('我的.学历字典加载失败'.tr());
       return;
     }
     if (degreeOptions.isEmpty) {
       if (!mounted) {
         return;
       }
-      _showMessage('暂无可选学历');
+      _showMessage('我的.暂无可选学历'.tr());
       return;
     }
     if (!mounted) {
@@ -105,7 +106,7 @@ class _AddEducationExperiencePageState
     }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '学历',
+      title: '我的.学历'.tr(),
       options: degreeOptions,
       initialSelectedValues: _selectedDegree == null
           ? const <String>[]
@@ -127,7 +128,7 @@ class _AddEducationExperiencePageState
     final ResumeTimePickerValue? result = await showResumeTimePickerBottomSheet(
       context: context,
       type: ResumeTimePickerType.period,
-      title: '时间段',
+      title: '我的.时间段'.tr(),
       initialValue:
           _selectedPeriod ??
           ResumeTimePickerValue(
@@ -150,19 +151,19 @@ class _AddEducationExperiencePageState
   void _handleSave() {
     final String major = _majorController.text.trim();
     if ((_selectedSchool ?? '').isEmpty) {
-      _showMessage('请选择学校');
+      _showMessage('我的.请选择学校'.tr());
       return;
     }
     if ((_selectedDegree ?? '').isEmpty) {
-      _showMessage('请选择学历');
+      _showMessage('我的.请选择学历'.tr());
       return;
     }
     if (major.isEmpty) {
-      _showMessage('请输入专业');
+      _showMessage('我的.请输入专业'.tr());
       return;
     }
     if (_selectedPeriod == null) {
-      _showMessage('请选择时间段');
+      _showMessage('我的.请选择时间段'.tr());
       return;
     }
 
@@ -208,8 +209,8 @@ class _AddEducationExperiencePageState
             color: Color(0xFF171A1D),
           ),
         ),
-        title: const Text(
-          '教育经历',
+        title: Text(
+          '我的.教育经历'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -226,24 +227,24 @@ class _AddEducationExperiencePageState
             child: Column(
               children: <Widget>[
                 _EducationSelectorField(
-                  label: '学校',
+                  label: '我的.学校'.tr(),
                   value: _selectedSchool,
                   onTap: _openSchoolPage,
                 ),
                 const SizedBox(height: 16),
                 _EducationSelectorField(
-                  label: '学历',
+                  label: '我的.学历'.tr(),
                   value: _selectedDegree,
                   onTap: _openDegreeSheet,
                 ),
                 const SizedBox(height: 16),
                 _EducationInputField(
-                  label: '专业',
+                  label: '我的.专业'.tr(),
                   controller: _majorController,
                 ),
                 const SizedBox(height: 16),
                 _EducationSelectorField(
-                  label: '时间段',
+                  label: '我的.时间段'.tr(),
                   value: _selectedPeriod?.format(ResumeTimePickerType.period),
                   onTap: _openPeriodSheet,
                 ),
@@ -277,8 +278,8 @@ class _AddEducationExperiencePageState
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        '删除',
+                      child: Text(
+                        '我的.删除'.tr(),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -304,8 +305,8 @@ class _AddEducationExperiencePageState
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '保存',
+                    child: Text(
+                      '我的.保存'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -360,7 +361,7 @@ class EducationExperienceFormResult {
   String get displayPeriod {
     final String start = period.startYear.toString().padLeft(4, '0');
     if (period.endYear == null) {
-      return '$start - 至今';
+      return '$start - ${'我的.至今'.tr()}';
     }
     return '$start - ${period.endYear.toString().padLeft(4, '0')}';
   }
@@ -407,8 +408,8 @@ class _EducationInputField extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   height: 22 / 16,
                 ),
-                decoration: const InputDecoration(
-                  hintText: '请输入',
+                decoration: InputDecoration(
+                  hintText: '通用.请输入'.tr(),
                   hintStyle: TextStyle(
                     color: Color(0xFFBFBFBF),
                     fontSize: 16,
@@ -470,7 +471,7 @@ class _EducationSelectorField extends StatelessWidget {
                     children: <Widget>[
                       Expanded(
                         child: Text(
-                          value ?? '请选择',
+                          value ?? '通用.请选择'.tr(),
                           style: TextStyle(
                             color: value == null
                                 ? const Color(0xFFBFBFBF)

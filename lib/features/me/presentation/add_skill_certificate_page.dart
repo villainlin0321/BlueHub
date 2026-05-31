@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -76,14 +77,14 @@ class _AddSkillCertificatePageState
       if (!mounted) {
         return;
       }
-      _showMessage('技能证书字典加载失败');
+      _showMessage('我的.技能证书字典加载失败'.tr());
       return;
     }
     if (certificateOptions.isEmpty) {
       if (!mounted) {
         return;
       }
-      _showMessage('暂无可选技能证书');
+      _showMessage('我的.暂无可选技能证书'.tr());
       return;
     }
     if (!mounted) {
@@ -91,7 +92,7 @@ class _AddSkillCertificatePageState
     }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '技能证书',
+      title: '我的.技能证书'.tr(),
       options: certificateOptions,
       initialSelectedValues: _certificateName == null
           ? const <String>[]
@@ -112,7 +113,7 @@ class _AddSkillCertificatePageState
     final ResumeTimePickerValue? result = await showResumeTimePickerBottomSheet(
       context: context,
       type: ResumeTimePickerType.singleMonth,
-      title: '获得时间',
+      title: '我的.获得时间'.tr(),
       initialValue:
           _issuedAt ??
           ResumeTimePickerValue.suggestedSingleMonth(DateTime.now()),
@@ -135,19 +136,19 @@ class _AddSkillCertificatePageState
 
   void _handleSave() {
     if (_isUploadingImages) {
-      _showMessage('图片上传中，请稍候');
+      _showMessage('我的.图片上传中请稍候'.tr());
       return;
     }
     if (_certificateName == null) {
-      _showMessage('请选择技能证书');
+      _showMessage('我的.请选择技能证书'.tr());
       return;
     }
     if (_issuedAt == null) {
-      _showMessage('请选择获得时间');
+      _showMessage('我的.请选择获得时间'.tr());
       return;
     }
     if (_uploadedImageUrls.isEmpty) {
-      _showMessage('请上传证书图片');
+      _showMessage('我的.请上传证书图片'.tr());
       return;
     }
 
@@ -185,8 +186,8 @@ class _AddSkillCertificatePageState
             color: Color(0xFF171A1D),
           ),
         ),
-        title: const Text(
-          '技能证书',
+        title: Text(
+          '我的.技能证书'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -201,19 +202,19 @@ class _AddSkillCertificatePageState
           padding: const EdgeInsets.fromLTRB(16, 16, 15, 24),
           children: <Widget>[
             _CertificateSelectorField(
-              label: '技能证书',
+              label: '我的.技能证书'.tr(),
               value: _certificateName,
               onTap: _openCertificateSheet,
             ),
             const SizedBox(height: 16),
             _CertificateSelectorField(
-              label: '获得时间',
+              label: '我的.获得时间'.tr(),
               value: _issuedAt?.format(ResumeTimePickerType.singleMonth),
               onTap: _openTimeSheet,
             ),
             const SizedBox(height: 16),
-            const Text(
-              '证书图片',
+            Text(
+              '我的.证书图片'.tr(),
               style: TextStyle(
                 color: Color(0xFF595959),
                 fontSize: 14,
@@ -272,8 +273,8 @@ class _AddSkillCertificatePageState
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            '删除',
+                          child: Text(
+                            '我的.删除'.tr(),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
@@ -299,8 +300,8 @@ class _AddSkillCertificatePageState
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          '保存',
+                        child: Text(
+                          '我的.保存'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -393,7 +394,7 @@ class _CertificateSelectorField extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        value ?? '请选择',
+                        value ?? '通用.请选择'.tr(),
                         style: TextStyle(
                           color: value == null
                               ? const Color(0xFFBFBFBF)
