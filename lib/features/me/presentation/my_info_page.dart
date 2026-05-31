@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -101,6 +103,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                           _InfoValueRow(
                             label: '我的.手机号'.tr(),
                             value: userViewData.maskedPhone,
+                            // onTap: _handlePhoneTap,
                             showChevron: false,
                           ),
                         ],
@@ -214,6 +217,27 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
           .updateMe(request: UpdateUserBO(gender: result.first)),
       successMessage: '我的.性别已更新'.tr(),
     );
+  }
+
+  /// 打开手机号编辑弹窗，当前版本先承载输入与确认交互。
+  Future<void> _handlePhoneTap() async {
+    if (_isSubmitting) {
+      return;
+    }
+    final String currentPhone =
+        ref.read(authSessionProvider).user?.phone.trim() ?? '';
+    final String? nextPhone = await showDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (BuildContext dialogContext) {
+        return _EditPhoneDialog(initialPhone: currentPhone);
+      },
+    );
+    if (!mounted || nextPhone == null || nextPhone == currentPhone) {
+      return;
+    }
+
+    _showMessage('当前版本暂不支持直接修改手机号');
   }
 
   /// 选择头像后完成预签名上传，并把返回的文件 ID 回写到资料接口。
@@ -613,10 +637,7 @@ class _ImageSourceBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _BottomSheetActionTile(label: '我的.拍照'.tr(), onTap: onCameraTap),
-            _BottomSheetActionTile(
-              label: '我的.从相册选择'.tr(),
-              onTap: onGalleryTap,
-            ),
+            _BottomSheetActionTile(label: '我的.从相册选择'.tr(), onTap: onGalleryTap),
             const SizedBox(height: 8),
             _BottomSheetActionTile(label: '通用.取消'.tr(), onTap: onClose),
           ],
@@ -649,6 +670,181 @@ class _BottomSheetActionTile extends StatelessWidget {
               height: 22 / 16,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditPhoneDialog extends StatefulWidget {
+  const _EditPhoneDialog({required this.initialPhone});
+
+  final String initialPhone;
+
+  @override
+  State<_EditPhoneDialog> createState() => _EditPhoneDialogState();
+}
+
+class _EditPhoneDialogState extends State<_EditPhoneDialog> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialPhone);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleConfirm() {
+    final String phone = _controller.text.trim();
+    if (phone.isEmpty) {
+      setState(() {
+        _errorText = '请输入手机号';
+      });
+      return;
+    }
+    if (!RegExp(r'^\d{6,20}$').hasMatch(phone)) {
+      setState(() {
+        _errorText = '请输入正确的手机号';
+      });
+      return;
+    }
+    Navigator.of(context).pop(phone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text(
+                    '修改手机号',
+                    style: TextStyle(
+                      color: Color(0xFF262626),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                      height: 24 / 17,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Color(0xFF8C8C8C),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '请输入新的手机号',
+              style: TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+                height: 20 / 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(20),
+              ],
+              cursorColor: AppColors.brand,
+              onChanged: (_) {
+                if (_errorText == null) {
+                  return;
+                }
+                setState(() {
+                  _errorText = null;
+                });
+              },
+              onSubmitted: (_) => _handleConfirm(),
+              decoration: InputDecoration(
+                hintText: '请输入手机号',
+                hintStyle: const TextStyle(
+                  color: Color(0xFFBFBFBF),
+                  fontSize: 15,
+                  height: 22 / 15,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF5F7FA),
+                errorText: _errorText,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.brand),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.danger),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.danger),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: FilledButton(
+                onPressed: _handleConfirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF096DD9),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  '确认',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 22 / 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

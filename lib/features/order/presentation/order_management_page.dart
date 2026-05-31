@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/me/data/dictionary_providers.dart';
+import '../../../features/message/application/chat/chat_page_args.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import '../../../shared/network/models/dictionary_models.dart';
@@ -175,6 +176,33 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       return message.substring('Exception: '.length);
     }
     return message.isEmpty ? '订单.订单加载失败'.tr() : message;
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _handleContactTap(VisaOrderVO order) {
+    if (order.userId <= 0) {
+      _showMessage('订单.客户信息缺失'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: order.userId,
+        targetUserRole: 'worker',
+        nickname: _displayCustomerName(order),
+        avatarUrl: order.avatarUrl,
+        relatedOrderId: order.orderId,
+        packageName: order.packageName.trim().isNotEmpty
+            ? order.packageName
+            : order.tierName,
+        orderStatus: order.statusLabel,
+      ),
+    );
   }
 
   String? _statusForRequest({
@@ -449,9 +477,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                       final VisaOrderVO item = _orders[index];
                       return _OrderCard(
                         order: item,
-                        onContactTap: () => _showPlaceholderToast(
-                          '${'订单.联系客户'.tr()} ${_displayCustomerName(item)}',
-                        ),
+                        onContactTap: () => _handleContactTap(item),
                         onProcessTap: () => context.push(
                           RoutePaths.orderDetail,
                           extra: OrderDetailPageArgs(orderId: item.orderId),

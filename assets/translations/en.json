@@ -522,6 +522,7 @@
     "订单材料": "Order Material",
     "文件地址不存在": "File URL does not exist. Unable to download right now.",
     "已下载到本地": "Downloaded to local storage",
+    "下载目录无访问权限": "No access to the download directory. Please check storage permission and try again.",
     "文件下载失败": "File download failed. Please try again later.",
     "审核已通过": "Review approved",
     "已驳回重传": "Rejected for re-upload",

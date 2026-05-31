@@ -957,20 +957,46 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<Directory> _resolveDownloadDirectory() async {
+    final List<Directory> candidates = <Directory>[];
     try {
       final Directory? downloadsDirectory = await getDownloadsDirectory();
       if (downloadsDirectory != null) {
-        return Directory('${downloadsDirectory.path}/BlueHub');
+        candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
       }
     } catch (_) {}
 
     try {
       final Directory documentsDirectory =
           await getApplicationDocumentsDirectory();
-      return Directory('${documentsDirectory.path}/downloads');
+      candidates.add(Directory('${documentsDirectory.path}/downloads'));
+    } catch (_) {}
+
+    final Directory temporaryDirectory = await getTemporaryDirectory();
+    candidates.add(Directory('${temporaryDirectory.path}/downloads'));
+
+    for (final Directory candidate in candidates) {
+      if (await _canWriteToDirectory(candidate)) {
+        return candidate;
+      }
+    }
+    throw Exception('订单.下载目录无访问权限'.tr());
+  }
+
+  Future<bool> _canWriteToDirectory(Directory directory) async {
+    try {
+      if (!directory.existsSync()) {
+        await directory.create(recursive: true);
+      }
+      final File probeFile = File(
+        '${directory.path}/.bluehub_write_test_${DateTime.now().microsecondsSinceEpoch}',
+      );
+      await probeFile.writeAsString('ok', flush: true);
+      if (probeFile.existsSync()) {
+        await probeFile.delete();
+      }
+      return true;
     } catch (_) {
-      final Directory temporaryDirectory = await getTemporaryDirectory();
-      return Directory('${temporaryDirectory.path}/downloads');
+      return false;
     }
   }
 
@@ -1078,7 +1104,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('订单.已下载到本地'.tr());
+      _showMessage('${'订单.已下载到本地'.tr()}\n$savePath');
     } on DioException {
       if (!mounted) {
         return;
