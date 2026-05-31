@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 enum ResumeTimePickerType { period, singleMonth }
@@ -67,7 +68,7 @@ class ResumeTimePickerValue {
       return start;
     }
     if (isCurrent) {
-      return '$start - 至今';
+      return '$start - ${'我的.至今'.tr()}';
     }
     return '$start - ${endYear.toString().padLeft(4, '0')}.${endMonth.toString().padLeft(2, '0')}';
   }
@@ -110,14 +111,14 @@ Future<ResumeTimePickerValue?> showResumeTimePickerBottomSheet({
   required BuildContext context,
   required ResumeTimePickerType type,
   required ResumeTimePickerValue initialValue,
-  String title = '时间段',
+  String title = '',
 }) {
   return showResumeBottomSheet<ResumeTimePickerValue>(
     context: context,
     builder: (BuildContext context) {
       return _ResumeTimePickerBottomSheet(
         type: type,
-        title: title,
+        title: title.isEmpty ? '我的.时间段'.tr() : title,
         initialValue: initialValue.normalizedFor(type),
       );
     },
@@ -275,10 +276,10 @@ class _ResumeTimePickerBottomSheetState
                     GestureDetector(
                       onTap: _handleConfirm,
                       behavior: HitTestBehavior.opaque,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
-                          '确定',
+                          '通用.确定'.tr(),
                           style: TextStyle(
                             color: Color(0xFF096DD9),
                             fontSize: 16,
@@ -441,7 +442,8 @@ class _ResumeTimePickerBottomSheetState
             controller: _endYearController,
             selectedValue: _endYear,
             itemExtent: _itemExtent,
-            labelBuilder: (int? value) => value == null ? '至今' : '$value',
+            labelBuilder: (int? value) =>
+                value == null ? '我的.至今'.tr() : '$value',
             onSelected: (int? value) {
               setState(() {
                 _endYear = value;

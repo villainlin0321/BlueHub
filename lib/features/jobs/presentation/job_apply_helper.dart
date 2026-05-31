@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,7 +11,7 @@ String resolveJobApplyErrorMessage(Object error) {
   if (error is ApiException) {
     return error.message;
   }
-  return '投递失败，请稍后重试';
+  return '招聘.投递失败'.tr();
 }
 
 /// 统一提交岗位投递请求。
@@ -22,7 +23,7 @@ Future<String?> submitJobApplication(
 }) async {
   // 关键保护：没有真实岗位 ID 时，不发起无效请求，直接给出明确提示。
   if (jobId == null || jobId <= 0) {
-    return '岗位信息缺失，暂无法投递';
+    return '招聘.岗位信息缺失无法投递'.tr();
   }
 
   try {

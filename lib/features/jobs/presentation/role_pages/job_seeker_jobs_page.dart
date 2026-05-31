@@ -982,19 +982,19 @@ class _JobsErrorState extends StatelessWidget {
 extension on JobListVO {
   /// 将接口返回的岗位列表项映射为职位卡片数据。
   JobPositionCardData toCardData({required bool isCollected}) {
+    final String urgentLabel = '招聘卡片.急招'.tr();
+    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
     final List<String> tagLabels = tags
         .map((TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
         .toList(growable: false);
     final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '招聘卡片.急招'.tr() && label != '急招'),
-      if (hasVisaSupport &&
-          !tagLabels.contains('招聘卡片.提供签证'.tr()) &&
-          !tagLabels.contains('提供签证'))
-        '招聘卡片.提供签证'.tr(),
+      ...tagLabels.where((String label) => label != urgentLabel),
+      if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
+        visaSupportLabel,
     ].take(3).toList(growable: false);
     final List<String> highlightTags = <String>[
-      if (isUrgent) '招聘卡片.急招'.tr(),
+      if (isUrgent) urgentLabel,
     ];
 
     return JobPositionCardData(

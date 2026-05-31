@@ -884,15 +884,17 @@ extension on JobDetailVO {
 
   /// 组装详情页展示标签，兼容急招和签证支持。
   List<String> get displayTags {
+    final String urgentLabel = '招聘卡片.急招'.tr();
+    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
     final List<String> labels = tags
         .map((TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
         .toList(growable: true);
-    if (hasVisaSupport && !labels.contains('提供签证')) {
-      labels.add('招聘卡片.提供签证'.tr());
+    if (hasVisaSupport && !labels.contains(visaSupportLabel)) {
+      labels.add(visaSupportLabel);
     }
-    if (isUrgent && !labels.contains('急招')) {
-      labels.insert(0, '招聘卡片.急招'.tr());
+    if (isUrgent && !labels.contains(urgentLabel)) {
+      labels.insert(0, urgentLabel);
     }
     if (employmentType.trim().isNotEmpty &&
         !labels.contains(employmentType.trim())) {

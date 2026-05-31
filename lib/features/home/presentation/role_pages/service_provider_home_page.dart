@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -31,25 +32,25 @@ class ServiceProviderHomePage extends ConsumerWidget {
 
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
-      label: '发布套餐',
+      labelKey: '首页.发布套餐',
       assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_box_outlined,
       routePath: RoutePaths.editVisaPackage,
     ),
     _QuickActionItem(
-      label: '订单处理',
+      labelKey: '首页.订单处理',
       assetPath: 'assets/images/mon6azmx-b7iu27t.svg',
       fallback: Icons.fact_check_outlined,
       routePath: RoutePaths.orderManagement,
     ),
     _QuickActionItem(
-      label: '人才中心',
+      labelKey: '招聘.人才中心',
       assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
       routePath: RoutePaths.serviceProviderTalentCenter,
     ),
     _QuickActionItem(
-      label: '财务结算',
+      labelKey: '财务.财务结算',
       assetPath: 'assets/images/mon6azmx-tafz6au.svg',
       fallback: Icons.account_balance_wallet_outlined,
       routePath: RoutePaths.financeSettlement,
@@ -198,15 +199,18 @@ class _HeroStatsRow extends ConsumerWidget {
         : <_HeroStatItem>[
             _HeroStatItem(
               value: _formatProviderCount(stats.todayConsultations),
-              label: '今日咨询',
+              labelKey: '首页.今日咨询',
             ),
             _HeroStatItem(
               value: _formatProviderCount(stats.inProgressOrders),
-              label: '进行中订单',
+              labelKey: '首页.进行中订单',
             ),
             _HeroStatItem(
               value: stats.monthlyIncomeDisplay,
-              label: '本月收入(${stats.incomeCurrencySymbol})',
+              labelKey: '首页.本月收入',
+              labelNamedArgs: <String, String>{
+                'symbol': stats.incomeCurrencySymbol,
+              },
             ),
           ];
 
@@ -222,10 +226,15 @@ class _HeroStatsRow extends ConsumerWidget {
 }
 
 class _HeroStatItem extends StatelessWidget {
-  const _HeroStatItem({required this.value, required this.label});
+  const _HeroStatItem({
+    required this.value,
+    required this.labelKey,
+    this.labelNamedArgs = const <String, String>{},
+  });
 
   final String value;
-  final String label;
+  final String labelKey;
+  final Map<String, String> labelNamedArgs;
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +253,7 @@ class _HeroStatItem extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          label,
+          labelKey.tr(namedArgs: labelNamedArgs),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
@@ -277,7 +286,12 @@ class _ProviderInfoRow extends ConsumerWidget {
     final bool isVerified = providerProfile?.isVerified ?? false;
     final String providerSummary = providerProfile == null
         ? ''
-        : '服务评分 ${_formatProviderRating(providerProfile.rating)}  累计服务 ${_formatProviderCaseCount(providerProfile.caseCount)}';
+        : '我的.服务商摘要'.tr(
+            namedArgs: <String, String>{
+              'rating': _formatProviderRating(providerProfile.rating),
+              'count': _formatProviderCaseCount(providerProfile.caseCount),
+            },
+          );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -359,12 +373,12 @@ class _CertificationBadge extends StatelessWidget {
               height: 14,
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 18,
             top: 2,
             child: Row(
               children: <Widget>[
-                Text(
+                const Text(
                   'V',
                   style: TextStyle(
                     color: Color(0xFF784301),
@@ -375,7 +389,7 @@ class _CertificationBadge extends StatelessWidget {
                 ),
                 SizedBox(width: 1),
                 Text(
-                  '认证',
+                  '我的.认证'.tr(),
                   style: TextStyle(
                     color: Color(0xFF784301),
                     fontSize: 9,
@@ -444,7 +458,7 @@ class _QuickActionButton extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                item.label,
+                item.labelKey.tr(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF171A1D),
@@ -488,14 +502,14 @@ class _AiAssistantBanner extends StatelessWidget {
                     height: 40,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         Text(
-                          'AI业务助手',
+                          '招聘.AI业务助手'.tr(),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -504,7 +518,7 @@ class _AiAssistantBanner extends StatelessWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          '发现 3 个可能需要德国工签的人才',
+                          '首页.德国工签人才提示'.tr(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -527,8 +541,8 @@ class _AiAssistantBanner extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        const Text(
-                          '查看',
+                        Text(
+                          '招聘.查看'.tr(),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -540,7 +554,10 @@ class _AiAssistantBanner extends StatelessWidget {
                           'assets/images/chat_page_order_arrow.svg',
                           width: 12,
                           height: 12,
-                          color: Colors.white,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ],
                     ),
@@ -562,9 +579,9 @@ class _OrdersSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        const Expanded(
+        Expanded(
           child: Text(
-            '待处理订单',
+            '我的.待处理订单'.tr(),
             style: TextStyle(
               color: Color(0xFF262626),
               fontSize: 16,
@@ -573,8 +590,8 @@ class _OrdersSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        const Text(
-          '全部',
+        Text(
+          '订单.全部'.tr(),
           style: TextStyle(
             color: Color(0xFF8C8C8C),
             fontSize: 14,
@@ -667,9 +684,9 @@ class _PendingOrderCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const _GhostActionButton(label: '联系客户'),
+                _GhostActionButton(label: '订单.联系客户'.tr()),
                 const SizedBox(width: 8),
-                const _PrimaryActionButton(label: '审核材料'),
+                _PrimaryActionButton(label: '首页.审核材料'.tr()),
               ],
             ),
           ],
@@ -689,14 +706,14 @@ class _PendingOrdersSection extends ConsumerWidget {
     );
 
     return ordersAsync.when(
-      loading: () => const _PendingOrdersStateView(
+      loading: () => _PendingOrdersStateView(
         icon: Icons.hourglass_empty_rounded,
-        message: '待审核订单加载中',
+        message: '首页.待审核订单加载中'.tr(),
       ),
       error: (Object error, StackTrace stackTrace) => _PendingOrdersStateView(
         icon: Icons.cloud_off_rounded,
-        message: '待审核订单加载失败，请稍后重试',
-        buttonLabel: '重新加载',
+        message: '首页.待审核订单加载失败'.tr(),
+        buttonLabel: '我的.重新加载'.tr(),
         onTap: () => ref.refresh(serviceProviderReviewingOrdersProvider),
       ),
       data: (List<VisaOrderVO> orders) {
@@ -707,8 +724,8 @@ class _PendingOrdersSection extends ConsumerWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const AppEmptyState(
-              message: '暂无待审核订单',
+            child: AppEmptyState(
+              message: '首页.暂无待审核订单'.tr(),
             ),
           );
         }
@@ -889,13 +906,13 @@ class _PrimaryActionButton extends StatelessWidget {
 
 class _QuickActionItem {
   const _QuickActionItem({
-    required this.label,
+    required this.labelKey,
     required this.assetPath,
     required this.fallback,
     this.routePath,
   });
 
-  final String label;
+  final String labelKey;
   final String assetPath;
   final IconData fallback;
   final String? routePath;
@@ -949,7 +966,7 @@ String _formatProviderCaseCount(int value) {
 
 String _displayCustomerName(VisaOrderVO order) {
   final String nickname = order.nickname.trim();
-  return nickname.isEmpty ? '订单客户' : nickname;
+  return nickname.isEmpty ? '订单.订单客户'.tr() : nickname;
 }
 
 String _displayServiceTag(VisaOrderVO order) {
@@ -958,7 +975,7 @@ String _displayServiceTag(VisaOrderVO order) {
     return packageName;
   }
   final String tierName = order.tierName.trim();
-  return tierName.isEmpty ? '签证服务' : tierName;
+  return tierName.isEmpty ? '我的.签证服务'.tr() : tierName;
 }
 
 String _displayStatusText(VisaOrderVO order) {
@@ -967,7 +984,7 @@ String _displayStatusText(VisaOrderVO order) {
     return statusLabel;
   }
   final String status = order.status.trim();
-  return status.isEmpty ? '待审核' : status;
+  return status.isEmpty ? '首页.待审核'.tr() : status;
 }
 
 String _buildMaterialsText(VisaOrderVO order) {
@@ -977,28 +994,39 @@ String _buildMaterialsText(VisaOrderVO order) {
       .take(3)
       .toList(growable: false);
   if (names.isEmpty) {
-    return '暂未上传材料';
+    return '首页.暂未上传材料'.tr();
   }
-  return '已上传${names.join('、')}';
+  return '首页.已上传材料'.tr(namedArgs: <String, String>{
+    'names': names.join('、'),
+  });
 }
 
 String _formatOrderUpdatedText(String raw) {
   final DateTime? updatedAt = DateTime.tryParse(raw)?.toLocal();
   if (updatedAt == null) {
-    return raw.trim().isEmpty ? '刚刚更新' : raw;
+    return raw.trim().isEmpty ? '订单.刚刚更新'.tr() : raw;
   }
 
   final Duration difference = DateTime.now().difference(updatedAt);
   if (difference.inMinutes < 1) {
-    return '刚刚更新';
+    return '订单.刚刚更新'.tr();
   }
   if (difference.inMinutes < 60) {
-    return '${difference.inMinutes}分钟前更新';
+    return '订单.分钟前更新'.tr(
+      namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+    );
   }
   if (difference.inHours < 24) {
-    return '${difference.inHours}小时前更新';
+    return '订单.小时前更新'.tr(
+      namedArgs: <String, String>{'count': difference.inHours.toString()},
+    );
   }
-  return '${updatedAt.month}月${updatedAt.day}日更新';
+  return '订单.月日更新'.tr(
+    namedArgs: <String, String>{
+      'month': updatedAt.month.toString(),
+      'day': updatedAt.day.toString(),
+    },
+  );
 }
 
 String _formatOrderAmount(double amount) {

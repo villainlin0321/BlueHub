@@ -43,7 +43,7 @@ class JobPositionCard extends StatelessWidget {
     this.onFavoriteTap,
     this.isApplying = false,
     this.isCollecting = false,
-    this.applyButtonText = '一键投递',
+    this.applyButtonText = '',
   });
 
   final JobPositionCardData data;
@@ -57,7 +57,8 @@ class JobPositionCard extends StatelessWidget {
   /// 构建职位卡片，并根据外部状态展示投递按钮的禁用或加载文案。
   @override
   Widget build(BuildContext context) {
-    final String resolvedApplyButtonText = applyButtonText == '一键投递'
+    // 未显式传入按钮文案时，统一回退到国际化默认值。
+    final String resolvedApplyButtonText = applyButtonText.trim().isEmpty
         ? '招聘卡片.一键投递'.tr()
         : applyButtonText;
     final Widget cardBody = Container(
@@ -241,7 +242,7 @@ class JobPositionCard extends StatelessWidget {
 
   Widget _buildHighlightTag(String tag) {
     final String urgentLabel = '招聘卡片.急招'.tr();
-    if (tag == '急招' || tag == urgentLabel) {
+    if (tag == urgentLabel) {
       return _JobPositionTagStyle.urgent().build(urgentLabel);
     }
     return const _JobPositionTagStyle.highlightBlue().build(tag);

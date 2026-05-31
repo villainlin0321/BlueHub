@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:dio/dio.dart';
@@ -39,7 +40,7 @@ class FileService {
     required String path,
     required FileScene scene,
     String accessType = 'PUBLIC',
-    String errorMessage = '文件上传失败，请稍后重试',
+    String errorMessage = '',
     void Function(int sent, int total)? onSendProgress,
   }) async {
     final File localFile = File(path);
@@ -49,6 +50,9 @@ class FileService {
 
     final List<int> bytes = await localFile.readAsBytes();
     final String mimeType = resolveMimeType(path);
+    final String resolvedErrorMessage = errorMessage.isEmpty
+        ? tr('上传.文件上传失败')
+        : errorMessage;
     final FilePresignVO response = await presign(
       request: FilePresignBO(
         fileName: UploadPickerUtils.basename(path),
@@ -63,7 +67,7 @@ class FileService {
       uploadUrl: response.uploadUrl,
       bytes: bytes,
       mimeType: mimeType,
-      errorMessage: errorMessage,
+      errorMessage: resolvedErrorMessage,
       onSendProgress: onSendProgress,
     );
     await confirmUpload(
@@ -90,7 +94,7 @@ class FileService {
     required String uploadUrl,
     required List<int> bytes,
     required String mimeType,
-    String errorMessage = '文件上传失败，请稍后重试',
+    String errorMessage = '',
     void Function(int sent, int total)? onSendProgress,
   }) async {
     final Dio uploadDio = Dio(
@@ -100,6 +104,9 @@ class FileService {
         sendTimeout: const Duration(seconds: 20),
       ),
     );
+    final String resolvedErrorMessage = errorMessage.isEmpty
+        ? tr('上传.文件上传失败')
+        : errorMessage;
     try {
       final Response<dynamic> response = await uploadDio.put<dynamic>(
         uploadUrl,
@@ -119,13 +126,13 @@ class FileService {
           (response.statusCode ?? 0) >= 300) {
         throw ApiException.http(
           statusCode: response.statusCode,
-          message: errorMessage,
+          message: resolvedErrorMessage,
         );
       }
     } on DioException catch (error) {
       throw ApiException.http(
         statusCode: error.response?.statusCode,
-        message: errorMessage,
+        message: resolvedErrorMessage,
         original: error,
       );
     } finally {

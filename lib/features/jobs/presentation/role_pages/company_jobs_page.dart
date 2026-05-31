@@ -548,7 +548,10 @@ class _BannerAction extends StatelessWidget {
                   'assets/images/chat_page_order_arrow.svg',
                   width: 12,
                   height: 12,
-                  color: Colors.white,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ],
             ),

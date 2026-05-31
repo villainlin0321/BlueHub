@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 enum ApiExceptionType { network, http, biz, parse, unknown }
 
 class ApiException implements Exception {
@@ -24,7 +26,7 @@ class ApiException implements Exception {
 
   static ApiException network(Object error) => ApiException(
     ApiExceptionType.network,
-    message: '网络异常，请稍后重试',
+    message: tr('通用.网络异常'),
     original: error,
   );
 
@@ -45,14 +47,22 @@ class ApiException implements Exception {
     String? requestId,
   }) => ApiException(
     ApiExceptionType.biz,
-    message: message.isEmpty ? '业务异常' : message,
+    message: message.isEmpty ? tr('通用.业务异常') : message,
     code: code,
     requestId: requestId,
   );
 
   static ApiException parse(Object error) =>
-      ApiException(ApiExceptionType.parse, message: '数据解析失败', original: error);
+      ApiException(
+        ApiExceptionType.parse,
+        message: tr('通用.数据解析失败'),
+        original: error,
+      );
 
   static ApiException unknown(Object error) =>
-      ApiException(ApiExceptionType.unknown, message: '未知错误', original: error);
+      ApiException(
+        ApiExceptionType.unknown,
+        message: tr('通用.未知错误'),
+        original: error,
+      );
 }

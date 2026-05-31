@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -327,16 +328,8 @@ class _CardTopRow extends StatelessWidget {
           child: Text.rich(
             TextSpan(
               children: <InlineSpan>[
-                const TextSpan(
-                  text: '投递岗位: ',
-                  style: TextStyle(
-                    color: CompanyApplicationManagementStyles.textSecondary,
-                    fontSize: 14,
-                    height: 16 / 14,
-                  ),
-                ),
                 TextSpan(
-                  text: data.positionTitle,
+                  text: '招聘.投递岗位'.tr(namedArgs: {'title': data.positionTitle}),
                   style: const TextStyle(
                     color: CompanyApplicationManagementStyles.textPrimary,
                     fontSize: 14,
@@ -367,7 +360,7 @@ class _CardTopRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
-                '匹配',
+                '招聘.匹配度'.tr(),
                 style: const TextStyle(
                   color: CompanyApplicationManagementStyles.primary,
                   fontSize: 10,
@@ -473,7 +466,7 @@ class _CardFooter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             CompanyApplicationActionButton(
-              label: '查看简历',
+              label: '招聘.查看简历'.tr(),
               onTap: onViewResumeTap,
             ),
             const SizedBox(width: 8),

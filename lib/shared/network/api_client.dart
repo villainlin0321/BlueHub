@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'api_exception.dart';
 import 'api_result.dart';
@@ -223,7 +224,7 @@ class ApiClient {
     if (e.response != null) {
       return ApiException.http(
         statusCode: e.response?.statusCode,
-        message: e.response?.statusMessage ?? 'HTTP 请求失败',
+        message: e.response?.statusMessage ?? tr('通用.HTTP请求失败'),
         original: e,
       );
     }

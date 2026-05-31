@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:bluehub_app/shared/network/api_client.dart';
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 import '../../../features/me/data/resume_models.dart';
@@ -15,7 +16,7 @@ class ResumeService {
     );
     final int? resumeId = _readCreatedResumeId(response);
     if (resumeId == null || resumeId <= 0) {
-      throw StateError('创建简历成功，但未返回有效的简历 ID');
+      throw StateError(tr('我的.创建简历缺少有效ID'));
     }
     return resumeId;
   }

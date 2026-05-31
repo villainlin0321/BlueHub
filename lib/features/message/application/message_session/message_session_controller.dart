@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/logging/app_logger.dart';
@@ -367,7 +368,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     if (error is ApiException && error.message.trim().isNotEmpty) {
       return error.message;
     }
-    return '消息加载失败，请稍后重试';
+    return tr('消息.消息加载失败');
   }
 
   void _syncCurrentUserId() {

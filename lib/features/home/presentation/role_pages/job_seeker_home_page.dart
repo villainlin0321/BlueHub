@@ -936,17 +936,19 @@ extension on HomeHotPackageVO {
 extension on JobListVO {
   /// 将首页最新岗位接口模型映射为职位卡片数据。
   JobPositionCardData toHomeJobCardData() {
+    final String urgentLabel = '招聘卡片.急招'.tr();
+    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
     final List<String> tagLabels = tags
         .map((TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
         .toList(growable: false);
     final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '急招'),
-      if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
-        '招聘卡片.提供签证'.tr(),
+      ...tagLabels.where((String label) => label != urgentLabel),
+      if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
+        visaSupportLabel,
     ].take(3).toList(growable: false);
     final List<String> highlightTags = <String>[
-      if (isUrgent) '招聘卡片.急招'.tr(),
+      if (isUrgent) urgentLabel,
     ];
 
     return JobPositionCardData(

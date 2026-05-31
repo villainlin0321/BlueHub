@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../app/router/route_paths.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../shell/application/shell_role_provider.dart';
 import 'role_pages/company_jobs_page.dart';

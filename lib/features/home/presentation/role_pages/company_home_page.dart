@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -27,25 +28,25 @@ class CompanyHomePage extends ConsumerStatefulWidget {
 
   static const List<_QuickActionItem> _quickActions = <_QuickActionItem>[
     _QuickActionItem(
-      label: '发布招聘',
+      labelKey: '首页.发布招聘',
       assetPath: 'assets/images/mon6azmx-yws4mpq.svg',
       fallback: Icons.add_business_outlined,
       routePath: RoutePaths.postJob,
     ),
     _QuickActionItem(
-      label: '人才中心',
+      labelKey: '招聘.人才中心',
       assetPath: 'assets/images/mon6azmx-gxjq4wk.svg',
       fallback: Icons.school_outlined,
       tabRoutePath: RoutePaths.jobs,
     ),
     _QuickActionItem(
-      label: '应聘管理',
+      labelKey: '我的.应聘管理',
       assetPath: 'assets/images/mon6z4ru-nlqxve0.svg',
       fallback: Icons.assignment_ind_outlined,
       routePath: RoutePaths.companyApplications,
     ),
     _QuickActionItem(
-      label: '签证服务',
+      labelKey: '首页.签证服务',
       assetPath: 'assets/images/mon6z4rt-44w61yz.svg',
       fallback: Icons.assignment_outlined,
       routePath: RoutePaths.companyVisaService,
@@ -104,24 +105,26 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text('$actionLabel备注'),
+          title: Text(
+            '首页.备注标题'.tr(namedArgs: <String, String>{'action': actionLabel}),
+          ),
           content: TextField(
             controller: controller,
             maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: '请输入备注（选填）',
+            decoration: InputDecoration(
+              hintText: '招聘.请输入备注选填'.tr(),
               border: OutlineInputBorder(),
             ),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
+              child: Text('通用.取消'.tr()),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.of(dialogContext).pop(controller.text.trim()),
-              child: const Text('确认'),
+              child: Text('通用.确定'.tr()),
             ),
           ],
         );
@@ -216,8 +219,8 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
     if (resumeItems.isEmpty) {
       return _ResumeStateCard(
-        message: pendingState.errorMessage ?? '暂无待处理应聘',
-        buttonLabel: pendingState.errorMessage == null ? null : '重试',
+        message: pendingState.errorMessage ?? '招聘.未找到待处理应聘记录'.tr(),
+        buttonLabel: pendingState.errorMessage == null ? null : '通用.重试'.tr(),
         onTap: pendingState.errorMessage == null
             ? null
             : _reloadPendingApplications,
@@ -259,10 +262,10 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
   _ResumeCardItem _mapResumeCardItem(ApplicationVO item) {
     final String name = item.applicant.nickname.trim().isEmpty
-        ? '匿名候选人'
+        ? '招聘.匿名候选人'.tr()
         : item.applicant.nickname;
     final String title = item.job.title.trim().isEmpty
-        ? '待定岗位'
+        ? '招聘.待定岗位'.tr()
         : item.job.title;
     return _ResumeCardItem(
       applicationId: item.applicationId,
@@ -270,7 +273,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       status: item.status,
       name: name,
       ageGender: _formatAgeGender(item.applicant.age, item.applicant.gender),
-      appliedJob: '应聘：$title',
+      appliedJob: '首页.应聘职位'.tr(namedArgs: <String, String>{'title': title}),
       matchPercent: '${item.matchScore.clamp(0, 100)}%',
       tags: _buildTags(item.applicant),
       deliveryTime: _formatSubmittedText(item.submittedAt),
@@ -296,11 +299,17 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     }
 
     if (applicant.experienceYears > 0) {
-      addTag('${applicant.experienceYears}年经验');
+      addTag(
+        '招聘.年经验'.tr(
+          namedArgs: <String, String>{
+            'count': applicant.experienceYears.toString(),
+          },
+        ),
+      );
     }
 
     if (tags.isEmpty) {
-      addTag('信息待完善');
+      addTag('招聘.信息待完善'.tr());
     }
 
     return tags.take(3).toList(growable: false);
@@ -309,7 +318,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
   String _formatAgeGender(int age, String gender) {
     final List<String> parts = <String>[];
     if (age > 0) {
-      parts.add('$age岁');
+      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': age.toString()}));
     }
 
     final String normalizedGender = _normalizeGender(gender);
@@ -326,12 +335,12 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       case 'man':
       case 'm':
       case '男':
-        return '男';
+        return '我的.男'.tr();
       case 'female':
       case 'woman':
       case 'f':
       case '女':
-        return '女';
+        return '我的.女'.tr();
       default:
         return value.trim();
     }
@@ -340,7 +349,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
   String _formatSubmittedText(String raw) {
     final String trimmed = raw.trim();
     if (trimmed.isEmpty) {
-      return '刚刚投递';
+      return '首页.刚刚投递'.tr();
     }
 
     final DateTime? submittedAt = DateTime.tryParse(trimmed)?.toLocal();
@@ -352,13 +361,17 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     final Duration difference = now.difference(submittedAt);
 
     if (difference.inMinutes < 1) {
-      return '刚刚投递';
+      return '首页.刚刚投递'.tr();
     }
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前投递';
+      return '首页.分钟前投递'.tr(
+        namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+      );
     }
     if (_isSameDay(now, submittedAt)) {
-      return '${difference.inHours}小时前投递';
+      return '首页.小时前投递'.tr(
+        namedArgs: <String, String>{'count': difference.inHours.toString()},
+      );
     }
 
     final DateTime yesterday = DateTime(
@@ -367,10 +380,22 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       now.day,
     ).subtract(const Duration(days: 1));
     if (_isSameDay(yesterday, submittedAt)) {
-      return '昨日${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+      return '首页.昨日投递'.tr(
+        namedArgs: <String, String>{
+          'time':
+              '${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}',
+        },
+      );
     }
 
-    return '${_twoDigits(submittedAt.month)}-${_twoDigits(submittedAt.day)} ${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+    return '首页.月日投递'.tr(
+      namedArgs: <String, String>{
+        'month': _twoDigits(submittedAt.month),
+        'day': _twoDigits(submittedAt.day),
+        'time':
+            '${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}',
+      },
+    );
   }
 
   bool _isSameDay(DateTime left, DateTime right) {
@@ -561,12 +586,12 @@ class _CompanyHeroTopRow extends StatelessWidget {
 
   String _buildCompanyName(EmployerProfileVO? profile) {
     final String name = profile?.companyName.trim() ?? '';
-    return name.isEmpty ? '企业名称待完善' : name;
+    return name.isEmpty ? '我的.企业名称待完善'.tr() : name;
   }
 
   String _buildIndustry(EmployerProfileVO? profile) {
     final String industry = profile?.industry.trim() ?? '';
-    return industry.isEmpty ? '行业待完善' : industry;
+    return industry.isEmpty ? '我的.行业待完善'.tr() : industry;
   }
 
   String _buildLocation(EmployerProfileVO? profile) {
@@ -608,10 +633,10 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
   const _CompanyHeroStatsRow();
 
   static const List<_HeroStatItem> _items = <_HeroStatItem>[
-    _HeroStatItem(value: '8', label: '在招岗位'),
-    _HeroStatItem(value: '108', label: '收到简历'),
-    _HeroStatItem(value: '13', label: '待面试'),
-    _HeroStatItem(value: '4', label: '已录用'),
+    _HeroStatItem(value: '8', labelKey: '我的.在招岗位'),
+    _HeroStatItem(value: '108', labelKey: '我的.收到简历'),
+    _HeroStatItem(value: '13', labelKey: '我的.待面试'),
+    _HeroStatItem(value: '4', labelKey: '我的.已录用'),
   ];
 
   @override
@@ -623,16 +648,22 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
     final List<_HeroStatItem> items = stats == null
         ? _items
         : <_HeroStatItem>[
-            _HeroStatItem(value: _formatCount(stats.activeJobs), label: '在招岗位'),
+            _HeroStatItem(
+              value: _formatCount(stats.activeJobs),
+              labelKey: '我的.在招岗位',
+            ),
             _HeroStatItem(
               value: _formatCount(stats.receivedResumes),
-              label: '收到简历',
+              labelKey: '我的.收到简历',
             ),
             _HeroStatItem(
               value: _formatCount(stats.pendingInterviews),
-              label: '待面试',
+              labelKey: '我的.待面试',
             ),
-            _HeroStatItem(value: _formatCount(stats.hired), label: '已录用'),
+            _HeroStatItem(
+              value: _formatCount(stats.hired),
+              labelKey: '我的.已录用',
+            ),
           ];
 
     return Row(
@@ -652,7 +683,7 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    item.label,
+                    item.labelKey.tr(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
@@ -670,10 +701,10 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
 }
 
 class _HeroStatItem {
-  const _HeroStatItem({required this.value, required this.label});
+  const _HeroStatItem({required this.value, required this.labelKey});
 
   final String value;
-  final String label;
+  final String labelKey;
 }
 
 String _formatCount(int? value) => (value ?? 0).toString();
@@ -732,7 +763,7 @@ class _QuickActionButton extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              item.label,
+                item.labelKey.tr(),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF171A1D),
@@ -775,14 +806,14 @@ class _AiAssistantBanner extends StatelessWidget {
                     height: 40,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         Text(
-                          'AI业务助手',
+                          '招聘.AI业务助手'.tr(),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -791,7 +822,7 @@ class _AiAssistantBanner extends StatelessWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          '为您精准推荐 5 名资深中餐厨师',
+                          '招聘.AI推荐文案'.tr(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -813,8 +844,8 @@ class _AiAssistantBanner extends StatelessWidget {
                     ),
                     child: Row(
                       children: <Widget>[
-                        const Text(
-                          '查看',
+                        Text(
+                          '招聘.查看'.tr(),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -826,7 +857,10 @@ class _AiAssistantBanner extends StatelessWidget {
                           'assets/images/chat_page_order_arrow.svg',
                           width: 12,
                           height: 12,
-                          color: Colors.white,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ],
                     ),
@@ -848,9 +882,9 @@ class _ResumeSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        const Expanded(
+        Expanded(
           child: Text(
-            '最新收到简历',
+            '首页.最新收到简历'.tr(),
             style: TextStyle(
               color: Color(0xFF262626),
               fontSize: 16,
@@ -862,13 +896,13 @@ class _ResumeSectionHeader extends StatelessWidget {
         InkWell(
           onTap: () => context.push(RoutePaths.companyApplications),
           borderRadius: BorderRadius.circular(12),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  '全部',
+                  '订单.全部'.tr(),
                   style: TextStyle(
                     color: Color(0xFF8C8C8C),
                     fontSize: 14,
@@ -1007,8 +1041,8 @@ class _ResumeCard extends StatelessWidget {
                           height: 21 / 16,
                         ),
                       ),
-                      const TextSpan(
-                        text: ' 匹配',
+                      TextSpan(
+                        text: ' ${'招聘.匹配度'.tr()}',
                         style: TextStyle(
                           color: Color(0xFF096DD9),
                           fontSize: 10,
@@ -1040,7 +1074,10 @@ class _ResumeCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _GhostActionButton(label: '查看简历', onTap: onViewResumeTap),
+                _GhostActionButton(
+                  label: '招聘.查看简历'.tr(),
+                  onTap: onViewResumeTap,
+                ),
               ],
             ),
             if (item.status ==
@@ -1051,7 +1088,7 @@ class _ResumeCard extends StatelessWidget {
                   SizedBox(
                     width: 109,
                     child: _ApplicationStatusActionButton(
-                      label: '不合适',
+                      label: '招聘.不合适'.tr(),
                       backgroundColor: const Color(0xFFFFEBEB),
                       borderColor: const Color(0x99FF4D4F),
                       textColor: const Color(0xFFD9363E),
@@ -1064,7 +1101,7 @@ class _ResumeCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _ApplicationStatusActionButton(
-                      label: '邀约面试',
+                      label: '招聘.邀约面试'.tr(),
                       backgroundColor: const Color(0xFF096DD9),
                       textColor: Colors.white,
                       onTap: processingAction == null ? onInviteTap : null,
@@ -1203,14 +1240,14 @@ class _ApplicationStatusActionButton extends StatelessWidget {
 
 class _QuickActionItem {
   const _QuickActionItem({
-    required this.label,
+    required this.labelKey,
     required this.assetPath,
     required this.fallback,
     this.tabRoutePath,
     this.routePath,
   });
 
-  final String label;
+  final String labelKey;
   final String assetPath;
   final IconData fallback;
   final String? tabRoutePath;

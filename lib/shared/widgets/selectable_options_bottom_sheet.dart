@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'resume_time_picker_bottom_sheet.dart';
@@ -108,10 +109,10 @@ class _SelectableOptionsBottomSheetState<T>
                         );
                       },
                       behavior: HitTestBehavior.opaque,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
-                          '确定',
+                          '通用.确定'.tr(),
                           style: TextStyle(
                             color: Color(0xFF096DD9),
                             fontSize: 16,
