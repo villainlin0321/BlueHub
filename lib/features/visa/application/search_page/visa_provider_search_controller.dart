@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/visa_provider_search_history_store.dart';
@@ -26,7 +27,7 @@ class VisaProviderSearchController extends Notifier<VisaProviderSearchState> {
     } catch (_) {
       state = state.copyWith(
         isLoadingHistory: false,
-        feedbackMessage: '历史记录加载失败，请稍后重试',
+        feedbackMessage: '签证搜索.历史记录加载失败'.tr(),
         feedbackId: state.feedbackId + 1,
       );
     }
@@ -56,7 +57,7 @@ class VisaProviderSearchController extends Notifier<VisaProviderSearchState> {
       );
     } catch (_) {
       state = state.copyWith(
-        feedbackMessage: '历史记录保存失败，请稍后重试',
+        feedbackMessage: '签证搜索.历史记录保存失败'.tr(),
         feedbackId: state.feedbackId + 1,
       );
     }
@@ -76,7 +77,7 @@ class VisaProviderSearchController extends Notifier<VisaProviderSearchState> {
     } catch (_) {
       state = state.copyWith(
         isClearingHistory: false,
-        feedbackMessage: '清空历史记录失败，请稍后重试',
+        feedbackMessage: '签证搜索.清空历史记录失败'.tr(),
         feedbackId: state.feedbackId + 1,
       );
     }
