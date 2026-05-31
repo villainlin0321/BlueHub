@@ -1,4 +1,5 @@
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,8 +40,8 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
             },
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           ),
-          title: const Text(
-            '应聘管理',
+          title: Text(
+            '我的.应聘管理'.tr(),
             style: TextStyle(
               color: Colors.black,
               fontSize: 17,
@@ -53,12 +54,15 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
           children: <Widget>[
             CompanyApplicationTabBar(
               tabs: _CompanyApplicationTab.values
-                  .map((tab) => tab.label)
+                  .map((tab) => tab.label.tr())
                   .toList(growable: false),
             ),
             CompanyApplicationJobFilterBar(
-              label: '全部岗位',
-              onTap: () => _showPlaceholderSnackBar(context, '岗位筛选功能'),
+              label: '应聘管理.全部岗位'.tr(),
+              onTap: () => _showPlaceholderSnackBar(
+                context,
+                '应聘管理.岗位筛选功能'.tr(),
+              ),
             ),
             Expanded(
               child: TabBarView(
@@ -84,28 +88,34 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
   static void _showPlaceholderSnackBar(BuildContext context, String label) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$label（占位）')));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
+          ),
+        ),
+      );
   }
 }
 
 enum _CompanyApplicationTab {
   pending(
-    label: '待处理',
+    label: '应聘管理.待处理',
     status: 'pending',
-    emptyText: '暂无待处理应聘',
-    secondaryActionLabel: '邀约面试',
+    emptyText: '应聘管理.暂无待处理应聘',
+    secondaryActionLabel: '招聘.邀约面试',
   ),
   invited(
-    label: '已邀约',
+    label: '应聘管理.已邀约',
     status: 'invited',
-    emptyText: '暂无已邀约应聘',
-    secondaryActionLabel: '电话联系',
+    emptyText: '应聘管理.暂无已邀约应聘',
+    secondaryActionLabel: '应聘管理.电话联系',
   ),
   rejected(
-    label: '不合适',
+    label: '招聘.不合适',
     status: 'rejected',
-    emptyText: '暂无不合适应聘',
-    secondaryActionLabel: '电话联系',
+    emptyText: '应聘管理.暂无不合适应聘',
+    secondaryActionLabel: '应聘管理.电话联系',
   );
 
   const _CompanyApplicationTab({
@@ -232,7 +242,7 @@ class _CompanyApplicationTabViewState
               children: <Widget>[
                 Center(
                   child: AppEmptyState(
-                    message: listState.errorMessage ?? '暂无数据',
+                    message: listState.errorMessage ?? '暂无数据'.tr(),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                 ),
@@ -265,8 +275,9 @@ class _CompanyApplicationTabViewState
     await context.push(RoutePaths.myResumePreview, extra: userId);
   }
 
+  /// 根据当前 Tab 的动作定义，执行邀约或电话联系等二级操作。
   Future<void> _handleSecondaryAction(ApplicationVO item) async {
-    if (widget.tab.secondaryActionLabel == '邀约面试') {
+    if (widget.tab.secondaryActionLabel == '招聘.邀约面试') {
       final ApplicationStatusUpdateResult result = await ref
           .read(companyApplicationListsControllerProvider.notifier)
           .updateApplicationStatus(
@@ -292,17 +303,18 @@ class _CompanyApplicationTabViewState
       return;
     }
 
-    if (widget.tab.secondaryActionLabel == '电话联系') {
+    if (widget.tab.secondaryActionLabel == '应聘管理.电话联系') {
       await _handlePhoneCall(item);
       return;
     }
 
-    _showPlaceholderSnackBar(context, widget.tab.secondaryActionLabel);
+    _showPlaceholderSnackBar(context, widget.tab.secondaryActionLabel.tr());
   }
 
+  /// 尝试读取求职者手机号并唤起系统拨号页。
   Future<void> _handlePhoneCall(ApplicationVO item) async {
     final String fallbackName = item.applicant.nickname.trim().isEmpty
-        ? '候选人'
+        ? '应聘管理.候选人'.tr()
         : item.applicant.nickname.trim();
     try {
       final String phone =
@@ -316,7 +328,11 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (phone.isEmpty) {
-        _showErrorSnackBar('未获取到$fallbackName的联系电话');
+        _showErrorSnackBar(
+          '应聘管理.未获取联系电话'.tr(
+            namedArgs: <String, String>{'name': fallbackName},
+          ),
+        );
         return;
       }
 
@@ -326,7 +342,7 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (!launched) {
-        _showErrorSnackBar('暂时无法拨打电话，请稍后重试');
+        _showErrorSnackBar('应聘管理.暂时无法拨打电话'.tr());
       }
     } catch (error) {
       if (!mounted) {
@@ -351,22 +367,32 @@ class _CompanyApplicationTabViewState
     final String message = error.toString().trim();
     if (message.startsWith('Exception: ')) {
       final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty ? '获取$fallbackName联系电话失败，请稍后重试' : normalized;
+      return normalized.isEmpty
+          ? '应聘管理.获取联系电话失败'.tr(
+              namedArgs: <String, String>{'name': fallbackName},
+            )
+          : normalized;
     }
-    return message.isEmpty ? '获取$fallbackName联系电话失败，请稍后重试' : message;
+    return message.isEmpty
+        ? '应聘管理.获取联系电话失败'.tr(
+            namedArgs: <String, String>{'name': fallbackName},
+          )
+        : message;
   }
 
   CompanyApplicationCardData _buildCardData(ApplicationVO item, int index) {
     return CompanyApplicationCardData(
-      positionTitle: item.job.title.trim().isEmpty ? '待定岗位' : item.job.title,
+      positionTitle: item.job.title.trim().isEmpty
+          ? '招聘.待定岗位'.tr()
+          : item.job.title,
       matchText: '${item.matchScore.clamp(0, 100)}%',
       name: item.applicant.nickname.trim().isEmpty
-          ? '匿名候选人'
+          ? '招聘.匿名候选人'.tr()
           : item.applicant.nickname,
       ageGender: _formatAgeGender(item.applicant.age, item.applicant.gender),
       tags: _buildTags(item.applicant),
       submittedText: _formatSubmittedText(item.submittedAt),
-      secondaryActionLabel: widget.tab.secondaryActionLabel,
+      secondaryActionLabel: widget.tab.secondaryActionLabel.tr(),
     );
   }
 
@@ -389,11 +415,17 @@ class _CompanyApplicationTabViewState
     }
 
     if (applicant.experienceYears > 0) {
-      addTag('${applicant.experienceYears}年经验');
+      addTag(
+        '招聘.年经验'.tr(
+          namedArgs: <String, String>{
+            'count': applicant.experienceYears.toString(),
+          },
+        ),
+      );
     }
 
     if (tags.isEmpty) {
-      addTag('信息待完善');
+      addTag('招聘.信息待完善'.tr());
     }
 
     return tags.take(3).toList(growable: false);
@@ -402,7 +434,7 @@ class _CompanyApplicationTabViewState
   String _formatAgeGender(int age, String gender) {
     final List<String> parts = <String>[];
     if (age > 0) {
-      parts.add('$age岁');
+      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': '$age'}));
     }
 
     final String normalizedGender = _normalizeGender(gender);
@@ -419,12 +451,12 @@ class _CompanyApplicationTabViewState
       case 'man':
       case 'm':
       case '男':
-        return '男';
+        return '招聘.男'.tr();
       case 'female':
       case 'woman':
       case 'f':
       case '女':
-        return '女';
+        return '招聘.女'.tr();
       default:
         return value.trim();
     }
@@ -433,7 +465,7 @@ class _CompanyApplicationTabViewState
   String _formatSubmittedText(String raw) {
     final String trimmed = raw.trim();
     if (trimmed.isEmpty) {
-      return '刚刚投递';
+      return '首页.刚刚投递'.tr();
     }
 
     final DateTime? submittedAt = DateTime.tryParse(trimmed)?.toLocal();
@@ -445,13 +477,17 @@ class _CompanyApplicationTabViewState
     final Duration difference = now.difference(submittedAt);
 
     if (difference.inMinutes < 1) {
-      return '刚刚投递';
+      return '首页.刚刚投递'.tr();
     }
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前投递';
+      return '首页.分钟前投递'.tr(
+        namedArgs: <String, String>{'count': '${difference.inMinutes}'},
+      );
     }
     if (_isSameDay(now, submittedAt)) {
-      return '${difference.inHours}小时前投递';
+      return '首页.小时前投递'.tr(
+        namedArgs: <String, String>{'count': '${difference.inHours}'},
+      );
     }
 
     final DateTime yesterday = DateTime(
@@ -460,10 +496,22 @@ class _CompanyApplicationTabViewState
       now.day,
     ).subtract(const Duration(days: 1));
     if (_isSameDay(yesterday, submittedAt)) {
-      return '昨日${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+      return '首页.昨日投递'.tr(
+        namedArgs: <String, String>{
+          'time':
+              '${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}',
+        },
+      );
     }
 
-    return '${_twoDigits(submittedAt.month)}-${_twoDigits(submittedAt.day)} ${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}投递';
+    return '首页.月日投递'.tr(
+      namedArgs: <String, String>{
+        'month': _twoDigits(submittedAt.month),
+        'day': _twoDigits(submittedAt.day),
+        'time':
+            '${_twoDigits(submittedAt.hour)}:${_twoDigits(submittedAt.minute)}',
+      },
+    );
   }
 
   bool _isSameDay(DateTime left, DateTime right) {
@@ -479,6 +527,12 @@ class _CompanyApplicationTabViewState
   void _showPlaceholderSnackBar(BuildContext context, String label) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$label（占位）')));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
+          ),
+        ),
+      );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/data/config_models.dart';
@@ -93,7 +94,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     } catch (_) {
       state = state.copyWith(
         isLoadingServiceTags: false,
-        serviceTagsError: '包含服务标签加载失败',
+        serviceTagsError: '签证编辑.包含服务标签加载失败'.tr(),
       );
     }
   }
@@ -160,15 +161,23 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       );
       _emitFeedback(
         packageId == null
-            ? (isDraft ? '草稿保存成功' : '签证套餐发布成功')
-            : (isDraft ? '草稿更新成功' : '签证套餐更新成功'),
+            ? (isDraft
+                  ? '签证编辑.草稿保存成功'.tr()
+                  : '签证编辑.签证套餐发布成功'.tr())
+            : (isDraft
+                  ? '签证编辑.草稿更新成功'.tr()
+                  : '签证编辑.签证套餐更新成功'.tr()),
       );
     } catch (_) {
       state = state.copyWith(isSavingDraft: false, isPublishing: false);
       _emitFeedback(
         packageId == null
-            ? (isDraft ? '草稿保存失败，请稍后重试' : '签证套餐发布失败，请稍后重试')
-            : (isDraft ? '草稿更新失败，请稍后重试' : '签证套餐更新失败，请稍后重试'),
+            ? (isDraft
+                  ? '签证编辑.草稿保存失败'.tr()
+                  : '签证编辑.签证套餐发布失败'.tr())
+            : (isDraft
+                  ? '签证编辑.草稿更新失败'.tr()
+                  : '签证编辑.签证套餐更新失败'.tr()),
         isError: true,
       );
     }
@@ -180,30 +189,30 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
   }) {
     final String name = draft.name.trim();
     if (name.isEmpty) {
-      _emitFeedback('请填写套餐总名称', isError: true);
+      _emitFeedback('签证编辑.请填写套餐总名称'.tr(), isError: true);
       return null;
     }
 
     final String? countryCode = state.selectedCountryCode;
     if (countryCode == null || countryCode.isEmpty) {
-      _emitFeedback('请选择服务国家', isError: true);
+      _emitFeedback('签证编辑.请选择服务国家'.tr(), isError: true);
       return null;
     }
 
     final String? visaTypeCode = state.selectedVisaTypeCode;
     if (visaTypeCode == null || visaTypeCode.isEmpty) {
-      _emitFeedback('请选择签证类型', isError: true);
+      _emitFeedback('签证编辑.请选择签证类型'.tr(), isError: true);
       return null;
     }
 
     final int? estimatedDays = int.tryParse(draft.estimatedDays.trim());
     if (estimatedDays == null || estimatedDays <= 0) {
-      _emitFeedback('请填写正确的预计周期', isError: true);
+      _emitFeedback('签证编辑.请填写正确的预计周期'.tr(), isError: true);
       return null;
     }
 
     if (draft.tiers.isEmpty) {
-      _emitFeedback('请至少添加一个套餐档位', isError: true);
+      _emitFeedback('签证编辑.请至少添加一个套餐档位'.tr(), isError: true);
       return null;
     }
 
@@ -212,13 +221,23 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       final EditVisaPackageTierDraftInput tier = draft.tiers[index];
       final String tierName = tier.name.trim();
       if (tierName.isEmpty) {
-        _emitFeedback('请填写第${index + 1}个档位名称', isError: true);
+        _emitFeedback(
+          '签证编辑.请填写档位名称'.tr(
+            namedArgs: <String, String>{'index': (index + 1).toString()},
+          ),
+          isError: true,
+        );
         return null;
       }
 
       final double? price = double.tryParse(tier.price.trim());
       if (price == null || price <= 0) {
-        _emitFeedback('请填写第${index + 1}个档位的正确价格', isError: true);
+        _emitFeedback(
+          '签证编辑.请填写档位正确价格'.tr(
+            namedArgs: <String, String>{'index': (index + 1).toString()},
+          ),
+          isError: true,
+        );
         return null;
       }
 
@@ -233,7 +252,12 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
           .toSet()
           .toList(growable: false);
       if (selectedServices.isEmpty && customServices.isEmpty) {
-        _emitFeedback('请至少为第${index + 1}个档位选择一个包含服务', isError: true);
+        _emitFeedback(
+          '签证编辑.请至少选择一个包含服务'.tr(
+            namedArgs: <String, String>{'index': (index + 1).toString()},
+          ),
+          isError: true,
+        );
         return null;
       }
 
@@ -248,7 +272,15 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
             continue;
           }
           if (materialName.isEmpty) {
-            _emitFeedback('请填写第${index + 1}个档位中材料${materialIndex + 1}的名称', isError: true);
+            _emitFeedback(
+              '签证编辑.请填写材料名称'.tr(
+                namedArgs: <String, String>{
+                  'tierIndex': (index + 1).toString(),
+                  'materialIndex': (materialIndex + 1).toString(),
+                },
+              ),
+              isError: true,
+            );
             return null;
           }
           materials.add(

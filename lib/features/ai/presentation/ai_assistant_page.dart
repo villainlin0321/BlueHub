@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,25 +29,25 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   JobListVO? _recommendedJob;
 
   final List<_ChatMessage> _messages = <_ChatMessage>[
-    const _ChatMessage(
+    _ChatMessage(
       role: _ChatRole.assistant,
-      text: '你好！我是您的专属AI助手。请问有什么我可以帮您的？',
+      text: 'AI.欢迎语'.tr(),
       footer: null,
     ),
-    const _ChatMessage(
+    _ChatMessage(
       role: _ChatRole.user,
-      text: '我从事电气技术工作8年，持高级电工证，擅长工业电气系统安装调试、设备维护升级、配电方案优化及安全管理',
+      text: 'AI.用户示例提问'.tr(),
       footer: null,
     ),
-    const _ChatMessage(
+    _ChatMessage(
       role: _ChatRole.assistant,
-      text: '请稍后，我这边为您匹配一下岗位，请问您有德国语音证书吗？',
-      footer: '由西格玛AI提供',
+      text: 'AI.匹配追问'.tr(),
+      footer: 'AI.由西格玛AI提供'.tr(),
     ),
-    const _ChatMessage(
+    _ChatMessage(
       role: _ChatRole.assistant,
-      text: '给您推荐了以下几个厨师岗位，看看合不合适？',
-      footer: '由西格玛AI提供',
+      text: 'AI.推荐岗位提示'.tr(),
+      footer: 'AI.由西格玛AI提供'.tr(),
     ),
   ];
 
@@ -123,7 +124,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
       });
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('投递成功')));
+      ).showSnackBar(SnackBar(content: Text('招聘.投递成功'.tr())));
       return;
     }
 
@@ -167,7 +168,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
                 child: Row(
                   children: <Widget>[
                     Text(
-                      'AI助手',
+                      'AI.AI助手'.tr(),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w800,
@@ -176,7 +177,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
                     const Spacer(),
                     TextButton(
                       onPressed: () {},
-                      child: const Text('历史记录'),
+                      child: Text('AI.历史记录'.tr()),
                     ),
                   ],
                 ),
@@ -190,18 +191,21 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
                     ..._messages.map((m) => _ChatBubble(message: m)),
                     const SizedBox(height: 10),
                     _QuickQuestion(
-                      label: '推荐适合我的欧洲签证服务商',
-                      onTap: () => _controller.text = '推荐适合我的欧洲签证服务商',
+                      label: 'AI.推荐适合我的欧洲签证服务商'.tr(),
+                      onTap: () =>
+                          _controller.text = 'AI.推荐适合我的欧洲签证服务商'.tr(),
                     ),
                     const SizedBox(height: 10),
                     _QuickQuestion(
-                      label: '推荐匹配我的欧洲岗位',
-                      onTap: () => _controller.text = '推荐匹配我的欧洲岗位',
+                      label: 'AI.推荐匹配我的欧洲岗位'.tr(),
+                      onTap: () =>
+                          _controller.text = 'AI.推荐匹配我的欧洲岗位'.tr(),
                     ),
                     const SizedBox(height: 10),
                     _QuickQuestion(
-                      label: '签证办理流程是什么',
-                      onTap: () => _controller.text = '签证办理流程是什么',
+                      label: 'AI.签证办理流程是什么'.tr(),
+                      onTap: () =>
+                          _controller.text = 'AI.签证办理流程是什么'.tr(),
                     ),
                     const SizedBox(height: 10),
                     if (_isRecommendationLoading)
@@ -368,16 +372,19 @@ class _EmbeddedJobCard extends StatelessWidget {
   /// 构建 AI 推荐岗位卡片，支持跳转详情与直接投递。
   @override
   Widget build(BuildContext context) {
+    final String urgentLabel = '招聘卡片.急招'.tr();
+    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
     final List<String> tagLabels = job.tags
         .map((TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
         .toList(growable: false);
     final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '急招'),
-      if (job.hasVisaSupport && !tagLabels.contains('提供签证')) '提供签证',
+      ...tagLabels.where((String label) => label != urgentLabel),
+      if (job.hasVisaSupport && !tagLabels.contains(visaSupportLabel))
+        visaSupportLabel,
     ].take(3).toList(growable: false);
     final List<String> highlightTags = <String>[
-      if (job.isUrgent) '急招',
+      if (job.isUrgent) urgentLabel,
     ];
     final List<String> locationParts = <String>[
       job.country.trim(),
@@ -469,7 +476,13 @@ class _EmbeddedJobCard extends StatelessWidget {
                     side: const BorderSide(color: AppColors.divider),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   ),
-                  child: Text(isApplied ? '已投递' : (isApplying ? '投递中...' : '一键投递')),
+                  child: Text(
+                    isApplied
+                        ? '招聘.已投递'.tr()
+                        : (isApplying
+                              ? '招聘.投递中'.tr()
+                              : '招聘卡片.一键投递'.tr()),
+                  ),
                 ),
               ),
             ],
@@ -545,8 +558,8 @@ class _Composer extends StatelessWidget {
                 ),
                 child: TextField(
                   controller: controller,
-                  decoration: const InputDecoration(
-                    hintText: '发消息...',
+                  decoration: InputDecoration(
+                    hintText: '消息.发消息'.tr(),
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => onSend(),

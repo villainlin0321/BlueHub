@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -159,8 +160,8 @@ class _VisaProviderSearchPageState
                 minimumSize: const Size(52, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                '搜索',
+              child: Text(
+                '通用.搜索'.tr(),
                 style: TextStyle(
                   color: Color(0xFF096DD9),
                   fontSize: 15,
@@ -237,10 +238,10 @@ class _SearchAppBarField extends StatelessWidget {
                 fontWeight: FontWeight.w400,
                 height: 20 / 14,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
-                hintText: '搜索xxx服务/xxx岗位',
+                hintText: '首页.搜索签证服务欧洲岗位'.tr(),
                 hintStyle: TextStyle(
                   color: Color(0xFFBFBFBF),
                   fontSize: 14,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,7 +60,7 @@ class _ServiceProviderJobsPageState
         ),
         _PageTabBar(
           tabs: _PackageTab.values
-              .map((tab) => tab.label)
+              .map((tab) => tab.label.tr())
               .toList(growable: false),
           selectedIndex: _selectedTabIndex,
           onTap: (int index) {
@@ -91,20 +92,24 @@ class _ServiceProviderJobsPageState
 
 enum _PackageTab {
   active(
-    label: '已上架',
+    label: '套餐管理.已上架',
     status: 'active',
-    emptyText: '暂无已上架套餐',
-    secondaryActionLabel: '下架',
+    emptyText: '套餐管理.暂无已上架套餐',
+    secondaryActionLabel: '套餐管理.下架',
     secondaryActionStatus: 'inactive',
   ),
   inactive(
-    label: '已下架',
+    label: '套餐管理.已下架',
     status: 'inactive',
-    emptyText: '暂无已下架套餐',
-    secondaryActionLabel: '上架',
+    emptyText: '套餐管理.暂无已下架套餐',
+    secondaryActionLabel: '套餐管理.上架',
     secondaryActionStatus: 'active',
   ),
-  draft(label: '已驳回', status: 'draft', emptyText: '暂无已驳回套餐');
+  draft(
+    label: '套餐管理.已驳回',
+    status: 'draft',
+    emptyText: '套餐管理.暂无已驳回套餐',
+  );
 
   const _PackageTab({
     required this.label,
@@ -164,7 +169,11 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       });
       ref.invalidate(myVisaPackageListProvider(widget.tab.status));
       ref.invalidate(myVisaPackageListProvider(nextStatus));
-      _showMessage(widget.tab.status == 'active' ? '套餐已下架' : '套餐已上架');
+      _showMessage(
+        widget.tab.status == 'active'
+            ? '套餐管理.套餐已下架'.tr()
+            : '套餐管理.套餐已上架'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -192,7 +201,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '操作失败，请稍后重试' : message;
+    return message.isEmpty ? '套餐管理.操作失败'.tr() : message;
   }
 
   Widget _buildPackageList(
@@ -295,9 +304,9 @@ class _PageHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(20, topPadding + 10, 16, 10),
       child: Row(
         children: <Widget>[
-          const Expanded(
+          Expanded(
             child: Text(
-              '套餐管理',
+              '套餐管理.标题'.tr(),
               style: TextStyle(
                 color: Color(0xE6000000),
                 fontSize: 17,
@@ -309,10 +318,10 @@ class _PageHeader extends StatelessWidget {
           InkWell(
             onTap: onPublishTap,
             borderRadius: BorderRadius.circular(4),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.only(top: 2),
               child: Text(
-                '发布',
+                '套餐管理.发布'.tr(),
                 style: TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 14,
@@ -481,13 +490,16 @@ class _PackageCard extends StatelessWidget {
                   const Spacer(),
                   if (data.secondaryActionLabel != null) ...<Widget>[
                     _GhostButton(
-                      label: data.secondaryActionLabel!,
+                      label: data.secondaryActionLabel!.tr(),
                       onTap: onSecondaryAction,
                       isLoading: isSecondaryActionLoading,
                     ),
                     const SizedBox(width: 8),
                   ],
-                  _PrimaryButton(label: '编辑', onTap: onPrimaryAction),
+                  _PrimaryButton(
+                    label: '企业岗位.编辑'.tr(),
+                    onTap: onPrimaryAction,
+                  ),
                 ],
               ),
             ],
@@ -543,8 +555,13 @@ class _PackagePriceRow extends StatelessWidget {
                 height: 20 / 12,
               ),
               children: <InlineSpan>[
-                const TextSpan(text: '已售 '),
-                TextSpan(text: '${item.soldCount}'),
+                TextSpan(
+                  text: '套餐管理.已售'.tr(
+                    namedArgs: <String, String>{
+                      'count': item.soldCount.toString(),
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -592,8 +609,8 @@ class _EmptyTierState extends StatelessWidget {
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Text(
-        '暂无套餐档位',
+      child: Text(
+        '套餐管理.暂无套餐档位'.tr(),
         style: TextStyle(
           color: Color(0xFF8C8C8C),
           fontSize: 12,
@@ -637,8 +654,8 @@ class _DeleteButton extends StatelessWidget {
         border: Border.all(color: const Color(0xFFFF4D4F), width: 0.5),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Text(
-        '删除',
+      child: Text(
+        '企业岗位.删除'.tr(),
         style: TextStyle(
           color: Color(0xFFD9363E),
           fontSize: 12,
@@ -746,7 +763,13 @@ class _PackageCardData {
 
     return _PackageCardData(
       title: package.name,
-      metaText: package.estimatedDays > 0 ? '预计${package.estimatedDays}天' : '-',
+      metaText: package.estimatedDays > 0
+          ? '套餐管理.预计天数'.tr(
+              namedArgs: <String, String>{
+                'days': package.estimatedDays.toString(),
+              },
+            )
+          : '-',
       tags: tags,
       packages: package.tiers
           .map(
@@ -865,8 +888,8 @@ class _PackageLoadError extends StatelessWidget {
         bottom: bottomPadding + 8,
       ),
       children: <Widget>[
-        const Text(
-          '套餐列表加载失败',
+        Text(
+          '套餐管理.套餐列表加载失败'.tr(),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Color(0xFF262626),
@@ -891,7 +914,10 @@ class _PackageLoadError extends StatelessWidget {
           child: SizedBox(
             width: 88,
             height: 32,
-            child: OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            child: OutlinedButton(
+              onPressed: onRetry,
+              child: Text('通用.重试'.tr()),
+            ),
           ),
         ),
       ],
@@ -900,20 +926,20 @@ class _PackageLoadError extends StatelessWidget {
 }
 
 const Map<String, String> _countryLabelMap = <String, String>{
-  'DE': '德国',
-  'FR': '法国',
-  'CH': '瑞士',
-  'GB': '英国',
-  'IT': '意大利',
-  'ES': '西班牙',
+  'DE': '国家.德国',
+  'FR': '国家.法国',
+  'CH': '国家.瑞士',
+  'GB': '国家.英国',
+  'IT': '国家.意大利',
+  'ES': '国家.西班牙',
 };
 
 const Map<String, String> _visaTypeLabelMap = <String, String>{
-  'work': '工作签',
-  'travel': '旅行签',
-  'tech': '技术签',
-  'nursing': '护理签',
-  'study': '留学签',
+  'work': '服务详情.工作签',
+  'travel': '服务详情.旅游签',
+  'tech': '服务详情.技术签',
+  'nursing': '服务详情.护理签',
+  'study': '服务详情.留学签',
 };
 
 String _resolveCountryLabel(String value) {
@@ -921,7 +947,8 @@ String _resolveCountryLabel(String value) {
   if (normalized.isEmpty) {
     return '';
   }
-  return _countryLabelMap[normalized.toUpperCase()] ?? normalized;
+  final String? labelKey = _countryLabelMap[normalized.toUpperCase()];
+  return labelKey == null ? normalized : labelKey.tr();
 }
 
 String _resolveVisaTypeLabel(String value) {
@@ -929,7 +956,8 @@ String _resolveVisaTypeLabel(String value) {
   if (normalized.isEmpty) {
     return '';
   }
-  return _visaTypeLabelMap[normalized.toLowerCase()] ?? normalized;
+  final String? labelKey = _visaTypeLabelMap[normalized.toLowerCase()];
+  return labelKey == null ? normalized : labelKey.tr();
 }
 
 String _formatCurrencyAmount(String currency, double amount) {

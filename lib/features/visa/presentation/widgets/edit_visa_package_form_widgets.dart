@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -55,6 +56,7 @@ class EditVisaPackageMaterialViewDraft {
   }
 }
 
+/// 弹出自定义服务输入框，并返回用户输入的服务名。
 Future<String?> showEditVisaPackageCustomServiceDialog(
   BuildContext context,
 ) async {
@@ -102,8 +104,8 @@ class _EditVisaPackageCustomServiceDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text(
-              '添加自定义服务',
+            Text(
+              '签证编辑.添加自定义服务'.tr(),
               style: TextStyle(
                 color: EditVisaPackageStyles.textPrimary,
                 fontSize: 16,
@@ -121,7 +123,7 @@ class _EditVisaPackageCustomServiceDialogState
               ],
               cursorColor: EditVisaPackageStyles.primary,
               decoration: InputDecoration(
-                hintText: '请输入自定义服务',
+                hintText: '签证编辑.请输入自定义服务'.tr(),
                 hintStyle: EditVisaPackageStyles.fieldHint,
                 counterText: '',
                 filled: true,
@@ -155,8 +157,8 @@ class _EditVisaPackageCustomServiceDialogState
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  '确定',
+                child: Text(
+                  '通用.确定'.tr(),
                   style: EditVisaPackageStyles.primaryButton,
                 ),
               ),
@@ -250,9 +252,9 @@ class EditVisaPackageHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Center(
+                Center(
                   child: Text(
-                    '编辑/签证套餐',
+                    '签证编辑.编辑签证套餐'.tr(),
                     style: EditVisaPackageStyles.headerTitle,
                   ),
                 ),
@@ -269,7 +271,9 @@ class EditVisaPackageHeader extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      isSavingDraft ? '保存中...' : '存草稿',
+                      isSavingDraft
+                          ? '签证编辑.保存中'.tr()
+                          : '签证编辑.存草稿'.tr(),
                       style: EditVisaPackageStyles.headerAction,
                     ),
                   ),
@@ -609,12 +613,12 @@ class EditVisaPackageServiceTagContent extends StatelessWidget {
             ),
             TextButton(
               onPressed: onRetryLoadServiceTags,
-              child: const Text('重试'),
+              child: Text('通用.重试'.tr()),
             ),
           ],
         )
       else if (serviceTags.isEmpty)
-        const Text('暂无包含服务标签', style: EditVisaPackageStyles.fieldHint)
+        Text('签证编辑.暂无包含服务标签'.tr(), style: EditVisaPackageStyles.fieldHint)
       else
         GridView.builder(
           shrinkWrap: true,
@@ -799,7 +803,10 @@ class EditVisaPackageAddCustomServiceChip extends StatelessWidget {
             borderRadius: EditVisaPackageStyles.chipRadius,
             border: Border.all(color: EditVisaPackageStyles.border),
           ),
-          child: const Text('+ 自定义', style: EditVisaPackageStyles.plainChip),
+          child: Text(
+            '签证编辑.自定义'.tr(),
+            style: EditVisaPackageStyles.plainChip,
+          ),
         ),
       ),
     );
@@ -820,18 +827,21 @@ class EditVisaPackageRadioGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        const Expanded(
-          child: Text('是否展示所需材料', style: EditVisaPackageStyles.fieldLabel),
+        Expanded(
+          child: Text(
+            '签证编辑.是否展示所需材料'.tr(),
+            style: EditVisaPackageStyles.fieldLabel,
+          ),
         ),
         EditVisaPackageRadioOption(
-          label: '是',
+          label: '签证编辑.是'.tr(),
           selected: value,
           selectedAsset: 'assets/images/visa_package_radio_selected_yes.svg',
           onTap: () => onChanged(true),
         ),
         const SizedBox(width: 32),
         EditVisaPackageRadioOption(
-          label: '否',
+          label: '签证编辑.否'.tr(),
           selected: !value,
           selectedAsset: 'assets/images/visa_package_radio_selected_no.svg',
           onTap: () => onChanged(false),
@@ -1073,8 +1083,8 @@ class EditVisaPackageBottomBar extends StatelessWidget {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            '立即发布',
+                        : Text(
+                            '签证编辑.立即发布'.tr(),
                             style: EditVisaPackageStyles.primaryButton,
                           ),
                   ),

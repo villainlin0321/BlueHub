@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,8 +42,8 @@ class MyApplicationsPage extends ConsumerWidget {
               color: Color(0xFF262626),
             ),
           ),
-          title: const Text(
-            '我的应聘',
+          title: Text(
+            '我的.我的应聘'.tr(),
             style: TextStyle(
               color: Color(0xE6262626),
               fontSize: 17,
@@ -62,7 +63,7 @@ class MyApplicationsPage extends ConsumerWidget {
               ),
               child: TabBar(
                 tabs: _tabs
-                    .map((tab) => Tab(height: 44, text: tab.label))
+                    .map((tab) => Tab(height: 44, text: tab.localizedLabel))
                     .toList(growable: false),
                 labelColor: const Color(0xFF096DD9),
                 unselectedLabelColor: const Color(0xFF262626),
@@ -98,8 +99,8 @@ class MyApplicationsPage extends ConsumerWidget {
                           padding: const EdgeInsets.only(top: 12),
                           child: Center(
                             child: Text(
-                              '暂无更多记录',
-                              style: const TextStyle(
+                              '我的应聘.暂无更多记录'.tr(),
+                              style: TextStyle(
                                 color: Color(0xFFBFBFBF),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
@@ -119,7 +120,13 @@ class MyApplicationsPage extends ConsumerWidget {
                           onActionTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('${items[index].actionLabel}（占位）'),
+                                content: Text(
+                                  '我的.占位提示'.tr(
+                                    namedArgs: <String, String>{
+                                      'label': items[index].actionLabel.tr(),
+                                    },
+                                  ),
+                                ),
                               ),
                             );
                           },

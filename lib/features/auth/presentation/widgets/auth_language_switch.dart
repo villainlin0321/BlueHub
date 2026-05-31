@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class AuthLanguageSwitch extends StatelessWidget {
@@ -23,12 +24,12 @@ class AuthLanguageSwitch extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           _LanguageOption(
-            label: '中',
+            label: '语言.中文简称'.tr(),
             selected: isChineseSelected,
             onTap: () => onChanged(true),
           ),
           _LanguageOption(
-            label: 'En',
+            label: '语言.英文简称'.tr(),
             selected: !isChineseSelected,
             onTap: () => onChanged(false),
             horizontalPadding: 8,

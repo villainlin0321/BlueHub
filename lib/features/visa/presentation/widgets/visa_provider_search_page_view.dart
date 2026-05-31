@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,9 +91,9 @@ class _HistorySection extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Expanded(
+              Expanded(
                 child: Text(
-                  '历史记录',
+                  '签证搜索.历史记录'.tr(),
                   style: TextStyle(
                     color: Color(0xFF262626),
                     fontSize: 16,
@@ -132,8 +133,8 @@ class _HistorySection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (historyKeywords.isEmpty)
-            const Text(
-              '暂无搜索记录',
+            Text(
+              '签证搜索.暂无搜索记录'.tr(),
               style: TextStyle(
                 color: Color(0xFF8C8C8C),
                 fontSize: 14,
@@ -246,7 +247,9 @@ class _SearchResultSection extends StatelessWidget {
     return providersAsync.when(
       data: (PageResult<VisaProviderListVO> pageResult) {
         if (pageResult.list.isEmpty) {
-          return const Center(child: AppEmptyState(message: '未找到相关签证服务商'));
+          return Center(
+            child: AppEmptyState(message: '签证搜索.未找到相关签证服务商'.tr()),
+          );
         }
 
         final Set<int>? collectedPackageIds =
@@ -286,7 +289,7 @@ class _SearchResultSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextButton(onPressed: onRetry, child: const Text('重试')),
+                TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
               ],
             ),
           ),
@@ -297,16 +300,22 @@ class _SearchResultSection extends StatelessWidget {
 
   VisaServiceCardData _buildCardData(VisaProviderListVO item) {
     return VisaServiceCardData(
-      title: item.name.trim().isEmpty ? '签证服务商' : item.name,
+      title: item.name.trim().isEmpty ? '签证页.签证服务商'.tr() : item.name,
       avatarUrl: item.logoUrl.trim().isEmpty ? null : item.logoUrl.trim(),
       rating: item.rating.toStringAsFixed(1),
-      cases: item.caseCount > 0 ? '服务案例${item.caseCount}' : '暂无服务案例',
-      tags: item.tags.isEmpty ? <String>['签证服务'] : item.tags,
-      description: item.brief.trim().isEmpty ? '暂无服务商简介' : item.brief.trim(),
+      cases: item.caseCount > 0
+          ? '签证页.服务案例数'.tr(
+              namedArgs: <String, String>{'count': item.caseCount.toString()},
+            )
+          : '签证页.暂无服务案例'.tr(),
+      tags: item.tags.isEmpty ? <String>['首页.签证服务'.tr()] : item.tags,
+      description: item.brief.trim().isEmpty
+          ? '签证页.暂无服务商简介'.tr()
+          : item.brief.trim(),
       packages: <VisaServicePackageData>[
         VisaServicePackageData(
           title: item.latestPackage.name.trim().isEmpty
-              ? '推荐套餐'
+              ? '签证页.推荐套餐'.tr()
               : item.latestPackage.name,
           price: _formatVisaListPrice(item.latestPackage.priceFrom),
         ),
@@ -326,6 +335,6 @@ class _SearchResultSection extends StatelessWidget {
     if (error is ApiException) {
       return error.message;
     }
-    return '签证服务加载失败，请稍后重试';
+    return '签证页.签证服务加载失败'.tr();
   }
 }

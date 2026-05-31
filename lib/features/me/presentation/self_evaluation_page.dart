@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,8 +80,8 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
             color: Color(0xFF171A1D),
           ),
         ),
-        title: const Text(
-          '自我评价',
+        title: Text(
+          '我的.自我评价'.tr(),
           style: TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
@@ -111,8 +112,8 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                         fontWeight: FontWeight.w400,
                         height: 24 / 16,
                       ),
-                      decoration: const InputDecoration(
-                        hintText: '请输入',
+                      decoration: InputDecoration(
+                        hintText: '通用.请输入'.tr(),
                         hintStyle: TextStyle(
                           color: Color(0xFFBFBFBF),
                           fontSize: 16,
@@ -170,8 +171,8 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    '保存',
+                  child: Text(
+                    '我的.保存'.tr(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }) {
     return EditVisaPackageTierViewDraft(
       tierId: tierId,
-      nameController: TextEditingController(text: '基础套餐'),
+      nameController: TextEditingController(text: '签证编辑.基础套餐'.tr()),
       priceController: TextEditingController(),
       descriptionController: TextEditingController(),
       showMaterials: true,
@@ -119,7 +120,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '套餐详情加载失败，请稍后重试' : message;
+    return message.isEmpty ? '服务详情.套餐详情加载失败'.tr() : message;
   }
 
   void _replaceTiers(List<EditVisaPackageTierViewDraft> nextTiers) {
@@ -191,6 +192,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     super.dispose();
   }
 
+  /// 打开服务国家选择面板，并在用户确认后回写国家编码。
   Future<void> _openCountrySheet() async {
     final EditVisaPackageState state = ref.read(
       editVisaPackageControllerProvider,
@@ -198,7 +200,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     final result = await showCountryOptionsBottomSheet(
       context: context,
       ref: ref,
-      title: '服务国家',
+      title: '签证编辑.服务国家'.tr(),
       initialSelectedValues: state.selectedCountryCode == null
           ? const <String>[]
           : <String>[state.selectedCountryCode!],
@@ -212,6 +214,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
         .setCountryCode(result.first.countryCode.trim());
   }
 
+  /// 打开签证类型选择面板，并处理字典加载失败与空数据提示。
   Future<void> _openVisaTypeSheet() async {
     final EditVisaPackageState state = ref.read(
       editVisaPackageControllerProvider,
@@ -226,11 +229,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showSnackBar('签证类型字典加载失败');
+      _showSnackBar('签证编辑.签证类型字典加载失败'.tr());
       return;
     }
     if (visaTypeOptions.isEmpty) {
-      _showSnackBar('暂无可选签证类型');
+      _showSnackBar('签证编辑.暂无可选签证类型'.tr());
       return;
     }
     if (!mounted) {
@@ -238,7 +241,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '签证类型',
+      title: '签证编辑.签证类型'.tr(),
       options: visaTypeOptions,
       initialSelectedValues: state.selectedVisaTypeCode == null
           ? const <String>[]
@@ -276,6 +279,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }).toList(growable: false);
   }
 
+  /// 打开材料类型选择面板，并把选择结果写回当前材料项。
   Future<void> _openMaterialTypeSheet(int tierIndex, int materialIndex) async {
     final String currentValue = _tiers[tierIndex]
         .materials[materialIndex]
@@ -292,11 +296,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showSnackBar('材料类型字典加载失败');
+      _showSnackBar('签证编辑.材料类型字典加载失败'.tr());
       return;
     }
     if (materialTypeOptions.isEmpty) {
-      _showSnackBar('暂无可选材料类型');
+      _showSnackBar('签证编辑.暂无可选材料类型'.tr());
       return;
     }
     if (!mounted) {
@@ -304,7 +308,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
-      title: '材料类型',
+      title: '签证编辑.材料类型'.tr(),
       options: materialTypeOptions,
       initialSelectedValues: currentValue.isEmpty
           ? const <String>[]
@@ -335,6 +339,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     return null;
   }
 
+  /// 从页面控制器和档位草稿构建提交所需的表单草稿。
   EditVisaPackageFormDraft _buildFormDraft() {
     return EditVisaPackageFormDraft(
       name: _serviceNameController.text,
@@ -425,11 +430,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }
     final String customService = result.trim();
     if (customService.isEmpty) {
-      _showSnackBar('请输入自定义服务');
+      _showSnackBar('签证编辑.请输入自定义服务'.tr());
       return;
     }
     if (_tiers[tierIndex].customServices.contains(customService)) {
-      _showSnackBar('该自定义服务已添加');
+      _showSnackBar('签证编辑.该自定义服务已添加'.tr());
       return;
     }
     setState(() {
@@ -524,8 +529,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Text(
-                  '套餐详情加载失败',
+                Text(
+                  '服务详情.套餐详情加载失败'.tr(),
                   style: TextStyle(
                     color: Color(0xFF262626),
                     fontSize: 16,
@@ -545,7 +550,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _loadPackageDetail,
-                  child: const Text('重试'),
+                  child: Text('通用.重试'.tr()),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -167,43 +168,43 @@ class _BasicInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const EditVisaPackageSectionTitle(title: '基础信息'),
+          EditVisaPackageSectionTitle(title: '签证编辑.基础信息'.tr()),
           const SizedBox(height: 16),
           EditVisaPackageLabeledField(
-            label: '套餐总名称',
+            label: '签证编辑.套餐总名称'.tr(),
             required: true,
             child: EditVisaPackageInputField(
               controller: serviceNameController,
-              hintText: '例如：德国厨师工作签包过',
+              hintText: '签证编辑.套餐总名称示例'.tr(),
             ),
           ),
           const SizedBox(height: 16),
           EditVisaPackageLabeledField(
-            label: '服务国家',
+            label: '签证编辑.服务国家'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
               text: selectedCountryLabel,
-              hintText: '请选择',
+              hintText: '通用.请选择'.tr(),
               onTap: onCountryTap,
             ),
           ),
           const SizedBox(height: 16),
           EditVisaPackageLabeledField(
-            label: '签证类型',
+            label: '签证编辑.签证类型'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
               text: selectedVisaTypeLabel,
-              hintText: '请选择',
+              hintText: '通用.请选择'.tr(),
               onTap: onVisaTypeTap,
             ),
           ),
           const SizedBox(height: 16),
           EditVisaPackageLabeledField(
-            label: '预计周期 (工作日)',
+            label: '签证编辑.预计周期工作日'.tr(),
             required: true,
             child: EditVisaPackageInputField(
               controller: durationController,
-              hintText: '例如：20',
+              hintText: '签证编辑.预计周期示例'.tr(),
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.digitsOnly,
@@ -255,7 +256,7 @@ class _TierConfigSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const EditVisaPackageSectionTitle(title: '多档位套餐配置'),
+          EditVisaPackageSectionTitle(title: '签证编辑.多档位套餐配置'.tr()),
           const SizedBox(height: 16),
           ...tiers.asMap().entries.map((MapEntry<int, EditVisaPackageTierViewDraft> entry) {
             return Padding(
@@ -280,7 +281,10 @@ class _TierConfigSection extends StatelessWidget {
             );
           }),
           const SizedBox(height: 20),
-          EditVisaPackageSecondaryButton(label: '添加套餐档位', onTap: onAddTier),
+          EditVisaPackageSecondaryButton(
+            label: '签证编辑.添加套餐档位'.tr(),
+            onTap: onAddTier,
+          ),
         ],
       ),
     );
@@ -325,7 +329,7 @@ class _TierCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         EditVisaPackageTierHeader(
-          title: '档位套餐',
+          title: '签证编辑.档位套餐'.tr(),
           showDelete: tier.deletable,
           onDeleteTap: tier.deletable ? () => onDeleteTier(tierIndex) : null,
         ),
@@ -335,20 +339,20 @@ class _TierCard extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: EditVisaPackageLabeledField(
-                label: '档位名称',
+                label: '签证编辑.档位名称'.tr(),
                 child: EditVisaPackageInputField(
                   controller: tier.nameController,
-                  hintText: '请输入',
+                  hintText: '通用.请输入'.tr(),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: EditVisaPackageLabeledField(
-                label: '价格 (元)',
+                label: '签证编辑.价格元'.tr(),
                 child: EditVisaPackageInputField(
                   controller: tier.priceController,
-                  hintText: '请输入',
+                  hintText: '通用.请输入'.tr(),
                   keyboardType: TextInputType.number,
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
@@ -359,7 +363,7 @@ class _TierCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        const Text('包含服务', style: EditVisaPackageStyles.fieldLabel),
+        Text('签证编辑.包含服务'.tr(), style: EditVisaPackageStyles.fieldLabel),
         const SizedBox(height: 8),
         EditVisaPackageServiceTagContent(
           serviceTags: state.serviceTags,
@@ -376,10 +380,10 @@ class _TierCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         EditVisaPackageLabeledField(
-          label: '套餐描述',
+          label: '签证编辑.套餐描述'.tr(),
           child: EditVisaPackageMultilineField(
             controller: tier.descriptionController,
-            hintText: '请输入…',
+            hintText: '签证编辑.套餐描述提示'.tr(),
             maxLength: 100,
           ),
         ),
@@ -408,7 +412,7 @@ class _TierCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           EditVisaPackageAddMaterialButton(
-            label: '添加材料',
+            label: '签证编辑.添加材料'.tr(),
             onTap: () => onAddMaterial(tierIndex),
           ),
         ],
@@ -442,12 +446,16 @@ class _MaterialCard extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: Text(
-                '材料${materialIndex + 1}',
+                '签证编辑.材料序号'.tr(
+                  namedArgs: <String, String>{
+                    'index': (materialIndex + 1).toString(),
+                  },
+                ),
                 style: EditVisaPackageStyles.fieldLabel,
               ),
             ),
             Text(
-              material.isRequired ? '必填' : '选填',
+              material.isRequired ? '签证编辑.必填'.tr() : '通用.选填'.tr(),
               style: EditVisaPackageStyles.materialMeta,
             ),
             const SizedBox(width: 8),
@@ -466,13 +474,13 @@ class _MaterialCard extends StatelessWidget {
           text: material.titleController.text.trim().isEmpty
               ? null
               : material.titleController.text.trim(),
-          hintText: '选择材料类型',
+          hintText: '签证编辑.选择材料类型'.tr(),
           onTap: () => onMaterialTypeTap(tierIndex, materialIndex),
         ),
         const SizedBox(height: 12),
         EditVisaPackageInputField(
           controller: material.descriptionController,
-          hintText: '请输入材料描述（20字以内）',
+          hintText: '签证编辑.请输入材料描述'.tr(),
         ),
       ],
     );
