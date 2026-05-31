@@ -49,6 +49,7 @@ import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
 import '../../features/visa/presentation/company_visa_service_page.dart';
 import '../../features/visa/presentation/edit_visa_package_page.dart';
+import '../../features/visa/presentation/visa_provider_search_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
 import '../../shared/logging/app_logger.dart';
 import 'route_paths.dart';
@@ -329,6 +330,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.companyVisaService,
         builder: (context, state) => const CompanyVisaServicePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.visaProviderSearch,
+        builder: (context, state) => const VisaProviderSearchPage(),
       ),
       GoRoute(
         path: RoutePaths.serviceProviderTalentCenter,

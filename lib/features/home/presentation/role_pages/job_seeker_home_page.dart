@@ -262,34 +262,41 @@ class _HomeSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push(RoutePaths.visaProviderSearch),
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: <Widget>[
-          const AppSvgIcon(
-            assetPath: 'assets/images/mon5bjog-j2j6s3e.svg',
-            fallback: Icons.search_rounded,
-            size: 16,
-            color: Color(0xFFBFBFBF),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '搜索签证服务/欧洲岗位',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFFBFBFBF),
-                fontSize: 14,
+          child: Row(
+            children: <Widget>[
+              const AppSvgIcon(
+                assetPath: 'assets/images/mon5bjog-j2j6s3e.svg',
+                fallback: Icons.search_rounded,
+                size: 16,
+                color: Color(0xFFBFBFBF),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '搜索签证服务/欧洲岗位',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFBFBFBF),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

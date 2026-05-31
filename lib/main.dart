@@ -32,7 +32,10 @@ Future<void> main() async {
 
       runApp(
         ProviderScope(
-          overrides: [tokenStoreProvider.overrideWithValue(tokenStore)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            tokenStoreProvider.overrideWithValue(tokenStore),
+          ],
           child: const App(),
         ),
       );
