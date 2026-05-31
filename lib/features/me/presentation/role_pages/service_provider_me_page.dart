@@ -175,7 +175,7 @@ class _HeaderSection extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 80),
+              padding: EdgeInsets.fromLTRB(16, topPadding, 16, 80),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -334,7 +334,6 @@ class _ProviderNameRow extends ConsumerWidget {
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              height: 24 / 17,
             ),
           ),
         ),
