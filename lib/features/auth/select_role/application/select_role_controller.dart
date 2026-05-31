@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/auth_role_mapper.dart';
@@ -33,7 +34,7 @@ class SelectRoleController extends Notifier<SelectRoleState> {
   Future<bool> submitSelection() async {
     final selectedRoleId = state.selectedRoleId;
     if (selectedRoleId == null || selectedRoleId.isEmpty) {
-      _emitFeedback('请选择角色', isError: true);
+      _emitFeedback(tr('认证.请选择角色'), isError: true);
       return false;
     }
 
@@ -46,7 +47,7 @@ class SelectRoleController extends Notifier<SelectRoleState> {
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
       return true;
     } catch (_) {
-      _emitFeedback('角色选择失败，请稍后重试', isError: true);
+      _emitFeedback(tr('认证.角色选择失败'), isError: true);
       return false;
     } finally {
       state = state.copyWith(isSubmitting: false);

@@ -1,4 +1,5 @@
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -62,7 +63,13 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   void _showPlaceholderToast(String label) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$label（占位）')));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}),
+          ),
+        ),
+      );
   }
 
   Future<void> _loadOrders({
@@ -167,7 +174,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '订单加载失败，请稍后重试' : message;
+    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
   }
 
   String? _statusForRequest({
@@ -214,14 +221,16 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('国家列表加载失败，请稍后重试')));
+        ..showSnackBar(
+          SnackBar(content: Text('订单.国家列表加载失败'.tr())),
+        );
       return;
     }
     if (!mounted) {
       return;
     }
     final _CountryFilter? result = await _showFilterSheet<_CountryFilter>(
-      title: '选择国家',
+      title: '订单.选择国家'.tr(),
       currentValue: _selectedCountry,
       options: countries,
       labelBuilder: (_CountryFilter item) => item.label,
@@ -235,7 +244,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
 
   Future<void> _selectStatus() async {
     final _StatusFilter? result = await _showFilterSheet<_StatusFilter>(
-      title: '选择订单状态',
+      title: '订单.选择订单状态'.tr(),
       currentValue: _selectedStatus,
       options: _statuses,
       labelBuilder: (_StatusFilter item) => item.label,
@@ -322,31 +331,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     );
   }
 
-  List<VisaOrderVO> get _visibleOrders {
-    return _orders
-        .where((VisaOrderVO item) {
-          if (_selectedTab == _OrderTab.all) {
-            return true;
-          }
-          return _tabForStatus(item.status) == _selectedTab;
-        })
-        .toList(growable: false);
-  }
-
-  _OrderTab _tabForStatus(String status) {
-    final String normalized = status.trim().toLowerCase();
-    if (normalized == 'completed') {
-      return _OrderTab.completed;
-    }
-    if (normalized == 'processing') {
-      return _OrderTab.processing;
-    }
-    if (normalized.startsWith('pending_') || normalized == 'all') {
-      return _OrderTab.pending;
-    }
-    return _OrderTab.pending;
-  }
-
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -378,9 +362,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
             color: Color(0xE6000000),
           ),
         ),
-        title: const Text(
-          '订单管理',
-          style: TextStyle(
+        title: Text(
+          '订单.订单管理'.tr(),
+          style: const TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
             fontWeight: FontWeight.w500,
@@ -389,7 +373,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
         ),
         actions: <Widget>[
           IconButton(
-            onPressed: () => _showPlaceholderToast('搜索'),
+            onPressed: () => _showPlaceholderToast('订单.搜索'.tr()),
             icon: const AppSvgIcon(
               assetPath: 'assets/images/company_application_search.svg',
               fallback: Icons.search_rounded,
@@ -466,7 +450,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                       return _OrderCard(
                         order: item,
                         onContactTap: () => _showPlaceholderToast(
-                          '联系客户 ${_displayCustomerName(item)}',
+                          '${'订单.联系客户'.tr()} ${_displayCustomerName(item)}',
                         ),
                         onProcessTap: () => context.push(
                           RoutePaths.orderDetail,
@@ -493,15 +477,15 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     if (nickname.isNotEmpty) {
       return nickname;
     }
-    return '订单客户';
+    return '订单.订单客户'.tr();
   }
 }
 
 enum _OrderTab {
-  all('全部'),
-  pending('待处理', 'pending_payment'),
-  processing('办理中', 'embassy_submitted'),
-  completed('已完成', 'completed');
+  all('订单.全部'),
+  pending('订单.待处理', 'pending_payment'),
+  processing('订单.办理中', 'embassy_submitted'),
+  completed('订单.已完成', 'completed');
 
   const _OrderTab(this.label, [this.apiValue]);
 
@@ -512,7 +496,7 @@ enum _OrderTab {
 class _CountryFilter {
   const _CountryFilter({required this.label, this.apiValue});
 
-  static const _CountryFilter all = _CountryFilter(label: '全部国家');
+  static _CountryFilter all = _CountryFilter(label: '订单.全部国家'.tr());
 
   final String label;
   final String? apiValue;
@@ -531,15 +515,15 @@ class _CountryFilter {
 }
 
 enum _StatusFilter {
-  all('订单状态', 'all'),
-  pendingPayment('待付款', 'pending_payment'),
-  pendingUpload('待用户上传材料', 'pending_upload'),
-  reviewing('材料审核中', 'reviewing'),
-  rejected('材料被驳回', 'rejected'),
-  processing('办理中', 'embassy_submitted'),
-  completed('已完成', 'completed'),
-  cancelled('已取消', 'cancelled'),
-  refunded('已退款', 'refunded');
+  all('订单.订单状态', 'all'),
+  pendingPayment('订单.待付款', 'pending_payment'),
+  pendingUpload('订单.待用户上传材料', 'pending_upload'),
+  reviewing('订单.材料审核中', 'reviewing'),
+  rejected('订单.材料被驳回', 'rejected'),
+  processing('订单.办理中', 'embassy_submitted'),
+  completed('订单.已完成', 'completed'),
+  cancelled('订单.已取消', 'cancelled'),
+  refunded('订单.已退款', 'refunded');
 
   const _StatusFilter(this.label, this.apiValue);
 
@@ -581,7 +565,7 @@ class _OrderTabs extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
                       Text(
-                        tab.label,
+                        tab.label.tr(),
                         style: TextStyle(
                           color: selected
                               ? const Color(0xFF096DD9)
@@ -731,7 +715,7 @@ class _OrderCard extends StatelessWidget {
                     child: Text.rich(
                       TextSpan(
                         children: <InlineSpan>[
-                          const TextSpan(text: '订单号：'),
+                          TextSpan(text: '订单.订单号'.tr()),
                           TextSpan(
                             text: order.orderNo,
                             style: const TextStyle(
@@ -754,7 +738,7 @@ class _OrderCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   _StatusTag(
                     label: order.statusLabel.trim().isEmpty
-                        ? '处理中'
+                        ? '订单.处理中'.tr()
                         : order.statusLabel,
                     style: _statusStyleFor(order.status),
                   ),
@@ -833,13 +817,13 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                   _ActionButton(
-                    label: '联系客户',
+                    label: '订单.联系客户'.tr(),
                     outlined: true,
                     onTap: onContactTap,
                   ),
                   const SizedBox(width: 8),
                   _ActionButton(
-                    label: '处理订单',
+                    label: '订单.处理订单'.tr(),
                     outlined: false,
                     onTap: onProcessTap,
                   ),
@@ -857,7 +841,7 @@ class _OrderCard extends StatelessWidget {
     if (nickname.isNotEmpty) {
       return nickname;
     }
-    return '订单客户';
+    return '订单.订单客户'.tr();
   }
 
   static String _serviceNameFor(VisaOrderVO order) {
@@ -869,7 +853,7 @@ class _OrderCard extends StatelessWidget {
     if (tierName.isNotEmpty) {
       return tierName;
     }
-    return '签证服务';
+    return '订单.签证服务'.tr();
   }
 
   static _OrderStatusStyle _statusStyleFor(String status) {
@@ -913,20 +897,29 @@ class _OrderCard extends StatelessWidget {
   static String _formatUpdatedText(String raw) {
     final DateTime? updatedAt = DateTime.tryParse(raw)?.toLocal();
     if (updatedAt == null) {
-      return raw.trim().isEmpty ? '刚刚更新' : raw;
+      return raw.trim().isEmpty ? '订单.刚刚更新'.tr() : raw;
     }
 
     final Duration difference = DateTime.now().difference(updatedAt);
     if (difference.inMinutes < 1) {
-      return '刚刚更新';
+      return '订单.刚刚更新'.tr();
     }
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前更新';
+      return '订单.分钟前更新'.tr(
+        namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+      );
     }
     if (difference.inHours < 24) {
-      return '${difference.inHours}小时前更新';
+      return '订单.小时前更新'.tr(
+        namedArgs: <String, String>{'count': difference.inHours.toString()},
+      );
     }
-    return '${updatedAt.month}月${updatedAt.day}日更新';
+    return '订单.月日更新'.tr(
+      namedArgs: <String, String>{
+        'month': updatedAt.month.toString(),
+        'day': updatedAt.day.toString(),
+      },
+    );
   }
 }
 
@@ -1008,9 +1001,9 @@ class _UrgentTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(3),
         border: Border.all(color: const Color(0xFFFF6661)),
       ),
-      child: const Text(
-        '紧急',
-        style: TextStyle(
+      child: Text(
+        '订单.紧急'.tr(),
+        style: const TextStyle(
           color: Color(0xFFFF0B03),
           fontSize: 10,
           fontWeight: FontWeight.w400,
@@ -1084,12 +1077,12 @@ class _OrderManagementEmptyState extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(24, 80, 24, bottomInset + 24),
       children: <Widget>[
-        const AppEmptyState(message: '暂无符合条件的订单'),
+        AppEmptyState(message: '订单.暂无符合条件的订单'.tr()),
         const SizedBox(height: 16),
         TextButton(
           onPressed: onResetTap,
           style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
-          child: const Text('重置筛选'),
+          child: Text('订单.重置筛选'.tr()),
         ),
       ],
     );
@@ -1128,7 +1121,7 @@ class _OrderManagementErrorState extends StatelessWidget {
         TextButton(
           onPressed: onRetryTap,
           style: TextButton.styleFrom(foregroundColor: const Color(0xFF096DD9)),
-          child: const Text('重新加载'),
+          child: Text('订单.重新加载'.tr()),
         ),
       ],
     );

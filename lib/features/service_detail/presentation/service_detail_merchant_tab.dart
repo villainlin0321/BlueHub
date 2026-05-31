@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
@@ -29,7 +30,7 @@ class ServiceDetailMerchantTab extends StatelessWidget {
     }
 
     if (provider == null) {
-      return const _MerchantPlaceholder(message: '暂无商家信息');
+      return _MerchantPlaceholder(message: '服务详情.暂无商家信息'.tr());
     }
 
     return ListView(
@@ -114,7 +115,9 @@ class _MerchantHeaderCard extends StatelessWidget {
                       children: <Widget>[
                         Flexible(
                           child: Text(
-                            provider.name.isEmpty ? '签证服务商' : provider.name,
+                            provider.name.isEmpty
+                                ? '服务详情.签证服务商'.tr()
+                                : provider.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: titleStyle,
@@ -134,7 +137,12 @@ class _MerchantHeaderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '服务评分 ${provider.rating.toStringAsFixed(1)}  累计服务 ${provider.caseCount}',
+                    '服务详情.服务评分累计服务'.tr(
+                      namedArgs: <String, String>{
+                        'rating': provider.rating.toStringAsFixed(1),
+                        'count': provider.caseCount.toString(),
+                      },
+                    ),
                     style: metaStyle,
                   ),
                 ],
@@ -178,45 +186,53 @@ class _MerchantInfoPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('简介', style: titleStyle),
+        Text('服务详情.简介'.tr(), style: titleStyle),
         const SizedBox(height: 8),
         Text(
-          provider.brief.trim().isEmpty ? '暂无商家简介' : provider.brief,
+          provider.brief.trim().isEmpty
+              ? '服务详情.暂无商家简介'.tr()
+              : provider.brief,
           style: contentStyle,
         ),
         const SizedBox(height: 24),
-        Text('基础信息', style: titleStyle),
+        Text('服务详情.基础信息'.tr(), style: titleStyle),
         const SizedBox(height: 12),
         _MerchantInfoRow(
-          label: '服务国家',
+          label: '服务详情.服务国家'.tr(),
           value: provider.serviceCountries.isEmpty
-              ? '暂无'
+              ? '服务详情.暂无'.tr()
               : provider.serviceCountries.join(' / '),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),
         const SizedBox(height: 12),
         _MerchantInfoRow(
-          label: '认证状态',
-          value: provider.isVerified ? '已认证' : '未认证',
+          label: '服务详情.认证状态'.tr(),
+          value: provider.isVerified
+              ? '服务详情.已认证'.tr()
+              : '服务详情.未认证'.tr(),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),
         const SizedBox(height: 12),
         _MerchantInfoRow(
-          label: '服务年限',
+          label: '服务详情.服务年限'.tr(),
           value: provider.yearsOfService > 0
-              ? '${provider.yearsOfService}年'
-              : '暂无',
+              ? '服务详情.年数'.tr(
+                  namedArgs: <String, String>{
+                    'count': provider.yearsOfService.toString(),
+                  },
+                )
+              : '服务详情.暂无'.tr(),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),
         const SizedBox(height: 24),
-        Text('服务承诺', style: titleStyle),
+        Text('服务详情.服务承诺'.tr(), style: titleStyle),
         const SizedBox(height: 8),
         Text(
           provider.servicePromise.trim().isEmpty
-              ? '暂无服务承诺说明'
+              ? '服务详情.暂无服务承诺说明'.tr()
               : provider.servicePromise,
           style: contentStyle,
         ),
@@ -232,9 +248,12 @@ class _MerchantPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (message == '暂无商家信息') {
-      return const Center(
-        child: AppEmptyState(message: '暂无商家信息', padding: EdgeInsets.all(24)),
+    if (message == '服务详情.暂无商家信息'.tr()) {
+      return Center(
+        child: AppEmptyState(
+          message: '服务详情.暂无商家信息'.tr(),
+          padding: const EdgeInsets.all(24),
+        ),
       );
     }
 

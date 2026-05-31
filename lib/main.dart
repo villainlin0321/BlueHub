@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bluehub_app/app/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'shared/localization/app_locales.dart';
 import 'shared/auth/token_store.dart';
 import 'shared/logging/app_logger.dart';
 import 'shared/network/providers.dart';
@@ -16,6 +18,7 @@ Future<void> main() async {
     () async {
       // 关键点：Binding 初始化与 runApp 必须处于同一个 Zone，避免 Zone mismatch。
       WidgetsFlutterBinding.ensureInitialized();
+      await EasyLocalization.ensureInitialized();
       await AppLogger.instance.init();
       _registerGlobalErrorHandlers();
 
@@ -31,12 +34,20 @@ Future<void> main() async {
       );
 
       runApp(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            tokenStoreProvider.overrideWithValue(tokenStore),
-          ],
-          child: const App(),
+        EasyLocalization(
+          supportedLocales: AppLocales.supported,
+          path: 'assets/translations',
+          fallbackLocale: AppLocales.english,
+          startLocale: AppLocales.english,
+          saveLocale: true,
+          useOnlyLangCode: true,
+          child: ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              tokenStoreProvider.overrideWithValue(tokenStore),
+            ],
+            child: const App(),
+          ),
         ),
       );
     },

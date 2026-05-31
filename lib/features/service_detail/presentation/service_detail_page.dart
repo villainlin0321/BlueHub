@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +67,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   Widget build(BuildContext context) {
     final ServiceDetailPageArgs? args = widget.args;
     if (args == null) {
-      return const _ServiceDetailMessagePage(message: '缺少套餐参数，暂时无法打开详情页');
+      return _ServiceDetailMessagePage(message: '服务详情.缺少套餐参数'.tr());
     }
 
     final AsyncValue<VisaPackageVO> packageAsync = ref.watch(
@@ -86,7 +87,10 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       loading: () => const _ServiceDetailLoadingPage(),
       error: (Object error, StackTrace stackTrace) {
         return _ServiceDetailMessagePage(
-          message: _resolveErrorMessage(error, fallback: '套餐详情加载失败，请稍后重试'),
+          message: _resolveErrorMessage(
+            error,
+            fallback: '服务详情.套餐详情加载失败'.tr(),
+          ),
         );
       },
       data: (VisaPackageVO package) {
@@ -144,7 +148,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                         duration: const Duration(milliseconds: 180),
                         opacity: _showCollapsedTitle ? 1 : 0,
                         child: Text(
-                          '服务详情',
+                          '服务详情.标题'.tr(),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: const Color(0xFF262626),
@@ -184,7 +188,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                             onFavoriteTap: _toggleCollection,
                             onShareTap: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('分享功能开发中')),
+                                SnackBar(content: Text('服务详情.分享开发中'.tr())),
                               );
                             },
                           );
@@ -222,10 +226,10 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                       review: reviewAsync?.asData?.value,
                       isLoading: reviewAsync?.isLoading ?? false,
                       errorMessage: args.providerId == null
-                          ? '暂无评价数据'
+                          ? '服务详情.暂无评价数据'.tr()
                           : _resolveAsyncErrorMessage(
                               reviewAsync,
-                              fallback: '评价加载失败，请稍后重试',
+                              fallback: '服务详情.评价加载失败'.tr(),
                             ),
                     ),
                     ServiceDetailMerchantTab(
@@ -233,10 +237,10 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                       provider: provider,
                       isLoading: providerDetailAsync?.isLoading ?? false,
                       errorMessage: args.providerId == null
-                          ? '暂无商家信息'
+                          ? '服务详情.暂无商家信息'.tr()
                           : _resolveAsyncErrorMessage(
                               providerDetailAsync,
-                              fallback: '商家信息加载失败，请稍后重试',
+                              fallback: '服务详情.商家信息加载失败'.tr(),
                             ),
                     ),
                   ],
@@ -298,7 +302,9 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     if (package == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('当前套餐暂无可申请档位')));
+      ).showSnackBar(
+        SnackBar(content: Text('服务详情.当前套餐暂无可申请档位'.tr())),
+      );
       return;
     }
     ServiceDetailApplyBottomSheet.show(
@@ -311,11 +317,11 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   /// 跳转到聊天页，并携带当前服务商作为聊天对象。
   void _handleConsultTap(ProviderVO? provider) {
     if (provider == null) {
-      _showMessage('商家信息加载中，请稍后重试');
+      _showMessage('服务详情.商家信息加载中'.tr());
       return;
     }
     if (provider.providerId <= 0) {
-      _showMessage('商家信息缺失，暂无法发起咨询');
+      _showMessage('服务详情.商家信息缺失'.tr());
       return;
     }
     context.push(
@@ -323,7 +329,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       extra: ChatPageArgs(
         targetUserId: provider.providerId,
         targetUserRole: 'visa_provider',
-        nickname: provider.name.trim().isEmpty ? '服务商' : provider.name,
+        nickname: provider.name.trim().isEmpty ? '服务详情.服务商'.tr() : provider.name,
         avatarUrl: provider.logoUrl,
       ),
     );
@@ -361,7 +367,9 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
         _isCollectedOverride = !wasCollected;
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(wasCollected ? '已取消收藏' : '收藏成功');
+      _showMessage(
+        wasCollected ? '服务详情.已取消收藏'.tr() : '服务详情.收藏成功'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -369,7 +377,9 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       setState(() {
         _isCollecting = false;
       });
-      _showMessage(_resolveErrorMessage(error, fallback: '收藏操作失败，请稍后重试'));
+      _showMessage(
+        _resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()),
+      );
     }
   }
 
@@ -406,7 +416,7 @@ class _ServiceDetailMessagePage extends StatelessWidget {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text('服务详情'),
+        title: Text('服务详情.标题'.tr()),
       ),
       body: Center(
         child: Padding(
@@ -584,7 +594,13 @@ class _SummaryPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final String summaryDescription = provider?.brief.trim().isNotEmpty == true
         ? provider!.brief
-        : '预计办理 ${packageDetail.estimatedDays > 0 ? packageDetail.estimatedDays : '--'} 天';
+        : '服务详情.预计办理天数'.tr(
+            namedArgs: <String, String>{
+              'days': packageDetail.estimatedDays > 0
+                  ? packageDetail.estimatedDays.toString()
+                  : '--',
+            },
+          );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
@@ -620,7 +636,7 @@ class _SummaryPanel extends StatelessWidget {
                           ),
                     ),
                     TextSpan(
-                      text: '起',
+                      text: '服务详情.起'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -648,7 +664,13 @@ class _SummaryPanel extends StatelessWidget {
               ),
               _SummaryTag(label: _formatVisaTypeLabel(packageDetail.visaType)),
               if (packageDetail.estimatedDays > 0)
-                _SummaryTag(label: '${packageDetail.estimatedDays}天办结'),
+                _SummaryTag(
+                  label: '服务详情.天办结'.tr(
+                    namedArgs: <String, String>{
+                      'days': packageDetail.estimatedDays.toString(),
+                    },
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -687,17 +709,17 @@ class _ServiceDetailTabBar extends StatelessWidget {
           bottomOffset: 2,
           borderSide: BorderSide(color: Color(0xFF096DD9), width: 2),
         ),
-        tabs: const <Widget>[
+        tabs: <Widget>[
           _ServiceDetailTab(
-            label: '套餐',
+            label: '服务详情.套餐'.tr(),
             selectedWeight: FontWeight.w500,
-            horizontalPadding: EdgeInsets.only(left: 16, right: 16),
+            horizontalPadding: const EdgeInsets.only(left: 16, right: 16),
           ),
           _ServiceDetailTab(
-            label: '评价',
-            horizontalPadding: EdgeInsets.only(left: 16, right: 16),
+            label: '服务详情.评价'.tr(),
+            horizontalPadding: const EdgeInsets.only(left: 16, right: 16),
           ),
-          _ServiceDetailTab(label: '商家'),
+          _ServiceDetailTab(label: '服务详情.商家'.tr()),
         ],
       ),
     );
@@ -721,7 +743,11 @@ class _ServiceDetailTab extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
-        final int tabIndex = <String>['套餐', '评价', '商家'].indexOf(label);
+        final int tabIndex = <String>[
+          '服务详情.套餐'.tr(),
+          '服务详情.评价'.tr(),
+          '服务详情.商家'.tr(),
+        ].indexOf(label);
         final bool selected = controller.index == tabIndex;
         final TextStyle? labelStyle = Theme.of(context).textTheme.titleMedium
             ?.copyWith(
@@ -917,7 +943,7 @@ class _PackageBottomActionBar extends StatelessWidget {
                       left: 3,
                       right: 3,
                       child: Text(
-                        '咨询',
+                        '服务详情.咨询'.tr(),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: const Color(0xFF8C8C8C),
@@ -943,7 +969,7 @@ class _PackageBottomActionBar extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  '立即申请',
+                  '服务详情.立即申请'.tr(),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -1000,7 +1026,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
                   ),
                   backgroundColor: Colors.white,
                 ),
-                child: Text('举报商家', style: secondaryStyle),
+                child: Text('服务详情.举报商家'.tr(), style: secondaryStyle),
               ),
             ),
             const SizedBox(width: 12),
@@ -1015,7 +1041,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text('联系商家', style: primaryStyle),
+                child: Text('服务详情.联系商家'.tr(), style: primaryStyle),
               ),
             ),
           ],
@@ -1120,12 +1146,14 @@ extension on VisaPackageVO {
           (TierVO tier) => ServicePackageData(
             packageId: packageId,
             tierId: tier.tierId,
-            title: tier.name.trim().isEmpty ? '套餐档位' : tier.name,
+            title: tier.name.trim().isEmpty ? '服务详情.套餐档位'.tr() : tier.name,
             price: _formatPrice(tier.price, currency),
             description: tier.description.trim().isEmpty
-                ? '暂无套餐说明'
+                ? '服务详情.暂无套餐说明'.tr()
                 : tier.description,
-            tags: tier.services.isEmpty ? <String>['暂无服务标签'] : tier.services,
+            tags: tier.services.isEmpty
+                ? <String>['服务详情.暂无服务标签'.tr()]
+                : tier.services,
           ),
         )
         .toList(growable: false);
@@ -1136,7 +1164,7 @@ extension on VisaPackageVO {
         .map(
           (MaterialVO material) => ServiceMaterialData(
             title: material.materialName.trim().isEmpty
-                ? '所需材料'
+                ? '服务详情.所需材料'.tr()
                 : material.materialName,
             subtitle: _buildMaterialSubtitle(material),
             status: _buildMaterialStatus(material),
@@ -1157,7 +1185,7 @@ String _buildMaterialSubtitle(MaterialVO material) {
       _formatMaterialDate(material.uploadedAt),
   ];
   if (parts.isEmpty) {
-    return '请按服务要求准备相关材料';
+    return '服务详情.请按服务要求准备相关材料'.tr();
   }
   return parts.join(' · ');
 }
@@ -1165,7 +1193,7 @@ String _buildMaterialSubtitle(MaterialVO material) {
 /// 组装材料状态文案，优先展示文件类型。
 String _buildMaterialStatus(MaterialVO material) {
   final String fileType = material.fileType.trim();
-  return fileType.isEmpty ? '材料' : fileType.toUpperCase();
+  return fileType.isEmpty ? '服务详情.材料'.tr() : fileType.toUpperCase();
 }
 
 /// 格式化详情页价格，统一复用币种前缀转换规则。
@@ -1190,32 +1218,32 @@ String _resolveCurrencyPrefix(String rawCurrency) {
 /// 将国家代码转为详情页展示文案。
 String _formatCountryLabel(String country) {
   return switch (country.trim().toUpperCase()) {
-    'DE' => '德国',
-    'FR' => '法国',
-    'IT' => '意大利',
-    'ES' => '西班牙',
-    'NL' => '荷兰',
-    'BE' => '比利时',
-    _ => country.trim().isEmpty ? '签证' : country.trim().toUpperCase(),
+    'DE' => '国家.德国'.tr(),
+    'FR' => '国家.法国'.tr(),
+    'IT' => '国家.意大利'.tr(),
+    'ES' => '国家.西班牙'.tr(),
+    'NL' => '国家.荷兰'.tr(),
+    'BE' => '国家.比利时'.tr(),
+    _ => country.trim().isEmpty ? '国家.签证'.tr() : country.trim().toUpperCase(),
   };
 }
 
 /// 将签证类型代码转为详情页展示文案。
 String _formatVisaTypeLabel(String visaType) {
   return switch (visaType.trim().toLowerCase()) {
-    'work' => '工作签',
-    'travel' => '旅游签',
-    'tech' => '技术签',
-    'nursing' => '护理签',
-    'study' => '留学签',
-    _ => visaType.trim().isEmpty ? '签证服务' : visaType.trim(),
+    'work' => '服务详情.工作签'.tr(),
+    'travel' => '服务详情.旅游签'.tr(),
+    'tech' => '服务详情.技术签'.tr(),
+    'nursing' => '服务详情.护理签'.tr(),
+    'study' => '服务详情.留学签'.tr(),
+    _ => visaType.trim().isEmpty ? '服务详情.签证服务'.tr() : visaType.trim(),
   };
 }
 
 /// 格式化文件大小，优先展示为 KB/MB。
 String _formatFileSize(int bytes) {
   if (bytes <= 0) {
-    return '未知大小';
+    return '服务详情.未知大小'.tr();
   }
   if (bytes >= 1024 * 1024) {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';

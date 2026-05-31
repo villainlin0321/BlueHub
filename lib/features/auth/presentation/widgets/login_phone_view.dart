@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/ui/app_colors.dart';
@@ -18,6 +19,7 @@ class LoginPhoneView extends StatelessWidget {
   const LoginPhoneView({
     super.key,
     required this.state,
+    required this.isChineseSelected,
     required this.phoneController,
     required this.emailController,
     required this.codeController,
@@ -34,6 +36,7 @@ class LoginPhoneView extends StatelessWidget {
   });
 
   final LoginFormState state;
+  final bool isChineseSelected;
   final TextEditingController phoneController;
   final TextEditingController emailController;
   final TextEditingController codeController;
@@ -49,6 +52,7 @@ class LoginPhoneView extends StatelessWidget {
   final ValueChanged<bool> onAgreementChanged;
 
   @override
+  /// 构建登录视图，并根据当前全局语言实时切换页面文案。
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -65,13 +69,13 @@ class LoginPhoneView extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: AuthLanguageSwitch(
-                      isChineseSelected: state.isChineseSelected,
+                      isChineseSelected: isChineseSelected,
                       onChanged: onLanguageChanged,
                     ),
                   ),
                   const SizedBox(height: 50),
                   Text(
-                    '注册/登录',
+                    '认证.注册登录'.tr(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: const Color(0xFF262626),
                           fontSize: 26,
@@ -93,14 +97,16 @@ class LoginPhoneView extends StatelessWidget {
                     )
                   else
                     _TextInputRow(
-                      hintText: '请输入邮箱',
+                      hintText: '认证.请输入邮箱'.tr(),
                       keyboardType: TextInputType.emailAddress,
                       controller: emailController,
                       onChanged: onEmailChanged,
                     ),
                   const SizedBox(height: 25),
                   _CodeInputRow(
-                    hintText: state.isPhoneLogin ? '请输入验证码' : '请输入邮箱验证码',
+                    hintText: state.isPhoneLogin
+                        ? '认证.请输入验证码'.tr()
+                        : '认证.请输入邮箱验证码'.tr(),
                     controller: codeController,
                     isSending: state.isSendingCode,
                     onChanged: onCodeChanged,
@@ -108,13 +114,13 @@ class LoginPhoneView extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(
-                    label: '登录-Test',
+                    label: '认证.登录测试'.tr(),
                     enabled: !state.isSendingCode && !state.isSubmitting,
                     onPressed: onDirectEmailLogin,
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(
-                    label: state.isSubmitting ? '登录中...' : '登录',
+                    label: state.isSubmitting ? '认证.登录中'.tr() : '认证.登录'.tr(),
                     enabled: state.canLogin && !state.isSendingCode,
                     onPressed: onLogin,
                   ),
@@ -139,11 +145,12 @@ class LoginPhoneView extends StatelessWidget {
                                     color: const Color(0xFF171A1D),
                                     fontSize: 12,
                                   ),
-                              children: const <InlineSpan>[
-                                TextSpan(text: '同意'),
+                              children: <InlineSpan>[
+                                TextSpan(text: '认证.协议前缀'.tr()),
                                 TextSpan(
-                                  text: '《XXXA用户服务协议》《XXXA用户隐私政策》',
-                                  style: TextStyle(color: AppColors.brand),
+                                  text:
+                                      '${'认证.用户服务协议'.tr()}${'认证.用户隐私政策'.tr()}',
+                                  style: const TextStyle(color: AppColors.brand),
                                 ),
                               ],
                             ),
@@ -175,6 +182,7 @@ class _LoginModeTabs extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
+  /// 构建登录方式切换标签，支持手机号和邮箱两种方式。
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,13 +190,13 @@ class _LoginModeTabs extends StatelessWidget {
         Row(
           children: <Widget>[
             _ModeTab(
-              label: '手机号',
+              label: '认证.手机号'.tr(),
               selected: isPhoneLogin,
               onTap: () => onChanged(true),
             ),
             const SizedBox(width: 24),
             _ModeTab(
-              label: '邮箱',
+              label: '认证.邮箱'.tr(),
               selected: !isPhoneLogin,
               onTap: () => onChanged(false),
             ),
@@ -220,6 +228,7 @@ class _ModeTab extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  /// 构建单个登录方式标签，并根据选中态切换颜色。
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
@@ -253,6 +262,7 @@ class _PhoneInputRow extends StatelessWidget {
   final ValueChanged<String>? onChanged;
 
   @override
+  /// 构建手机号输入行，左侧展示当前区号并支持弹出地区选择器。
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
@@ -288,11 +298,11 @@ class _PhoneInputRow extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  hintText: '请输入手机号',
+                decoration: InputDecoration(
+                  hintText: '认证.请输入手机号'.tr(),
                   isDense: true,
                   border: InputBorder.none,
-                  hintStyle: TextStyle(
+                  hintStyle: const TextStyle(
                     color: Color(0xFFBFBFBF),
                     fontSize: 16,
                   ),
@@ -327,6 +337,7 @@ class _TextInputRow extends StatelessWidget {
   final ValueChanged<String>? onChanged;
 
   @override
+  /// 构建通用文本输入行，用于邮箱等单字段输入场景。
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
@@ -371,6 +382,7 @@ class _CodeInputRow extends StatelessWidget {
   final ValueChanged<String>? onChanged;
 
   @override
+  /// 构建验证码输入行，并在右侧承载发送验证码按钮。
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
@@ -400,7 +412,7 @@ class _CodeInputRow extends StatelessWidget {
             GestureDetector(
               onTap: isSending ? null : onGetCode,
               child: Text(
-                isSending ? '发送中...' : '获取验证码',
+                isSending ? '认证.发送中'.tr() : '认证.获取验证码'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isSending
                           ? AppColors.brand.withValues(alpha: 0.45)
@@ -431,6 +443,7 @@ class _LoginButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  /// 构建登录主按钮，并统一处理启用态与禁用态样式。
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -469,6 +482,7 @@ class _AgreementCheckbox extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
+  /// 构建协议勾选框，并把点击结果回传给父级状态。
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => onChanged(!value),
@@ -497,6 +511,7 @@ class _SocialLoginSection extends StatelessWidget {
   const _SocialLoginSection();
 
   @override
+  /// 构建底部第三方登录图标区，目前保留为纯展示入口。
   Widget build(BuildContext context) {
     return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -522,6 +537,7 @@ class RegionPickerSheet extends StatelessWidget {
   final LoginRegionOption selected;
 
   @override
+  /// 构建地区选择底部弹层，并高亮当前已选择的区号。
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
@@ -547,7 +563,7 @@ class RegionPickerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '选择地区',
+              '认证.选择地区'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: const Color(0xFF262626),
                     fontWeight: FontWeight.w600,
@@ -579,6 +595,7 @@ class _SocialIcon extends StatelessWidget {
   final double size;
 
   @override
+  /// 构建单个社交登录图标容器，统一圆形边框与居中布局。
   Widget build(BuildContext context) {
     return Container(
       width: 40,

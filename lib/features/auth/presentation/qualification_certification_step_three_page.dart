@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -28,14 +29,17 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationStepThreePageState
     extends ConsumerState<QualificationCertificationStepThreePage> {
-  static const List<String> _steps = <String>['基本信息', '资质证明', '服务信息'];
-
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
   bool _isSubmitting = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
+  List<String> get _steps => <String>[
+    tr('认证流程.基本信息'),
+    tr('认证流程.资质证明'),
+    tr('认证流程.服务信息'),
+  ];
 
   @override
   void initState() {
@@ -108,11 +112,11 @@ class _QualificationCertificationStepThreePageState
       }
       context.push(
         RoutePaths.appResult,
-        extra: const AppResultPageArgs(
-          pageTitle: '资质认证',
-          resultTitle: '信息已提交',
-          tipText: '预计1-3个工作日完成审核，5s后进入首页',
-          actionLabel: '进入首页',
+        extra: AppResultPageArgs(
+          pageTitle: tr('认证流程.资质认证'),
+          resultTitle: tr('认证流程.信息已提交'),
+          tipText: tr('认证流程.审核提示'),
+          actionLabel: tr('认证流程.进入首页'),
           action: AppResultAction.go(RoutePaths.home),
         ),
       );
@@ -122,7 +126,7 @@ class _QualificationCertificationStepThreePageState
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('提交失败，请稍后重试')));
+      ).showSnackBar(SnackBar(content: Text('认证流程.提交失败'.tr())));
     } finally {
       if (mounted) {
         setState(() {
@@ -150,9 +154,9 @@ class _QualificationCertificationStepThreePageState
             color: Color(0xE6000000),
           ),
         ),
-        title: const Text(
-          '资质认证',
-          style: TextStyle(
+        title: Text(
+          '认证流程.资质认证'.tr(),
+          style: const TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
             fontWeight: FontWeight.w500,
@@ -167,11 +171,11 @@ class _QualificationCertificationStepThreePageState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               const SizedBox(height: 16),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  '为了您的企业账户安全，请完成实名认证',
-                  style: TextStyle(
+                  '认证流程.实名认证提示'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF8C8C8C),
                     fontSize: 14,
                     height: 20 / 14,
@@ -179,7 +183,7 @@ class _QualificationCertificationStepThreePageState
                 ),
               ),
               const SizedBox(height: 16),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: QualificationProgressStepper(
                   labels: _steps,
@@ -211,9 +215,9 @@ class _QualificationCertificationStepThreePageState
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '(可多选)',
-                            style: TextStyle(
+                          Text(
+                            '认证流程.可多选'.tr(),
+                            style: const TextStyle(
                               color: Color(0xFF8C8C8C),
                               fontSize: 13,
                               fontWeight: FontWeight.w400,
@@ -265,11 +269,11 @@ class _QualificationCertificationStepThreePageState
                             .toList(),
                       ),
                       const SizedBox(height: 20),
-                      const Row(
+                      Row(
                         children: <Widget>[
                           Text(
-                            '从业年限',
-                            style: TextStyle(
+                            '认证流程.从业年限'.tr(),
+                            style: const TextStyle(
                               color: Color(0xFF262626),
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
@@ -308,9 +312,9 @@ class _QualificationCertificationStepThreePageState
                                   fontSize: 14,
                                   height: 20 / 14,
                                 ),
-                                decoration: const InputDecoration(
-                                  hintText: '请输入',
-                                  hintStyle: TextStyle(
+                                decoration: InputDecoration(
+                                  hintText: '通用.请输入'.tr(),
+                                  hintStyle: const TextStyle(
                                     color: Color(0xFFBFBFBF),
                                     fontSize: 14,
                                     height: 20 / 14,
@@ -326,9 +330,9 @@ class _QualificationCertificationStepThreePageState
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            '年',
-                            style: TextStyle(
+                          Text(
+                            '认证流程.年'.tr(),
+                            style: const TextStyle(
                               color: Color(0xFF262626),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -366,9 +370,9 @@ class _QualificationCertificationStepThreePageState
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '上一步',
-                      style: TextStyle(
+                    child: Text(
+                      '认证流程.上一步'.tr(),
+                      style: const TextStyle(
                         color: Color(0xFF171A1D),
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -392,9 +396,9 @@ class _QualificationCertificationStepThreePageState
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      '提交审核',
-                      style: TextStyle(
+                    child: Text(
+                      '认证流程.提交审核'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
