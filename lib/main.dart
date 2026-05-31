@@ -38,7 +38,6 @@ Future<void> main() async {
           supportedLocales: AppLocales.supported,
           path: 'assets/translations',
           fallbackLocale: AppLocales.english,
-          startLocale: AppLocales.english,
           saveLocale: true,
           useOnlyLangCode: true,
           child: ProviderScope(

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../shared/app_icon/app_icon_switcher.dart';
 import '../shared/localization/app_locales.dart';
 import 'router/app_router.dart';
 
@@ -16,17 +17,51 @@ class App extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final title = ref.watch(appTitleProvider);
 
-    return MaterialApp.router(
-      title: title,
-      locale: context.locale,
-      supportedLocales: AppLocales.supported,
-      localizationsDelegates: context.localizationDelegates,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF186CFF)),
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        useMaterial3: true,
+    return _AppIconInitialSync(
+      child: MaterialApp.router(
+        title: title,
+        locale: context.locale,
+        supportedLocales: AppLocales.supported,
+        localizationsDelegates: context.localizationDelegates,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF186CFF)),
+          scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+          useMaterial3: true,
+        ),
+        routerConfig: router,
       ),
-      routerConfig: router,
     );
   }
+}
+
+class _AppIconInitialSync extends StatefulWidget {
+  const _AppIconInitialSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AppIconInitialSync> createState() => _AppIconInitialSyncState();
+}
+
+class _AppIconInitialSyncState extends State<_AppIconInitialSync> {
+  bool _didSync = false;
+
+  @override
+  /// 首次进入应用时，根据当前 Locale 同步一次系统桌面图标（后续语言切换由 switchAppLocale 主动触发）。
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_didSync) {
+      return;
+    }
+    _didSync = true;
+
+    final locale = context.locale;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppIconSwitcher.syncByLocale(locale);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
