@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -6,7 +7,7 @@ class UploadPlaceholderTile extends StatelessWidget {
     super.key,
     required this.assetPath,
     required this.onTap,
-    this.label = '上传图片',
+    this.label,
     this.borderRadius = 8,
     this.iconSize = 24,
     this.backgroundColor = const Color(0xFFF5F7FA),
@@ -14,13 +15,15 @@ class UploadPlaceholderTile extends StatelessWidget {
 
   final String assetPath;
   final VoidCallback onTap;
-  final String label;
+  final String? label;
   final double borderRadius;
   final double iconSize;
   final Color backgroundColor;
 
   @override
+  /// 构建上传占位卡片，未传文案时默认展示国际化后的“上传图片”。
   Widget build(BuildContext context) {
+    final String resolvedLabel = label ?? '上传.上传图片'.tr();
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(borderRadius),
@@ -44,7 +47,7 @@ class UploadPlaceholderTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              label,
+              resolvedLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: const Color(0xFF595959),
                 fontSize: 12,

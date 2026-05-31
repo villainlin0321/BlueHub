@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,17 +16,16 @@ class AppResultPageArgs {
     this.orderId,
   });
 
-  const AppResultPageArgs.paymentSuccess({int? orderId})
-      : this(
-          pageTitle: '支付结果',
-          resultTitle: '支付成功',
-          tipText: '可以在个人中心“订单管理”查看',
-          actionLabel: '去上传提交材料',
-          action: const AppResultAction.push(
-            RoutePaths.orderDetail,
-          ),
-          orderId: orderId,
-        );
+  factory AppResultPageArgs.paymentSuccess({int? orderId}) {
+    return AppResultPageArgs(
+      pageTitle: '服务详情.支付结果'.tr(),
+      resultTitle: '服务详情.支付成功'.tr(),
+      tipText: '服务详情.支付成功提示'.tr(),
+      actionLabel: '服务详情.去上传提交材料'.tr(),
+      action: const AppResultAction.push(RoutePaths.orderDetail),
+      orderId: orderId,
+    );
+  }
 
   final String pageTitle;
   final String resultTitle;
@@ -67,10 +67,10 @@ enum AppResultActionType {
 }
 
 class AppResultPage extends StatelessWidget {
-  const AppResultPage({
+  AppResultPage({
     super.key,
-    this.args = const AppResultPageArgs.paymentSuccess(),
-  });
+    AppResultPageArgs? args,
+  }) : args = args ?? AppResultPageArgs.paymentSuccess();
 
   final AppResultPageArgs args;
 

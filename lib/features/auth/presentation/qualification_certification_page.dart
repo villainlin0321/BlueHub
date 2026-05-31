@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,8 +27,6 @@ class QualificationCertificationPage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationPageState
     extends ConsumerState<QualificationCertificationPage> {
-  static const List<String> _steps = <String>['基本信息', '资质证明', '服务信息'];
-
   final TextEditingController _serviceProviderCompanyNameController =
       TextEditingController();
   final TextEditingController _creditCodeController = TextEditingController();
@@ -62,6 +61,11 @@ class _QualificationCertificationPageState
   QualificationCertificationRole get _role => widget.args.role;
   bool get _isCompany => _role == QualificationCertificationRole.company;
   QualificationCertificationDraft get _draft => widget.args.draft;
+  List<String> get _steps => <String>[
+    tr('认证流程.基本信息'),
+    tr('认证流程.资质证明'),
+    tr('认证流程.服务信息'),
+  ];
 
   bool get _isCompanyNextEnabled {
     return _companyNameController.text.trim().isNotEmpty &&
@@ -179,7 +183,7 @@ class _QualificationCertificationPageState
     final List<PickedUploadFile> files =
         await UploadPickerUtils.pickImagesWithSourceSheet(
           context: context,
-          title: '选择图片',
+          title: tr('上传.选择图片'),
         );
     if (!mounted || files.isEmpty) {
       return;
@@ -203,7 +207,9 @@ class _QualificationCertificationPageState
             role: _role,
             file: pickedFile,
             docType: QualificationDocType.idCard,
-            docName: isEmblemSide ? '法人身份证国徽面' : '法人身份证人像面',
+            docName: isEmblemSide
+                ? tr('认证流程.法人身份证国徽面')
+                : tr('认证流程.法人身份证人像面'),
           );
       if (!mounted) {
         return;
@@ -241,7 +247,7 @@ class _QualificationCertificationPageState
     final List<CountryVO>? result = await showCountryOptionsBottomSheet(
       context: context,
       ref: ref,
-      title: '注册国家',
+      title: tr('认证流程.注册国家'),
       initialSelectedValues: _selectedCompanyCountryCode == null
           ? const <String>[]
           : <String>[_selectedCompanyCountryCode!],
@@ -293,7 +299,7 @@ class _QualificationCertificationPageState
     final String message = error.toString();
     if (message.startsWith('ApiException(') ||
         message.startsWith('Exception: ')) {
-      return '上传失败，请稍后重试';
+      return tr('认证流程.上传失败');
     }
     return message;
   }
@@ -316,9 +322,9 @@ class _QualificationCertificationPageState
             color: Color(0xE6000000),
           ),
         ),
-        title: const Text(
-          '资质认证',
-          style: TextStyle(
+        title: Text(
+          '认证流程.资质认证'.tr(),
+          style: const TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
             fontWeight: FontWeight.w500,
@@ -336,7 +342,7 @@ class _QualificationCertificationPageState
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  _isCompany ? '为了您的企业账户安全，请完成实名认证' : '为了您的企业账户安全，请完成实名认证',
+                  '认证流程.实名认证提示'.tr(),
                   style: const TextStyle(
                     color: Color(0xFF8C8C8C),
                     fontSize: 14,
@@ -345,7 +351,7 @@ class _QualificationCertificationPageState
                 ),
               ),
               const SizedBox(height: 16),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: QualificationProgressStepper(
                   labels: _steps,
@@ -417,9 +423,9 @@ class _QualificationCertificationPageState
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                '下一步',
-                style: TextStyle(
+              child: Text(
+                '认证流程.下一步'.tr(),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -471,27 +477,27 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _QualificationTextField(
-          label: '企业名称',
-          hintText: '请输入营业执照上的企业全称',
+          label: '认证流程.企业名称'.tr(),
+          hintText: '认证流程.营业执照企业全称'.tr(),
           controller: companyNameController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '统一社会信用代码',
-          hintText: '请输入',
+          label: '认证流程.统一社会信用代码'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: creditCodeController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '法人姓名',
-          hintText: '请输入',
+          label: '认证流程.法人姓名'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: legalPersonController,
           required: true,
         ),
         const SizedBox(height: 16),
-        _SectionLabel(label: '法人身份证', required: true),
+        _SectionLabel(label: '认证流程.法人身份证'.tr(), required: true),
         const SizedBox(height: 8),
         Row(
           children: <Widget>[
@@ -499,7 +505,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
               child: _UploadCard(
                 pickedFile: idCardEmblemImage,
                 imageAsset: 'assets/images/qualification_id_emblem.png',
-                label: '上传国徽面',
+                label: '认证流程.上传国徽面'.tr(),
                 isUploading: isEmblemUploading,
                 onTap: onEmblemTap,
               ),
@@ -509,7 +515,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
               child: _UploadCard(
                 pickedFile: idCardPortraitImage,
                 imageAsset: 'assets/images/qualification_id_portrait.png',
-                label: '上传人像面',
+                label: '认证流程.上传人像面'.tr(),
                 isUploading: isPortraitUploading,
                 onTap: onPortraitTap,
               ),
@@ -518,31 +524,31 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '官方联系人',
-          hintText: '请输入',
+          label: '认证流程.官方联系人'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: contactPersonController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '联系电话',
-          hintText: '请输入',
+          label: '认证流程.联系电话'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: phoneController,
           required: true,
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '邮箱',
-          hintText: '请输入',
+          label: '认证流程.邮箱'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: emailController,
           required: true,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '公司官网',
-          hintText: '选填',
+          label: '认证流程.公司官网'.tr(),
+          hintText: '通用.选填'.tr(),
           controller: websiteController,
           keyboardType: TextInputType.url,
         ),
@@ -584,76 +590,76 @@ class _CompanyBasicInfoForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _QualificationTextField(
-          label: '企业名称',
-          hintText: '请输入营业执照上的企业全称',
+          label: '认证流程.企业名称'.tr(),
+          hintText: '认证流程.营业执照企业全称'.tr(),
           controller: companyNameController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '所属行业',
-          hintText: '请输入',
+          label: '认证流程.所属行业'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: industryController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '公司规模',
-          hintText: '请输入',
+          label: '认证流程.公司规模'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: companySizeController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '官网地址',
-          hintText: '请输入',
+          label: '认证流程.官网地址'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: websiteController,
           required: true,
           keyboardType: TextInputType.url,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '成立年份',
-          hintText: '请输入',
+          label: '认证流程.成立年份'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: foundedYearController,
           required: true,
           keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
         _QualificationSelectorField(
-          label: '注册国家',
+          label: '认证流程.注册国家'.tr(),
           value: selectedCountry,
-          hintText: '请选择',
+          hintText: '通用.请选择'.tr(),
           required: true,
           onTap: onCountryTap,
           fieldKey: const Key('qualification_company_country_selector'),
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '所在城市',
-          hintText: '请输入',
+          label: '认证流程.所在城市'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: cityController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '负责人姓名',
-          hintText: '请输入',
+          label: '认证流程.负责人姓名'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: managerNameController,
           required: true,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '联系电话',
-          hintText: '请输入',
+          label: '认证流程.联系电话'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: phoneController,
           required: true,
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
-          label: '联系邮箱',
-          hintText: '请输入',
+          label: '认证流程.联系邮箱'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: emailController,
           required: true,
           keyboardType: TextInputType.emailAddress,

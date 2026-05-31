@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -26,8 +27,6 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
   int _selectedTabIndex = 0;
   late final TextEditingController _searchController = TextEditingController();
   String? _submittedKeyword;
-
-  static const List<String> _tabs = <String>['推荐套餐', '德国签证', '法国签证', '意大利签证'];
 
   VisaProviderListQuery get _query => VisaProviderListQuery(
     page: 1,
@@ -126,7 +125,7 @@ class _VisaProviderListSection extends StatelessWidget {
     return providersAsync.when(
       data: (PageResult<VisaProviderListVO> pageResult) {
         if (pageResult.list.isEmpty) {
-          return const _VisaProviderEmptyState();
+          return _VisaProviderEmptyState();
         }
         return ListView.separated(
           shrinkWrap: true,
@@ -179,12 +178,12 @@ class _VisaProviderEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 40),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
       child: Center(
         child: AppEmptyState(
-          message: '暂无签证服务',
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          message: '签证页.暂无签证服务'.tr(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
       ),
     );
@@ -215,7 +214,10 @@ class _VisaProviderErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(
+              onPressed: onRetry,
+              child: Text('通用.重试'.tr()),
+            ),
           ],
         ),
       ),
@@ -228,23 +230,27 @@ String _resolveVisaProviderErrorMessage(Object error) {
   if (error is ApiException) {
     return error.message;
   }
-  return '签证服务加载失败，请稍后重试';
+  return '签证页.签证服务加载失败'.tr();
 }
 
 extension on VisaProviderListVO {
   /// 将服务商列表项映射为签证卡片展示数据。
   VisaServiceCardData toVisaServiceCardData() {
     return VisaServiceCardData(
-      title: name.trim().isEmpty ? '签证服务商' : name,
+      title: name.trim().isEmpty ? '签证页.签证服务商'.tr() : name,
       avatarUrl: logoUrl.trim().isEmpty ? null : logoUrl.trim(),
       rating: rating.toStringAsFixed(1),
-      cases: caseCount > 0 ? '服务案例$caseCount' : '暂无服务案例',
-      tags: tags.isEmpty ? <String>['签证服务'] : tags,
-      description: brief.trim().isEmpty ? '暂无服务商简介' : brief.trim(),
+      cases: caseCount > 0
+          ? '签证页.服务案例数'.tr(
+              namedArgs: <String, String>{'count': caseCount.toString()},
+            )
+          : '签证页.暂无服务案例'.tr(),
+      tags: tags.isEmpty ? <String>['首页.签证服务'.tr()] : tags,
+      description: brief.trim().isEmpty ? '签证页.暂无服务商简介'.tr() : brief.trim(),
       packages: <VisaServicePackageData>[
         VisaServicePackageData(
           title: latestPackage.name.trim().isEmpty
-              ? '推荐套餐'
+              ? '签证页.推荐套餐'.tr()
               : latestPackage.name,
           price: _formatVisaListPrice(latestPackage.priceFrom),
         ),
@@ -285,7 +291,7 @@ class _VisaHeroSection extends StatelessWidget {
         Padding(
           padding: EdgeInsets.only(top: topPadding + 13, bottom: 10, left: 20),
           child: Text(
-            '服务商与签证套餐',
+            '签证页.服务商与签证套餐'.tr(),
             style: TextStyle(
               color: Colors.black,
               fontSize: 17,
@@ -344,11 +350,11 @@ class _VisaSearchBar extends StatelessWidget {
                 fontWeight: FontWeight.w400,
                 height: 20 / 14,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: '搜索签证服务/欧洲岗位',
-                hintStyle: TextStyle(
+                hintText: '首页.搜索签证服务欧洲岗位'.tr(),
+                hintStyle: const TextStyle(
                   color: Color(0xFFBFBFBF),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -368,6 +374,12 @@ class _VisaTabRow extends StatelessWidget {
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
+  List<String> get _tabs => <String>[
+    tr('签证页.推荐套餐'),
+    tr('签证页.德国签证'),
+    tr('签证页.法国签证'),
+    tr('签证页.意大利签证'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -376,7 +388,7 @@ class _VisaTabRow extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 12, right: 39),
-        itemCount: _JobSeekerVisaPageState._tabs.length,
+        itemCount: _tabs.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (BuildContext context, int index) {
           final bool selected = index == selectedIndex;
@@ -395,7 +407,7 @@ class _VisaTabRow extends StatelessWidget {
                 ),
               ),
               child: Text(
-                _JobSeekerVisaPageState._tabs[index],
+                _tabs[index],
                 style: TextStyle(
                   color: selected
                       ? const Color(0xFF096DD9)

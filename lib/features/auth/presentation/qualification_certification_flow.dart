@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 import '../../employer/data/employer_models.dart';
 import '../../files/data/file_models.dart';
 import '../../visa/data/provider_models.dart';
@@ -21,7 +23,9 @@ enum QualificationDocType {
 }
 
 String qualificationCountryLabel(QualificationCertificationRole role) {
-  return role == QualificationCertificationRole.company ? '主营国家' : '期望国家/地区';
+  return role == QualificationCertificationRole.company
+      ? tr('认证流程.主营国家')
+      : tr('认证流程.期望国家地区');
 }
 
 class UploadedQualificationDoc {

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +42,11 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 
   static const List<_MaterialRequirement> _fallbackRequirements =
       <_MaterialRequirement>[
-        _MaterialRequirement(id: 'passport', title: '护照原件及复印件', required: true),
+        _MaterialRequirement(
+          id: 'passport',
+          title: '护照原件及复印件',
+          required: true,
+        ),
         _MaterialRequirement(
           id: 'chef_certificate',
           title: '厨师资格证公证件',
@@ -80,7 +85,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (orderId <= 0) {
       setState(() {
         _isLoading = false;
-        _errorMessage = '缺少订单参数，暂时无法查看详情';
+        _errorMessage = '订单.缺少订单参数'.tr();
       });
       return;
     }
@@ -109,7 +114,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       setState(() {
         _isLoading = false;
-        _errorMessage = _resolveErrorMessage(error, fallback: '订单详情加载失败，请稍后重试');
+        _errorMessage = _resolveErrorMessage(
+          error,
+          fallback: '订单.订单详情加载失败'.tr(),
+        );
       });
     }
   }
@@ -173,7 +181,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final String normalizedPath = _normalizedPathFromUrl(document.fileUrl);
     final String fileName = document.docName.trim().isNotEmpty
         ? document.docName
-        : _displayNameFromUrl(document.fileUrl, fallback: '出证材料');
+        : _displayNameFromUrl(document.fileUrl, fallback: '订单.出证材料'.tr());
     return PickedUploadFile(
       id: 'visa_doc_${document.fileUrl.hashCode}_${document.uploadedAt}',
       name: fileName,
@@ -245,26 +253,26 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   List<ProgressStep> _buildProgressSteps(VisaOrderVO? detail) {
     final List<StepVO> steps = detail?.steps ?? const <StepVO>[];
     if (steps.isEmpty) {
-      return const <ProgressStep>[
-        ProgressStep(label: '提交订单', state: ProgressStepState.completed),
-        ProgressStep(label: '支付费用', state: ProgressStepState.completed),
+      return <ProgressStep>[
+        ProgressStep(label: '订单.提交订单'.tr(), state: ProgressStepState.completed),
+        ProgressStep(label: '订单.支付费用'.tr(), state: ProgressStepState.completed),
         ProgressStep(
-          label: '上传材料',
+          label: '订单.上传材料'.tr(),
           state: ProgressStepState.current,
           number: 3,
         ),
         ProgressStep(
-          label: '材料审核',
+          label: '订单.材料审核'.tr(),
           state: ProgressStepState.pending,
           number: 4,
         ),
         ProgressStep(
-          label: '使馆递交',
+          label: '订单.使馆递交'.tr(),
           state: ProgressStepState.pending,
           number: 5,
         ),
         ProgressStep(
-          label: '签证出签',
+          label: '订单.签证出签'.tr(),
           state: ProgressStepState.pending,
           number: 6,
         ),
@@ -282,7 +290,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             state = ProgressStepState.pending;
           }
           final String label = step.label.trim().isEmpty
-              ? '步骤${step.step}'
+              ? '订单.步骤'.tr(
+                  namedArgs: <String, String>{'step': step.step.toString()},
+                )
               : step.label;
           return ProgressStep(label: label, state: state, number: step.step);
         })
@@ -298,11 +308,11 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   void _handleConsultTap() {
     final VisaOrderVO? detail = _orderDetail;
     if (detail == null) {
-      _showMessage('商家信息加载中，请稍后重试');
+      _showMessage('订单.商家信息加载中'.tr());
       return;
     }
     if (detail.providerInfo.providerId <= 0) {
-      _showMessage('商家信息缺失，暂无法发起咨询');
+      _showMessage('订单.商家信息缺失'.tr());
       return;
     }
     context.push(
@@ -311,7 +321,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         targetUserId: detail.providerInfo.providerId,
         targetUserRole: 'visa_provider',
         nickname: detail.providerName.trim().isEmpty
-            ? '服务商'
+            ? '订单.服务商'.tr()
             : detail.providerName,
         avatarUrl: detail.avatarUrl,
         relatedOrderId: detail.orderId,
@@ -341,7 +351,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _uploadMaterialsStepNumber ||
-        currentStepLabel.contains('上传材料') ||
+        currentStepLabel.contains('订单.上传材料'.tr()) ||
         status.contains('upload');
   }
 
@@ -349,7 +359,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _materialReviewStepNumber ||
-        currentStepLabel.contains('材料审核') ||
+        currentStepLabel.contains('订单.材料审核'.tr()) ||
         status.contains('review');
   }
 
@@ -361,7 +371,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _embassySubmittedStepNumber ||
-        currentStepLabel.contains('使馆递交') ||
+        currentStepLabel.contains('订单.使馆递交'.tr()) ||
         status.contains('embassy');
   }
 
@@ -369,7 +379,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _visaIssuedStepNumber ||
-        currentStepLabel.contains('签证出签') ||
+        currentStepLabel.contains('订单.签证出签'.tr()) ||
         status.contains('visa_issued') ||
         status.contains('issued');
   }
@@ -456,7 +466,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('打开相机失败，请稍后重试');
+      _showMessage('订单.打开相机失败'.tr());
     }
   }
 
@@ -472,7 +482,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('打开相册失败，请稍后重试');
+      _showMessage('订单.打开相册失败'.tr());
     }
   }
 
@@ -481,7 +491,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final List<PickedUploadFile> pickedFiles =
           await UploadPickerUtils.pickFromFiles();
       if (pickedFiles.isEmpty) {
-        _showMessage('未能读取所选文件');
+        _showMessage('订单.未能读取所选文件'.tr());
         return;
       }
 
@@ -490,7 +500,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('选择文件失败，请稍后重试');
+      _showMessage('订单.选择文件失败'.tr());
     }
   }
 
@@ -506,7 +516,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('打开相机失败，请稍后重试');
+      _showMessage('订单.打开相机失败'.tr());
     }
   }
 
@@ -522,7 +532,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('打开相册失败，请稍后重试');
+      _showMessage('订单.打开相册失败'.tr());
     }
   }
 
@@ -531,7 +541,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final List<PickedUploadFile> pickedFiles =
           await UploadPickerUtils.pickFromFiles();
       if (pickedFiles.isEmpty) {
-        _showMessage('未能读取所选文件');
+        _showMessage('订单.未能读取所选文件'.tr());
         return;
       }
       await _appendVisaDocumentFiles(pickedFiles);
@@ -539,7 +549,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('选择文件失败，请稍后重试');
+      _showMessage('订单.选择文件失败'.tr());
     }
   }
 
@@ -653,7 +663,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         final uploaded = await fileService.uploadFile(
           path: file.path,
           scene: FileScene.material,
-          errorMessage: '材料文件上传失败，请稍后重试',
+          errorMessage: '订单.材料文件上传失败'.tr(),
           onSendProgress: (int sent, int total) {
             if (!mounted || total <= 0) {
               return;
@@ -696,7 +706,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             progress: 0,
             errorMessage: _resolveErrorMessage(
               error,
-              fallback: '上传失败，请删除后重新上传',
+              fallback: '订单.上传失败请重试'.tr(),
             ),
             uploadedFileId: null,
             uploadedFileUrl: null,
@@ -716,7 +726,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         final uploaded = await fileService.uploadFile(
           path: file.path,
           scene: FileScene.visaDoc,
-          errorMessage: '出证材料上传失败，请稍后重试',
+          errorMessage: '订单.出证材料上传失败'.tr(),
           onSendProgress: (int sent, int total) {
             if (!mounted || total <= 0) {
               return;
@@ -756,7 +766,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             progress: 0,
             errorMessage: _resolveErrorMessage(
               error,
-              fallback: '上传失败，请删除后重新上传',
+              fallback: '订单.上传失败请重试'.tr(),
             ),
             uploadedFileId: null,
             uploadedFileUrl: null,
@@ -772,7 +782,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     final VisaOrderVO? detail = _orderDetail;
     if (detail == null) {
-      _showMessage('订单详情尚未加载完成');
+      _showMessage('订单.订单详情尚未加载完成'.tr());
       return;
     }
     final List<_MaterialRequirement> requirements = _buildMaterialRequirements(
@@ -793,11 +803,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
     }
     if (missingRequirement != null) {
-      _showMessage('请先上传${missingRequirement.title}');
+      _showMessage(
+        '订单.请先上传'.tr(namedArgs: <String, String>{'title': missingRequirement.title}),
+      );
       return;
     }
     if (failedRequirement != null) {
-      _showMessage('${failedRequirement.title}存在未上传成功的文件，请处理后再提交');
+      _showMessage(
+        '订单.存在未上传成功文件'.tr(
+          namedArgs: <String, String>{'title': failedRequirement.title},
+        ),
+      );
       return;
     }
 
@@ -806,7 +822,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       (count, item) => count + _filesFor(item).length,
     );
     if (totalFiles <= 0) {
-      _showMessage('请先选择要提交的材料');
+      _showMessage('订单.请先选择要提交的材料'.tr());
       return;
     }
 
@@ -820,7 +836,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           if (file.state != UploadItemState.success ||
               uploadedFileId == null ||
               uploadedFileUrl.isEmpty) {
-            throw ApiException.unknown('存在未上传完成的材料文件');
+            throw ApiException.unknown('订单.存在未上传完成的材料文件'.tr());
           }
           final int fileSize = UploadPickerUtils.readFileSize(file.path);
           requestMaterials.add(
@@ -850,7 +866,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return;
       }
       setState(() => _isSubmitting = false);
-      _showMessage(_resolveErrorMessage(error, fallback: '提交材料失败，请稍后重试'));
+      _showMessage(
+        _resolveErrorMessage(error, fallback: '订单.提交材料失败'.tr()),
+      );
     }
   }
 
@@ -860,17 +878,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     final VisaOrderVO? detail = _orderDetail;
     if (detail == null) {
-      _showMessage('订单详情尚未加载完成');
+      _showMessage('订单.订单详情尚未加载完成'.tr());
       return;
     }
     if (_visaDocumentUploads.isEmpty) {
-      _showMessage('请先上传出证材料');
+      _showMessage('订单.请先上传出证材料'.tr());
       return;
     }
     if (_visaDocumentUploads.any(
       (file) => file.state != UploadItemState.success,
     )) {
-      _showMessage('存在未上传成功的出证材料，请处理后再完结');
+      _showMessage('订单.存在未上传成功的出证材料'.tr());
       return;
     }
 
@@ -911,7 +929,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '上传出证材料失败，请稍后重试'));
+      _showMessage(
+        _resolveErrorMessage(error, fallback: '订单.上传出证材料失败'.tr()),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -960,7 +980,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (uri != null && uri.pathSegments.isNotEmpty) {
       return Uri.decodeComponent(uri.pathSegments.last);
     }
-    return '订单材料';
+    return '订单.订单材料'.tr();
   }
 
   String _materialFileExtension(MaterialVO material) {
@@ -999,7 +1019,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Future<void> _downloadMaterial(MaterialVO material) async {
     final String fileUrl = material.fileUrl.trim();
     if (fileUrl.isEmpty) {
-      _showMessage('文件地址不存在，暂时无法下载');
+      _showMessage('订单.文件地址不存在'.tr());
       return;
     }
     if (_downloadingMaterialUrls.contains(fileUrl)) {
@@ -1055,17 +1075,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage('已下载到本地');
+      _showMessage('订单.已下载到本地'.tr());
     } on DioException {
       if (!mounted) {
         return;
       }
-      _showMessage('文件下载失败，请稍后重试');
+      _showMessage('订单.文件下载失败'.tr());
     } catch (error) {
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '文件下载失败，请稍后重试'));
+      _showMessage(_resolveErrorMessage(error, fallback: '订单.文件下载失败'.tr()));
     } finally {
       dio.close(force: true);
       if (mounted) {
@@ -1102,7 +1122,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     final VisaOrderVO? detail = _orderDetail;
     if (detail == null) {
-      _showMessage('订单详情尚未加载完成');
+      _showMessage('订单.订单详情尚未加载完成'.tr());
       return;
     }
 
@@ -1129,12 +1149,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(action == 'approve' ? '审核已通过' : '已驳回重传');
+      _showMessage(
+        action == 'approve' ? '订单.审核已通过'.tr() : '订单.已驳回重传'.tr(),
+      );
     } catch (error) {
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '订单处理失败，请稍后重试'));
+      _showMessage(_resolveErrorMessage(error, fallback: '订单.订单处理失败'.tr()));
     } finally {
       if (mounted) {
         setState(() => _isProcessingOrder = false);
@@ -1191,7 +1213,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             if (context.canPop()) {
               context.pop();
             } else {
-              _showMessage('暂无可返回页面');
+              _showMessage('订单.暂无可返回页面'.tr());
             }
           },
           icon: const AppSvgIcon(
@@ -1202,7 +1224,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           ),
         ),
         title: Text(
-          '订单详情',
+          '订单.订单详情'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: const Color(0xE6000000),
             fontWeight: FontWeight.w600,
@@ -1215,7 +1237,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 TextButton(
                   onPressed: _handleConsultTap,
                   child: Text(
-                    '联系商家',
+                    '订单.联系商家'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF262626),
                       fontWeight: FontWeight.w400,
@@ -1265,7 +1287,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return const SizedBox.shrink();
       }
       return _BottomSubmitBar(
-        label: _isSubmitting ? '提交中...' : '提交材料',
+        label: _isSubmitting ? '订单.提交材料中'.tr() : '订单.提交材料'.tr(),
         enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
         onPressed: _submitMaterials,
       );
@@ -1283,14 +1305,16 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         );
       }
       return _BottomSubmitBar(
-        label: '材料审核中...',
+        label: '订单.材料审核中'.tr(),
         enabled: false,
         onPressed: _noopAction,
       );
     }
     if (isEmbassySubmittedStage && isServiceProvider) {
       return _BottomSubmitBar(
-        label: _isSubmitting || _isProcessingOrder ? '完结中...' : '完结',
+        label: _isSubmitting || _isProcessingOrder
+            ? '订单.完结中'.tr()
+            : '订单.完结'.tr(),
         enabled:
             !_isLoading &&
             _errorMessage == null &&
@@ -1319,14 +1343,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (_errorMessage != null) {
       return _OrderDetailStateView(
         message: _errorMessage!,
-        buttonLabel: '重试',
+        buttonLabel: '通用.重试'.tr(),
         onTap: _loadOrderDetail,
       );
     }
     if (detail == null) {
       return _OrderDetailStateView(
-        message: '订单详情不存在',
-        buttonLabel: '返回',
+        message: '订单.订单详情不存在'.tr(),
+        buttonLabel: '订单.返回'.tr(),
         onTap: () => context.pop(),
       );
     }
@@ -1362,7 +1386,11 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   allowUpload: isUploadMaterialsStage,
                   allowDelete: isUploadMaterialsStage,
                   onPreviewTap: (String title) =>
-                      _showMessage('$title 查看样例（占位）'),
+                      _showMessage(
+                        '订单.查看样例占位'.tr(
+                          namedArgs: <String, String>{'title': title},
+                        ),
+                      ),
                   onUploadTap: _openUploadSheet,
                   onDeleteFile: _removeUploadFile,
                 )
@@ -1417,7 +1445,9 @@ class _OrderInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            order.packageName.trim().isEmpty ? '未命名订单' : order.packageName,
+            order.packageName.trim().isEmpty
+                ? '订单.未命名订单'.tr()
+                : order.packageName,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -1426,13 +1456,16 @@ class _OrderInfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _OrderInfoRow(label: '服务商', value: order.providerName),
+          _OrderInfoRow(label: '订单.服务商'.tr(), value: order.providerName),
           const SizedBox(height: 8),
-          _OrderInfoRow(label: '套餐类型', value: order.tierName),
+          _OrderInfoRow(label: '服务详情.套餐类型'.tr(), value: order.tierName),
           const SizedBox(height: 8),
-          _OrderInfoRow(label: '套餐价格', value: _formatAmount(order.amount)),
+          _OrderInfoRow(
+            label: '订单.套餐价格'.tr(),
+            value: _formatAmount(order.amount),
+          ),
           const SizedBox(height: 8),
-          _OrderInfoRow(label: '订单号', value: order.orderNo),
+          _OrderInfoRow(label: '订单.订单号'.tr(), value: order.orderNo),
         ],
       ),
     );
@@ -1564,7 +1597,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '添加出证材料',
+            '订单.添加出证材料'.tr(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: const Color(0xFF171A1D),
               fontWeight: FontWeight.w400,
@@ -1612,7 +1645,7 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '客户上传材料',
+                  '订单.客户上传材料'.tr(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: const Color(0xFF262626),
                     fontSize: 16,
@@ -1622,7 +1655,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '共${materials.length}份',
+                '订单.共份'.tr(
+                  namedArgs: <String, String>{'count': materials.length.toString()},
+                ),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF8C8C8C),
                   fontSize: 14,
@@ -1642,9 +1677,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: const AppEmptyState(
-                message: '暂无客户上传材料',
-                padding: EdgeInsets.symmetric(horizontal: 24),
+              child: AppEmptyState(
+                message: '订单.暂无客户上传材料'.tr(),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
               ),
             )
           else
@@ -1701,7 +1736,7 @@ class _ProviderMaterialFileCard extends StatelessWidget {
     if (uri != null && uri.pathSegments.isNotEmpty) {
       return Uri.decodeComponent(uri.pathSegments.last);
     }
-    return '订单材料';
+    return '订单.订单材料'.tr();
   }
 
   @override
@@ -1843,7 +1878,7 @@ class _MaterialUploadItem extends StatelessWidget {
             GestureDetector(
               onTap: onPreviewTap,
               child: Text(
-                '查看样例',
+                '服务详情.查看样例'.tr(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF096DD9),
                   fontWeight: FontWeight.w400,
@@ -1887,7 +1922,7 @@ class _MaterialUploadContent extends StatelessWidget {
       if (allowUpload && onAddTap != null) {
         return _UploadPlaceholder(onTap: onAddTap!);
       }
-      return const _ReadonlyUploadPlaceholder(text: '待求职者上传材料');
+      return _ReadonlyUploadPlaceholder(text: '订单.待求职者上传材料'.tr());
     }
 
     return Column(
@@ -2029,7 +2064,7 @@ class _UploadFileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      (file.errorMessage ?? '上传失败，请删除后重新上传').trim(),
+                      (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2147,7 +2182,7 @@ class _UploadPlaceholder extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '上传文件',
+                  '订单.上传文件'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF171A1D),
                     fontWeight: FontWeight.w400,
@@ -2248,7 +2283,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
   void _handleConfirm() {
     final String reason = _controller.text.trim();
     if (reason.isEmpty) {
-      setState(() => _errorText = '请输入驳回原因');
+      setState(() => _errorText = '订单.请输入驳回原因'.tr());
       return;
     }
     Navigator.of(context).pop(reason);
@@ -2288,7 +2323,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                         children: <Widget>[
                           Align(
                             child: Text(
-                              '驳回材料',
+                              '订单.驳回材料'.tr(),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 color: const Color(0xFF171A1D),
                                 fontSize: 17,
@@ -2320,7 +2355,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Text(
-                        '请填写驳回原因，客户将收到通知并重新上传材料',
+                        '订单.驳回说明'.tr(),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF595959),
                           fontSize: 14,
@@ -2360,7 +2395,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                             children: <Widget>[
                               Expanded(
                                 child: _RejectReasonActionButton(
-                                  label: '取消',
+                                  label: '通用.取消'.tr(),
                                   backgroundColor: const Color(0xFFF0F0F0),
                                   foregroundColor: const Color(0xFF262626),
                                   onTap: widget.onClose,
@@ -2369,7 +2404,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _RejectReasonActionButton(
-                                  label: '确认驳回',
+                                  label: '订单.确认驳回'.tr(),
                                   backgroundColor: const Color(0xFFD9363E),
                                   foregroundColor: Colors.white,
                                   onTap: _handleConfirm,
@@ -2443,7 +2478,7 @@ class _RejectReasonInputCard extends StatelessWidget {
                   isCollapsed: true,
                   border: InputBorder.none,
                   counterText: '',
-                  hintText: '例如：护照首页照片反光，请重新上传清晰照片…',
+                  hintText: '订单.驳回原因示例'.tr(),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF8C8C8C),
                     fontSize: 14,
@@ -2558,7 +2593,7 @@ class _UploadTypeBottomSheet extends StatelessWidget {
                     Expanded(
                       child: Center(
                         child: Text(
-                          '上传类型',
+                          '订单.上传类型'.tr(),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: const Color(0xFF171A1D),
@@ -2596,19 +2631,19 @@ class _UploadTypeBottomSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     _UploadTypeAction(
-                      label: '拍照上传',
+                      label: '订单.拍照上传'.tr(),
                       iconAssetPath:
                           'assets/images/order_upload_sheet_camera.svg',
                       onTap: onCameraTap,
                     ),
                     _UploadTypeAction(
-                      label: '本地相册',
+                      label: '订单.本地相册'.tr(),
                       iconAssetPath:
                           'assets/images/order_upload_sheet_gallery.svg',
                       onTap: onGalleryTap,
                     ),
                     _UploadTypeAction(
-                      label: '本地文件',
+                      label: '订单.本地文件'.tr(),
                       iconAssetPath:
                           'assets/images/order_upload_sheet_file.svg',
                       onTap: onFileTap,

@@ -1,4 +1,5 @@
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,17 +59,19 @@ class _CompanyVisaPageState extends ConsumerState<CompanyVisaPage> {
 }
 
 enum _CompanyJobTab {
-  recruiting(label: '招聘中', status: 'active'),
-  offline(label: '已下线', status: 'inactive');
+  recruiting(labelKey: '企业岗位.招聘中', status: 'active'),
+  offline(labelKey: '企业岗位.已下线', status: 'inactive');
 
-  const _CompanyJobTab({required this.label, required this.status});
+  const _CompanyJobTab({required this.labelKey, required this.status});
 
-  final String label;
+  final String labelKey;
   final String status;
 
   bool get isOffline => this == _CompanyJobTab.offline;
 
-  String get emptyText => isOffline ? '暂无已下线岗位' : '暂无招聘中的岗位';
+  String get emptyText => isOffline
+      ? tr('企业岗位.暂无已下线岗位')
+      : tr('企业岗位.暂无招聘中的岗位');
 }
 
 class _CompanyVisaHeader extends StatelessWidget {
@@ -88,9 +91,9 @@ class _CompanyVisaHeader extends StatelessWidget {
       child: Row(
         children: <Widget>[
           const Spacer(),
-          const Text(
-            '岗位',
-            style: TextStyle(
+          Text(
+            '企业岗位.岗位'.tr(),
+            style: const TextStyle(
               color: Colors.black,
               fontSize: 17,
               fontWeight: FontWeight.w500,
@@ -101,11 +104,11 @@ class _CompanyVisaHeader extends StatelessWidget {
           GestureDetector(
             onTap: onPublishTap,
             behavior: HitTestBehavior.opaque,
-            child: const Padding(
-              padding: EdgeInsets.only(top: 2),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
               child: Text(
-                '发布',
-                style: TextStyle(
+                '企业岗位.发布'.tr(),
+                style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 15,
                   height: 21 / 15,
@@ -128,7 +131,7 @@ class _CompanyVisaTabBar extends StatelessWidget {
       color: Colors.white,
       child: TabBar(
         tabs: _CompanyJobTab.values
-            .map((tab) => Tab(height: 44, text: tab.label))
+            .map((tab) => Tab(height: 44, text: tab.labelKey.tr()))
             .toList(growable: false),
         labelColor: const Color(0xFF096DD9),
         unselectedLabelColor: const Color(0xFF262626),
@@ -309,7 +312,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '加载失败，请稍后重试' : message;
+    return message.isEmpty ? tr('企业岗位.加载失败') : message;
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -328,16 +331,20 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('删除岗位'),
-          content: Text('确认删除“${job.title}”吗？删除后不可恢复。'),
+          title: Text('企业岗位.删除岗位'.tr()),
+          content: Text(
+            '企业岗位.确认删除岗位'.tr(
+              namedArgs: <String, String>{'title': job.title},
+            ),
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('取消'),
+              child: Text('通用.取消'.tr()),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('删除'),
+              child: Text('企业岗位.删除'.tr()),
             ),
           ],
         );
@@ -372,7 +379,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
             .where((JobDetailVO item) => item.jobId != job.jobId)
             .toList(growable: false);
       });
-      _showMessage('岗位已删除');
+      _showMessage('企业岗位.岗位已删除'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -393,7 +400,9 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
     final JobManageStatus nextStatus = widget.tab.isOffline
         ? JobManageStatus.active
         : JobManageStatus.inactive;
-    final String successMessage = widget.tab.isOffline ? '岗位已发布' : '岗位已下线';
+    final String successMessage = widget.tab.isOffline
+        ? '企业岗位.岗位已发布'.tr()
+        : '企业岗位.岗位已下线'.tr();
 
     setState(() {
       _updatingStatusJobIds.add(job.jobId);
@@ -485,7 +494,9 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       child: _jobs.isEmpty
           ? _CompanyJobEmptyState(
               message: _errorMessage ?? widget.tab.emptyText,
-              buttonLabel: _errorMessage == null ? null : '重新加载',
+              buttonLabel: _errorMessage == null
+                  ? null
+                  : '企业岗位.重新加载'.tr(),
               onTap: _errorMessage == null ? null : _loadInitial,
             )
           : ListView.separated(
@@ -636,7 +647,11 @@ class _JobManageCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '浏览 ${job.viewCount}',
+                  '企业岗位.浏览数'.tr(
+                    namedArgs: <String, String>{
+                      'count': job.viewCount.toString(),
+                    },
+                  ),
                   style: const TextStyle(
                     color: Color(0xFF8C8C8C),
                     fontSize: 12,
@@ -645,7 +660,11 @@ class _JobManageCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  '收到简历 ${job.applyCount}',
+                  '企业岗位.收到简历数'.tr(
+                    namedArgs: <String, String>{
+                      'count': job.applyCount.toString(),
+                    },
+                  ),
                   style: const TextStyle(
                     color: Color(0xFF096DD9),
                     fontSize: 12,
@@ -657,7 +676,9 @@ class _JobManageCard extends StatelessWidget {
             if (job.publishedAt.isNotEmpty) ...<Widget>[
               const SizedBox(height: 6),
               Text(
-                '发布时间 ${job.publishedAt}',
+                '企业岗位.发布时间'.tr(
+                  namedArgs: <String, String>{'time': job.publishedAt},
+                ),
                 style: const TextStyle(
                   color: Color(0xFF8C8C8C),
                   fontSize: 12,
@@ -674,14 +695,19 @@ class _JobManageCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 _BorderActionButton(
-                  label: isOffline ? '发布' : '下线',
+                  label: isOffline
+                      ? '企业岗位.发布'.tr()
+                      : '企业岗位.下线'.tr(),
                   onTap: isDeleting || isUpdatingStatus
                       ? null
                       : onToggleStatusTap,
                   isLoading: isUpdatingStatus,
                 ),
                 const SizedBox(width: 8),
-                _PrimaryActionButton(label: '编辑', onTap: onEditTap),
+                _PrimaryActionButton(
+                  label: '企业岗位.编辑'.tr(),
+                  onTap: onEditTap,
+                ),
               ],
             ),
           ],
@@ -704,7 +730,7 @@ class _JobManageCard extends StatelessWidget {
     addTag(job.employmentType);
     addTag(_formatLocation(job));
     if (job.hasVisaSupport) {
-      addTag('提供签证');
+      addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
       addTag(tag.label);
@@ -736,7 +762,7 @@ class _JobManageCard extends StatelessWidget {
         : '/${job.salaryPeriod}';
 
     if (job.salaryMin <= 0 && job.salaryMax <= 0) {
-      return '薪资面议';
+      return '企业岗位.薪资面议'.tr();
     }
 
     if (job.salaryMin > 0 && job.salaryMax > 0) {
@@ -813,7 +839,7 @@ class _DeleteActionButton extends StatelessWidget {
     return _BorderActionChip(
       borderColor: const Color(0xFFFF4D4F),
       textColor: const Color(0xFFD9363E),
-      label: '删除',
+      label: '企业岗位.删除'.tr(),
       onTap: onTap,
       isLoading: isLoading,
       loadingColor: const Color(0xFFD9363E),

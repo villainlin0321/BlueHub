@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -27,12 +28,6 @@ class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
 
 class _QualificationCertificationStepTwoPageState
     extends ConsumerState<QualificationCertificationStepTwoPage> {
-  static const List<String> _steps = <String>[
-    '基本信息',
-    '资质证明',
-    '服务信息',
-  ];
-
   PickedUploadFile? _businessLicenseImage;
   PickedUploadFile? _specialPermitImage;
   bool _isUploadingBusinessLicense = false;
@@ -40,6 +35,11 @@ class _QualificationCertificationStepTwoPageState
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
+  List<String> get _steps => <String>[
+    tr('认证流程.基本信息'),
+    tr('认证流程.资质证明'),
+    tr('认证流程.服务信息'),
+  ];
 
   @override
   void initState() {
@@ -74,7 +74,7 @@ class _QualificationCertificationStepTwoPageState
     final List<PickedUploadFile> files =
         await UploadPickerUtils.pickImagesWithSourceSheet(
           context: context,
-          title: '选择图片',
+          title: tr('上传.选择图片'),
         );
     if (!mounted || files.isEmpty) {
       return;
@@ -118,7 +118,7 @@ class _QualificationCertificationStepTwoPageState
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('上传失败，请稍后重试')));
+      ).showSnackBar(SnackBar(content: Text('认证流程.上传失败'.tr())));
     } finally {
       if (mounted) {
         setState(() {
@@ -150,9 +150,9 @@ class _QualificationCertificationStepTwoPageState
             color: Color(0xE6000000),
           ),
         ),
-        title: const Text(
-          '资质认证',
-          style: TextStyle(
+        title: Text(
+          '认证流程.资质认证'.tr(),
+          style: const TextStyle(
             color: Color(0xE6000000),
             fontSize: 17,
             fontWeight: FontWeight.w500,
@@ -166,11 +166,11 @@ class _QualificationCertificationStepTwoPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             const SizedBox(height: 16),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                '为了您的企业账户安全，请完成实名认证',
-                style: TextStyle(
+                '认证流程.实名认证提示'.tr(),
+                style: const TextStyle(
                   color: Color(0xFF8C8C8C),
                   fontSize: 14,
                   height: 20 / 14,
@@ -178,7 +178,7 @@ class _QualificationCertificationStepTwoPageState
               ),
             ),
             const SizedBox(height: 16),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
               child: QualificationProgressStepper(
                 labels: _steps,
@@ -198,7 +198,7 @@ class _QualificationCertificationStepTwoPageState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _LicenseUploadSection(
-                      title: '营业执照',
+                      title: '认证流程.营业执照'.tr(),
                       isRequired: true,
                       pickedFile: _businessLicenseImage,
                       isUploading: _isUploadingBusinessLicense,
@@ -208,8 +208,8 @@ class _QualificationCertificationStepTwoPageState
                     ),
                     const SizedBox(height: 16),
                     _LicenseUploadSection(
-                      title: '特许经验许可',
-                      optionalLabel: '(选填)',
+                      title: '认证流程.特许经验许可'.tr(),
+                      optionalLabel: '通用.选填'.tr(),
                       pickedFile: _specialPermitImage,
                       isUploading: _isUploadingSpecialPermit,
                       onTap: () => _pickQualificationImage(
@@ -246,9 +246,9 @@ class _QualificationCertificationStepTwoPageState
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      '上一步',
-                      style: TextStyle(
+                    child: Text(
+                      '认证流程.上一步'.tr(),
+                      style: const TextStyle(
                         color: Color(0xFF171A1D),
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -274,9 +274,9 @@ class _QualificationCertificationStepTwoPageState
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      '下一步',
-                      style: TextStyle(
+                    child: Text(
+                      '认证流程.下一步'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -353,7 +353,7 @@ class _LicenseUploadSection extends StatelessWidget {
             TextButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('查看样例（占位）')),
+                  SnackBar(content: Text('认证流程.查看样例占位'.tr())),
                 );
               },
               style: TextButton.styleFrom(
@@ -361,9 +361,9 @@ class _LicenseUploadSection extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                '查看样例',
-                style: TextStyle(
+              child: Text(
+                '认证流程.查看样例'.tr(),
+                style: const TextStyle(
                   color: Color(0xFF096DD9),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,

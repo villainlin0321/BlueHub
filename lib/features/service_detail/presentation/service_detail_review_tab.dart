@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
@@ -35,7 +36,7 @@ class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
 
     final ReviewVO? review = widget.review;
     if (review == null || review.list.isEmpty) {
-      return const _ReviewPlaceholder(message: '暂无评价数据');
+      return _ReviewPlaceholder(message: '服务详情.暂无评价数据'.tr());
     }
 
     return ListView.builder(
@@ -123,7 +124,7 @@ class _ReviewSummaryScore extends StatelessWidget {
             left: 62,
             top: 6,
             child: Text(
-              summary.label.isEmpty ? '暂无标签' : summary.label,
+              summary.label.isEmpty ? '服务详情.暂无标签'.tr() : summary.label,
               style: labelTextStyle,
             ),
           ),
@@ -200,12 +201,12 @@ class _ReviewSortSwitch extends StatelessWidget {
           Positioned(
             left: 9,
             top: 6,
-            child: Text('最热', style: selectedTextStyle),
+            child: Text('服务详情.最热'.tr(), style: selectedTextStyle),
           ),
           Positioned(
             left: 53,
             top: 6,
-            child: Text('最新', style: normalTextStyle),
+            child: Text('服务详情.最新'.tr(), style: normalTextStyle),
           ),
         ],
       ),
@@ -424,7 +425,7 @@ class _ExpandableReviewText extends StatelessWidget {
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.only(left: 8),
-                  child: Text('展开', style: expandStyle),
+                  child: Text('服务详情.展开'.tr(), style: expandStyle),
                 ),
               ),
             ),
@@ -482,9 +483,12 @@ class _ReviewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (message == '暂无评价数据') {
-      return const Center(
-        child: AppEmptyState(message: '暂无评价数据', padding: EdgeInsets.all(24)),
+    if (message == '服务详情.暂无评价数据'.tr()) {
+      return Center(
+        child: AppEmptyState(
+          message: '服务详情.暂无评价数据'.tr(),
+          padding: const EdgeInsets.all(24),
+        ),
       );
     }
 
@@ -514,7 +518,7 @@ String _resolveReviewUserName(ReviewItemVO review) {
     return phone;
   }
   final String email = review.user.email.trim();
-  return email.isEmpty ? '匿名用户' : email;
+  return email.isEmpty ? '服务详情.匿名用户'.tr() : email;
 }
 
 /// 提取评价头像占位字，优先取昵称首字，其次取手机号首字符。

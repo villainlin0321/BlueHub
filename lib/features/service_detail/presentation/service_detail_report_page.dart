@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -59,7 +60,7 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
     if (!_canSubmit) {
       return;
     }
-    _showMessage('举报已提交（占位）');
+    _showMessage('服务详情.举报已提交'.tr());
   }
 
   void _handleBack() {
@@ -96,7 +97,7 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
             color: Color(0xE6000000),
           ),
         ),
-        title: Text('举报', style: titleStyle),
+        title: Text('服务详情.举报'.tr(), style: titleStyle),
       ),
       body: TapBlankToDismissKeyboard(
         child: ListView(
@@ -113,7 +114,7 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    '举报内容',
+                    '服务详情.举报内容'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
                       fontSize: 14,
@@ -143,9 +144,9 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
                                 _maxContentLength,
                               ),
                             ],
-                            decoration: const InputDecoration(
-                              hintText: '请输入...',
-                              hintStyle: TextStyle(
+                            decoration: InputDecoration(
+                              hintText: '通用.请输入'.tr(),
+                              hintStyle: const TextStyle(
                                 color: Color(0xFF8C8C8C),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
@@ -238,9 +239,9 @@ class _ReportSubmitBar extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                '提交',
-                style: TextStyle(
+              child: Text(
+                '订单.提交材料'.tr(),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
