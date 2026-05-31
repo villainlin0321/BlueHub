@@ -32,11 +32,14 @@ class VisaProviderSearchPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (state.isShowingResults && providersAsync != null) {
-      return _SearchResultSection(
-        providersAsync: providersAsync!,
-        collectedPackageIdsAsync: collectedPackageIdsAsync,
-        onRetry: onRetrySearch,
-        onTap: onResultTap,
+      return ColoredBox(
+        color: const Color(0xFFF5F7FA),
+        child: _SearchResultSection(
+          providersAsync: providersAsync!,
+          collectedPackageIdsAsync: collectedPackageIdsAsync,
+          onRetry: onRetrySearch,
+          onTap: onResultTap,
+        ),
       );
     }
 
