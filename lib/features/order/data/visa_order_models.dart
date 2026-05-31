@@ -320,6 +320,7 @@ class VisaDocVO {
 
 class VisaOrderVO {
   const VisaOrderVO({
+    required this.userId,
     required this.orderId,
     required this.orderNo,
     required this.status,
@@ -346,6 +347,7 @@ class VisaOrderVO {
     required this.paymentUrl,
   });
 
+  final int userId;
   final int orderId;
   final String orderNo;
   final String status;
@@ -374,6 +376,7 @@ class VisaOrderVO {
   factory VisaOrderVO.fromJson(JsonMap json) {
     final JsonMap providerInfoJson = readJsonMap(json, 'providerInfo');
     return VisaOrderVO(
+      userId: readInt(json, 'userId'),
       orderId: readInt(json, 'orderId'),
       orderNo: readString(json, 'orderNo'),
       status: readString(json, 'status'),
@@ -411,6 +414,7 @@ class VisaOrderVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
+      'userId': userId,
       'orderId': orderId,
       'orderNo': orderNo,
       'status': status,
