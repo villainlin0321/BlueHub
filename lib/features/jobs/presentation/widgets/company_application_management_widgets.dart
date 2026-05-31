@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -249,12 +251,13 @@ class CompanyApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final BorderRadius borderRadius = BorderRadius.circular(
+      CompanyApplicationManagementStyles.cardRadius,
+    );
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          CompanyApplicationManagementStyles.cardRadius,
-        ),
+        borderRadius: borderRadius,
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: CompanyApplicationManagementStyles.cardShadow,
@@ -263,23 +266,46 @@ class CompanyApplicationCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _CardTopRow(data: data),
-              const SizedBox(height: 14),
-              _CandidateInfoSection(data: data),
-              const SizedBox(height: 20),
-              _CardFooter(
-                data: data,
-                onViewResumeTap: onViewResumeTap,
-                onSecondaryActionTap: onSecondaryActionTap,
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 6.8, sigmaY: 6.8),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.72),
+                width: 0.5,
               ),
-            ],
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Colors.white.withValues(alpha: 0.95),
+                  Colors.white.withValues(alpha: 0.88),
+                ],
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _CardTopRow(data: data),
+                    const SizedBox(height: 18),
+                    _CandidateInfoSection(data: data),
+                    const SizedBox(height: 20),
+                    _CardFooter(
+                      data: data,
+                      onViewResumeTap: onViewResumeTap,
+                      onSecondaryActionTap: onSecondaryActionTap,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -295,11 +321,11 @@ class _CardTopRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Expanded(
-          child: RichText(
-            text: TextSpan(
+          child: Text.rich(
+            TextSpan(
               children: <InlineSpan>[
                 const TextSpan(
                   text: '投递岗位: ',
@@ -319,31 +345,37 @@ class _CardTopRow extends StatelessWidget {
                 ),
               ],
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(width: 8),
-        RichText(
-          text: TextSpan(
-            children: <InlineSpan>[
-              TextSpan(
-                text: data.matchText,
-                style: const TextStyle(
-                  color: CompanyApplicationManagementStyles.primary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 21 / 16,
-                ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            Text(
+              data.matchText,
+              style: const TextStyle(
+                color: CompanyApplicationManagementStyles.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                height: 21 / 16,
               ),
-              const TextSpan(
-                text: ' 匹配',
-                style: TextStyle(
+            ),
+            const SizedBox(width: 2),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '匹配',
+                style: const TextStyle(
                   color: CompanyApplicationManagementStyles.primary,
                   fontSize: 10,
                   height: 14 / 10,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -358,13 +390,15 @@ class _CandidateInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Image.asset(
-          CompanyApplicationManagementStyles.avatarPlaceholderAssetPath,
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
+        ClipOval(
+          child: Image.asset(
+            CompanyApplicationManagementStyles.avatarPlaceholderAssetPath,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -406,7 +440,7 @@ class _CandidateInfoSection extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 4,
+                spacing: 6,
                 runSpacing: 4,
                 children: data.tags
                     .map((String label) => CompanyApplicationTag(label: label))
@@ -460,16 +494,22 @@ class _CardFooter extends StatelessWidget {
                 style: const TextStyle(
                   color: CompanyApplicationManagementStyles.textSecondary,
                   fontSize: 12,
-                  height: 16 / 12,
                 ),
               ),
               const SizedBox(height: 12),
-              Align(alignment: Alignment.centerRight, child: actions),
+              Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: actions,
+                ),
+              ),
             ],
           );
         }
 
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Expanded(
               child: Text(
@@ -484,7 +524,15 @@ class _CardFooter extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            actions,
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: actions,
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -500,9 +548,13 @@ class CompanyApplicationTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 20),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: CompanyApplicationManagementStyles.tagBorder),
+        border: Border.all(
+          color: CompanyApplicationManagementStyles.tagBorder,
+          width: 0.5,
+        ),
         borderRadius: BorderRadius.circular(
           CompanyApplicationManagementStyles.tagRadius,
         ),
@@ -540,7 +592,7 @@ class CompanyApplicationActionButton extends StatelessWidget {
     return Material(
       color: primary
           ? CompanyApplicationManagementStyles.primary
-          : CompanyApplicationManagementStyles.surface,
+          : Colors.white,
       borderRadius: BorderRadius.circular(
         CompanyApplicationManagementStyles.buttonRadius,
       ),
@@ -559,28 +611,31 @@ class CompanyApplicationActionButton extends StatelessWidget {
               ? Colors.white.withValues(alpha: 0.12)
               : CompanyApplicationManagementStyles.actionOverlay;
         }),
-        child: Ink(
-          height: 28,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              CompanyApplicationManagementStyles.buttonRadius,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 77),
+          child: Ink(
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(
+                CompanyApplicationManagementStyles.buttonRadius,
+              ),
+              border: primary
+                  ? null
+                  : Border.all(
+                      color: CompanyApplicationManagementStyles.ghostBorder,
+                    ),
             ),
-            border: primary
-                ? null
-                : Border.all(
-                    color: CompanyApplicationManagementStyles.ghostBorder,
-                  ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: foregroundColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 12 / 12,
-                letterSpacing: 0.2,
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: foregroundColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 12 / 12,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ),
