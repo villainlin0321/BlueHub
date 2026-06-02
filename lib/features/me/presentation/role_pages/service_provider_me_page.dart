@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -64,7 +66,8 @@ class ServiceProviderMePage extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
               items: _menus,
-              onTap: (String labelKey) => _handleMenuTap(context, ref, labelKey),
+              onTap: (String labelKey) =>
+                  _handleMenuTap(context, ref, labelKey),
             ),
           ),
         ],
@@ -74,14 +77,10 @@ class ServiceProviderMePage extends ConsumerWidget {
 
   /// 展示暂未接入功能的占位提示。
   void _showPlaceholderToast(BuildContext context, String labelKey) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{
-            'label': labelKey.tr(),
-          }),
+          '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
         ),
       ),
     );
@@ -155,7 +154,10 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double topPadding = MediaQuery.paddingOf(context).top;
+    double topPadding = MediaQuery.paddingOf(context).top;
+    if (Platform.isAndroid) {
+      topPadding = topPadding + 12;
+    }
 
     return SizedBox(
       height: 248,
@@ -164,6 +166,7 @@ class _HeaderSection extends StatelessWidget {
         children: <Widget>[
           Container(
             height: 220,
+            alignment: Alignment.center,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(28),
@@ -260,10 +263,12 @@ class _ProviderProfileRow extends ConsumerWidget {
         ?.value;
     final String providerSummary = providerProfile == null
         ? ''
-        : '我的.服务商摘要'.tr(namedArgs: <String, String>{
-            'rating': _formatProviderRating(providerProfile.rating),
-            'count': _formatProviderCaseCount(providerProfile.caseCount),
-          });
+        : '我的.服务商摘要'.tr(
+            namedArgs: <String, String>{
+              'rating': _formatProviderRating(providerProfile.rating),
+              'count': _formatProviderCaseCount(providerProfile.caseCount),
+            },
+          );
 
     return InkWell(
       onTap: () => context.push(RoutePaths.serviceProviderMyInfo),
