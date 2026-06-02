@@ -328,7 +328,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                             horizontal: 4,
                           ),
                           title: Text(
-                            labelBuilder(option),
+                            labelBuilder(option).tr(),
                             style: TextStyle(
                               color: selected
                                   ? const Color(0xFF096DD9)
@@ -678,7 +678,7 @@ class _FilterButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              label,
+              label.tr(),
               style: const TextStyle(
                 color: Color(0xFF171A1D),
                 fontSize: 14,

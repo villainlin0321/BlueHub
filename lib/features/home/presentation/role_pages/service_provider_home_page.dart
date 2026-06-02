@@ -614,7 +614,8 @@ class _PendingOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Padding(
+      child: Container(
+        color: Colors.white,
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,6 +739,7 @@ class _PendingOrdersSection extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: items.length,
+          padding: EdgeInsets.zero,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (BuildContext context, int index) {
             return _PendingOrderCard(item: items[index]);
