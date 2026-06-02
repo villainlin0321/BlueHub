@@ -26,7 +26,7 @@ class AiService {
   /// 获取指定 AI 会话的历史消息。
   ///
   /// `sessionId` 为会话主键，`limit` 用于控制单次返回条数。
-  Future<List<AiMessage>> getChatHistory({
+  Future<List<AiMessageVO>> getChatHistory({
     required int sessionId,
     int? limit,
   }) async {
@@ -34,12 +34,36 @@ class AiService {
       'session_id': sessionId,
       if (limit != null) 'limit': limit,
     };
-    final response = await _apiClient.get<List<AiMessage>>(
+    final response = await _apiClient.get<List<AiMessageVO>>(
       '/ai/chat/history',
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
-      decode: (data) => decodeModelList<AiMessage>(data, AiMessage.fromJson),
+      decode: (data) =>
+          decodeModelList<AiMessageVO>(data, AiMessageVO.fromJson),
     );
     return response;
+  }
+
+  /// 获取当前角色下的 AI 会话列表。
+  Future<List<AiSessionVO>> listSessions() async {
+    final response = await _apiClient.get<List<AiSessionVO>>(
+      '/ai/sessions',
+      decode: (data) =>
+          decodeModelList<AiSessionVO>(data, AiSessionVO.fromJson),
+    );
+    return response;
+  }
+
+  /// 重命名指定会话。
+  Future<void> renameSession({required int id, required String title}) async {
+    return _apiClient.putVoid(
+      '/ai/sessions/$id/title',
+      queryParameters: <String, dynamic>{'title': title},
+    );
+  }
+
+  /// 软删除指定会话。
+  Future<void> deleteSession({required int id}) async {
+    return _apiClient.deleteVoid('/ai/sessions/$id');
   }
 
   /// 获取岗位对应的 AI 人才推荐结果。

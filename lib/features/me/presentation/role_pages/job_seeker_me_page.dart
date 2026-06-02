@@ -8,6 +8,8 @@ import '../../../../app/router/route_paths.dart';
 import '../current_user_view_data.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
+import '../../../home/data/home_models.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
@@ -49,6 +51,10 @@ class JobSeekerMePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
     final AuthUser? currentUser = ref.watch(authSessionProvider).user;
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       currentUser,
     );
@@ -67,6 +73,7 @@ class JobSeekerMePage extends ConsumerWidget {
               const SizedBox(height: 11),
               _ProfileCard(
                 userViewData: userViewData,
+                stats: stats,
                 onTap: () => context.push(RoutePaths.myInfo),
                 onOrderTap: () => context.push(RoutePaths.myOrders),
                 onResumeTap: () => context.push(RoutePaths.myResume),
@@ -190,6 +197,7 @@ class _TopIconButton extends StatelessWidget {
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
     required this.userViewData,
+    required this.stats,
     required this.onTap,
     required this.onOrderTap,
     required this.onResumeTap,
@@ -198,6 +206,7 @@ class _ProfileCard extends StatelessWidget {
   });
 
   final CurrentUserViewData userViewData;
+  final HomeDashboardStatsVO? stats;
   final VoidCallback onTap;
   final VoidCallback onOrderTap;
   final VoidCallback onResumeTap;
@@ -301,25 +310,29 @@ class _ProfileCard extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: _StatItem(value: '3', label: '我的.我的订单'.tr(), onTap: onOrderTap),
+                child: _StatItem(
+                  value: _formatCount(stats?.orderCount),
+                  label: '我的.我的订单'.tr(),
+                  onTap: onOrderTap,
+                ),
               ),
               Expanded(
                 child: _StatItem(
-                  value: '85%',
+                  value: _formatPercent(stats?.resumeCompleteness),
                   label: '我的.我的简历'.tr(),
                   onTap: onResumeTap,
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  value: '3',
+                  value: _formatCount(stats?.applicationCount),
                   label: '我的.我的应聘'.tr(),
                   onTap: onApplicationTap,
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  value: '24',
+                  value: _formatCount(stats?.collectionCount),
                   label: '我的.我的收藏'.tr(),
                   onTap: onFavoriteTap,
                 ),
@@ -329,6 +342,14 @@ class _ProfileCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatCount(int? value) {
+    return (value ?? 0).toString();
+  }
+
+  String _formatPercent(int? value) {
+    return '${value ?? 0}%';
   }
 }
 

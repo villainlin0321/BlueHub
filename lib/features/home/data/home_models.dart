@@ -79,6 +79,10 @@ class HomeDashboardStatsVO {
     this.receivedResumes,
     this.pendingInterviews,
     this.hired,
+    this.orderCount,
+    this.resumeCompleteness,
+    this.applicationCount,
+    this.collectionCount,
   });
 
   final int? todayConsultations;
@@ -89,17 +93,25 @@ class HomeDashboardStatsVO {
   final int? receivedResumes;
   final int? pendingInterviews;
   final int? hired;
+  final int? orderCount;
+  final int? resumeCompleteness;
+  final int? applicationCount;
+  final int? collectionCount;
 
   factory HomeDashboardStatsVO.fromJson(JsonMap json) {
     return HomeDashboardStatsVO(
       todayConsultations: _readNullableInt(json['todayConsultations']),
       inProgressOrders: _readNullableInt(json['inProgressOrders']),
-      monthlyIncome: readString(json, 'monthlyIncome', fallback: '0'),
+      monthlyIncome: _readNumberAsString(json['monthlyIncome']) ?? '0',
       incomeCurrency: readString(json, 'incomeCurrency', fallback: 'CNY'),
       activeJobs: _readNullableInt(json['activeJobs']),
       receivedResumes: _readNullableInt(json['receivedResumes']),
       pendingInterviews: _readNullableInt(json['pendingInterviews']),
       hired: _readNullableInt(json['hired']),
+      orderCount: _readNullableInt(json['orderCount']),
+      resumeCompleteness: _readNullableInt(json['resumeCompleteness']),
+      applicationCount: _readNullableInt(json['applicationCount']),
+      collectionCount: _readNullableInt(json['collectionCount']),
     );
   }
 
@@ -113,6 +125,10 @@ class HomeDashboardStatsVO {
       'receivedResumes': receivedResumes,
       'pendingInterviews': pendingInterviews,
       'hired': hired,
+      'orderCount': orderCount,
+      'resumeCompleteness': resumeCompleteness,
+      'applicationCount': applicationCount,
+      'collectionCount': collectionCount,
     };
   }
 
@@ -143,6 +159,28 @@ int? _readNullableInt(dynamic value) {
   }
   if (value is String) {
     return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+String? _readNumberAsString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is int) {
+    return value.toString();
+  }
+  if (value is double) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toString();
+  }
+  if (value is num) {
+    final double normalized = value.toDouble();
+    return normalized % 1 == 0
+        ? normalized.toStringAsFixed(0)
+        : normalized.toString();
   }
   return null;
 }

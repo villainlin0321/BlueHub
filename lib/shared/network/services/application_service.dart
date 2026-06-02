@@ -88,6 +88,21 @@ class ApplicationService {
     );
   }
 
+  /// 雇主端从人才中心直接发起面试邀约。
+  Future<Map<String, dynamic>> inviteInterview({
+    required InviteInterviewBO request,
+  }) async {
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/applications/invite',
+      data: request.toJson(),
+      decode: (data) => decodeMapValues<dynamic>(
+        data ?? const <String, dynamic>{},
+        (value) => value,
+      ),
+    );
+    return response;
+  }
+
   /// 求职者撤回自己的投递。
   Future<void> withdraw({required int applicationId}) async {
     return _apiClient.putVoid('/applications/$applicationId/withdraw');

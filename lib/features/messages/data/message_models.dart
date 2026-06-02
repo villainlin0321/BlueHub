@@ -140,6 +140,7 @@ class MessageVO {
     required this.fileUrl,
     required this.fileName,
     required this.fileSize,
+    required this.duration,
     required this.isRead,
     required this.isRetracted,
     required this.sentAt,
@@ -153,6 +154,7 @@ class MessageVO {
   final String fileUrl;
   final String fileName;
   final int fileSize;
+  final int? duration;
   final bool isRead;
   final bool isRetracted;
   final String sentAt;
@@ -167,6 +169,7 @@ class MessageVO {
       fileUrl: readString(json, 'fileUrl'),
       fileName: readString(json, 'fileName'),
       fileSize: readInt(json, 'fileSize'),
+      duration: _readNullableInt(json['duration']),
       isRead: readBool(json, 'isRead'),
       isRetracted: readBool(json, 'isRetracted'),
       sentAt: readString(json, 'sentAt'),
@@ -183,6 +186,7 @@ class MessageVO {
       'fileUrl': fileUrl,
       'fileName': fileName,
       'fileSize': fileSize,
+      'duration': duration,
       'isRead': isRead,
       'isRetracted': isRetracted,
       'sentAt': sentAt,
@@ -244,6 +248,7 @@ class SendMessageBO {
     this.fileUrl,
     this.fileName,
     this.fileSize,
+    this.duration,
   });
 
   final String? type;
@@ -252,6 +257,7 @@ class SendMessageBO {
   final String? fileUrl;
   final String? fileName;
   final int? fileSize;
+  final int? duration;
 
   factory SendMessageBO.fromJson(JsonMap json) {
     return SendMessageBO(
@@ -261,6 +267,7 @@ class SendMessageBO {
       fileUrl: _readNullableString(json['fileUrl']),
       fileName: _readNullableString(json['fileName']),
       fileSize: _readNullableInt(json['fileSize']),
+      duration: _readNullableInt(json['duration']),
     );
   }
 
@@ -272,6 +279,7 @@ class SendMessageBO {
       if (fileUrl != null) 'fileUrl': fileUrl,
       if (fileName != null) 'fileName': fileName,
       if (fileSize != null) 'fileSize': fileSize,
+      if (duration != null) 'duration': duration,
     };
   }
 }

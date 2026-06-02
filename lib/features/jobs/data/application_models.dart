@@ -46,6 +46,7 @@ class ApplicantVO {
   const ApplicantVO({
     required this.userId,
     required this.nickname,
+    required this.avatarUrl,
     required this.age,
     required this.gender,
     required this.experienceYears,
@@ -54,6 +55,7 @@ class ApplicantVO {
 
   final int userId;
   final String nickname;
+  final String avatarUrl;
   final int age;
   final String gender;
   final int experienceYears;
@@ -63,6 +65,7 @@ class ApplicantVO {
     return ApplicantVO(
       userId: readInt(json, 'userId'),
       nickname: readString(json, 'nickname'),
+      avatarUrl: readString(json, 'avatarUrl'),
       age: readInt(json, 'age'),
       gender: readString(json, 'gender'),
       experienceYears: readInt(json, 'experienceYears'),
@@ -74,6 +77,7 @@ class ApplicantVO {
     return <String, dynamic>{
       'userId': userId,
       'nickname': nickname,
+      'avatarUrl': avatarUrl,
       'age': age,
       'gender': gender,
       'experienceYears': experienceYears,
@@ -231,4 +235,45 @@ class UpdateApplicationStatusBO {
   JsonMap toJson() {
     return <String, dynamic>{'status': status, 'remark': remark};
   }
+}
+
+class InviteInterviewBO {
+  const InviteInterviewBO({
+    required this.jobId,
+    required this.resumeId,
+    this.remark,
+  });
+
+  final int jobId;
+  final int resumeId;
+  final String? remark;
+
+  factory InviteInterviewBO.fromJson(JsonMap json) {
+    return InviteInterviewBO(
+      jobId: readInt(json, 'jobId'),
+      resumeId: readInt(json, 'resumeId'),
+      remark: _readNullableString(json['remark']),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'jobId': jobId,
+      'resumeId': resumeId,
+      if (remark != null && remark!.trim().isNotEmpty) 'remark': remark,
+    };
+  }
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }

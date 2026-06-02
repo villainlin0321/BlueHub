@@ -6,14 +6,13 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
-import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
-import '../../application/company_applications/company_application_list_state.dart';
-import '../../application/company_applications/company_application_lists_controller.dart';
 import '../../data/application_models.dart';
+import '../../data/job_models.dart';
 import '../../data/application_providers.dart';
 import '../../data/talent_providers.dart';
+import '../widgets/invite_job_picker_sheet.dart';
 
 /// 企业招聘页：按 Figma「人才中心」实现。
 class CompanyJobsPage extends ConsumerStatefulWidget {
@@ -24,8 +23,6 @@ class CompanyJobsPage extends ConsumerStatefulWidget {
 }
 
 class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
-  static final String _pendingStatus =
-      EmployerApplicationFilterStatus.pending.value;
   int _selectedTabIndex = 0;
   final Set<int> _processingInviteUserIds = <int>{};
 
@@ -94,29 +91,6 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     );
   }
 
-  Future<int?> _findPendingApplicationId(int userId) async {
-    final Map<String, CompanyApplicationListState> states = ref.read(
-      companyApplicationListsControllerProvider,
-    );
-    final CompanyApplicationListState pendingState =
-        states[_pendingStatus] ?? const CompanyApplicationListState();
-    for (final ApplicationVO item in pendingState.applications) {
-      if (item.applicant.userId == userId) {
-        return item.applicationId;
-      }
-    }
-
-    final PageResult<ApplicationVO> response = await ref
-        .read(applicationServiceProvider)
-        .listJobApplications(page: 1, pageSize: 100, status: _pendingStatus);
-    for (final ApplicationVO item in response.list) {
-      if (item.applicant.userId == userId) {
-        return item.applicationId;
-      }
-    }
-    return null;
-  }
-
   Future<void> _handleInviteInterview(_CandidateCardData data) async {
     if (_processingInviteUserIds.contains(data.userId)) {
       return;
@@ -128,27 +102,28 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     if (remark == null || !mounted) {
       return;
     }
+    final JobDetailVO? selectedJob = await showInviteJobPickerSheet(context);
+    if (selectedJob == null || !mounted) {
+      return;
+    }
 
     setState(() {
       _processingInviteUserIds.add(data.userId);
     });
 
     try {
-      final int? applicationId = await _findPendingApplicationId(data.userId);
-      if (applicationId == null) {
-        _showMessage('招聘.未找到待处理应聘记录'.tr(), isError: true);
+      if (data.resumeId <= 0 || selectedJob.jobId <= 0) {
+        _showMessage('招聘.邀约失败'.tr(), isError: true);
         return;
       }
-
-      final ApplicationStatusUpdateResult result = await ref
-          .read(companyApplicationListsControllerProvider.notifier)
-          .updateApplicationStatus(
-            sourceStatus: _pendingStatus,
-            applicationId: applicationId,
-            nextStatus: EmployerApplicationUpdateStatus.interview,
-            remark: remark,
-          );
-      _showMessage(result.message, isError: !result.success);
+      await ref.read(applicationServiceProvider).inviteInterview(
+        request: InviteInterviewBO(
+          jobId: selectedJob.jobId,
+          resumeId: data.resumeId,
+          remark: remark.trim().isEmpty ? null : remark.trim(),
+        ),
+      );
+      _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
       _showMessage(error.toString(), isError: true);
     } finally {
@@ -786,6 +761,7 @@ class _ResumeActionButton extends StatelessWidget {
 
 class _CandidateCardData {
   const _CandidateCardData({
+    required this.resumeId,
     required this.userId,
     required this.avatarUrl,
     required this.name,
@@ -797,6 +773,7 @@ class _CandidateCardData {
     required this.updatedText,
   });
 
+  final int resumeId;
   final int userId;
   final String avatarUrl;
   final String name;
@@ -811,6 +788,7 @@ class _CandidateCardData {
     final bool isMatchSort = sort == 'match';
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
+      resumeId: talent.resumeId,
       userId: talent.userId,
       avatarUrl: talent.avatarUrl,
       name: talent.nickname.isEmpty ? '招聘.未命名用户'.tr() : talent.nickname,

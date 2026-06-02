@@ -275,6 +275,7 @@ Future<T?> showFilterActionBottomSheet<T>({
   String? resetText,
   String? confirmText,
   bool isConfirmEnabled = true,
+  double maxHeightRatio = 0.72,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -288,6 +289,7 @@ Future<T?> showFilterActionBottomSheet<T>({
         resetText: resetText ?? '重置'.tr(),
         confirmText: confirmText ?? '确定'.tr(),
         isConfirmEnabled: isConfirmEnabled,
+        maxHeightRatio: maxHeightRatio,
         child: child,
       );
     },
@@ -303,6 +305,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
     required this.resetText,
     required this.confirmText,
     required this.isConfirmEnabled,
+    required this.maxHeightRatio,
   });
 
   final String title;
@@ -312,11 +315,14 @@ class _FilterActionBottomSheet extends StatelessWidget {
   final String resetText;
   final String confirmText;
   final bool isConfirmEnabled;
+  final double maxHeightRatio;
 
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final double maxHeight = MediaQuery.sizeOf(context).height * 0.9;
+    final double normalizedMaxHeightRatio = maxHeightRatio.clamp(0.0, 1.0);
+    final double maxHeight =
+        MediaQuery.sizeOf(context).height * normalizedMaxHeightRatio;
 
     return SafeArea(
       top: false,

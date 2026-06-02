@@ -3,10 +3,14 @@ import 'dart:async';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../features/me/data/user_models.dart';
 import '../../../features/me/data/user_providers.dart';
@@ -42,6 +46,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   static const String _orderArrowAsset =
       'assets/images/chat_page_order_arrow.svg';
   static const String _voiceAsset = 'assets/images/chat_page_voice.svg';
+  static const String _keyboardAsset = 'assets/images/chat_page_keyboard.svg';
   static const String _addAsset = 'assets/images/chat_page_add.svg';
 
   final TextEditingController _inputController = TextEditingController();
@@ -49,8 +54,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final ChatBottomPanelContainerController<_ChatPanelType>
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
+  final Dio _dio = Dio();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isBlockingUser = false;
   late final ChatPageController _chatController;
+  StreamSubscription<PlayerState>? _audioPlayerStateSubscription;
   int _activeConversationId = 0;
 
   @override
@@ -63,6 +71,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         widget.args.conversationId,
       );
     }
+    _audioPlayerStateSubscription = _audioPlayer.playerStateStream.listen((
+      PlayerState playerState,
+    ) {
+      if (!mounted) {
+        return;
+      }
+      if (playerState.processingState == ProcessingState.completed) {
+        _chatController.setPlayingMessageId(null);
+        unawaited(_audioPlayer.seek(Duration.zero));
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -78,6 +97,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (conversationId > 0) {
       unawaited(_chatController.markConversationReadById(conversationId));
     }
+    unawaited(_audioPlayer.stop());
+    unawaited(_audioPlayer.dispose());
+    _audioPlayerStateSubscription?.cancel();
     MessageSessionController.setActiveChatConversationId(0);
     _scrollController
       ..removeListener(_handleScroll)
@@ -176,9 +198,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _handleVoiceTap() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('消息.语音消息开发中'.tr())));
+    _chatController.toggleComposerMode();
+    final ChatPageState state = ref.read(chatPageControllerProvider(widget.args));
+    if (state.isVoiceMode) {
+      _hideBottomPanel();
+      _inputFocusNode.unfocus();
+    }
   }
 
   void _handleOrderCardTap() {
@@ -188,12 +213,158 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _handleFileMessageTap(MessageVO message) async {
+    if (message.type == 'audio') {
+      await _handleAudioMessageTap(message);
+      return;
+    }
     final String label = message.type == 'image'
         ? '消息.图片预览开发中'.tr()
         : '消息.文件预览开发中'.tr();
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(label)));
+  }
+
+  Future<void> _handleVoiceRecordStart() async {
+    if (ref.read(chatPageControllerProvider(widget.args)).isSending) {
+      return;
+    }
+    final bool granted = await _chatController.hasMicrophonePermission();
+    if (!granted) {
+      final PermissionStatus status =
+          await _chatController.requestMicrophonePermission();
+      if (!mounted) {
+        return;
+      }
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text('消息.麦克风权限说明'.tr())),
+          );
+        return;
+      }
+    }
+    await _stopAudioPlayback();
+    await _chatController.startVoiceRecording();
+  }
+
+  Future<void> _handleVoiceRecordEnd() async {
+    await _chatController.finishVoiceRecordingAndSend();
+  }
+
+  void _handleVoiceRecordMove(LongPressMoveUpdateDetails details) {
+    if (details.localPosition.dy < -50) {
+      _chatController.cancelVoiceRecording();
+      return;
+    }
+    _chatController.restoreVoiceRecording();
+  }
+
+  Future<void> _handleAudioMessageTap(MessageVO message) async {
+    final ChatPageState currentState = ref.read(
+      chatPageControllerProvider(widget.args),
+    );
+    if (currentState.downloadingAudioMessageIds.contains(message.messageId)) {
+      return;
+    }
+    if (currentState.playingMessageId == message.messageId &&
+        _audioPlayer.playing) {
+      await _stopAudioPlayback();
+      return;
+    }
+
+    try {
+      await _stopAudioPlayback();
+      final String audioPath = await _ensureAudioPlayablePath(message);
+      await _audioPlayer.setFilePath(audioPath);
+      _chatController.setPlayingMessageId(message.messageId);
+      await _audioPlayer.play();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(_resolveAudioPlaybackErrorMessage(error))),
+        );
+    }
+  }
+
+  Future<void> _stopAudioPlayback() async {
+    try {
+      await _audioPlayer.stop();
+    } finally {
+      _chatController.setPlayingMessageId(null);
+    }
+  }
+
+  Future<String> _ensureAudioPlayablePath(MessageVO message) async {
+    final String rawPath = message.fileUrl.trim();
+    if (rawPath.isEmpty) {
+      throw ApiException.parse('audio file url missing');
+    }
+    if (!_isRemoteFileUrl(rawPath)) {
+      final File localFile = File(rawPath);
+      if (await localFile.exists()) {
+        return localFile.path;
+      }
+    }
+
+    final Directory cacheDirectory = await _resolveAudioCacheDirectory();
+    final String targetPath =
+        '${cacheDirectory.path}/${message.messageId}${_resolveAudioCacheExtension(message)}';
+    final File cachedFile = File(targetPath);
+    if (await cachedFile.exists() && await cachedFile.length() > 0) {
+      return cachedFile.path;
+    }
+
+    _chatController.setAudioDownloading(message.messageId, true);
+    try {
+      if (!_isRemoteFileUrl(rawPath)) {
+        throw ApiException.parse('audio file unavailable');
+      }
+      await _dio.download(rawPath, targetPath);
+      return targetPath;
+    } catch (error) {
+      if (await cachedFile.exists()) {
+        await cachedFile.delete();
+      }
+      rethrow;
+    } finally {
+      _chatController.setAudioDownloading(message.messageId, false);
+    }
+  }
+
+  Future<Directory> _resolveAudioCacheDirectory() async {
+    final Directory temporaryDirectory = await getTemporaryDirectory();
+    final Directory cacheDirectory = Directory(
+      '${temporaryDirectory.path}/chat_audio_cache',
+    );
+    if (!await cacheDirectory.exists()) {
+      await cacheDirectory.create(recursive: true);
+    }
+    return cacheDirectory;
+  }
+
+  String _resolveAudioCacheExtension(MessageVO message) {
+    final String fileName = message.fileName.trim();
+    if (fileName.contains('.')) {
+      return '.${fileName.split('.').last}';
+    }
+    final Uri? uri = Uri.tryParse(message.fileUrl.trim());
+    if (uri != null && uri.path.contains('.')) {
+      return '.${uri.path.split('.').last}';
+    }
+    return '.wav';
+  }
+
+  String _resolveAudioPlaybackErrorMessage(Object error) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return '消息.语音播放失败'.tr();
   }
 
   Future<void> _showMoreMenu(BuildContext buttonContext) async {
@@ -428,6 +599,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                             currentUserAvatarUrl: authUser?.avatarUrl ?? '',
                             scrollController: _scrollController,
                             isLoadingMore: state.isLoadingMore,
+                            playingMessageId: state.playingMessageId,
+                            downloadingAudioMessageIds:
+                                state.downloadingAudioMessageIds,
                             onTapFileMessage: _handleFileMessageTap,
                           ),
                   ),
@@ -435,7 +609,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     controller: _inputController,
                     focusNode: _inputFocusNode,
                     isSending: state.isSending,
+                    isVoiceMode: state.isVoiceMode,
+                    recordingState: state.recordingState,
+                    recordingSeconds: state.recordingSeconds,
                     onVoiceTap: _handleVoiceTap,
+                    onVoiceRecordStart: _handleVoiceRecordStart,
+                    onVoiceRecordEnd: _handleVoiceRecordEnd,
+                    onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
                     onFileTap: _handleFileAction,
                     onSend: () =>
                         _chatController.sendTextMessage(_inputController.text),
@@ -758,6 +938,8 @@ class _ChatMessageList extends StatelessWidget {
     required this.currentUserAvatarUrl,
     required this.scrollController,
     required this.isLoadingMore,
+    required this.playingMessageId,
+    required this.downloadingAudioMessageIds,
     required this.onTapFileMessage,
   });
 
@@ -769,6 +951,8 @@ class _ChatMessageList extends StatelessWidget {
   final String currentUserAvatarUrl;
   final ScrollController scrollController;
   final bool isLoadingMore;
+  final int? playingMessageId;
+  final Set<int> downloadingAudioMessageIds;
   final Future<void> Function(MessageVO message) onTapFileMessage;
 
   @override
@@ -813,6 +997,10 @@ class _ChatMessageList extends StatelessWidget {
                 isMine: isMine,
                 avatarUrl: isMine ? currentUserAvatarUrl : targetAvatarUrl,
                 fallbackName: isMine ? currentUserNickname : targetNickname,
+                isPlaying: playingMessageId == message.messageId,
+                isDownloading: downloadingAudioMessageIds.contains(
+                  message.messageId,
+                ),
                 onTapFileMessage: onTapFileMessage,
               );
             },
@@ -829,6 +1017,8 @@ class _ChatMessageRow extends StatelessWidget {
     required this.isMine,
     required this.avatarUrl,
     required this.fallbackName,
+    required this.isPlaying,
+    required this.isDownloading,
     required this.onTapFileMessage,
   });
 
@@ -836,6 +1026,8 @@ class _ChatMessageRow extends StatelessWidget {
   final bool isMine;
   final String avatarUrl;
   final String fallbackName;
+  final bool isPlaying;
+  final bool isDownloading;
   final Future<void> Function(MessageVO message) onTapFileMessage;
 
   @override
@@ -876,6 +1068,8 @@ class _ChatMessageRow extends StatelessWidget {
                 child: _ChatBubble(
                   message: message,
                   isMine: isMine,
+                  isPlaying: isPlaying,
+                  isDownloading: isDownloading,
                   onTapFileMessage: onTapFileMessage,
                 ),
               );
@@ -893,11 +1087,15 @@ class _ChatBubble extends StatelessWidget {
   const _ChatBubble({
     required this.message,
     required this.isMine,
+    required this.isPlaying,
+    required this.isDownloading,
     required this.onTapFileMessage,
   });
 
   final MessageVO message;
   final bool isMine;
+  final bool isPlaying;
+  final bool isDownloading;
   final Future<void> Function(MessageVO message) onTapFileMessage;
 
   @override
@@ -1012,6 +1210,50 @@ class _ChatBubble extends StatelessWidget {
       );
     }
 
+    if (message.type == 'audio') {
+      return InkWell(
+        borderRadius: borderRadius,
+        onTap: () => onTapFileMessage(message),
+        child: Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: borderRadius,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (isDownloading)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
+                  ),
+                )
+              else
+                Icon(
+                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 20,
+                  color: foregroundColor,
+                ),
+              const SizedBox(width: 8),
+              Text(
+                _formatAudioDuration(message.duration),
+                style: TextStyle(
+                  color: foregroundColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  height: 20 / 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -1023,6 +1265,15 @@ class _ChatBubble extends StatelessWidget {
         style: TextStyle(color: foregroundColor, fontSize: 15, height: 22 / 15),
       ),
     );
+  }
+
+  String _formatAudioDuration(int? seconds) {
+    final int safeSeconds = seconds == null || seconds < 0 ? 0 : seconds;
+    final int minutes = safeSeconds ~/ 60;
+    final int remainder = safeSeconds % 60;
+    final String minuteText = minutes.toString().padLeft(2, '0');
+    final String secondText = remainder.toString().padLeft(2, '0');
+    return '$minuteText:$secondText';
   }
 }
 
@@ -1063,7 +1314,13 @@ class _ChatComposer extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.isSending,
+    required this.isVoiceMode,
+    required this.recordingState,
+    required this.recordingSeconds,
     required this.onVoiceTap,
+    required this.onVoiceRecordStart,
+    required this.onVoiceRecordEnd,
+    required this.onVoiceRecordMoveUpdate,
     required this.onFileTap,
     required this.onSend,
   });
@@ -1071,7 +1328,14 @@ class _ChatComposer extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isSending;
+  final bool isVoiceMode;
+  final ChatVoiceRecordingState recordingState;
+  final int recordingSeconds;
   final VoidCallback onVoiceTap;
+  final Future<void> Function() onVoiceRecordStart;
+  final Future<void> Function() onVoiceRecordEnd;
+  final void Function(LongPressMoveUpdateDetails details)
+  onVoiceRecordMoveUpdate;
   final Future<void> Function() onFileTap;
   final Future<void> Function() onSend;
 
@@ -1099,7 +1363,9 @@ class _ChatComposer extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: Center(
                     child: SvgPicture.asset(
-                      _ChatPageState._voiceAsset,
+                      isVoiceMode
+                          ? _ChatPageState._keyboardAsset
+                          : _ChatPageState._voiceAsset,
                       width: 24,
                       height: 24,
                     ),
@@ -1108,84 +1374,182 @@ class _ChatComposer extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  minLines: 1,
-                  maxLines: 4,
-                  enabled: !isSending,
-                  textInputAction: TextInputAction.send,
-                  keyboardType: TextInputType.multiline,
-                  onSubmitted: (_) => onSend(),
-                  decoration: InputDecoration(
-                    isCollapsed: true,
-                    hintText: '消息.发消息'.tr(),
-                    hintStyle: const TextStyle(
-                      color: _ChatPageState._subtleTextColor,
-                      fontSize: 15,
-                      height: 22 / 15,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  style: const TextStyle(
-                    color: _ChatPageState._titleColor,
-                    fontSize: 15,
-                    height: 22 / 15,
-                  ),
-                ),
+                child: isVoiceMode
+                    ? _VoiceRecordButton(
+                        isSending: isSending,
+                        recordingState: recordingState,
+                        recordingSeconds: recordingSeconds,
+                        onRecordStart: onVoiceRecordStart,
+                        onRecordEnd: onVoiceRecordEnd,
+                        onRecordMoveUpdate: onVoiceRecordMoveUpdate,
+                      )
+                    : TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        minLines: 1,
+                        maxLines: 4,
+                        enabled: !isSending,
+                        textInputAction: TextInputAction.send,
+                        keyboardType: TextInputType.multiline,
+                        onSubmitted: (_) => onSend(),
+                        decoration: InputDecoration(
+                          isCollapsed: true,
+                          hintText: '消息.发消息'.tr(),
+                          hintStyle: const TextStyle(
+                            color: _ChatPageState._subtleTextColor,
+                            fontSize: 15,
+                            height: 22 / 15,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                        style: const TextStyle(
+                          color: _ChatPageState._titleColor,
+                          fontSize: 15,
+                          height: 22 / 15,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
-              ValueListenableBuilder<TextEditingValue>(
-                valueListenable: controller,
-                builder:
-                    (
-                      BuildContext context,
-                      TextEditingValue value,
-                      Widget? child,
-                    ) {
-                      final bool hasText = value.text.trim().isNotEmpty;
-                      if (hasText) {
-                        return InkWell(
-                          onTap: isSending ? null : onSend,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              '消息.发送'.tr(),
-                              style: TextStyle(
-                                color: isSending
-                                    ? const Color(0xFFBFBFBF)
-                                    : _ChatPageState._brandBlue,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                height: 24 / 15,
+              if (isVoiceMode)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: InkWell(
+                    onTap: isSending ? null : onFileTap,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        _ChatPageState._addAsset,
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder:
+                      (
+                        BuildContext context,
+                        TextEditingValue value,
+                        Widget? child,
+                      ) {
+                        final bool hasText = value.text.trim().isNotEmpty;
+                        if (hasText) {
+                          return InkWell(
+                            onTap: isSending ? null : onSend,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(
+                                '消息.发送'.tr(),
+                                style: TextStyle(
+                                  color: isSending
+                                      ? const Color(0xFFBFBFBF)
+                                      : _ChatPageState._brandBlue,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  height: 24 / 15,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: InkWell(
+                            onTap: isSending ? null : onFileTap,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Center(
+                              child: SvgPicture.asset(
+                                _ChatPageState._addAsset,
+                                width: 24,
+                                height: 24,
                               ),
                             ),
                           ),
                         );
-                      }
-                      return SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: InkWell(
-                          onTap: isSending ? null : onFileTap,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              _ChatPageState._addAsset,
-                              width: 24,
-                              height: 24,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-              ),
+                      },
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+class _VoiceRecordButton extends StatelessWidget {
+  const _VoiceRecordButton({
+    required this.isSending,
+    required this.recordingState,
+    required this.recordingSeconds,
+    required this.onRecordStart,
+    required this.onRecordEnd,
+    required this.onRecordMoveUpdate,
+  });
+
+  final bool isSending;
+  final ChatVoiceRecordingState recordingState;
+  final int recordingSeconds;
+  final Future<void> Function() onRecordStart;
+  final Future<void> Function() onRecordEnd;
+  final void Function(LongPressMoveUpdateDetails details) onRecordMoveUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isCancel = recordingState == ChatVoiceRecordingState.cancel;
+    final bool isRecording = recordingState == ChatVoiceRecordingState.recording;
+    final Color backgroundColor = isCancel
+        ? const Color(0xFFFFEAEA)
+        : isRecording
+        ? const Color(0xFFEAF3FF)
+        : Colors.transparent;
+    final Color foregroundColor = isCancel
+        ? const Color(0xFFD9363E)
+        : isRecording
+        ? _ChatPageState._brandBlue
+        : _ChatPageState._subtleTextColor;
+    final String label = isCancel
+        ? '消息.松开取消'.tr()
+        : isRecording
+        ? '${'消息.松开发送'.tr()} ${_formatDuration(recordingSeconds)}'
+        : '消息.按住说话'.tr();
+    return Listener(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onLongPressStart: isSending ? null : (_) => onRecordStart(),
+        onLongPressEnd: isSending ? null : (_) => onRecordEnd(),
+        onLongPressMoveUpdate: isSending ? null : onRecordMoveUpdate,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 32,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: foregroundColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              height: 22 / 15,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(int seconds) {
+    final int safeSeconds = seconds < 0 ? 0 : seconds;
+    final int minutes = safeSeconds ~/ 60;
+    final int remainder = safeSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
   }
 }
 

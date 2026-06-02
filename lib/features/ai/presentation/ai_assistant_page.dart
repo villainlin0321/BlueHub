@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -6,12 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/network/api_decoders.dart';
+import '../../../shared/network/sse_models.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 import '../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../shared/widgets/tag_chip.dart';
 import '../data/ai_models.dart';
 import '../data/ai_providers.dart';
+import 'widgets/ai_session_history_sheet.dart';
 import '../../jobs/data/job_models.dart';
 import '../../jobs/data/job_providers.dart';
 import '../../jobs/presentation/job_apply_helper.dart';
@@ -32,7 +36,9 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   final List<_ChatMessage> _messages = <_ChatMessage>[];
   final Set<int> _applyingJobIds = <int>{};
   final Set<int> _appliedJobIds = <int>{};
+  int? _currentSessionId;
   bool _isHistoryLoading = false;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -50,8 +56,9 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
 
   /// 初始化页面消息源：有有效会话时拉取历史，否则展示默认示例消息。
   Future<void> _initializeMessages() async {
-    if (_hasValidSessionId(widget.sessionId)) {
-      await _loadHistoryMessages(widget.sessionId!);
+    _currentSessionId = widget.sessionId;
+    if (_hasValidSessionId(_currentSessionId)) {
+      await _loadHistoryMessages(_currentSessionId!);
       return;
     }
 
@@ -91,18 +98,54 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     ];
   }
 
-  /// 发送本地输入消息，仅追加用户侧消息气泡。
-  void _send() {
+  /// 发送用户消息并建立 AI SSE 对话流。
+  Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) {
+    if (text.isEmpty || _isSending) {
       return;
     }
+    final String language = _resolveLanguage();
     setState(() {
       _messages.add(
         _ChatMessage(role: _ChatRole.user, text: text, footer: null),
       );
+      _messages.add(
+        _ChatMessage(
+          role: _ChatRole.assistant,
+          text: '',
+          footer: 'AI.由西格玛AI提供'.tr(),
+        ),
+      );
       _controller.clear();
+      _isSending = true;
     });
+    final int assistantIndex = _messages.length - 1;
+    try {
+      await for (final SseEvent event in ref.read(aiServiceProvider).chat(
+        request: AiChatBO(
+          sessionId: _currentSessionId,
+          message: text,
+          contextType: 'general',
+          language: language,
+        ),
+      )) {
+        if (!mounted) {
+          return;
+        }
+        _handleChatEvent(event, assistantIndex: assistantIndex);
+      }
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+      if (mounted) {
+        _removeEmptyAssistantMessage(assistantIndex);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
   }
 
   /// 拉取会话历史，并将服务端消息映射为页面内部消息模型。
@@ -112,17 +155,18 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     });
 
     try {
-      final List<AiMessage> history = await ref
+      final List<AiMessageVO> history = await ref
           .read(aiServiceProvider)
           .getChatHistory(sessionId: sessionId);
       history.sort(
-        (AiMessage left, AiMessage right) =>
+        (AiMessageVO left, AiMessageVO right) =>
             left.aiMsgId.compareTo(right.aiMsgId),
       );
       if (!mounted) {
         return;
       }
       setState(() {
+        _currentSessionId = sessionId;
         _isHistoryLoading = false;
         _messages
           ..clear()
@@ -139,19 +183,14 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   }
 
   /// 将接口消息统一转换为页面渲染模型，便于兼容 footer 与嵌入卡片。
-  _ChatMessage _mapHistoryMessage(AiMessage message) {
+  _ChatMessage _mapHistoryMessage(AiMessageVO message) {
     final _ChatRole role = _parseChatRole(message.role);
     final bool isAssistant = role == _ChatRole.assistant;
     return _ChatMessage(
       role: role,
       text: message.content.trim(),
-      footer: isAssistant
-          ? (_parseFooterFromExtraData(message.extraData) ?? 'AI.由西格玛AI提供'.tr())
-          : null,
-      extraData: message.extraData,
-      embeddedJob: isAssistant
-          ? _parseEmbeddedJobFromExtraData(message.extraData)
-          : null,
+      footer: isAssistant ? 'AI.由西格玛AI提供'.tr() : null,
+      embeddedJob: isAssistant ? _parseEmbeddedJobFromCards(message.cards) : null,
     );
   }
 
@@ -199,7 +238,6 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
       _messages[messageIndex] = _messages[messageIndex].copyWith(
         isEmbeddedJobLoading: false,
         embeddedJob: job,
-        extraData: job == null ? null : jsonEncode(job.toJson()),
       );
     });
   }
@@ -254,109 +292,22 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     );
   }
 
-  /// 解析额外数据中的 footer 文案，兼容多种字段命名。
-  String? _parseFooterFromExtraData(String extraData) {
-    final Map<String, Object?>? json = _decodeJsonMap(extraData);
-    if (json == null) {
-      return null;
-    }
-    for (final String key in <String>[
-      'footer',
-      'footerText',
-      'providerLabel',
-      'sourceLabel',
-    ]) {
-      final String? value = _readStringValue(json[key]);
-      if (value != null && value.trim().isNotEmpty) {
-        return value.trim();
+  JobListVO? _parseEmbeddedJobFromCards(List<AiCardEvent> cards) {
+    for (final AiCardEvent card in cards) {
+      if (card.type.trim().toLowerCase() != 'jobs') {
+        continue;
+      }
+      for (final JsonMap item in card.items) {
+        try {
+          return JobListVO.fromJson(_normalizeJobJson(item));
+        } catch (_) {
+          continue;
+        }
       }
     }
     return null;
   }
 
-  /// 从额外数据中提取岗位卡片，兼容嵌套对象与列表结构。
-  JobListVO? _parseEmbeddedJobFromExtraData(String extraData) {
-    final Map<String, Object?>? json = _decodeJsonMap(extraData);
-    if (json == null) {
-      return null;
-    }
-    final Map<String, Object?>? jobJson = _findEmbeddedJobJson(json);
-    if (jobJson == null) {
-      return null;
-    }
-    try {
-      return JobListVO.fromJson(_normalizeJobJson(jobJson));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// 安全解码 JSON Map，避免 extraData 非 JSON 时影响页面渲染。
-  Map<String, Object?>? _decodeJsonMap(String value) {
-    final String normalizedValue = value.trim();
-    if (normalizedValue.isEmpty) {
-      return null;
-    }
-    try {
-      final Object? decoded = jsonDecode(normalizedValue);
-      return _asJsonMap(decoded);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// 递归查找最像岗位结构的对象，优先命中特定业务键名。
-  Map<String, Object?>? _findEmbeddedJobJson(Object? value) {
-    final Map<String, Object?>? json = _asJsonMap(value);
-    if (json != null) {
-      if (_looksLikeJobJson(json)) {
-        return json;
-      }
-      for (final String key in <String>[
-        'job',
-        'jobCard',
-        'embeddedJob',
-        'payload',
-        'data',
-      ]) {
-        final Map<String, Object?>? nestedJson = _findEmbeddedJobJson(
-          json[key],
-        );
-        if (nestedJson != null) {
-          return nestedJson;
-        }
-      }
-      for (final Object? nestedValue in json.values) {
-        final Map<String, Object?>? nestedJson = _findEmbeddedJobJson(
-          nestedValue,
-        );
-        if (nestedJson != null) {
-          return nestedJson;
-        }
-      }
-    }
-
-    final List<Object?>? items = _asObjectList(value);
-    if (items == null) {
-      return null;
-    }
-    for (final Object? item in items) {
-      final Map<String, Object?>? nestedJson = _findEmbeddedJobJson(item);
-      if (nestedJson != null) {
-        return nestedJson;
-      }
-    }
-    return null;
-  }
-
-  /// 判断对象是否具备岗位卡片的关键字段。
-  bool _looksLikeJobJson(Map<String, Object?> json) {
-    return (json.containsKey('jobId') || json.containsKey('job_id')) &&
-        (json.containsKey('title') || json.containsKey('job_title')) &&
-        json.containsKey('employer');
-  }
-
-  /// 将 extraData 中可能出现的蛇形字段映射为页面已使用的岗位模型字段。
   Map<String, Object?> _normalizeJobJson(Map<String, Object?> json) {
     return <String, Object?>{
       'jobId': json['jobId'] ?? json['job_id'] ?? 0,
@@ -370,7 +321,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
       'tags': json['tags'] ?? const <Object?>[],
       'hasVisaSupport':
           json['hasVisaSupport'] ?? json['has_visa_support'] ?? false,
-      'employer': _normalizeEmployerJson(_asJsonMap(json['employer'])),
+      'employer': _normalizeEmployerJson(asJsonMap(json['employer'])),
       'isUrgent': json['isUrgent'] ?? json['is_urgent'] ?? false,
       'isCollected': json['isCollected'] ?? json['is_collected'] ?? false,
       'publishedAt': json['publishedAt'] ?? json['published_at'] ?? '',
@@ -388,34 +339,125 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     };
   }
 
-  /// 将运行时对象安全转换为 JSON Map。
-  Map<String, Object?>? _asJsonMap(Object? value) {
-    if (value is Map<Object?, Object?>) {
-      return value.map(
-        (Object? key, Object? nestedValue) =>
-            MapEntry<String, Object?>(key.toString(), nestedValue),
+  void _handleChatEvent(SseEvent event, {required int assistantIndex}) {
+    final String eventName = (event.event ?? '').trim().toLowerCase();
+    final JsonMap payload = _decodeEventPayload(event.data);
+    switch (eventName) {
+      case 'ready':
+        final int sessionId = readInt(payload, 'sessionId');
+        if (sessionId > 0) {
+          setState(() {
+            _currentSessionId = sessionId;
+          });
+        }
+      case 'cards':
+        final AiCardEvent card = AiCardEvent.fromJson(payload);
+        if (_isValidAssistantIndex(assistantIndex)) {
+          setState(() {
+            final JobListVO? embeddedJob = _parseEmbeddedJobFromCards(
+              <AiCardEvent>[card],
+            );
+            _messages[assistantIndex] = _messages[assistantIndex].copyWith(
+              embeddedJob: embeddedJob,
+              isEmbeddedJobLoading: false,
+            );
+          });
+        }
+      case 'delta':
+        final String content = readString(payload, 'content');
+        if (content.isEmpty || !_isValidAssistantIndex(assistantIndex)) {
+          return;
+        }
+        setState(() {
+          _messages[assistantIndex] = _messages[assistantIndex].copyWith(
+            text: '${_messages[assistantIndex].text}$content',
+          );
+        });
+      case 'error':
+        final String message = readString(payload, 'msg', fallback: event.data);
+        _showMessage(message, isError: true);
+        _removeEmptyAssistantMessage(assistantIndex);
+      case 'done':
+        if (_isValidAssistantIndex(assistantIndex)) {
+          setState(() {
+            _messages[assistantIndex] = _messages[assistantIndex].copyWith(
+              isEmbeddedJobLoading: false,
+            );
+          });
+        }
+      default:
+        return;
+    }
+  }
+
+  bool _isValidAssistantIndex(int index) {
+    return index >= 0 && index < _messages.length;
+  }
+
+  JsonMap _decodeEventPayload(String raw) {
+    final String normalized = raw.trim();
+    if (normalized.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    try {
+      return asJsonMap(jsonDecode(normalized));
+    } catch (_) {
+      return const <String, dynamic>{};
+    }
+  }
+
+  void _removeEmptyAssistantMessage(int assistantIndex) {
+    if (!_isValidAssistantIndex(assistantIndex)) {
+      return;
+    }
+    final _ChatMessage message = _messages[assistantIndex];
+    if (message.role != _ChatRole.assistant || message.text.trim().isNotEmpty) {
+      return;
+    }
+    setState(() {
+      _messages.removeAt(assistantIndex);
+    });
+  }
+
+  String _resolveLanguage() {
+    final String code = context.locale.languageCode.trim().toLowerCase();
+    return code == 'en' ? 'en' : 'zh';
+  }
+
+  Future<void> _openSessionHistory() async {
+    await showAiSessionHistorySheet(
+      context,
+      currentSessionId: _currentSessionId,
+      onSessionSelected: (AiSessionVO session) async {
+        await _loadHistoryMessages(session.sessionId);
+      },
+      onCurrentSessionDeleted: () async {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _currentSessionId = null;
+          _messages
+            ..clear()
+            ..addAll(_buildDefaultMessages());
+        });
+        await _loadRecommendedJob();
+      },
+    );
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: isError ? const Color(0xFFD9363E) : null,
+          content: Text(message),
+        ),
       );
-    }
-    return null;
-  }
-
-  /// 将运行时对象安全转换为对象列表。
-  List<Object?>? _asObjectList(Object? value) {
-    if (value is List<Object?>) {
-      return value;
-    }
-    if (value is List<dynamic>) {
-      return value.cast<Object?>();
-    }
-    return null;
-  }
-
-  /// 从多态 JSON 值中读取字符串，避免类型漂移导致解析失败。
-  String? _readStringValue(Object? value) {
-    if (value is String) {
-      return value;
-    }
-    return null;
   }
 
   @override
@@ -445,7 +487,10 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
                       ),
                     ),
                     const Spacer(),
-                    TextButton(onPressed: () {}, child: Text('AI.历史记录'.tr())),
+                    TextButton(
+                      onPressed: _openSessionHistory,
+                      child: Text('AI.历史记录'.tr()),
+                    ),
                   ],
                 ),
               ),
@@ -489,7 +534,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
                   ],
                 ),
               ),
-              _Composer(controller: _controller, onSend: _send),
+              _Composer(controller: _controller, onSend: () => unawaited(_send())),
             ],
           ),
         ),

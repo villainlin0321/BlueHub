@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 import '../../../../features/auth/application/auth_session_provider.dart';
 import '../../../../features/files/data/file_models.dart';
@@ -36,14 +40,19 @@ class ChatPageController extends Notifier<ChatPageState> {
   late final MessageService _messageService;
   late final FileService _fileService;
   late final int _currentUserId;
+  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isDisposed = false;
   int _nextTemporaryMessageId = -1;
+  Timer? _recordingTimer;
+  String? _recordingFilePath;
 
   @override
   ChatPageState build() {
     _isDisposed = false;
     ref.onDispose(() {
       _isDisposed = true;
+      _recordingTimer?.cancel();
+      unawaited(_audioRecorder.dispose());
     });
     _messageService = ref.read(messageServiceProvider);
     _fileService = ref.read(fileServiceProvider);
@@ -162,6 +171,224 @@ class ChatPageController extends Notifier<ChatPageState> {
         (ChatPageState current) => current.copyWith(
           isSending: false,
           feedbackMessage: _resolveErrorMessage(error),
+          feedbackId: current.feedbackId + 1,
+        ),
+      );
+    }
+  }
+
+  void toggleComposerMode() {
+    if (state.isSending || state.isRecording) {
+      return;
+    }
+    _updateState((ChatPageState current) {
+      final ChatComposerMode nextMode = current.isVoiceMode
+          ? ChatComposerMode.text
+          : ChatComposerMode.voice;
+      return current.copyWith(
+        composerMode: nextMode,
+        recordingState: ChatVoiceRecordingState.idle,
+        recordingSeconds: 0,
+      );
+    });
+  }
+
+  void setPlayingMessageId(int? messageId) {
+    _updateState(
+      (ChatPageState current) => current.copyWith(playingMessageId: messageId),
+    );
+  }
+
+  void setAudioDownloading(int messageId, bool isDownloading) {
+    _updateState((ChatPageState current) {
+      final Set<int> nextIds = <int>{...current.downloadingAudioMessageIds};
+      if (isDownloading) {
+        nextIds.add(messageId);
+      } else {
+        nextIds.remove(messageId);
+      }
+      return current.copyWith(downloadingAudioMessageIds: nextIds);
+    });
+  }
+
+  Future<bool> hasMicrophonePermission() async {
+    final PermissionStatus status = await Permission.microphone.status;
+    return status.isGranted;
+  }
+
+  Future<PermissionStatus> requestMicrophonePermission() {
+    return Permission.microphone.request();
+  }
+
+  Future<bool> startVoiceRecording() async {
+    if (state.isSending || state.isRecording) {
+      return false;
+    }
+    final bool granted = await hasMicrophonePermission();
+    if (!granted) {
+      return false;
+    }
+
+    try {
+      final Directory temporaryDirectory = await getTemporaryDirectory();
+      final String filePath =
+          '${temporaryDirectory.path}/chat_voice_${DateTime.now().millisecondsSinceEpoch}.wav';
+      _recordingFilePath = filePath;
+      _recordingTimer?.cancel();
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          recordingState: ChatVoiceRecordingState.recording,
+          recordingSeconds: 0,
+          feedbackMessage: null,
+        ),
+      );
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (
+        Timer timer,
+      ) {
+        if (_isDisposed || !state.isRecording) {
+          timer.cancel();
+          return;
+        }
+        final int nextSeconds = state.recordingSeconds + 1;
+        _updateState(
+          (ChatPageState current) =>
+              current.copyWith(recordingSeconds: nextSeconds),
+        );
+      });
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          bitRate: 64000,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        path: filePath,
+      );
+      return true;
+    } catch (error) {
+      _recordingTimer?.cancel();
+      _recordingFilePath = null;
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          recordingState: ChatVoiceRecordingState.idle,
+          recordingSeconds: 0,
+          feedbackMessage: _resolveRecordingErrorMessage(error),
+          feedbackId: current.feedbackId + 1,
+        ),
+      );
+      return false;
+    }
+  }
+
+  void cancelVoiceRecording() {
+    if (!state.isRecording && !state.isRecordingCancel) {
+      return;
+    }
+    _updateState(
+      (ChatPageState current) =>
+          current.copyWith(recordingState: ChatVoiceRecordingState.cancel),
+    );
+  }
+
+  void restoreVoiceRecording() {
+    if (!state.isRecordingCancel) {
+      return;
+    }
+    _updateState(
+      (ChatPageState current) =>
+          current.copyWith(recordingState: ChatVoiceRecordingState.recording),
+    );
+  }
+
+  Future<void> finishVoiceRecordingAndSend() async {
+    if (state.recordingState == ChatVoiceRecordingState.idle) {
+      return;
+    }
+    final bool shouldCancel =
+        state.recordingState == ChatVoiceRecordingState.cancel;
+    final int duration = state.recordingSeconds;
+    _recordingTimer?.cancel();
+
+    String? filePath;
+    try {
+      filePath = await _audioRecorder.stop();
+    } catch (_) {
+      filePath = _recordingFilePath;
+    }
+    _recordingFilePath = null;
+
+    _updateState(
+      (ChatPageState current) => current.copyWith(
+        recordingState: ChatVoiceRecordingState.idle,
+        recordingSeconds: 0,
+      ),
+    );
+
+    if (filePath == null || filePath.isEmpty) {
+      if (!shouldCancel) {
+        _updateState(
+          (ChatPageState current) => current.copyWith(
+            feedbackMessage: '消息.录音失败'.tr(),
+            feedbackId: current.feedbackId + 1,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (shouldCancel) {
+      await _deleteLocalFileIfExists(filePath);
+      return;
+    }
+
+    if (duration < 1) {
+      await _deleteLocalFileIfExists(filePath);
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          feedbackMessage: '消息.录音时间太短'.tr(),
+          feedbackId: current.feedbackId + 1,
+        ),
+      );
+      return;
+    }
+
+    _updateState(
+      (ChatPageState current) =>
+          current.copyWith(isSending: true, feedbackMessage: null),
+    );
+    try {
+      final File audioFile = File(filePath);
+      final int conversationId = await _ensureConversationId();
+      final FilePresignVO uploaded = await _fileService.uploadFile(
+        path: filePath,
+        scene: FileScene.chat,
+        errorMessage: '消息.语音发送失败'.tr(),
+      );
+      final int fileSize = await audioFile.length();
+      final MessageVO message = await _messageService.sendMessage(
+        conversationId: conversationId,
+        request: SendMessageBO(
+          type: 'audio',
+          fileId: uploaded.fileId,
+          fileUrl: uploaded.fileUrl,
+          fileName: _resolveAudioFileName(filePath),
+          fileSize: fileSize,
+          duration: duration,
+        ),
+      );
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          conversationId: conversationId,
+          messages: _mergeMessages(current.messages, <MessageVO>[message]),
+          isSending: false,
+          newestMessageToken: current.newestMessageToken + 1,
+        ),
+      );
+    } catch (error) {
+      _updateState(
+        (ChatPageState current) => current.copyWith(
+          isSending: false,
+          feedbackMessage: _resolveRecordingErrorMessage(error),
           feedbackId: current.feedbackId + 1,
         ),
       );
@@ -552,6 +779,7 @@ class ChatPageController extends Notifier<ChatPageState> {
       fileUrl: file.path,
       fileName: file.name,
       fileSize: UploadPickerUtils.readFileSize(file.path),
+      duration: null,
       isRead: true,
       isRetracted: false,
       sentAt: DateTime.now().toUtc().toIso8601String(),
@@ -635,6 +863,33 @@ class ChatPageController extends Notifier<ChatPageState> {
       return error.message;
     }
     return '消息.消息加载失败'.tr();
+  }
+
+  String _resolveRecordingErrorMessage(Object error) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return '消息.语音发送失败'.tr();
+  }
+
+  String _resolveAudioFileName(String path) {
+    final Uri uri = Uri.file(path);
+    final List<String> segments = uri.pathSegments;
+    if (segments.isNotEmpty) {
+      return segments.last;
+    }
+    return 'voice_${DateTime.now().millisecondsSinceEpoch}.wav';
+  }
+
+  Future<void> _deleteLocalFileIfExists(String path) async {
+    try {
+      final File file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // 本地缓存清理失败不阻断主流程。
+    }
   }
 
   void _updateState(ChatPageState Function(ChatPageState current) updater) {

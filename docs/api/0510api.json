@@ -54,6 +54,10 @@
       "description": "两级职位树：分类（餐饮/医护等） → 具体职位；支持中英文关键字搜索"
     },
     {
+      "name": "AI 助手模块",
+      "description": "分角色 AI 对话（SSE 流式）、会话管理、人才推荐"
+    },
+    {
       "name": "用户模块",
       "description": "用户信息管理、角色切换、实名认证、黑名单"
     },
@@ -76,10 +80,6 @@
     {
       "name": "应聘模块",
       "description": "投递简历、查看应聘记录、更新应聘状态"
-    },
-    {
-      "name": "AI 助手模块",
-      "description": "AI 对话（SSE 流式输出）、人才推荐（骨架占位）"
     },
     {
       "name": "首页模块",
@@ -1970,6 +1970,89 @@
           },
           "required": true
         },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/sessions/{id}/title": {
+      "put": {
+        "tags": [
+          "AI 助手模块"
+        ],
+        "summary": "重命名会话",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "rename",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "会话 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "description": "新标题",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "500": {
             "description": "Internal Server Error",
@@ -4838,12 +4921,84 @@
         }
       }
     },
+    "/applications/invite": {
+      "post": {
+        "tags": [
+          "应聘模块"
+        ],
+        "summary": "邀约面试（雇主端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "inviteInterview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteInterviewBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat": {
       "post": {
         "tags": [
           "AI 助手模块"
         ],
-        "summary": "发起/继续 AI 对话（流式 SSE）",
+        "summary": "发起/继续 AI 对话（流式 SSE，含工具卡片）",
         "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
         "operationId": "chat",
         "requestBody": {
@@ -4898,11 +5053,25 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "SSE 流式响应",
             "content": {
               "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/SseEmitter"
+                "examples": {
+                  "有工具调用 + 卡片 + 文字": {
+                    "summary": "工人问德国焊工岗位",
+                    "description": "有工具调用 + 卡片 + 文字",
+                    "value": "event: ready\ndata: {\"sessionId\":12}\n\nevent: cards\ndata: {\"type\":\"jobs\",\"items\":[{\"jobId\":42,\"title\":\"电焊工\",\"country\":\"DE\",\"city\":\"柏林\",\"salaryMin\":1500,\"salaryMax\":2200,\"currency\":\"EUR\",\"hasVisaSupport\":true,\"isUrgent\":false,\"tags\":[\"管吃住\"],\"detailUrl\":\"/jobs/42\"}]}\n\nevent: delta\ndata: {\"content\":\"为你找到\"}\n\nevent: delta\ndata: {\"content\":\"5 个德国焊工岗位，\"}\n\nevent: delta\ndata: {\"content\":\"建议优先看薪资较高的柏林岗位。\"}\n\nevent: done\ndata: {\"sessionId\":12,\"chars\":24}\n"
+                  },
+                  "无工具调用（闲聊）": {
+                    "summary": "普通问候",
+                    "description": "无工具调用（闲聊）",
+                    "value": "event: ready\ndata: {\"sessionId\":13}\n\nevent: delta\ndata: {\"content\":\"你好\"}\n\nevent: delta\ndata: {\"content\":\"！有什么我可以帮你的？\"}\n\nevent: done\ndata: {\"sessionId\":13,\"chars\":10}\n"
+                  },
+                  "限流错误": {
+                    "summary": "触发每分钟限流",
+                    "description": "限流错误",
+                    "value": "event: error\ndata: {\"msg\":\"请求过于频繁，请稍候\"}\n"
+                  }
                 }
               }
             }
@@ -6521,11 +6690,21 @@
             }
           },
           "200": {
-            "description": "统计数据，具体结构由当前 activeRole 决定",
+            "description": "按 activeRole 返回对应统计对象（三选一）",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppResultObject"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProviderStatsVO"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmployerStatsVO"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WorkerStatsVO"
+                    }
+                  ]
                 }
               }
             }
@@ -7504,7 +7683,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "推荐数量，默认5",
+            "description": "推荐数量，默认 5",
             "required": false,
             "schema": {
               "type": "integer",
@@ -7567,12 +7746,74 @@
         }
       }
     },
+    "/ai/sessions": {
+      "get": {
+        "tags": [
+          "AI 助手模块"
+        ],
+        "summary": "当前角色下的 AI 会话列表",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listSessions",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultListAiSessionVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat/history": {
       "get": {
         "tags": [
           "AI 助手模块"
         ],
-        "summary": "获取 AI 对话历史",
+        "summary": "获取某会话的对话历史",
         "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
         "operationId": "getChatHistory",
         "parameters": [
@@ -7589,7 +7830,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "返回条数，默认50",
+            "description": "返回条数，默认 50",
             "required": false,
             "schema": {
               "type": "integer",
@@ -7644,7 +7885,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppResultListAiMessage"
+                  "$ref": "#/components/schemas/AppResultListAiMessageVO"
                 }
               }
             }
@@ -7665,6 +7906,80 @@
             "name": "cardId",
             "in": "path",
             "description": "银行卡 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "AI 助手模块"
+        ],
+        "summary": "软删除会话",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "会话 ID",
             "required": true,
             "schema": {
               "type": "integer",
@@ -8646,6 +8961,34 @@
           }
         }
       },
+      "ApplicantInfoVO": {
+        "type": "object",
+        "description": "下单用户信息",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户 ID"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "昵称"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "头像 URL"
+          },
+          "type": {
+            "type": "string",
+            "description": "用户角色：worker / employer / visa_provider"
+          },
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务档案 ID（非 worker 时有值，发起会话时作为 targetUserId 传入）"
+          }
+        }
+      },
       "MaterialVO": {
         "type": "object",
         "description": "用户已上传材料项",
@@ -8849,6 +9192,10 @@
             "items": {
               "$ref": "#/components/schemas/VisaDocVO"
             }
+          },
+          "applicant": {
+            "$ref": "#/components/schemas/ApplicantInfoVO",
+            "description": "下单用户信息（服务商端，用于联系申请人）"
           },
           "rejectReason": {
             "type": "string",
@@ -9317,9 +9664,9 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "消息类型：text / image / file",
+            "description": "消息类型：text / image / file / audio",
             "minLength": 1,
-            "pattern": "text|image|file"
+            "pattern": "text|image|file|audio"
           },
           "content": {
             "type": "string",
@@ -9342,6 +9689,11 @@
             "type": "integer",
             "format": "int64",
             "description": "文件大小（字节）"
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int32",
+            "description": "音频时长（秒，type=audio 时填入）"
           }
         },
         "required": [
@@ -9401,7 +9753,7 @@
           },
           "type": {
             "type": "string",
-            "description": "消息类型：text / image / file / system"
+            "description": "消息类型：text / image / file / audio / system"
           },
           "content": {
             "type": "string",
@@ -9419,6 +9771,11 @@
             "type": "integer",
             "format": "int64",
             "description": "文件大小"
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int32",
+            "description": "音频时长（秒），type=audio 时有值"
           },
           "isRead": {
             "type": "boolean",
@@ -9774,6 +10131,30 @@
           "jobId"
         ]
       },
+      "InviteInterviewBO": {
+        "type": "object",
+        "description": "雇主邀约面试请求",
+        "properties": {
+          "jobId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "岗位 ID（必须是当前雇主发布的）"
+          },
+          "resumeId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "求职者简历 ID"
+          },
+          "remark": {
+            "type": "string",
+            "description": "邀约备注（仅雇主可见，可选）"
+          }
+        },
+        "required": [
+          "jobId",
+          "resumeId"
+        ]
+      },
       "AiChatBO": {
         "type": "object",
         "description": "AI 对话请求",
@@ -9792,20 +10173,17 @@
             "type": "string",
             "default": "general",
             "description": "上下文类型：general / job_match / visa_consult / order_query"
+          },
+          "language": {
+            "type": "string",
+            "description": "回复语言：zh / en（不传默认按 Accept-Language，再不传则默认 zh）",
+            "example": "en",
+            "pattern": "^(zh|en)$"
           }
         },
         "required": [
           "message"
         ]
-      },
-      "SseEmitter": {
-        "type": "object",
-        "properties": {
-          "timeout": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
       },
       "AppResultPageResultVisaProviderListVO": {
         "type": "object",
@@ -11365,6 +11743,15 @@
           }
         }
       },
+      "SseEmitter": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RVoid": {
         "type": "object",
         "description": "响应信息主体",
@@ -12145,34 +12532,79 @@
           }
         }
       },
-      "AppResultObject": {
+      "ProviderStatsVO": {
         "type": "object",
-        "description": "统一响应体",
+        "description": "供应商首页统计",
         "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "业务状态码，0=成功",
-            "example": 0
-          },
-          "message": {
-            "type": "string",
-            "description": "状态描述",
-            "example": "success"
-          },
-          "data": {
-            "description": "响应数据"
-          },
-          "timestamp": {
+          "todayConsultations": {
             "type": "integer",
             "format": "int64",
-            "description": "服务器时间戳（毫秒）",
-            "example": 1713542400000
+            "description": "今日咨询数"
           },
-          "requestId": {
+          "inProgressOrders": {
+            "type": "integer",
+            "format": "int64",
+            "description": "进行中订单数"
+          },
+          "monthlyIncome": {
+            "type": "number",
+            "description": "本月收入（CNY）"
+          },
+          "incomeCurrency": {
             "type": "string",
-            "description": "请求追踪ID",
-            "example": "req_abc123xyz"
+            "description": "收入币种，固定 CNY"
+          }
+        }
+      },
+      "EmployerStatsVO": {
+        "type": "object",
+        "description": "企业首页统计",
+        "properties": {
+          "activeJobs": {
+            "type": "integer",
+            "format": "int64",
+            "description": "在招岗位数"
+          },
+          "receivedResumes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "收到简历数"
+          },
+          "pendingInterviews": {
+            "type": "integer",
+            "format": "int64",
+            "description": "待面试数"
+          },
+          "hired": {
+            "type": "integer",
+            "format": "int64",
+            "description": "已录用数"
+          }
+        }
+      },
+      "WorkerStatsVO": {
+        "type": "object",
+        "description": "求职者首页统计数据",
+        "properties": {
+          "orderCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "我的签证订单总数"
+          },
+          "resumeCompleteness": {
+            "type": "integer",
+            "format": "int32",
+            "description": "默认简历完整度（0-100），无默认简历时为 0"
+          },
+          "applicationCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "我的应聘记录总数"
+          },
+          "collectionCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "我的收藏总数"
           }
         }
       },
@@ -12740,6 +13172,10 @@
             "type": "string",
             "description": "昵称"
           },
+          "avatarUrl": {
+            "type": "string",
+            "description": "头像 URL"
+          },
           "age": {
             "type": "integer",
             "format": "int32",
@@ -12848,45 +13284,71 @@
           }
         }
       },
-      "AiMessage": {
+      "AppResultObject": {
         "type": "object",
-        "description": "AI 助手对话消息",
+        "description": "统一响应体",
         "properties": {
-          "aiMsgId": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "description": "响应数据"
+          },
+          "timestamp": {
             "type": "integer",
             "format": "int64",
-            "description": "主键ID"
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
           },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "AiSessionVO": {
+        "type": "object",
+        "description": "AI 会话列表项",
+        "properties": {
           "sessionId": {
             "type": "integer",
             "format": "int64",
-            "description": "关联的会话ID"
+            "description": "会话 ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "会话标题"
           },
           "role": {
             "type": "string",
-            "description": "角色：user / assistant"
+            "description": "会话归属角色"
           },
-          "content": {
+          "contextType": {
             "type": "string",
-            "description": "消息内容"
-          },
-          "extraData": {
-            "type": "string",
-            "description": "附加数据（JSON），如推荐的岗位列表"
-          },
-          "tokensUsed": {
-            "type": "integer",
-            "format": "int32",
-            "description": "消耗 Token 数"
+            "description": "上下文类型"
           },
           "createdAt": {
             "type": "string",
             "format": "date-time",
             "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近一次更新时间（按此倒序展示）"
           }
         }
       },
-      "AppResultListAiMessage": {
+      "AppResultListAiSessionVO": {
         "type": "object",
         "description": "统一响应体",
         "properties": {
@@ -12905,7 +13367,7 @@
             "type": "array",
             "description": "响应数据",
             "items": {
-              "$ref": "#/components/schemas/AiMessage"
+              "$ref": "#/components/schemas/AiSessionVO"
             }
           },
           "timestamp": {
@@ -12918,6 +13380,99 @@
             "type": "string",
             "description": "请求追踪ID",
             "example": "req_abc123xyz"
+          }
+        }
+      },
+      "AiMessageVO": {
+        "type": "object",
+        "description": "AI 对话历史消息（含卡片解析）",
+        "properties": {
+          "aiMsgId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "消息 ID"
+          },
+          "sessionId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "会话 ID"
+          },
+          "role": {
+            "type": "string",
+            "description": "角色：user / assistant",
+            "example": "assistant"
+          },
+          "content": {
+            "type": "string",
+            "description": "消息文本内容（AI 回复或用户输入）"
+          },
+          "cards": {
+            "type": "array",
+            "description": "AI 推荐的卡片列表（按 type 渲染对应组件，null 表示无卡片）",
+            "items": {
+              "$ref": "#/components/schemas/CardEvent"
+            }
+          },
+          "tokensUsed": {
+            "type": "integer",
+            "format": "int32",
+            "description": "本次消息消耗的 token 数（可空）"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        }
+      },
+      "AppResultListAiMessageVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "array",
+            "description": "响应数据",
+            "items": {
+              "$ref": "#/components/schemas/AiMessageVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "CardEvent": {
+        "type": "object",
+        "description": "AI 对话推送的结构化卡片事件载荷",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "卡片类型：jobs / packages / talents / orders",
+            "example": "jobs"
+          },
+          "items": {
+            "type": "array",
+            "description": "卡片列表，元素类型由 type 决定（JobBrief / VisaPackageBrief / TalentBrief / OrderBrief）",
+            "items": {}
           }
         }
       }

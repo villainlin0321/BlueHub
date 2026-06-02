@@ -1,6 +1,11 @@
 import '../../../messages/data/message_models.dart';
 
 const Object _chatPageStateSentinel = Object();
+const Object _chatPageStateIntSetSentinel = Object();
+
+enum ChatComposerMode { text, voice }
+
+enum ChatVoiceRecordingState { idle, recording, cancel }
 
 class ChatPageState {
   const ChatPageState({
@@ -15,6 +20,11 @@ class ChatPageState {
     this.feedbackId = 0,
     this.newestMessageToken = 0,
     this.clearComposerToken = 0,
+    this.composerMode = ChatComposerMode.text,
+    this.recordingState = ChatVoiceRecordingState.idle,
+    this.recordingSeconds = 0,
+    this.playingMessageId,
+    this.downloadingAudioMessageIds = const <int>{},
   });
 
   final int conversationId;
@@ -28,6 +38,16 @@ class ChatPageState {
   final int feedbackId;
   final int newestMessageToken;
   final int clearComposerToken;
+  final ChatComposerMode composerMode;
+  final ChatVoiceRecordingState recordingState;
+  final int recordingSeconds;
+  final int? playingMessageId;
+  final Set<int> downloadingAudioMessageIds;
+
+  bool get isVoiceMode => composerMode == ChatComposerMode.voice;
+  bool get isRecording => recordingState == ChatVoiceRecordingState.recording;
+  bool get isRecordingCancel =>
+      recordingState == ChatVoiceRecordingState.cancel;
 
   ChatPageState copyWith({
     int? conversationId,
@@ -41,6 +61,11 @@ class ChatPageState {
     int? feedbackId,
     int? newestMessageToken,
     int? clearComposerToken,
+    ChatComposerMode? composerMode,
+    ChatVoiceRecordingState? recordingState,
+    int? recordingSeconds,
+    Object? playingMessageId = _chatPageStateSentinel,
+    Object? downloadingAudioMessageIds = _chatPageStateIntSetSentinel,
   }) {
     return ChatPageState(
       conversationId: conversationId ?? this.conversationId,
@@ -58,6 +83,18 @@ class ChatPageState {
       feedbackId: feedbackId ?? this.feedbackId,
       newestMessageToken: newestMessageToken ?? this.newestMessageToken,
       clearComposerToken: clearComposerToken ?? this.clearComposerToken,
+      composerMode: composerMode ?? this.composerMode,
+      recordingState: recordingState ?? this.recordingState,
+      recordingSeconds: recordingSeconds ?? this.recordingSeconds,
+      playingMessageId: identical(playingMessageId, _chatPageStateSentinel)
+          ? this.playingMessageId
+          : playingMessageId as int?,
+      downloadingAudioMessageIds: identical(
+            downloadingAudioMessageIds,
+            _chatPageStateIntSetSentinel,
+          )
+          ? this.downloadingAudioMessageIds
+          : downloadingAudioMessageIds as Set<int>,
     );
   }
 }

@@ -156,7 +156,8 @@ class MessageService {
   /// 向指定会话发送消息。
   ///
   /// [conversationId] 为目标会话主键；
-  /// [request] 支持文本、文件等不同类型消息体，由调用方提前组装。
+  /// [request] 支持 `text / image / file / audio / system` 等不同类型消息体，
+  /// 其中发送语音时由调用方额外提供 `fileId / fileUrl / fileName / fileSize / duration`。
   Future<MessageVO> sendMessage({
     required int conversationId,
     required SendMessageBO request,
