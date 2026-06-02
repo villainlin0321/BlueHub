@@ -1886,7 +1886,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   /// 替换当前编辑页进入简历预览页，避免返回栈保留已提交的编辑页。
   void _openPreview() {
     context.pushReplacement(
-      RoutePaths.myResumePreview,
+      RoutePaths.resumePreview,
       extra: _buildPreviewArgs(),
     );
   }

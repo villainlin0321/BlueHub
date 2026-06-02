@@ -51,7 +51,7 @@ class RoutePaths {
   static const myResume = '/me/resume';
 
   /// 简历预览页。
-  static const myResumePreview = '/me/resume/preview';
+  static const resumePreview = '/resume/preview';
 
   /// 简历编辑页。
   static const myResumeEditor = '/me/resume/editor';

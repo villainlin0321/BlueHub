@@ -308,7 +308,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MyResumePage(),
       ),
       GoRoute(
-        path: RoutePaths.myResumePreview,
+        path: RoutePaths.resumePreview,
         builder: (context, state) {
           final Object? extra = state.extra;
           if (extra is ResumePreviewArgs) {
@@ -317,7 +317,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (extra is int) {
             return MyResumePreviewPage(
               userId: extra,
-              title: '我的.我的简历标题'.tr(),
+              title: '我的.简历详情标题'.tr(),
             );
           }
           return const MyResumePreviewPage();

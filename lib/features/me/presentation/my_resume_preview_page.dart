@@ -340,7 +340,11 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   @override
   Widget build(BuildContext context) {
     final EdgeInsets viewPadding = MediaQuery.paddingOf(context);
-    final String pageTitle = widget.title.isEmpty ? '我的.预览'.tr() : widget.title;
+    final String pageTitle = widget.title.isNotEmpty
+        ? widget.title
+        : widget.userId != null
+        ? '我的.简历详情标题'.tr()
+        : '我的.预览'.tr();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),

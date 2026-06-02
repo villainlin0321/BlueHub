@@ -272,7 +272,7 @@ class _CompanyApplicationTabViewState
   }
 
   Future<void> _openResumePreview(int userId) async {
-    await context.push(RoutePaths.myResumePreview, extra: userId);
+    await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
   /// 根据当前 Tab 的动作定义，执行邀约或电话联系等二级操作。
@@ -386,6 +386,7 @@ class _CompanyApplicationTabViewState
           ? '招聘.待定岗位'.tr()
           : item.job.title,
       matchText: '${item.matchScore.clamp(0, 100)}%',
+      avatarUrl: item.applicant.avatarUrl,
       name: item.applicant.nickname.trim().isEmpty
           ? '招聘.匿名候选人'.tr()
           : item.applicant.nickname,
