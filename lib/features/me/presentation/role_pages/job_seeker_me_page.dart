@@ -65,7 +65,7 @@ class JobSeekerMePage extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 96),
+          padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 96),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -137,6 +137,7 @@ class _Header extends StatelessWidget {
       height: 36,
       child: Row(
         children: <Widget>[
+          SizedBox(width: 6),
           Text(
             '我的.我的'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(

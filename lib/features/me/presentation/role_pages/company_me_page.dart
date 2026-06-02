@@ -209,7 +209,7 @@ class _CompanyHeaderSection extends StatelessWidget {
                 ),
                 Positioned(
                   left: 16,
-                  top: topPadding + 14,
+                  top: topPadding,
                   right: 16,
                   // 关键修复：顶部内容仅按自身高度布局，避免固定底部留白把可用高度挤爆。
                   child: const Column(

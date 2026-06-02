@@ -79,7 +79,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   }
 
   Future<void> _openResumePreview(int userId) async {
-    await context.push(RoutePaths.myResumePreview, extra: userId);
+    await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
   Future<String?> _showRemarkDialog(String actionLabel) async {

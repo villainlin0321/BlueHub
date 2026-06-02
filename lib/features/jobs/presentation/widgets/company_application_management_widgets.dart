@@ -4,12 +4,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_application_management_styles.dart';
 
 class CompanyApplicationCardData {
   const CompanyApplicationCardData({
     required this.positionTitle,
     required this.matchText,
+    required this.avatarUrl,
     required this.name,
     required this.ageGender,
     required this.tags,
@@ -19,6 +21,7 @@ class CompanyApplicationCardData {
 
   final String positionTitle;
   final String matchText;
+  final String avatarUrl;
   final String name;
   final String ageGender;
   final List<String> tags;
@@ -323,13 +326,11 @@ class _CandidateInfoSection extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        ClipOval(
-          child: Image.asset(
-            CompanyApplicationManagementStyles.avatarPlaceholderAssetPath,
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
-          ),
+        AppUserAvatar(
+          imageUrl: data.avatarUrl,
+          size: 40,
+          placeholderAssetPath:
+              CompanyApplicationManagementStyles.avatarPlaceholderAssetPath,
         ),
         const SizedBox(width: 12),
         Expanded(
