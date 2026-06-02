@@ -68,7 +68,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void initState() {
     super.initState();
-    _chatController = ref.read(chatPageControllerProvider(widget.args).notifier);
+    _chatController = ref.read(
+      chatPageControllerProvider(widget.args).notifier,
+    );
     if (widget.args.conversationId > 0) {
       _activeConversationId = widget.args.conversationId;
       MessageSessionController.setActiveChatConversationId(
@@ -209,7 +211,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   void _handleVoiceTap() {
     _chatController.toggleComposerMode();
-    final ChatPageState state = ref.read(chatPageControllerProvider(widget.args));
+    final ChatPageState state = ref.read(
+      chatPageControllerProvider(widget.args),
+    );
     if (state.isVoiceMode) {
       _hideBottomPanel();
       _inputFocusNode.unfocus();
@@ -249,17 +253,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
     final bool granted = await _chatController.hasMicrophonePermission();
     if (!granted) {
-      final PermissionStatus status =
-          await _chatController.requestMicrophonePermission();
+      await _chatController.resetVoiceRecordingState();
+      final PermissionStatus status = await _chatController
+          .requestMicrophonePermission();
       if (!mounted) {
         return;
       }
       if (!status.isGranted) {
+        await _chatController.resetVoiceRecordingState();
         _scaffoldMessenger
           ?..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text('消息.麦克风权限说明'.tr())),
-          );
+          ..showSnackBar(SnackBar(content: Text('消息.麦克风权限说明'.tr())));
         return;
       }
     }
@@ -1459,7 +1463,9 @@ class _ChatComposer extends StatelessWidget {
                             onTap: isSending ? null : onSend,
                             borderRadius: BorderRadius.circular(12),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(
                                 '消息.发送'.tr(),
                                 style: TextStyle(
@@ -1519,7 +1525,8 @@ class _VoiceRecordButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isCancel = recordingState == ChatVoiceRecordingState.cancel;
-    final bool isRecording = recordingState == ChatVoiceRecordingState.recording;
+    final bool isRecording =
+        recordingState == ChatVoiceRecordingState.recording;
     final Color backgroundColor = isCancel
         ? const Color(0xFFFFEAEA)
         : isRecording

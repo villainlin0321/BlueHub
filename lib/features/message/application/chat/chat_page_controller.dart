@@ -22,12 +22,8 @@ import '../../../messages/data/message_providers.dart';
 import 'chat_page_args.dart';
 import 'chat_page_state.dart';
 
-final chatPageControllerProvider =
-    NotifierProvider.autoDispose.family<
-      ChatPageController,
-      ChatPageState,
-      ChatPageArgs
-    >(
+final chatPageControllerProvider = NotifierProvider.autoDispose
+    .family<ChatPageController, ChatPageState, ChatPageArgs>(
       ChatPageController.new,
     );
 
@@ -140,19 +136,14 @@ class ChatPageController extends Notifier<ChatPageState> {
     }
 
     _updateState(
-      (ChatPageState current) => current.copyWith(
-        isSending: true,
-        feedbackMessage: null,
-      ),
+      (ChatPageState current) =>
+          current.copyWith(isSending: true, feedbackMessage: null),
     );
     try {
       final int conversationId = await _ensureConversationId();
       final MessageVO message = await _messageService.sendMessage(
         conversationId: conversationId,
-        request: SendMessageBO(
-          type: 'text',
-          content: text,
-        ),
+        request: SendMessageBO(type: 'text', content: text),
       );
       final List<MessageVO> merged = _mergeMessages(state.messages, <MessageVO>[
         message,
@@ -218,6 +209,36 @@ class ChatPageController extends Notifier<ChatPageState> {
 
   Future<PermissionStatus> requestMicrophonePermission() {
     return Permission.microphone.request();
+  }
+
+  Future<void> resetVoiceRecordingState() async {
+    _recordingTimer?.cancel();
+
+    final Set<String> pathsToDelete = <String>{};
+    if (_recordingFilePath != null && _recordingFilePath!.isNotEmpty) {
+      pathsToDelete.add(_recordingFilePath!);
+    }
+
+    try {
+      final String? stoppedPath = await _audioRecorder.stop();
+      if (stoppedPath != null && stoppedPath.isNotEmpty) {
+        pathsToDelete.add(stoppedPath);
+      }
+    } catch (_) {
+      // 录音器未启动时 stop 可能抛错，这里直接忽略并继续重置状态。
+    }
+
+    _recordingFilePath = null;
+    for (final String path in pathsToDelete) {
+      await _deleteLocalFileIfExists(path);
+    }
+
+    _updateState(
+      (ChatPageState current) => current.copyWith(
+        recordingState: ChatVoiceRecordingState.idle,
+        recordingSeconds: 0,
+      ),
+    );
   }
 
   Future<bool> startVoiceRecording() async {
@@ -486,10 +507,8 @@ class ChatPageController extends Notifier<ChatPageState> {
     }
 
     _updateState(
-      (ChatPageState current) => current.copyWith(
-        isSending: true,
-        feedbackMessage: null,
-      ),
+      (ChatPageState current) =>
+          current.copyWith(isSending: true, feedbackMessage: null),
     );
 
     try {
