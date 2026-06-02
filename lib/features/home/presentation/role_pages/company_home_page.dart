@@ -511,20 +511,6 @@ class _HeroSection extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            right: -52,
-            bottom: -56,
-            child: Container(
-              width: 168,
-              height: 168,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: <Color>[Color(0xFF456DFF), Color(0x003584EC)],
-                ),
-              ),
-            ),
-          ),
           Padding(
             padding: EdgeInsets.fromLTRB(14, topPadding + 10, 14, 20),
             child: Column(
