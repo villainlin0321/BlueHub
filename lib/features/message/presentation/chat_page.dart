@@ -59,6 +59,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isBlockingUser = false;
   late final ChatPageController _chatController;
   StreamSubscription<PlayerState>? _audioPlayerStateSubscription;
+  ScaffoldMessengerState? _scaffoldMessenger;
   int _activeConversationId = 0;
 
   @override
@@ -89,6 +90,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       _chatController.loadInitialData();
     });
     _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
   }
 
   @override
@@ -237,8 +244,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         return;
       }
       if (!status.isGranted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
+        _scaffoldMessenger
+          ?..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(content: Text('消息.麦克风权限说明'.tr())),
           );
@@ -1346,14 +1353,14 @@ class _ChatComposer extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
+          constraints: const BoxConstraints(minHeight: 52),
           decoration: BoxDecoration(
             color: const Color(0xFFF5F7FA),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               SizedBox(
                 width: 24,
