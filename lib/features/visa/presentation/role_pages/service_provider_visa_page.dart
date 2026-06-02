@@ -1,113 +1,370 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/route_paths.dart';
+import '../../../../features/me/data/dictionary_providers.dart';
+import '../../../../features/message/application/chat/chat_page_args.dart';
+import '../../../../features/order/data/visa_order_models.dart';
+import '../../../../features/order/data/visa_order_providers.dart';
+import '../../../../features/order/presentation/order_detail_page.dart';
+import '../../../../shared/network/models/dictionary_models.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_user_avatar.dart';
 
 /// 服务商签证页。
-class ServiceProviderVisaPage extends StatelessWidget {
+class ServiceProviderVisaPage extends ConsumerStatefulWidget {
   const ServiceProviderVisaPage({super.key});
 
-  /// 这页当前仍是静态示例数据，先统一走国际化文案，后续接真接口时可直接替换。
-  List<_FilterItem> _buildFilters() {
-    return <_FilterItem>[
-      _FilterItem(label: '订单.全部国家'.tr()),
-      _FilterItem(label: '订单.订单状态'.tr()),
-    ];
+  @override
+  ConsumerState<ServiceProviderVisaPage> createState() =>
+      _ServiceProviderVisaPageState();
+}
+
+class _ServiceProviderVisaPageState
+    extends ConsumerState<ServiceProviderVisaPage> {
+  static const int _pageSize = 20;
+
+  _CountryFilter _selectedCountry = _CountryFilter.all;
+  _StatusFilter _selectedStatus = _StatusFilter.all;
+  List<VisaOrderVO> _orders = const <VisaOrderVO>[];
+  int _currentPage = 1;
+  bool _hasMore = false;
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_loadOrders);
   }
 
-  /// 构建示例订单卡片，确保 Mock 文案在多语言环境下也可正确展示。
-  List<_OrderCardData> _buildOrders() {
-    return <_OrderCardData>[
-      _OrderCardData(
-        orderNo: 'SJEH9823964875',
-        customerName: '程*彬',
-        visaTitle: '服务商签证页.德国厨师工签'.tr(),
-        price: '¥15,000',
-        updateTime: '订单.分钟前更新'.tr(
-          namedArgs: <String, String>{'count': '10'},
-        ),
-        status: '首页.待审核'.tr(),
-        statusType: _OrderStatusType.danger,
-        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-        urgentTag: '订单.紧急'.tr(),
+  Future<void> _loadOrders({
+    _CountryFilter? country,
+    _StatusFilter? status,
+  }) async {
+    final _CountryFilter effectiveCountry = country ?? _selectedCountry;
+    final _StatusFilter effectiveStatus = status ?? _selectedStatus;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await ref
+          .read(visaOrderServiceProvider)
+          .listProviderOrders(
+            page: 1,
+            pageSize: _pageSize,
+            status: effectiveStatus.apiValue,
+            country: effectiveCountry.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _errorMessage = _normalizeError(error);
+      });
+    }
+  }
+
+  Future<void> _loadMoreOrders() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final response = await ref
+          .read(visaOrderServiceProvider)
+          .listProviderOrders(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: _selectedStatus.apiValue,
+            country: _selectedCountry.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = <VisaOrderVO>[..._orders, ...response.list];
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isLoadingMore = false);
+      _showMessage(_normalizeError(error));
+    }
+  }
+
+  String _normalizeError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _handleContactTap(VisaOrderVO order) {
+    final int targetUserId = order.contactTargetUserId;
+    if (targetUserId <= 0) {
+      _showMessage('订单.客户信息缺失'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: targetUserId,
+        targetUserRole: order.contactTargetUserRole,
+        nickname: _displayCustomerName(order),
+        avatarUrl: order.avatarUrl,
+        relatedOrderId: order.orderId,
+        packageName: order.packageName.trim().isNotEmpty
+            ? order.packageName
+            : order.tierName,
+        orderStatus: order.statusLabel,
       ),
-      _OrderCardData(
-        orderNo: 'SJEH9823964875',
-        customerName: '程*彬',
-        visaTitle: '服务商签证页.法国建筑工签'.tr(),
-        price: '¥22,000',
-        updateTime: '订单.小时前更新'.tr(
-          namedArgs: <String, String>{'count': '2'},
-        ),
-        status: '订单.待用户上传材料'.tr(),
-        statusType: _OrderStatusType.info,
-        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-      ),
-      _OrderCardData(
-        orderNo: 'SJEH9823964875',
-        customerName: '程*彬',
-        visaTitle: '服务商签证页.法国建筑工签'.tr(),
-        price: '¥15,000',
-        updateTime: '订单.小时前更新'.tr(
-          namedArgs: <String, String>{'count': '2'},
-        ),
-        status: '订单.使馆审核中'.tr(),
-        statusType: _OrderStatusType.info,
-        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-      ),
-      _OrderCardData(
-        orderNo: 'SJEH9823964875',
-        customerName: '程*彬',
-        visaTitle: '服务商签证页.法国建筑工签'.tr(),
-        price: '¥15,000',
-        updateTime: '订单.小时前更新'.tr(
-          namedArgs: <String, String>{'count': '2'},
-        ),
-        status: '订单.待付款'.tr(),
-        statusType: _OrderStatusType.info,
-        avatarAssetPath: 'assets/images/mon8ysqa-s0y5kqs.png',
-      ),
-    ];
+    );
+  }
+
+  void _openOrderDetail(VisaOrderVO order) {
+    if (order.orderId <= 0) {
+      _showMessage('订单.订单详情不存在'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.orderDetail,
+      extra: OrderDetailPageArgs(orderId: order.orderId),
+    );
+  }
+
+  Future<List<_CountryFilter>> _loadCountryFilters() async {
+    final result = await ref.read(
+      countrySearchProvider(
+        const CountrySearchQuery(page: 1, pageSize: 300),
+      ).future,
+    );
+    final Set<String> seen = <String>{};
+    final List<_CountryFilter> countries = result.list
+        .where(
+          (CountryVO item) =>
+              item.countryCode.trim().isNotEmpty &&
+              item.nameZh.trim().isNotEmpty &&
+              seen.add(item.countryCode.trim()),
+        )
+        .map(
+          (CountryVO item) => _CountryFilter(
+            label: item.nameZh.trim(),
+            apiValue: item.countryCode.trim(),
+          ),
+        )
+        .toList(growable: false);
+    return <_CountryFilter>[_CountryFilter.all, ...countries];
+  }
+
+  Future<void> _selectCountry() async {
+    final List<_CountryFilter> countries;
+    try {
+      countries = await _loadCountryFilters();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('订单.国家列表加载失败'.tr());
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    final _CountryFilter? result = await _showFilterSheet<_CountryFilter>(
+      title: '订单.选择国家'.tr(),
+      currentValue: _selectedCountry,
+      options: countries,
+      labelBuilder: (_CountryFilter item) => item.label,
+    );
+    if (result == null || result == _selectedCountry) {
+      return;
+    }
+    setState(() => _selectedCountry = result);
+    await _loadOrders(country: result);
+  }
+
+  Future<void> _selectStatus() async {
+    final _StatusFilter? result = await _showFilterSheet<_StatusFilter>(
+      title: '订单.选择订单状态'.tr(),
+      currentValue: _selectedStatus,
+      options: _StatusFilter.values,
+      labelBuilder: (_StatusFilter item) => item.label.tr(),
+    );
+    if (result == null || result == _selectedStatus) {
+      return;
+    }
+    setState(() => _selectedStatus = result);
+    await _loadOrders(status: result);
+  }
+
+  Future<T?> _showFilterSheet<T>({
+    required String title,
+    required T currentValue,
+    required List<T> options,
+    required String Function(T value) labelBuilder,
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (BuildContext context) {
+        final double maxHeight = MediaQuery.sizeOf(context).height * 0.6;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFF262626),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final T option = options[index];
+                        final bool selected = option == currentValue;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                          ),
+                          title: Text(
+                            labelBuilder(option),
+                            style: TextStyle(
+                              color: selected
+                                  ? const Color(0xFF096DD9)
+                                  : const Color(0xFF262626),
+                              fontSize: 14,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          trailing: selected
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Color(0xFF096DD9),
+                                )
+                              : null,
+                          onTap: () => Navigator.of(context).pop(option),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final List<_FilterItem> filters = _buildFilters();
-    final List<_OrderCardData> orders = _buildOrders();
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + 36),
+    return ColoredBox(
+      color: const Color(0xFFF5F7FA),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _OrderTopSection(topPadding: topPadding),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(12, 7, 0, 7),
-            child: Row(
-              children: filters
-                  .map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(right: 11),
-                      child: _OrderFilterChip(item: item),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
+          _FilterBar(
+            countryLabel: _selectedCountry.label,
+            statusLabel: _selectedStatus.label.tr(),
+            onCountryTap: _selectCountry,
+            onStatusTap: _selectStatus,
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: orders.length,
-              padding: EdgeInsets.zero,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int index) {
-                return _OrderCard(data: orders[index]);
-              },
+          Expanded(
+            child: EasyRefresh(
+              header: const ClassicHeader(),
+              footer: const ClassicFooter(),
+              onRefresh: _loadOrders,
+              onLoad: _hasMore && _orders.isNotEmpty ? _loadMoreOrders : null,
+              child: Builder(
+                builder: (BuildContext context) {
+                  if (_isLoading && _orders.isEmpty) {
+                    return const _LoadingView();
+                  }
+                  if (_errorMessage != null && _orders.isEmpty) {
+                    return _OrderErrorState(
+                      message: _errorMessage!,
+                      bottomInset: bottomPadding,
+                      onRetryTap: _loadOrders,
+                    );
+                  }
+                  if (_orders.isEmpty) {
+                    return _OrderEmptyState(bottomInset: bottomPadding);
+                  }
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      12,
+                      12,
+                      bottomPadding + 16,
+                    ),
+                    itemCount: _orders.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (BuildContext context, int index) {
+                      final VisaOrderVO order = _orders[index];
+                      return _OrderCard(
+                        order: order,
+                        onTap: () => _openOrderDetail(order),
+                        onContactTap: () => _handleContactTap(order),
+                        onProcessTap: () => _openOrderDetail(order),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -135,7 +392,7 @@ class _OrderTopSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   '导航.订单'.tr(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
@@ -156,145 +413,71 @@ class _OrderTopSection extends StatelessWidget {
   }
 }
 
-class _OrderFilterChip extends StatelessWidget {
-  const _OrderFilterChip({required this.item});
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.countryLabel,
+    required this.statusLabel,
+    required this.onCountryTap,
+    required this.onStatusTap,
+  });
 
-  final _FilterItem item;
+  final String countryLabel;
+  final String statusLabel;
+  final VoidCallback onCountryTap;
+  final VoidCallback onStatusTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      decoration: BoxDecoration(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
+        ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            item.label,
-            style: const TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
-          ),
-          const SizedBox(width: 6),
-          SvgPicture.asset(
-            'assets/images/icon_arrow_down.svg',
-            width: 12,
-            height: 12,
-          ),
+          _FilterButton(label: countryLabel, onTap: onCountryTap),
+          const SizedBox(width: 12),
+          _FilterButton(label: statusLabel, onTap: onStatusTap),
         ],
       ),
     );
   }
 }
 
-class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.data});
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({required this.label, required this.onTap});
 
-  final _OrderCardData data;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
-                      children: <InlineSpan>[
-                        TextSpan(text: '订单.订单号'.tr()),
-                        TextSpan(text: data.orderNo),
-                      ],
-                    ),
-                  ),
-                ),
-                _OrderStatusChip(label: data.status, type: data.statusType),
-              ],
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF171A1D),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 20 / 14,
+              ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                Image.asset(data.avatarAssetPath, width: 40, height: 40),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            data.customerName,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
-                            ),
-                          ),
-                          if (data.urgentTag != null) ...<Widget>[
-                            const SizedBox(width: 6),
-                            _UrgentChip(label: data.urgentTag!),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        data.visaTitle,
-                        style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          height: 18 / 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  data.price,
-                  style: const TextStyle(
-                    color: Color(0xFFFE5815),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 16,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                Text(
-                  data.updateTime,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    height: 16 / 12,
-                  ),
-                ),
-                const Spacer(),
-                _GhostActionButton(label: '订单.联系客户'.tr()),
-                const SizedBox(width: 8),
-                _PrimaryActionButton(label: '订单.处理订单'.tr()),
-              ],
+            const SizedBox(width: 2),
+            SvgPicture.asset(
+              'assets/images/icon_arrow_down.svg',
+              width: 12,
+              height: 12,
             ),
           ],
         ),
@@ -303,38 +486,313 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-class _OrderStatusChip extends StatelessWidget {
-  const _OrderStatusChip({required this.label, required this.type});
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({
+    required this.order,
+    required this.onTap,
+    required this.onContactTap,
+    required this.onProcessTap,
+  });
 
-  final String label;
-  final _OrderStatusType type;
+  final VisaOrderVO order;
+  final VoidCallback onTap;
+  final VoidCallback onContactTap;
+  final VoidCallback onProcessTap;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDanger = type == _OrderStatusType.danger;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDanger ? const Color(0xFFFFEBEB) : const Color(0xFFEDF5FF),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isDanger ? const Color(0xFFFF4D4F) : const Color(0xFF386EF8),
-          fontSize: 11,
-          height: 12 / 11,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: <InlineSpan>[
+                            TextSpan(text: '订单.订单号'.tr()),
+                            TextSpan(
+                              text: order.orderNo,
+                              style: const TextStyle(
+                                color: Color(0xFF8C8C8C),
+                                fontFamily: 'SF UI Text',
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF8C8C8C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          height: 16 / 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _StatusTag(
+                      label: _displayStatusText(order),
+                      style: _statusStyleFor(order.status),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    ClipOval(
+                      child: AppUserAvatar(
+                        imageUrl: order.avatarUrl,
+                        size: 40,
+                        placeholderAssetPath:
+                            'assets/images/order_management_customer_avatar-56586a.png',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Flexible(
+                                child: Text(
+                                  _displayCustomerName(order),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFF262626),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    height: 24 / 16,
+                                  ),
+                                ),
+                              ),
+                              if (order.isUrgent) ...<Widget>[
+                                const SizedBox(width: 6),
+                                const _UrgentTag(),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _displayServiceName(order),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF8C8C8C),
+                              fontSize: 12,
+                              height: 18 / 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatAmount(order.amount),
+                      style: const TextStyle(
+                        color: Color(0xFFFE5815),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        height: 24 / 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        _formatUpdatedText(order.updatedAt),
+                        style: const TextStyle(
+                          color: Color(0xFF8C8C8C),
+                          fontSize: 12,
+                          height: 16 / 12,
+                        ),
+                      ),
+                    ),
+                    _ActionButton(
+                      label: '订单.联系客户'.tr(),
+                      outlined: true,
+                      onTap: onContactTap,
+                    ),
+                    const SizedBox(width: 8),
+                    _ActionButton(
+                      label: '订单.处理订单'.tr(),
+                      outlined: false,
+                      onTap: onProcessTap,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _UrgentChip extends StatelessWidget {
-  const _UrgentChip({required this.label});
+class _StatusTag extends StatelessWidget {
+  const _StatusTag({required this.label, required this.style});
 
   final String label;
+  final _OrderStatusStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    late final Color backgroundColor;
+    late final Color borderColor;
+    late final Color textColor;
+
+    switch (style) {
+      case _OrderStatusStyle.red:
+        backgroundColor = const Color(0xFFFFEBEB);
+        borderColor = Colors.transparent;
+        textColor = const Color(0xFFFF4D4F);
+        break;
+      case _OrderStatusStyle.blue:
+        backgroundColor = const Color(0xFFEDF5FF);
+        borderColor = Colors.transparent;
+        textColor = const Color(0xFF386EF8);
+        break;
+      case _OrderStatusStyle.outlined:
+        backgroundColor = Colors.white;
+        borderColor = const Color(0xFFA3AFD4);
+        textColor = const Color(0xFF546D96);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: borderColor, width: 0.5),
+      ),
+      child: Text(
+        label.trim().isEmpty ? '订单.处理中'.tr() : label,
+        style: TextStyle(color: textColor, fontSize: 11, height: 12 / 11),
+      ),
+    );
+  }
+}
+
+class _GhostActionButton extends StatelessWidget {
+  const _GhostActionButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD9D9D9)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF262626),
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF096DD9),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.outlined,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool outlined;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return outlined
+        ? _GhostActionButton(label: label, onTap: onTap)
+        : _PrimaryActionButton(label: label, onTap: onTap);
+  }
+}
+
+class _UrgentTag extends StatelessWidget {
+  const _UrgentTag();
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +803,7 @@ class _UrgentChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
-        label,
+        '订单.紧急'.tr(),
         style: const TextStyle(
           color: Color(0xFFFF0B03),
           fontSize: 10,
@@ -356,90 +814,220 @@ class _UrgentChip extends StatelessWidget {
   }
 }
 
-class _GhostActionButton extends StatelessWidget {
-  const _GhostActionButton({required this.label});
+class _CountryFilter {
+  const _CountryFilter({required this.label, this.apiValue});
+
+  static _CountryFilter get all => _CountryFilter(label: '订单.全部国家'.tr());
 
   final String label;
+  final String? apiValue;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _CountryFilter &&
+            runtimeType == other.runtimeType &&
+            label == other.label &&
+            apiValue == other.apiValue;
+  }
+
+  @override
+  int get hashCode => Object.hash(label, apiValue);
+}
+
+enum _StatusFilter {
+  all('订单.订单状态', null),
+  pendingPayment('订单.待付款', 'pending_payment'),
+  pendingUpload('订单.待用户上传材料', 'pending_upload'),
+  reviewing('订单.材料审核中', 'reviewing'),
+  rejected('订单.材料被驳回', 'rejected'),
+  processing('订单.办理中', 'embassy_submitted'),
+  completed('订单.已完成', 'completed'),
+  cancelled('订单.已取消', 'cancelled'),
+  refunded('订单.已退款', 'refunded');
+
+  const _StatusFilter(this.label, this.apiValue);
+
+  final String label;
+  final String? apiValue;
+}
+
+enum _OrderStatusStyle { red, blue, outlined }
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD9D9D9)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+    return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+  }
+}
+
+class _OrderEmptyState extends StatelessWidget {
+  const _OrderEmptyState({required this.bottomInset});
+
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 16),
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: AppEmptyState(message: '订单.暂无符合条件的订单'.tr()),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF096DD9),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterItem {
-  const _FilterItem({required this.label});
-
-  final String label;
-}
-
-class _OrderCardData {
-  const _OrderCardData({
-    required this.orderNo,
-    required this.customerName,
-    required this.visaTitle,
-    required this.price,
-    required this.updateTime,
-    required this.status,
-    required this.statusType,
-    required this.avatarAssetPath,
-    this.urgentTag,
+class _OrderErrorState extends StatelessWidget {
+  const _OrderErrorState({
+    required this.message,
+    required this.bottomInset,
+    required this.onRetryTap,
   });
 
-  final String orderNo;
-  final String customerName;
-  final String visaTitle;
-  final String price;
-  final String updateTime;
-  final String status;
-  final _OrderStatusType statusType;
-  final String avatarAssetPath;
-  final String? urgentTag;
+  final String message;
+  final double bottomInset;
+  final Future<void> Function() onRetryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, bottomInset + 16),
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: <Widget>[
+              const Icon(
+                Icons.cloud_off_rounded,
+                size: 40,
+                color: Color(0xFFBFBFBF),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF8C8C8C),
+                  fontSize: 14,
+                  height: 20 / 14,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: onRetryTap,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF096DD9),
+                ),
+                child: Text('我的.重新加载'.tr()),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-enum _OrderStatusType { danger, info }
+String _displayCustomerName(VisaOrderVO order) {
+  final String nickname = order.nickname.trim();
+  return nickname.isEmpty ? '订单.订单客户'.tr() : nickname;
+}
+
+String _displayServiceName(VisaOrderVO order) {
+  final String packageName = order.packageName.trim();
+  if (packageName.isNotEmpty) {
+    return packageName;
+  }
+  final String tierName = order.tierName.trim();
+  if (tierName.isNotEmpty) {
+    return tierName;
+  }
+  return '订单.签证服务'.tr();
+}
+
+String _displayStatusText(VisaOrderVO order) {
+  final String statusLabel = order.statusLabel.trim();
+  if (statusLabel.isNotEmpty) {
+    return statusLabel;
+  }
+  final String status = order.status.trim();
+  return status.isEmpty ? '订单.处理中'.tr() : status;
+}
+
+_OrderStatusStyle _statusStyleFor(String status) {
+  switch (status.trim().toLowerCase()) {
+    case 'completed':
+      return _OrderStatusStyle.outlined;
+    case 'pending_payment':
+    case 'pending_upload':
+    case 'reviewing':
+    case 'embassy_submitted':
+      return _OrderStatusStyle.blue;
+    default:
+      return _OrderStatusStyle.red;
+  }
+}
+
+String _formatAmount(double amount) {
+  final bool hasFraction = amount % 1 != 0;
+  final String raw = hasFraction
+      ? amount.toStringAsFixed(2)
+      : amount.toStringAsFixed(0);
+  final List<String> parts = raw.split('.');
+  final String integerPart = parts.first;
+  final StringBuffer buffer = StringBuffer();
+  for (int i = 0; i < integerPart.length; i++) {
+    final int reverseIndex = integerPart.length - i;
+    buffer.write(integerPart[i]);
+    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
+    return '¥${buffer.toString()}.${parts[1]}';
+  }
+  return '¥${buffer.toString()}';
+}
+
+String _formatUpdatedText(String raw) {
+  final DateTime? updatedAt = DateTime.tryParse(raw)?.toLocal();
+  if (updatedAt == null) {
+    return raw.trim().isEmpty ? '订单.刚刚更新'.tr() : raw;
+  }
+
+  final Duration difference = DateTime.now().difference(updatedAt);
+  if (difference.inMinutes < 1) {
+    return '订单.刚刚更新'.tr();
+  }
+  if (difference.inMinutes < 60) {
+    return '订单.分钟前更新'.tr(
+      namedArgs: <String, String>{'count': difference.inMinutes.toString()},
+    );
+  }
+  if (difference.inHours < 24) {
+    return '订单.小时前更新'.tr(
+      namedArgs: <String, String>{'count': difference.inHours.toString()},
+    );
+  }
+  return '订单.月日更新'.tr(
+    namedArgs: <String, String>{
+      'month': updatedAt.month.toString(),
+      'day': updatedAt.day.toString(),
+    },
+  );
+}

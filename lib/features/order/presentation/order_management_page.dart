@@ -185,15 +185,16 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   }
 
   void _handleContactTap(VisaOrderVO order) {
-    if (order.userId <= 0) {
+    final int targetUserId = order.contactTargetUserId;
+    if (targetUserId <= 0) {
       _showMessage('订单.客户信息缺失'.tr());
       return;
     }
     context.push(
       RoutePaths.chat,
       extra: ChatPageArgs(
-        targetUserId: order.userId,
-        targetUserRole: 'worker',
+        targetUserId: targetUserId,
+        targetUserRole: order.contactTargetUserRole,
         nickname: _displayCustomerName(order),
         avatarUrl: order.avatarUrl,
         relatedOrderId: order.orderId,
@@ -249,9 +250,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('订单.国家列表加载失败'.tr())),
-        );
+        ..showSnackBar(SnackBar(content: Text('订单.国家列表加载失败'.tr())));
       return;
     }
     if (!mounted) {

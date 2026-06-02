@@ -8,10 +8,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../features/auth/application/auth_session_provider.dart';
+import '../../../../features/message/application/chat/chat_page_args.dart';
 import '../../../../features/me/presentation/current_user_view_data.dart';
 import '../../../../features/order/data/visa_order_models.dart'
     show MaterialVO, VisaOrderVO;
-import '../../../../features/visa/data/provider_models.dart' show VisaProviderProfileVO;
+import '../../../../features/order/presentation/order_detail_page.dart'
+    show OrderDetailPageArgs;
+import '../../../../features/visa/data/provider_models.dart'
+    show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -22,9 +26,9 @@ import '../../data/home_providers.dart';
 
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
-  final service = ref.watch(providerServiceProvider);
-  return service.getMyProfile();
-});
+      final service = ref.watch(providerServiceProvider);
+      return service.getMyProfile();
+    });
 
 /// 当前按需求承载服务商首页实现，后续如补企业端首页可再拆分。
 class ServiceProviderHomePage extends ConsumerWidget {
@@ -606,9 +610,15 @@ class _OrdersSectionHeader extends StatelessWidget {
 }
 
 class _PendingOrderCard extends StatelessWidget {
-  const _PendingOrderCard({required this.item});
+  const _PendingOrderCard({
+    required this.item,
+    this.onContactTap,
+    this.onProcessTap,
+  });
 
   final _PendingOrderItem item;
+  final VoidCallback? onContactTap;
+  final VoidCallback? onProcessTap;
 
   @override
   Widget build(BuildContext context) {
@@ -685,9 +695,12 @@ class _PendingOrderCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _GhostActionButton(label: '订单.联系客户'.tr()),
+                _GhostActionButton(label: '订单.联系客户'.tr(), onTap: onContactTap),
                 const SizedBox(width: 8),
-                _PrimaryActionButton(label: '首页.审核材料'.tr()),
+                _PrimaryActionButton(
+                  label: '订单.处理订单'.tr(),
+                  onTap: onProcessTap,
+                ),
               ],
             ),
           ],
@@ -699,6 +712,41 @@ class _PendingOrderCard extends StatelessWidget {
 
 class _PendingOrdersSection extends ConsumerWidget {
   const _PendingOrdersSection();
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _openChat(BuildContext context, VisaOrderVO order) {
+    final int targetUserId = order.contactTargetUserId;
+    if (targetUserId <= 0) {
+      _showMessage(context, '订单.客户信息缺失'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: targetUserId,
+        targetUserRole: order.contactTargetUserRole,
+        nickname: _displayCustomerName(order),
+        avatarUrl: order.avatarUrl,
+        relatedOrderId: order.orderId,
+        packageName: order.packageName.trim().isNotEmpty
+            ? order.packageName
+            : order.tierName,
+        orderStatus: order.statusLabel,
+      ),
+    );
+  }
+
+  void _openOrderDetail(BuildContext context, VisaOrderVO order) {
+    context.push(
+      RoutePaths.orderDetail,
+      extra: OrderDetailPageArgs(orderId: order.orderId),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -725,9 +773,7 @@ class _PendingOrdersSection extends ConsumerWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: AppEmptyState(
-              message: '首页.暂无待审核订单'.tr(),
-            ),
+            child: AppEmptyState(message: '首页.暂无待审核订单'.tr()),
           );
         }
 
@@ -742,7 +788,12 @@ class _PendingOrdersSection extends ConsumerWidget {
           padding: EdgeInsets.zero,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (BuildContext context, int index) {
-            return _PendingOrderCard(item: items[index]);
+            final VisaOrderVO order = orders[index];
+            return _PendingOrderCard(
+              item: items[index],
+              onContactTap: () => _openChat(context, order),
+              onProcessTap: () => _openOrderDetail(context, order),
+            );
           },
         );
       },
@@ -851,27 +902,35 @@ class _StatusTag extends StatelessWidget {
 }
 
 class _GhostActionButton extends StatelessWidget {
-  const _GhostActionButton({required this.label});
+  const _GhostActionButton({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD9D9D9)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD9D9D9)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF262626),
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );
@@ -879,27 +938,35 @@ class _GhostActionButton extends StatelessWidget {
 }
 
 class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({required this.label});
+  const _PrimaryActionButton({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF096DD9),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          height: 12 / 12,
-          letterSpacing: 0.2,
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF096DD9),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              height: 12 / 12,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );
@@ -998,9 +1065,7 @@ String _buildMaterialsText(VisaOrderVO order) {
   if (names.isEmpty) {
     return '首页.暂未上传材料'.tr();
   }
-  return '首页.已上传材料'.tr(namedArgs: <String, String>{
-    'names': names.join('、'),
-  });
+  return '首页.已上传材料'.tr(namedArgs: <String, String>{'names': names.join('、')});
 }
 
 String _formatOrderUpdatedText(String raw) {

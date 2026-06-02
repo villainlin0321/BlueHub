@@ -8,12 +8,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../features/me/data/user_models.dart';
 import '../../../features/me/data/user_providers.dart';
+import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
@@ -214,9 +217,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _handleOrderCardTap() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('消息.订单详情开发中'.tr())));
+    final int orderId = widget.args.relatedOrderId;
+    if (orderId <= 0) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('订单.订单详情不存在'.tr())));
+      return;
+    }
+    context.push(
+      RoutePaths.orderDetail,
+      extra: OrderDetailPageArgs(orderId: orderId),
+    );
   }
 
   Future<void> _handleFileMessageTap(MessageVO message) async {

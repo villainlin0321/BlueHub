@@ -257,7 +257,11 @@ class UploadOrderMaterialsBO {
 
   factory UploadOrderMaterialsBO.fromJson(JsonMap json) {
     return UploadOrderMaterialsBO(
-      materials: readModelList<MaterialItemBO>(json, 'materials', MaterialItemBO.fromJson),
+      materials: readModelList<MaterialItemBO>(
+        json,
+        'materials',
+        MaterialItemBO.fromJson,
+      ),
     );
   }
 
@@ -277,7 +281,11 @@ class UploadVisaDocumentsBO {
 
   factory UploadVisaDocumentsBO.fromJson(JsonMap json) {
     return UploadVisaDocumentsBO(
-      documents: readModelList<DocumentItemBO>(json, 'documents', DocumentItemBO.fromJson),
+      documents: readModelList<DocumentItemBO>(
+        json,
+        'documents',
+        DocumentItemBO.fromJson,
+      ),
     );
   }
 
@@ -286,6 +294,49 @@ class UploadVisaDocumentsBO {
       'documents': documents
           .map((item) => item.toJson())
           .toList(growable: false),
+    };
+  }
+}
+
+class ApplicantInfoVO {
+  const ApplicantInfoVO({
+    required this.userId,
+    required this.nickname,
+    required this.avatarUrl,
+    required this.type,
+    required this.profileId,
+  });
+
+  const ApplicantInfoVO.empty()
+    : userId = 0,
+      nickname = '',
+      avatarUrl = '',
+      type = '',
+      profileId = 0;
+
+  final int userId;
+  final String nickname;
+  final String avatarUrl;
+  final String type;
+  final int profileId;
+
+  factory ApplicantInfoVO.fromJson(JsonMap json) {
+    return ApplicantInfoVO(
+      userId: readInt(json, 'userId'),
+      nickname: readString(json, 'nickname'),
+      avatarUrl: readString(json, 'avatarUrl'),
+      type: readString(json, 'type'),
+      profileId: readInt(json, 'profileId'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'userId': userId,
+      'nickname': nickname,
+      'avatarUrl': avatarUrl,
+      'type': type,
+      'profileId': profileId,
     };
   }
 }
@@ -320,7 +371,6 @@ class VisaDocVO {
 
 class VisaOrderVO {
   const VisaOrderVO({
-    required this.userId,
     required this.orderId,
     required this.orderNo,
     required this.status,
@@ -337,17 +387,15 @@ class VisaOrderVO {
     required this.requiredMaterials,
     required this.materials,
     required this.visaDocuments,
+    required this.applicant,
     required this.rejectReason,
     required this.isUrgent,
-    required this.nickname,
-    required this.avatarUrl,
-    required this.country,
     required this.createdAt,
     required this.updatedAt,
     required this.paymentUrl,
+    this.country = '',
   });
 
-  final int userId;
   final int orderId;
   final String orderNo;
   final String status;
@@ -364,19 +412,40 @@ class VisaOrderVO {
   final List<RequiredMaterialVO> requiredMaterials;
   final List<MaterialVO> materials;
   final List<VisaDocVO> visaDocuments;
+  final ApplicantInfoVO applicant;
   final String? rejectReason;
   final bool isUrgent;
-  final String nickname;
-  final String avatarUrl;
   final String country;
   final String createdAt;
   final String updatedAt;
   final String? paymentUrl;
 
+  int get userId => applicant.userId;
+  String get nickname => applicant.nickname;
+  String get avatarUrl => applicant.avatarUrl;
+  String get applicantType => applicant.type;
+  int get applicantProfileId => applicant.profileId;
+
+  int get contactTargetUserId {
+    final String normalizedRole = applicant.type.trim().toLowerCase();
+    if (normalizedRole == 'worker') {
+      return applicant.userId;
+    }
+    if (applicant.profileId > 0) {
+      return applicant.profileId;
+    }
+    return applicant.userId;
+  }
+
+  String get contactTargetUserRole {
+    final String normalizedRole = applicant.type.trim();
+    return normalizedRole.isEmpty ? 'worker' : normalizedRole;
+  }
+
   factory VisaOrderVO.fromJson(JsonMap json) {
     final JsonMap providerInfoJson = readJsonMap(json, 'providerInfo');
+    final JsonMap applicantJson = readJsonMap(json, 'applicant');
     return VisaOrderVO(
-      userId: readInt(json, 'userId'),
       orderId: readInt(json, 'orderId'),
       orderNo: readString(json, 'orderNo'),
       status: readString(json, 'status'),
@@ -388,9 +457,7 @@ class VisaOrderVO {
       packageName: readString(json, 'packageName'),
       tierName: readString(json, 'tierName'),
       providerName: readString(json, 'providerName'),
-      packageInfo: PackageInfoVO.fromJson(
-        readJsonMap(json, 'packageInfo'),
-      ),
+      packageInfo: PackageInfoVO.fromJson(readJsonMap(json, 'packageInfo')),
       providerInfo: providerInfoJson.isEmpty
           ? const ProviderInfoVO.empty()
           : ProviderInfoVO.fromJson(providerInfoJson),
@@ -399,13 +466,28 @@ class VisaOrderVO {
         'requiredMaterials',
         RequiredMaterialVO.fromJson,
       ),
-      materials: readModelList<MaterialVO>(json, 'materials', MaterialVO.fromJson),
-      visaDocuments: readModelList<VisaDocVO>(json, 'visaDocuments', VisaDocVO.fromJson),
+      materials: readModelList<MaterialVO>(
+        json,
+        'materials',
+        MaterialVO.fromJson,
+      ),
+      visaDocuments: readModelList<VisaDocVO>(
+        json,
+        'visaDocuments',
+        VisaDocVO.fromJson,
+      ),
+      applicant: applicantJson.isEmpty
+          ? ApplicantInfoVO(
+              userId: readInt(json, 'userId'),
+              nickname: readString(json, 'nickname'),
+              avatarUrl: readString(json, 'avatarUrl'),
+              type: _readNullableString(json['type']) ?? 'worker',
+              profileId: readInt(json, 'profileId'),
+            )
+          : ApplicantInfoVO.fromJson(applicantJson),
       rejectReason: _readNullableString(json['rejectReason']),
       isUrgent: readBool(json, 'isUrgent'),
-      nickname: readString(json, 'nickname'),
-      avatarUrl: readString(json, 'avatarUrl'),
-      country: readString(json, 'country'),
+      country: _readNullableString(json['country']) ?? '',
       createdAt: readString(json, 'createdAt'),
       updatedAt: readString(json, 'updatedAt'),
       paymentUrl: _readNullableString(json['paymentUrl']),
@@ -414,7 +496,6 @@ class VisaOrderVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'userId': userId,
       'orderId': orderId,
       'orderNo': orderNo,
       'status': status,
@@ -437,10 +518,9 @@ class VisaOrderVO {
       'visaDocuments': visaDocuments
           .map((item) => item.toJson())
           .toList(growable: false),
+      'applicant': applicant.toJson(),
       'rejectReason': rejectReason,
       'isUrgent': isUrgent,
-      'nickname': nickname,
-      'avatarUrl': avatarUrl,
       'country': country,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
