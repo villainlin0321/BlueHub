@@ -157,7 +157,7 @@ class _ChatMessageList extends StatelessWidget {
             'chat-message-$index-'
             '${message.role.name}-'
             '${message.text.hashCode}-'
-            '${message.embeddedJob?.jobId ?? 0}-'
+            '${message.embeddedJobs.map((JobListVO job) => job.jobId).join('_')}-'
             '${message.isEmbeddedJobLoading}',
           ),
           message: message,
@@ -219,7 +219,7 @@ class _AssistantMessageItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final JobListVO? embeddedJob = message.embeddedJob;
+    final List<JobListVO> embeddedJobs = message.embeddedJobs;
     const double bubbleStartInset = 18;
     const double bubbleTopInset = 20;
     return Padding(
@@ -283,15 +283,23 @@ class _AssistantMessageItem extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (embeddedJob != null) ...<Widget>[
+                if (embeddedJobs.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 10),
-                  _EmbeddedJobCard(
-                    job: embeddedJob,
-                    isApplying: applyingJobIds.contains(embeddedJob.jobId),
-                    isApplied: appliedJobIds.contains(embeddedJob.jobId),
-                    onApply: () => onApplyJob(embeddedJob),
-                    onTap: () => onOpenJobDetail(embeddedJob),
-                  ),
+                  ...List<Widget>.generate(embeddedJobs.length, (int index) {
+                    final JobListVO job = embeddedJobs[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == embeddedJobs.length - 1 ? 0 : 10,
+                      ),
+                      child: _EmbeddedJobCard(
+                        job: job,
+                        isApplying: applyingJobIds.contains(job.jobId),
+                        isApplied: appliedJobIds.contains(job.jobId),
+                        onApply: () => onApplyJob(job),
+                        onTap: () => onOpenJobDetail(job),
+                      ),
+                    );
+                  }),
                 ],
               ],
             ),

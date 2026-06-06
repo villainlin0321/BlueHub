@@ -15,21 +15,21 @@ class AiAssistantMessageVM {
     required this.role,
     required this.text,
     required this.footer,
-    this.embeddedJob,
+    this.embeddedJobs = const <JobListVO>[],
     this.isEmbeddedJobLoading = false,
   });
 
   final AiAssistantChatRole role;
   final String text;
   final String? footer;
-  final JobListVO? embeddedJob;
+  final List<JobListVO> embeddedJobs;
   final bool isEmbeddedJobLoading;
 
   AiAssistantMessageVM copyWith({
     AiAssistantChatRole? role,
     String? text,
     Object? footer = _aiAssistantMessageSentinel,
-    Object? embeddedJob = _aiAssistantMessageSentinel,
+    Object? embeddedJobs = _aiAssistantMessageSentinel,
     bool? isEmbeddedJobLoading,
   }) {
     return AiAssistantMessageVM(
@@ -38,9 +38,9 @@ class AiAssistantMessageVM {
       footer: identical(footer, _aiAssistantMessageSentinel)
           ? this.footer
           : footer as String?,
-      embeddedJob: identical(embeddedJob, _aiAssistantMessageSentinel)
-          ? this.embeddedJob
-          : embeddedJob as JobListVO?,
+      embeddedJobs: identical(embeddedJobs, _aiAssistantMessageSentinel)
+          ? this.embeddedJobs
+          : embeddedJobs as List<JobListVO>,
       isEmbeddedJobLoading:
           isEmbeddedJobLoading ?? this.isEmbeddedJobLoading,
     );

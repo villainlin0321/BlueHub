@@ -27,7 +27,8 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   Timer? _voiceTimer;
   bool _isDisposed = false;
   bool _hasBootstrapped = false;
-  final Map<int, JobListVO?> _pendingEmbeddedJobs = <int, JobListVO?>{};
+  final Map<int, List<JobListVO>> _pendingEmbeddedJobs =
+      <int, List<JobListVO>>{};
 
   @override
   /// 初始化控制器状态，并在销毁时回收语音识别相关资源。
@@ -397,7 +398,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       role: role,
       text: message.content.trim(),
       footer: isAssistant ? 'AI.由西格玛AI提供'.tr() : null,
-      embeddedJob: isAssistant ? _parseEmbeddedJobFromCards(message.cards) : null,
+      embeddedJobs: isAssistant
+          ? _parseEmbeddedJobsFromCards(message.cards)
+          : const <JobListVO>[],
     );
   }
 
@@ -445,7 +448,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     final List<AiAssistantMessageVM> nextMessages =
         List<AiAssistantMessageVM>.from(state.messages);
     nextMessages[messageIndex] = nextMessages[messageIndex].copyWith(
-      embeddedJob: job,
+      embeddedJobs: job == null ? const <JobListVO>[] : <JobListVO>[job],
       isEmbeddedJobLoading: false,
     );
     _updateState((AiAssistantState current) {
@@ -456,21 +459,22 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
-  /// 从 cards 事件中提取第一个岗位卡片，供页面在回复末尾展示。
-  JobListVO? _parseEmbeddedJobFromCards(List<AiCardEvent> cards) {
+  /// 从 cards 事件中提取全部岗位卡片，供页面在回复末尾批量展示。
+  List<JobListVO> _parseEmbeddedJobsFromCards(List<AiCardEvent> cards) {
+    final List<JobListVO> jobs = <JobListVO>[];
     for (final AiCardEvent card in cards) {
       if (card.type.trim().toLowerCase() != 'jobs') {
         continue;
       }
       for (final JsonMap item in card.items) {
         try {
-          return JobListVO.fromJson(_normalizeJobJson(item));
+          jobs.add(JobListVO.fromJson(_normalizeJobJson(item)));
         } catch (_) {
           continue;
         }
       }
     }
-    return null;
+    return jobs;
   }
 
   /// 标准化岗位字段，兼容后端在 SSE 中返回的蛇形和驼峰命名。
@@ -523,9 +527,15 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         if (!_isValidAssistantIndex(assistantIndex)) {
           break;
         }
-        _pendingEmbeddedJobs[assistantIndex] = _parseEmbeddedJobFromCards(
+        final List<JobListVO> nextJobs = _parseEmbeddedJobsFromCards(
           <AiCardEvent>[card],
         );
+        final List<JobListVO> currentJobs =
+            _pendingEmbeddedJobs[assistantIndex] ?? const <JobListVO>[];
+        _pendingEmbeddedJobs[assistantIndex] = <JobListVO>[
+          ...currentJobs,
+          ...nextJobs,
+        ];
         break;
       case 'delta':
         final String content = readString(payload, 'content');
@@ -556,13 +566,14 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         if (!_isValidAssistantIndex(assistantIndex)) {
           break;
         }
-        final JobListVO? pendingEmbeddedJob = _pendingEmbeddedJobs.remove(
+        final List<JobListVO> pendingEmbeddedJobs = _pendingEmbeddedJobs.remove(
           assistantIndex,
-        );
+            ) ??
+            const <JobListVO>[];
         final List<AiAssistantMessageVM> nextMessages =
             List<AiAssistantMessageVM>.from(state.messages);
         nextMessages[assistantIndex] = nextMessages[assistantIndex].copyWith(
-          embeddedJob: pendingEmbeddedJob,
+          embeddedJobs: pendingEmbeddedJobs,
           isEmbeddedJobLoading: false,
         );
         _updateState((AiAssistantState current) {
