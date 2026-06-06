@@ -20,6 +20,7 @@ import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../application/message_session/message_session_controller.dart';
@@ -51,6 +52,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   static const String _voiceAsset = 'assets/images/chat_page_voice.svg';
   static const String _keyboardAsset = 'assets/images/chat_page_keyboard.svg';
   static const String _addAsset = 'assets/images/chat_page_add.svg';
+  static const String _sendAsset = 'assets/images/icon_send.svg';
 
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
@@ -85,7 +87,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (playerState.processingState == ProcessingState.completed) {
         _chatController.setPlayingMessageId(null);
-        unawaited(_audioPlayer.seek(Duration.zero));
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -261,6 +262,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (!status.isGranted) {
         await _chatController.resetVoiceRecordingState();
+        if (status.isPermanentlyDenied || status.isRestricted) {
+          await _showMicrophonePermissionDialog();
+          return;
+        }
         _scaffoldMessenger
           ?..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text('消息.麦克风权限说明'.tr())));
@@ -269,6 +274,36 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
     await _stopAudioPlayback();
     await _chatController.startVoiceRecording();
+  }
+
+  Future<void> _showMicrophonePermissionDialog() async {
+    if (!mounted) {
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text('消息.麦克风权限标题'.tr()),
+          content: Text('消息.麦克风权限说明'.tr()),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text('取消'.tr()),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await openAppSettings();
+              },
+              child: Text('去设置'.tr()),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _handleVoiceRecordEnd() async {
@@ -300,6 +335,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       await _stopAudioPlayback();
       final String audioPath = await _ensureAudioPlayablePath(message);
       await _audioPlayer.setFilePath(audioPath);
+      await _audioPlayer.setLoopMode(LoopMode.off);
       _chatController.setPlayingMessageId(message.messageId);
       await _audioPlayer.play();
     } catch (error) {
@@ -555,118 +591,108 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         onBack: () => Navigator.of(context).maybePop(),
         onMoreTap: _showMoreMenu,
       ),
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double contentWidth = constraints.maxWidth.clamp(
-            0,
-            _chatContentMaxWidth,
-          );
-          return Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: Column(
-                children: <Widget>[
-                  if (_shouldShowOrderCard(widget.args))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                      child: _OrderSummaryCard(
-                        packageName: widget.args.packageName,
-                        orderStatus: _resolveOrderStatusLabel(
-                          widget.args.orderStatus,
-                        ),
-                        onTap: _handleOrderCardTap,
-                      ),
-                    ),
-                  if (_shouldShowOrderCard(widget.args))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        '消息.签证申请沟通提示'.tr(),
-                        style: const TextStyle(
-                          color: _subtleTextColor,
-                          fontSize: 11,
-                          height: 18 / 11,
-                        ),
-                      ),
-                    ),
-                  if (state.messages.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24),
-                      child: Text(
-                        _formatChatDateTime(state.messages.last.sentAt),
-                        style: const TextStyle(
-                          color: _subtleTextColor,
-                          fontSize: 11,
-                          height: 14 / 11,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: state.isInitialLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : state.loadErrorMessage != null
-                        ? _ChatLoadError(
-                            message: state.loadErrorMessage!,
-                            onRetry: _chatController.retry,
-                          )
-                        : _ChatMessageList(
-                            messages: state.messages,
-                            currentUserId: authUser?.userId ?? 0,
-                            targetNickname: widget.args.nickname,
-                            targetAvatarUrl: widget.args.avatarUrl,
-                            currentUserNickname:
-                                authUser?.nickname ?? '消息.我'.tr(),
-                            currentUserAvatarUrl: authUser?.avatarUrl ?? '',
-                            scrollController: _scrollController,
-                            isLoadingMore: state.isLoadingMore,
-                            playingMessageId: state.playingMessageId,
-                            downloadingAudioMessageIds:
-                                state.downloadingAudioMessageIds,
-                            onTapFileMessage: _handleFileMessageTap,
+      body: TapBlankToDismissKeyboard(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double contentWidth = constraints.maxWidth.clamp(
+              0,
+              _chatContentMaxWidth,
+            );
+            return Center(
+              child: SizedBox(
+                width: contentWidth,
+                child: Column(
+                  children: <Widget>[
+                    if (_shouldShowOrderCard(widget.args))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                        child: _OrderSummaryCard(
+                          packageName: widget.args.packageName,
+                          orderStatus: _resolveOrderStatusLabel(
+                            widget.args.orderStatus,
                           ),
-                  ),
-                  _ChatComposer(
-                    controller: _inputController,
-                    focusNode: _inputFocusNode,
-                    isSending: state.isSending,
-                    isVoiceMode: state.isVoiceMode,
-                    recordingState: state.recordingState,
-                    recordingSeconds: state.recordingSeconds,
-                    onVoiceTap: _handleVoiceTap,
-                    onVoiceRecordStart: _handleVoiceRecordStart,
-                    onVoiceRecordEnd: _handleVoiceRecordEnd,
-                    onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
-                    onFileTap: _handleFileAction,
-                    onSend: () =>
-                        _chatController.sendTextMessage(_inputController.text),
-                  ),
-                  ChatBottomPanelContainer<_ChatPanelType>(
-                    controller: _bottomPanelController,
-                    inputFocusNode: _inputFocusNode,
-                    panelBgColor: Colors.transparent,
-                    safeAreaBottom: 0,
-                    otherPanelWidget: (_ChatPanelType? type) {
-                      switch (type) {
-                        case _ChatPanelType.attachment:
-                          return _ChatAttachmentPanel(
-                            onClose: _hideBottomPanel,
-                            onCameraTap: _handleCameraPick,
-                            onGalleryTap: _handleGalleryPick,
-                            onFileTap: _handleLocalFilePick,
-                          );
-                        case null:
-                          return const SizedBox(height: 20);
-                      }
-                    },
-                  ),
-                  Container(height: 20, color: Colors.white),
-                ],
+                          onTap: _handleOrderCardTap,
+                        ),
+                      ),
+                    if (_shouldShowOrderCard(widget.args))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          '消息.签证申请沟通提示'.tr(),
+                          style: const TextStyle(
+                            color: _subtleTextColor,
+                            fontSize: 11,
+                            height: 18 / 11,
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: state.isInitialLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : state.loadErrorMessage != null
+                          ? _ChatLoadError(
+                              message: state.loadErrorMessage!,
+                              onRetry: _chatController.retry,
+                            )
+                          : _ChatMessageList(
+                              messages: state.messages,
+                              currentUserId: authUser?.userId ?? 0,
+                              targetNickname: widget.args.nickname,
+                              targetAvatarUrl: widget.args.avatarUrl,
+                              currentUserNickname:
+                                  authUser?.nickname ?? '消息.我'.tr(),
+                              currentUserAvatarUrl: authUser?.avatarUrl ?? '',
+                              scrollController: _scrollController,
+                              isLoadingMore: state.isLoadingMore,
+                              playingMessageId: state.playingMessageId,
+                              downloadingAudioMessageIds:
+                                  state.downloadingAudioMessageIds,
+                              onTapFileMessage: _handleFileMessageTap,
+                            ),
+                    ),
+                    _ChatComposer(
+                      controller: _inputController,
+                      focusNode: _inputFocusNode,
+                      isSending: state.isSending,
+                      isVoiceMode: state.isVoiceMode,
+                      recordingState: state.recordingState,
+                      recordingSeconds: state.recordingSeconds,
+                      onVoiceTap: _handleVoiceTap,
+                      onVoiceRecordStart: _handleVoiceRecordStart,
+                      onVoiceRecordEnd: _handleVoiceRecordEnd,
+                      onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
+                      onFileTap: _handleFileAction,
+                      onSend: () =>
+                          _chatController.sendTextMessage(_inputController.text),
+                    ),
+                    ChatBottomPanelContainer<_ChatPanelType>(
+                      controller: _bottomPanelController,
+                      inputFocusNode: _inputFocusNode,
+                      panelBgColor: Colors.transparent,
+                      safeAreaBottom: 0,
+                      otherPanelWidget: (_ChatPanelType? type) {
+                        switch (type) {
+                          case _ChatPanelType.attachment:
+                            return _ChatAttachmentPanel(
+                              onClose: _hideBottomPanel,
+                              onCameraTap: _handleCameraPick,
+                              onGalleryTap: _handleGalleryPick,
+                              onFileTap: _handleLocalFilePick,
+                            );
+                          case null:
+                            return const SizedBox(height: 20);
+                        }
+                      },
+                    ),
+                    Container(height: 20, color: Colors.white),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -1462,20 +1488,12 @@ class _ChatComposer extends StatelessWidget {
                           return InkWell(
                             onTap: isSending ? null : onSend,
                             borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: Text(
-                                '消息.发送'.tr(),
-                                style: TextStyle(
-                                  color: isSending
-                                      ? const Color(0xFFBFBFBF)
-                                      : _ChatPageState._brandBlue,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  height: 24 / 15,
-                                ),
+                            child: Opacity(
+                              opacity: isSending ? 0.45 : 1,
+                              child: SvgPicture.asset(
+                                _ChatPageState._sendAsset,
+                                width: 32,
+                                height: 32,
                               ),
                             ),
                           );
@@ -1530,12 +1548,12 @@ class _VoiceRecordButton extends StatelessWidget {
     final Color backgroundColor = isCancel
         ? const Color(0xFFFFEAEA)
         : isRecording
-        ? const Color(0xFFEAF3FF)
-        : Colors.transparent;
+        ? const Color(0xFFE5E7EB)
+        : Colors.white;
     final Color foregroundColor = isCancel
         ? const Color(0xFFD9363E)
         : isRecording
-        ? _ChatPageState._brandBlue
+        ? _ChatPageState._titleColor
         : _ChatPageState._subtleTextColor;
     final String label = isCancel
         ? '消息.松开取消'.tr()

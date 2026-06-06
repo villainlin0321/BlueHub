@@ -1,4 +1,5 @@
 "CFBundleDisplayName" = "Europe Pass";
 "NSCameraUsageDescription" = "Allow access to your camera to take photos for your profile and application documents.";
+"NSMicrophoneUsageDescription" = "Allow access to your microphone to record and send voice messages in chats.";
 "NSPhotoLibraryUsageDescription" = "Allow access to your photo library to choose photos for your profile and application documents.";
 "NSPhotoLibraryAddUsageDescription" = "Allow access to your photo library to save images to your device.";

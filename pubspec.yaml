@@ -50,6 +50,7 @@ dependencies:
   file_picker: ^11.0.2
   record: 6.1.2
   just_audio: ^0.10.5
+  speech_to_text: ^7.4.0
   easy_refresh: ^3.5.0
   cached_network_image: ^3.4.1
   chat_bottom_container: ^0.5.0
