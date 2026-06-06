@@ -30,6 +30,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   final Map<int, JobListVO?> _pendingEmbeddedJobs = <int, JobListVO?>{};
 
   @override
+  /// 初始化控制器状态，并在销毁时回收语音识别相关资源。
   AiAssistantState build() {
     _isDisposed = false;
     ref.onDispose(() {
@@ -40,6 +41,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return const AiAssistantState();
   }
 
+  /// 首次进入页面时完成启动流程：优先恢复历史会话，否则展示默认示例消息。
   Future<void> bootstrap({required int? sessionId}) async {
     if (_hasBootstrapped) {
       return;
@@ -53,6 +55,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     await _loadRecommendedJob();
   }
 
+  /// 加载指定会话的历史消息，并映射为页面可直接渲染的消息模型。
   Future<void> loadSessionHistory(int sessionId) async {
     _updateState((AiAssistantState current) {
       return current.copyWith(isHistoryLoading: true);
@@ -84,11 +87,14 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 将页面重置回默认示例对话，并重新拉取推荐岗位卡片。
   Future<void> resetToDefaultConversation() async {
     _showDefaultConversation();
     await _loadRecommendedJob();
   }
 
+  /// 发送文本消息，并消费 AI 返回的 SSE 流更新 assistant 回复。
+  /// 上下文类型：general / job_match / visa_consult / order_query
   Future<void> sendText(String rawText, {required String language}) async {
     final String text = rawText.trim();
     if (text.isEmpty || state.isSending) {
@@ -149,6 +155,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 在文本输入和语音输入两种模式之间切换，并清空录音中的瞬时状态。
   void toggleComposerMode() {
     if (state.isSending || state.isVoiceListening) {
       return;
@@ -166,6 +173,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 开始语音识别，负责初始化识别器、匹配语言并同步录音计时状态。
   Future<void> startVoiceInput({required bool isChineseLocale}) async {
     if (state.isSending || state.isVoiceListening) {
       return;
@@ -244,6 +252,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 根据长按拖动位置更新当前语音按钮状态，支持上滑取消。
   void updateVoiceDrag(LongPressMoveUpdateDetails details) {
     if (state.voiceInputState == AiAssistantVoiceInputState.idle) {
       return;
@@ -259,6 +268,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 结束语音识别；若未取消且识别出文本，则复用文本发送流程继续对话。
   Future<void> finishVoiceInput({required String language}) async {
     if (state.voiceInputState == AiAssistantVoiceInputState.idle) {
       return;
@@ -285,6 +295,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     await sendText(recognizedText, language: language);
   }
 
+  /// 处理 AI 推荐岗位的一键投递，并维护按钮 loading / 已投递状态。
   Future<void> applyRecommendedJob(JobListVO job) async {
     if (job.jobId <= 0 ||
         state.applyingJobIds.contains(job.jobId) ||
@@ -327,16 +338,19 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 清除一次性反馈消息，避免重复弹出页面提示。
   void clearFeedback() {
     _updateState((AiAssistantState current) {
       return current.copyWith(feedbackMessage: null, feedbackIsError: false);
     });
   }
 
+  /// 判断传入的会话 ID 是否有效，可用于历史记录拉取。
   bool _hasValidSessionId(int? sessionId) {
     return sessionId != null && sessionId > 0;
   }
 
+  /// 回填无会话场景下的示例消息，用于页面初次展示。
   void _showDefaultConversation() {
     _updateState((AiAssistantState current) {
       return current.copyWith(
@@ -348,6 +362,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 构建默认对话内容，并预留一个推荐岗位占位消息。
   List<AiAssistantMessageVM> _buildDefaultMessages() {
     return <AiAssistantMessageVM>[
       AiAssistantMessageVM(
@@ -374,6 +389,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     ];
   }
 
+  /// 将接口历史消息统一映射为页面消息模型，兼容岗位卡片和 footer。
   AiAssistantMessageVM _mapHistoryMessage(AiMessageVO message) {
     final AiAssistantChatRole role = _parseChatRole(message.role);
     final bool isAssistant = role == AiAssistantChatRole.assistant;
@@ -385,6 +401,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     );
   }
 
+  /// 解析后端消息角色，兼容 assistant / ai / bot 等多种返回值。
   AiAssistantChatRole _parseChatRole(String role) {
     final String normalizedRole = role.trim().toLowerCase();
     if (normalizedRole == 'assistant' ||
@@ -395,6 +412,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return AiAssistantChatRole.user;
   }
 
+  /// 拉取一个真实岗位，补全默认示例中的推荐岗位卡片。
   Future<void> _loadRecommendedJob() async {
     try {
       final response = await ref.read(jobServiceProvider).listJobs(
@@ -415,6 +433,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 用真实岗位数据更新默认推荐消息，并结束该消息的 loading 状态。
   void _updateDemoRecommendationMessage(JobListVO? job) {
     final int messageIndex = state.messages.indexWhere(
       (AiAssistantMessageVM message) => message.isEmbeddedJobLoading,
@@ -437,6 +456,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 从 cards 事件中提取第一个岗位卡片，供页面在回复末尾展示。
   JobListVO? _parseEmbeddedJobFromCards(List<AiCardEvent> cards) {
     for (final AiCardEvent card in cards) {
       if (card.type.trim().toLowerCase() != 'jobs') {
@@ -453,6 +473,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return null;
   }
 
+  /// 标准化岗位字段，兼容后端在 SSE 中返回的蛇形和驼峰命名。
   Map<String, Object?> _normalizeJobJson(Map<String, Object?> json) {
     return <String, Object?>{
       'jobId': json['jobId'] ?? json['job_id'] ?? 0,
@@ -473,6 +494,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     };
   }
 
+  /// 标准化雇主字段，确保岗位卡片能稳定拿到雇主信息。
   Map<String, Object?> _normalizeEmployerJson(Map<String, Object?>? json) {
     final Map<String, Object?> employerJson = json ?? <String, Object?>{};
     return <String, Object?>{
@@ -483,6 +505,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     };
   }
 
+  /// 消费单条 SSE 事件，按事件类型更新会话、文本流和推荐卡片状态。
   void _handleChatEvent(SseEvent event, {required int assistantIndex}) {
     final String eventName = (event.event ?? '').trim().toLowerCase();
     final JsonMap payload = _decodeEventPayload(event.data);
@@ -554,10 +577,12 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 校验 assistant 消息索引是否仍然指向当前有效消息列表。
   bool _isValidAssistantIndex(int index) {
     return index >= 0 && index < state.messages.length;
   }
 
+  /// 解析 SSE 中的 JSON 负载，异常场景下返回空对象兜底。
   JsonMap _decodeEventPayload(String raw) {
     final String normalized = raw.trim();
     if (normalized.isEmpty) {
@@ -570,6 +595,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     }
   }
 
+  /// 当 assistant 占位消息最终没有内容时，将其从消息列表中移除。
   void _removeEmptyAssistantMessage(int assistantIndex) {
     if (!_isValidAssistantIndex(assistantIndex)) {
       _pendingEmbeddedJobs.remove(assistantIndex);
@@ -591,6 +617,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 根据当前界面语言匹配 speech_to_text 可用的 localeId。
   Future<String?> _resolveSpeechLocaleId({
     required bool isChineseLocale,
   }) async {
@@ -622,6 +649,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return availableLocales.first.localeId;
   }
 
+  /// 在设备支持的语音 locale 列表中查找目标 locale 的精确匹配项。
   String? _findSpeechLocaleId(
     List<stt.LocaleName> availableLocales,
     String targetLocaleId,
@@ -635,16 +663,19 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return null;
   }
 
+  /// 将 localeId 统一规整为可比较的格式。
   String _normalizeLocaleId(String localeId) {
     return localeId.trim().replaceAll('-', '_').toLowerCase();
   }
 
+  /// 从 localeId 中提取语言码，用于做模糊匹配兜底。
   String _extractLanguageCode(String localeId) {
     final String normalized = _normalizeLocaleId(localeId);
     final List<String> segments = normalized.split('_');
     return segments.isEmpty ? normalized : segments.first;
   }
 
+  /// 重置语音输入状态，并停止录音计时。
   void _resetVoiceInputState() {
     _voiceTimer?.cancel();
     _updateState((AiAssistantState current) {
@@ -656,6 +687,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 统一解析岗位投递失败文案，优先透传接口真实错误信息。
   String _resolveJobApplyErrorMessage(Object error) {
     if (error is ApiException) {
       return error.message;
@@ -663,6 +695,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     return '招聘.投递失败'.tr();
   }
 
+  /// 发出一次性反馈事件，交由页面层通过 SnackBar 展示。
   void _emitFeedback(String message, {required bool isError}) {
     _updateState((AiAssistantState current) {
       return current.copyWith(
@@ -673,6 +706,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
+  /// 对状态更新做统一封装，避免控制器销毁后继续写入状态。
   void _updateState(
     AiAssistantState Function(AiAssistantState current) transform,
   ) {
