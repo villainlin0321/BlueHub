@@ -30,11 +30,32 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("../keystore.jks")
+            storePassword = "bh20260608"
+            keyAlias = "key0"
+            keyPassword = "bh20260608"
+        }
+        create("release") {
+            storeFile = file("../keystore.jks")
+            storePassword = "bh20260608"
+            keyAlias = "key0"
+            keyPassword = "bh20260608"
+        }
+    }
+
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
