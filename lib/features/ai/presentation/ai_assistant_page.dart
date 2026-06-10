@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -119,7 +120,9 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
     final AiAssistantController controller = ref.read(
       aiAssistantControllerProvider.notifier,
     );
-    final int? currentSessionId = ref.read(aiAssistantControllerProvider).currentSessionId;
+    final int? currentSessionId = ref
+        .read(aiAssistantControllerProvider)
+        .currentSessionId;
     await showAiSessionHistorySheet(
       context,
       currentSessionId: currentSessionId,
@@ -134,14 +137,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   void _scheduleScrollToBottom({bool animated = true, bool settle = false}) {
@@ -204,12 +200,10 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
       onOpenHistory: _openSessionHistory,
       onToggleComposerMode: () => _handleToggleComposerMode(controller, state),
       onSend: () => _handleSend(controller),
-      onVoiceRecordStart: () => controller.startVoiceInput(
-        isChineseLocale: context.isChineseLocale,
-      ),
-      onVoiceRecordEnd: () => controller.finishVoiceInput(
-        language: _resolveLanguage(),
-      ),
+      onVoiceRecordStart: () =>
+          controller.startVoiceInput(isChineseLocale: context.isChineseLocale),
+      onVoiceRecordEnd: () =>
+          controller.finishVoiceInput(language: _resolveLanguage()),
       onVoiceRecordMoveUpdate: controller.updateVoiceDrag,
       onApplyJob: controller.applyRecommendedJob,
       onOpenJobDetail: _openRecommendedJobDetail,

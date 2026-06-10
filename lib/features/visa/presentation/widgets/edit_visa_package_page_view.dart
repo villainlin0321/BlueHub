@@ -60,7 +60,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
   final void Function(int tierIndex, bool value) onShowMaterialsChanged;
   final void Function(int tierIndex, int materialIndex, bool value)
-      onMaterialRequiredChanged;
+  onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
@@ -108,14 +108,16 @@ class EditVisaPackagePageView extends StatelessWidget {
                                 _TierConfigSection(
                                   state: state,
                                   tiers: tiers,
-                                  onRetryLoadServiceTags: onRetryLoadServiceTags,
+                                  onRetryLoadServiceTags:
+                                      onRetryLoadServiceTags,
                                   onAddTier: onAddTier,
                                   onDeleteTier: onDeleteTier,
                                   onAddMaterial: onAddMaterial,
                                   onAddCustomService: onAddCustomService,
                                   onRemoveCustomService: onRemoveCustomService,
                                   onToggleServiceTag: onToggleServiceTag,
-                                  onShowMaterialsChanged: onShowMaterialsChanged,
+                                  onShowMaterialsChanged:
+                                      onShowMaterialsChanged,
                                   onMaterialRequiredChanged:
                                       onMaterialRequiredChanged,
                                   onMaterialTypeTap: onMaterialTypeTap,
@@ -245,7 +247,7 @@ class _TierConfigSection extends StatelessWidget {
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
   final void Function(int tierIndex, bool value) onShowMaterialsChanged;
   final void Function(int tierIndex, int materialIndex, bool value)
-      onMaterialRequiredChanged;
+  onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
@@ -258,7 +260,9 @@ class _TierConfigSection extends StatelessWidget {
         children: <Widget>[
           EditVisaPackageSectionTitle(title: '签证编辑.多档位套餐配置'.tr()),
           const SizedBox(height: 16),
-          ...tiers.asMap().entries.map((MapEntry<int, EditVisaPackageTierViewDraft> entry) {
+          ...tiers.asMap().entries.map((
+            MapEntry<int, EditVisaPackageTierViewDraft> entry,
+          ) {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: entry.key == tiers.length - 1 ? 0 : 24,
@@ -319,7 +323,7 @@ class _TierCard extends StatelessWidget {
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
   final void Function(int tierIndex, bool value) onShowMaterialsChanged;
   final void Function(int tierIndex, int materialIndex, bool value)
-      onMaterialRequiredChanged;
+  onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
@@ -371,7 +375,8 @@ class _TierCard extends StatelessWidget {
           isLoadingServiceTags: state.isLoadingServiceTags,
           serviceTagsError: state.serviceTagsError,
           onRetryLoadServiceTags: onRetryLoadServiceTags,
-          onServiceTagTap: (String tagCode) => onToggleServiceTag(tierIndex, tagCode),
+          onServiceTagTap: (String tagCode) =>
+              onToggleServiceTag(tierIndex, tagCode),
           tagLabelBuilder: tagLabelBuilder,
           customServices: tier.customServices,
           onAddCustomService: () => onAddCustomService(tierIndex),
@@ -394,22 +399,22 @@ class _TierCard extends StatelessWidget {
         ),
         if (tier.showMaterials) ...<Widget>[
           const SizedBox(height: 20),
-          ...tier.materials.asMap().entries.map(
-            (MapEntry<int, EditVisaPackageMaterialViewDraft> entry) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: entry.key == tier.materials.length - 1 ? 0 : 16,
-                ),
-                child: _MaterialCard(
-                  tierIndex: tierIndex,
-                  materialIndex: entry.key,
-                  material: entry.value,
-                  onMaterialRequiredChanged: onMaterialRequiredChanged,
-                  onMaterialTypeTap: onMaterialTypeTap,
-                ),
-              );
-            },
-          ),
+          ...tier.materials.asMap().entries.map((
+            MapEntry<int, EditVisaPackageMaterialViewDraft> entry,
+          ) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key == tier.materials.length - 1 ? 0 : 16,
+              ),
+              child: _MaterialCard(
+                tierIndex: tierIndex,
+                materialIndex: entry.key,
+                material: entry.value,
+                onMaterialRequiredChanged: onMaterialRequiredChanged,
+                onMaterialTypeTap: onMaterialTypeTap,
+              ),
+            );
+          }),
           const SizedBox(height: 16),
           EditVisaPackageAddMaterialButton(
             label: '签证编辑.添加材料'.tr(),
@@ -434,7 +439,7 @@ class _MaterialCard extends StatelessWidget {
   final int materialIndex;
   final EditVisaPackageMaterialViewDraft material;
   final void Function(int tierIndex, int materialIndex, bool value)
-      onMaterialRequiredChanged;
+  onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
 
   @override

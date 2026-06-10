@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/page_result.dart';
@@ -99,9 +100,7 @@ class _VisaProviderSearchPageState
           next.feedbackMessage == null) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(next.feedbackMessage!)));
+      AppToast.show(next.feedbackMessage!);
       ref.read(visaProviderSearchControllerProvider.notifier).clearFeedback();
     });
 

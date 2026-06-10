@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/network/page_result.dart';
 import '../data/finance_models.dart';
@@ -103,9 +104,7 @@ class _FinanceTransactionsPageState
         return;
       }
       setState(() => _isLoadingMore = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(normalizeFinanceError(error))),
-      );
+      AppToast.show(normalizeFinanceError(error));
     }
   }
 
@@ -179,10 +178,7 @@ class _FinanceTransactionsPageState
 }
 
 class _LoadMoreFooter extends StatelessWidget {
-  const _LoadMoreFooter({
-    required this.isLoadingMore,
-    required this.hasNext,
-  });
+  const _LoadMoreFooter({required this.isLoadingMore, required this.hasNext});
 
   final bool isLoadingMore;
   final bool hasNext;

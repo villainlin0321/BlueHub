@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../features/employer/data/employer_models.dart';
 import '../../../../features/employer/data/employer_providers.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../jobs/application/company_applications/company_application_list_state.dart';
 import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
 import '../../../jobs/data/application_models.dart';
@@ -88,14 +90,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   Future<void> _openResumePreview(int userId) async {
@@ -104,30 +99,29 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
   Future<String?> _showRemarkDialog(String actionLabel) async {
     final TextEditingController controller = TextEditingController();
-    final String? result = await showDialog<String>(
+    final String? result = await showAppDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(
-            '首页.备注标题'.tr(namedArgs: <String, String>{'action': actionLabel}),
+        return AppDialog(
+          title: '首页.备注标题'.tr(
+            namedArgs: <String, String>{'action': actionLabel},
           ),
           content: TextField(
             controller: controller,
             maxLines: 4,
-            decoration: InputDecoration(
-              hintText: '招聘.请输入备注选填'.tr(),
+            decoration: const InputDecoration(
               border: OutlineInputBorder(),
-            ),
+            ).copyWith(hintText: '招聘.请输入备注选填'.tr()),
           ),
-          actions: <Widget>[
-            TextButton(
+          actions: <AppDialogAction>[
+            AppDialogAction.secondary(
+              label: '通用.取消'.tr(),
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text('通用.取消'.tr()),
             ),
-            FilledButton(
+            AppDialogAction.primary(
+              label: '通用.确定'.tr(),
               onPressed: () =>
                   Navigator.of(dialogContext).pop(controller.text.trim()),
-              child: Text('通用.确定'.tr()),
             ),
           ],
         );
@@ -159,7 +153,10 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
   Future<void> _handleSecondaryAction(_ResumeCardItem item) async {
     if (item.status == EmployerApplicationFilterStatus.pending.value) {
-      await _handleApplicationAction(item, EmployerApplicationUpdateStatus.interview);
+      await _handleApplicationAction(
+        item,
+        EmployerApplicationUpdateStatus.interview,
+      );
       return;
     }
     await _handlePhoneCall(item);
@@ -182,9 +179,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
       }
       if (phone.isEmpty) {
         _showMessage(
-          '应聘管理.未获取联系电话'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          ),
+          '应聘管理.未获取联系电话'.tr(namedArgs: <String, String>{'name': fallbackName}),
           isError: true,
         );
         return;
@@ -217,9 +212,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
           : normalized;
     }
     return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          )
+        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
         : message;
   }
 
@@ -383,7 +376,9 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
   String _formatAgeGender(int age, String gender) {
     final List<String> parts = <String>[];
     if (age > 0) {
-      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': age.toString()}));
+      parts.add(
+        '招聘.岁'.tr(namedArgs: <String, String>{'count': age.toString()}),
+      );
     }
 
     final String normalizedGender = _normalizeGender(gender);
@@ -711,10 +706,7 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
               value: _formatCount(stats.pendingInterviews),
               labelKey: '我的.待面试',
             ),
-            _HeroStatItem(
-              value: _formatCount(stats.hired),
-              labelKey: '我的.已录用',
-            ),
+            _HeroStatItem(value: _formatCount(stats.hired), labelKey: '我的.已录用'),
           ];
 
     return Row(
@@ -814,7 +806,7 @@ class _QuickActionButton extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-                item.labelKey.tr(),
+              item.labelKey.tr(),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF171A1D),

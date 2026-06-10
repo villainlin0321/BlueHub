@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class SelfEvaluationPage extends StatefulWidget {
-  const SelfEvaluationPage({
-    super.key,
-    this.initialValue = '',
-  });
+  const SelfEvaluationPage({super.key, this.initialValue = ''});
 
   final String initialValue;
 

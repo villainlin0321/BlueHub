@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +19,7 @@ import '../../../features/me/data/user_models.dart';
 import '../../../features/me/data/user_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
@@ -188,9 +190,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (pickedFiles.isEmpty) {
         if (emptyMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(emptyMessage)));
+          AppToast.show(emptyMessage);
         }
         return;
       }
@@ -203,9 +203,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(errorMessage)));
+      AppToast.show(errorMessage);
       return;
     }
   }
@@ -224,9 +222,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _handleOrderCardTap() {
     final int orderId = widget.args.relatedOrderId;
     if (orderId <= 0) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('订单.订单详情不存在'.tr())));
+      AppToast.show('订单.订单详情不存在'.tr());
       return;
     }
     context.push(
@@ -243,9 +239,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final String label = message.type == 'image'
         ? '消息.图片预览开发中'.tr()
         : '消息.文件预览开发中'.tr();
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(label)));
+    AppToast.show(label);
   }
 
   Future<void> _handleVoiceRecordStart() async {
@@ -266,9 +260,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           await _showMicrophonePermissionDialog();
           return;
         }
-        _scaffoldMessenger
-          ?..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('消息.麦克风权限说明'.tr())));
+        AppToast.show('消息.麦克风权限说明'.tr());
         return;
       }
     }
@@ -280,30 +272,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (!mounted) {
       return;
     }
-    await showDialog<void>(
+    final bool shouldOpenSettings = await showAppConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('消息.麦克风权限标题'.tr()),
-          content: Text('消息.麦克风权限说明'.tr()),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text('取消'.tr()),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await openAppSettings();
-              },
-              child: Text('去设置'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '消息.麦克风权限标题'.tr(),
+      message: '消息.麦克风权限说明'.tr(),
+      cancelLabel: '取消'.tr(),
+      confirmLabel: '去设置'.tr(),
     );
+    if (shouldOpenSettings) {
+      await openAppSettings();
+    }
   }
 
   Future<void> _handleVoiceRecordEnd() async {
@@ -342,11 +320,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(_resolveAudioPlaybackErrorMessage(error))),
-        );
+      AppToast.show(_resolveAudioPlaybackErrorMessage(error));
     }
   }
 
@@ -495,11 +469,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(_resolveBlockUserErrorMessage(error))),
-        );
+      AppToast.show(_resolveBlockUserErrorMessage(error));
     } finally {
       if (mounted) {
         setState(() {
@@ -552,9 +522,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
       if (previous?.feedbackId != next.feedbackId &&
           next.feedbackMessage != null) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(next.feedbackMessage!)));
+        AppToast.show(next.feedbackMessage!);
         _chatController.clearFeedback();
       }
 
@@ -664,8 +632,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       onVoiceRecordEnd: _handleVoiceRecordEnd,
                       onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
                       onFileTap: _handleFileAction,
-                      onSend: () =>
-                          _chatController.sendTextMessage(_inputController.text),
+                      onSend: () => _chatController.sendTextMessage(
+                        _inputController.text,
+                      ),
                     ),
                     ChatBottomPanelContainer<_ChatPanelType>(
                       controller: _bottomPanelController,

@@ -274,16 +274,12 @@ class PostJobController extends Notifier<PostJobState> {
         publishSuccessId: state.publishSuccessId + 1,
       );
       _emitFeedback(
-        editingJobId == null
-            ? '岗位发布.岗位发布成功'.tr()
-            : '岗位发布.岗位更新成功'.tr(),
+        editingJobId == null ? '岗位发布.岗位发布成功'.tr() : '岗位发布.岗位更新成功'.tr(),
       );
     } catch (_) {
       state = state.copyWith(isPublishing: false);
       _emitFeedback(
-        editingJobId == null
-            ? '岗位发布.岗位发布失败'.tr()
-            : '岗位发布.岗位更新失败'.tr(),
+        editingJobId == null ? '岗位发布.岗位发布失败'.tr() : '岗位发布.岗位更新失败'.tr(),
         isError: true,
       );
     }

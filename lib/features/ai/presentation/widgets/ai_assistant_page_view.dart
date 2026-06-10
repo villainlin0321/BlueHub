@@ -258,20 +258,20 @@ class _AssistantMessageItem extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (message.footer != null && message.footer!.trim().isNotEmpty)
-                  ...<Widget>[
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Text(
-                        message.footer!,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textTertiary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                if (message.footer != null &&
+                    message.footer!.trim().isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      message.footer!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.textTertiary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  ),
+                ],
                 if (message.isEmbeddedJobLoading) ...<Widget>[
                   const SizedBox(height: 10),
                   const Padding(
@@ -609,18 +609,19 @@ class _Composer extends StatelessWidget {
                           textInputAction: TextInputAction.send,
                           keyboardType: TextInputType.multiline,
                           onSubmitted: (_) => onSend(),
-                          decoration: const InputDecoration(
-                            isCollapsed: true,
-                            hintText: null,
-                            border: InputBorder.none,
-                          ).copyWith(
-                            hintText: '消息.发消息'.tr(),
-                            hintStyle: const TextStyle(
-                              color: AiAssistantPageView._subtleTextColor,
-                              fontSize: 15,
-                              height: 22 / 15,
-                            ),
-                          ),
+                          decoration:
+                              const InputDecoration(
+                                isCollapsed: true,
+                                hintText: null,
+                                border: InputBorder.none,
+                              ).copyWith(
+                                hintText: '消息.发消息'.tr(),
+                                hintStyle: const TextStyle(
+                                  color: AiAssistantPageView._subtleTextColor,
+                                  fontSize: 15,
+                                  height: 22 / 15,
+                                ),
+                              ),
                           style: const TextStyle(
                             color: AiAssistantPageView._titleColor,
                             fontSize: 15,

@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -55,9 +56,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   }
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleBack(BuildContext context) {
@@ -148,10 +147,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isCollectedOverride = !wasCollected;
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(
-        context,
-        wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr(),
-      );
+      _showMessage(context, wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -592,7 +588,10 @@ class _JobDescriptionSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _DescriptionBlock(title: '招聘.岗位职责'.tr(), items: detail.responsibilities),
+          _DescriptionBlock(
+            title: '招聘.岗位职责'.tr(),
+            items: detail.responsibilities,
+          ),
           const SizedBox(height: 20),
           _DescriptionBlock(title: '招聘.任职要求'.tr(), items: detail.requirements),
           const SizedBox(height: 20),

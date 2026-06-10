@@ -93,7 +93,8 @@ class ResumeService {
         return value.toInt();
       }
       if (value is String) {
-        final int? parsed = int.tryParse(value) ?? double.tryParse(value)?.toInt();
+        final int? parsed =
+            int.tryParse(value) ?? double.tryParse(value)?.toInt();
         if (parsed != null) {
           return parsed;
         }

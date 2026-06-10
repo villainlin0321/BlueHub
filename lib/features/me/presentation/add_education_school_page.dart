@@ -3,15 +3,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../data/dictionary_providers.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class AddEducationSchoolPage extends ConsumerStatefulWidget {
-  const AddEducationSchoolPage({
-    super.key,
-    this.initialSchool,
-  });
+  const AddEducationSchoolPage({super.key, this.initialSchool});
 
   final String? initialSchool;
 
@@ -20,7 +18,8 @@ class AddEducationSchoolPage extends ConsumerStatefulWidget {
       _AddEducationSchoolPageState();
 }
 
-class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage> {
+class _AddEducationSchoolPageState
+    extends ConsumerState<AddEducationSchoolPage> {
   late final TextEditingController _searchController = TextEditingController(
     text: _initialKeyword(widget.initialSchool),
   )..addListener(_handleSearchChanged);
@@ -51,8 +50,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
 
   void _handleSearchChanged() {
     setState(() {
-      if (_selectedSchool != null &&
-          !_selectedSchool!.contains(_keyword)) {
+      if (_selectedSchool != null && !_selectedSchool!.contains(_keyword)) {
         _selectedSchool = null;
       }
     });
@@ -71,14 +69,13 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
         .map(_resolveSchoolName)
         .where((String name) => name.isNotEmpty)
         .toList(growable: false);
-    final String? result = _selectedSchool ??
+    final String? result =
+        _selectedSchool ??
         (schoolNames.contains(_keyword) ? _keyword : null) ??
         (schoolNames.length == 1 ? schoolNames.first : null);
 
     if (result == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.请选择学校'.tr())));
+      AppToast.show('我的.请选择学校'.tr());
       return;
     }
 
@@ -88,7 +85,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
   @override
   Widget build(BuildContext context) {
     final schoolsAsync = ref.watch(schoolSearchProvider(_query));
-    final List<SchoolVO> schools = schoolsAsync.asData?.value.list ?? <SchoolVO>[];
+    final List<SchoolVO> schools =
+        schoolsAsync.asData?.value.list ?? <SchoolVO>[];
 
     return Scaffold(
       backgroundColor: Colors.white,

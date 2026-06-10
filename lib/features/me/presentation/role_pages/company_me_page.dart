@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -81,14 +82,8 @@ class CompanyMePage extends ConsumerWidget {
   }
 
   void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-        ),
-      ),
+    AppToast.show(
+      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
     );
   }
 
@@ -145,9 +140,7 @@ class CompanyMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '我的.资料加载失败'.tr();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
     }
   }
 }
@@ -453,7 +446,10 @@ class _StatCard extends ConsumerWidget {
               value: _formatCompanyCount(stats.pendingInterviews),
               labelKey: '我的.待面试',
             ),
-            _StatData(value: _formatCompanyCount(stats.hired), labelKey: '我的.已录用'),
+            _StatData(
+              value: _formatCompanyCount(stats.hired),
+              labelKey: '我的.已录用',
+            ),
           ];
 
     return Container(

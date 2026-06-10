@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../order/data/visa_order_models.dart';
@@ -48,24 +49,12 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           ),
         );
         if (published == true && mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
-            SnackBar(content: Text('我的.评价发布成功'.tr())),
-          );
+          AppToast.show('我的.评价发布成功'.tr());
         }
         return;
       case _OrderActionType.contactMerchant:
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(
-            content: Text(
-              '我的.占位提示'.tr(namedArgs: <String, String>{
-                'label': action.label.tr(),
-              }),
-            ),
-          ),
+        AppToast.show(
+          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
         );
         return;
       case _OrderActionType.uploadMaterials:
@@ -78,16 +67,8 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         return;
       case _OrderActionType.goPay:
       case _OrderActionType.supplementMaterials:
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(
-            content: Text(
-              '我的.占位提示'.tr(namedArgs: <String, String>{
-                'label': action.label.tr(),
-              }),
-            ),
-          ),
+        AppToast.show(
+          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
         );
         return;
     }
@@ -642,9 +623,15 @@ class _OrderCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _OrderMetaRow(label: '订单.服务商'.tr(), value: order.provider),
+                      _OrderMetaRow(
+                        label: '订单.服务商'.tr(),
+                        value: order.provider,
+                      ),
                       const SizedBox(height: 4),
-                      _OrderMetaRow(label: '我的.套餐类型'.tr(), value: order.packageType),
+                      _OrderMetaRow(
+                        label: '我的.套餐类型'.tr(),
+                        value: order.packageType,
+                      ),
                       const SizedBox(height: 4),
                       _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
                       if (order.hasProgress) ...<Widget>[

@@ -2,11 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../auth/presentation/widgets/auth_language_switch.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/localization/app_locales.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -165,26 +167,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 展示退出登录确认框，避免误触直接丢失当前会话。
   Future<bool> _showLogoutConfirmDialog() async {
-    final bool? confirmed = await showDialog<bool>(
+    return showAppConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('设置.退出登录标题'.tr()),
-          content: Text('设置.退出登录内容'.tr()),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('通用.取消'.tr()),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('通用.确定'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '设置.退出登录标题'.tr(),
+      message: '设置.退出登录内容'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.确定'.tr(),
     );
-    return confirmed ?? false;
   }
 
   /// 将异常转换成适合页面提示的文案，优先展示接口返回信息。
@@ -197,9 +186,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 统一通过页面级 Snackbar 反馈点击结果或异常信息。
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 

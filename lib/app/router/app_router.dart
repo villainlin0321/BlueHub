@@ -315,10 +315,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             return MyResumePreviewPage(args: extra);
           }
           if (extra is int) {
-            return MyResumePreviewPage(
-              userId: extra,
-              title: '我的.简历详情标题'.tr(),
-            );
+            return MyResumePreviewPage(userId: extra, title: '我的.简历详情标题'.tr());
           }
           return const MyResumePreviewPage();
         },

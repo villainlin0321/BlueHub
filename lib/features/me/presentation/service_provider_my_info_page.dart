@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -268,9 +269,7 @@ class _ServiceProviderMyInfoPageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -290,22 +289,39 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<_InfoItem> infoItems = <_InfoItem>[
-      _InfoItem(label: '我的.企业名称'.tr(), value: _textOrPlaceholder(profile.companyName)),
+      _InfoItem(
+        label: '我的.企业名称'.tr(),
+        value: _textOrPlaceholder(profile.companyName),
+      ),
       _InfoItem(
         label: '我的.统一社会信用代码'.tr(),
         value: _textOrPlaceholder(profile.unifiedCreditCode),
       ),
-      _InfoItem(label: '我的.法人姓名'.tr(), value: _textOrPlaceholder(profile.legalPerson)),
+      _InfoItem(
+        label: '我的.法人姓名'.tr(),
+        value: _textOrPlaceholder(profile.legalPerson),
+      ),
       _InfoItem(
         label: '我的.官方联系人'.tr(),
         value: _textOrPlaceholder(profile.contactPerson),
       ),
-      _InfoItem(label: '我的.联系电话'.tr(), value: _textOrPlaceholder(profile.contactPhone)),
-      _InfoItem(label: '我的.邮箱'.tr(), value: _textOrPlaceholder(profile.contactEmail)),
-      _InfoItem(label: '我的.官网'.tr(), value: _textOrPlaceholder(profile.website)),
+      _InfoItem(
+        label: '我的.联系电话'.tr(),
+        value: _textOrPlaceholder(profile.contactPhone),
+      ),
+      _InfoItem(
+        label: '我的.邮箱'.tr(),
+        value: _textOrPlaceholder(profile.contactEmail),
+      ),
+      _InfoItem(
+        label: '我的.官网'.tr(),
+        value: _textOrPlaceholder(profile.website),
+      ),
       _InfoItem(
         label: '我的.从业年限'.tr(),
-        value: profile.yearsOfService > 0 ? '${profile.yearsOfService}' : '我的.未完善'.tr(),
+        value: profile.yearsOfService > 0
+            ? '${profile.yearsOfService}'
+            : '我的.未完善'.tr(),
       ),
       _InfoItem(
         label: '我的.国家地区'.tr(),

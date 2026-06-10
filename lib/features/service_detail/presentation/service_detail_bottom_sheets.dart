@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -225,9 +226,7 @@ class _ApplyBottomSheetContentState
                     shadowColor: Colors.transparent,
                   ),
                   child: Text(
-                    _isSubmitting
-                        ? '服务详情.提交中'.tr()
-                        : '服务详情.去支付'.tr(),
+                    _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
@@ -251,12 +250,14 @@ class _ApplyBottomSheetContentState
     FocusScope.of(context).unfocus();
     setState(() => _isSubmitting = true);
     try {
-      final order = await ref.read(visaOrderServiceProvider).createOrder(
-        request: CreateVisaOrderBO(
-          packageId: widget.package.packageId,
-          tierId: widget.package.tierId,
-        ),
-      );
+      final order = await ref
+          .read(visaOrderServiceProvider)
+          .createOrder(
+            request: CreateVisaOrderBO(
+              packageId: widget.package.packageId,
+              tierId: widget.package.tierId,
+            ),
+          );
       if (!mounted) {
         return;
       }
@@ -279,16 +280,13 @@ class _ApplyBottomSheetContentState
       }
       setState(() => _isSubmitting = false);
       _showMessage(
-        _resolveBottomSheetErrorMessage(
-          error,
-          fallback: '服务详情.创建订单失败'.tr(),
-        ),
+        _resolveBottomSheetErrorMessage(error, fallback: '服务详情.创建订单失败'.tr()),
       );
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -453,7 +451,9 @@ class _ConfirmPaymentBottomSheetContentState
     }
     setState(() => _isPaying = true);
     try {
-      await ref.read(visaOrderServiceProvider).payOrder(orderId: widget.orderId);
+      await ref
+          .read(visaOrderServiceProvider)
+          .payOrder(orderId: widget.orderId);
       if (!mounted) {
         return;
       }
@@ -473,16 +473,13 @@ class _ConfirmPaymentBottomSheetContentState
       }
       setState(() => _isPaying = false);
       _showMessage(
-        _resolveBottomSheetErrorMessage(
-          error,
-          fallback: '服务详情.支付发起失败'.tr(),
-        ),
+        _resolveBottomSheetErrorMessage(error, fallback: '服务详情.支付发起失败'.tr()),
       );
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -948,7 +945,10 @@ String _formatPaymentAmount(String priceText) {
   return '¥$groupedInteger.$decimalPart';
 }
 
-String _resolveBottomSheetErrorMessage(Object error, {required String fallback}) {
+String _resolveBottomSheetErrorMessage(
+  Object error, {
+  required String fallback,
+}) {
   if (error is ApiException) {
     return error.message;
   }

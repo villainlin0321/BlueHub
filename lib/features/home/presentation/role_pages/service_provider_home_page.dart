@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -714,9 +715,7 @@ class _PendingOrdersSection extends ConsumerWidget {
   const _PendingOrdersSection();
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _openChat(BuildContext context, VisaOrderVO order) {

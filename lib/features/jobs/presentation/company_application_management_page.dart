@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -59,10 +60,7 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
             ),
             CompanyApplicationJobFilterBar(
               label: '应聘管理.全部岗位'.tr(),
-              onTap: () => _showPlaceholderSnackBar(
-                context,
-                '应聘管理.岗位筛选功能'.tr(),
-              ),
+              onTap: () => _showPlaceholderToast(context, '应聘管理.岗位筛选功能'.tr()),
             ),
             Expanded(
               child: TabBarView(
@@ -85,16 +83,8 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
     );
   }
 
-  static void _showPlaceholderSnackBar(BuildContext context, String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
+  static void _showPlaceholderToast(BuildContext context, String label) {
+    AppToast.show('我的.占位提示'.tr(namedArgs: <String, String>{'label': label}));
   }
 }
 
@@ -289,14 +279,7 @@ class _CompanyApplicationTabViewState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: result.success ? null : const Color(0xFFD9363E),
-          ),
-        );
+      AppToast.show(result.message);
       if (!result.success) {
         return;
       }
@@ -308,7 +291,10 @@ class _CompanyApplicationTabViewState
       return;
     }
 
-    _showPlaceholderSnackBar(context, widget.tab.secondaryActionLabel.tr());
+    CompanyApplicationManagementPage._showPlaceholderToast(
+      context,
+      widget.tab.secondaryActionLabel.tr(),
+    );
   }
 
   /// 尝试读取求职者手机号并唤起系统拨号页。
@@ -328,10 +314,8 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (phone.isEmpty) {
-        _showErrorSnackBar(
-          '应聘管理.未获取联系电话'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          ),
+        _showErrorToast(
+          '应聘管理.未获取联系电话'.tr(namedArgs: <String, String>{'name': fallbackName}),
         );
         return;
       }
@@ -342,25 +326,18 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (!launched) {
-        _showErrorSnackBar('应聘管理.暂时无法拨打电话'.tr());
+        _showErrorToast('应聘管理.暂时无法拨打电话'.tr());
       }
     } catch (error) {
       if (!mounted) {
         return;
       }
-      _showErrorSnackBar(_normalizeActionError(error, fallbackName));
+      _showErrorToast(_normalizeActionError(error, fallbackName));
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: const Color(0xFFD9363E),
-        ),
-      );
+  void _showErrorToast(String message) {
+    AppToast.show(message);
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
@@ -374,9 +351,7 @@ class _CompanyApplicationTabViewState
           : normalized;
     }
     return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          )
+        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
         : message;
   }
 
@@ -523,17 +498,5 @@ class _CompanyApplicationTabViewState
 
   String _twoDigits(int value) {
     return value < 10 ? '0$value' : value.toString();
-  }
-
-  void _showPlaceholderSnackBar(BuildContext context, String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
   }
 }

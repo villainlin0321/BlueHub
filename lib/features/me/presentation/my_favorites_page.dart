@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -85,9 +86,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _enterManageMode() {
@@ -319,9 +318,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         );
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(
-        jobIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr(),
-      );
+      _showMessage(jobIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -983,9 +980,7 @@ extension on collection_models.JobListVO {
       if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
         '招聘卡片.提供签证'.tr(),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) '招聘卡片.急招'.tr(),
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) '招聘卡片.急招'.tr()];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),
@@ -1027,9 +1022,9 @@ extension on collection_models.VisaPackageVO {
       title: name.trim().isEmpty ? '首页.签证套餐'.tr() : name,
       rating: '0.0',
       cases: estimatedDays > 0
-          ? '服务详情.预计办理天数'.tr(namedArgs: <String, String>{
-              'days': estimatedDays.toString(),
-            })
+          ? '服务详情.预计办理天数'.tr(
+              namedArgs: <String, String>{'days': estimatedDays.toString()},
+            )
           : '我的.已收藏套餐'.tr(),
       tags: tags.isEmpty ? <String>['我的.签证服务'.tr()] : tags,
       description: _buildFavoriteDescription(),
@@ -1057,13 +1052,15 @@ extension on collection_models.VisaPackageVO {
   String _buildFavoriteDescription() {
     final List<String> parts = <String>[
       if (requiredMaterials.isNotEmpty)
-        '我的.所需材料项'.tr(namedArgs: <String, String>{
-          'count': requiredMaterials.length.toString(),
-        }),
+        '我的.所需材料项'.tr(
+          namedArgs: <String, String>{
+            'count': requiredMaterials.length.toString(),
+          },
+        ),
       if (estimatedDays > 0)
-        '我的.预计办理天数'.tr(namedArgs: <String, String>{
-          'days': estimatedDays.toString(),
-        }),
+        '我的.预计办理天数'.tr(
+          namedArgs: <String, String>{'days': estimatedDays.toString()},
+        ),
     ];
     if (parts.isEmpty) {
       return '我的.已收藏签证套餐说明'.tr();

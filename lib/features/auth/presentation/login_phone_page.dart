@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/localization/app_locales.dart';
@@ -105,10 +106,7 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
 
     final login = await ref
         .read(loginFormControllerProvider.notifier)
-        .submitEmailLoginWithoutValidation(
-          email: email,
-          code: _testCode,
-        );
+        .submitEmailLoginWithoutValidation(email: email, code: _testCode);
     if (!mounted || login == null) {
       return;
     }
@@ -134,9 +132,7 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(next.feedbackMessage!)));
+      AppToast.show(next.feedbackMessage!);
       ref.read(loginFormControllerProvider.notifier).clearFeedback();
     });
 

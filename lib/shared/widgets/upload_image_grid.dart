@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -136,10 +137,7 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
         }
         _replaceEntry(
           entryId,
-          entry.copyWith(
-            uploadedUrl: uploaded.fileUrl,
-            isUploading: false,
-          ),
+          entry.copyWith(uploadedUrl: uploaded.fileUrl, isUploading: false),
         );
         _notifyChanged();
       } catch (error) {
@@ -207,17 +205,15 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   /// 统一提示图片数量上限，避免多处重复拼接带参数文案。
   void _showMaxImagesMessage() {
     _showMessage(
-      '上传.最多上传'.tr(namedArgs: <String, String>{
-        'count': widget.maxImages.toString(),
-      }),
+      '上传.最多上传'.tr(
+        namedArgs: <String, String>{'count': widget.maxImages.toString()},
+      ),
     );
   }
 

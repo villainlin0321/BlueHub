@@ -144,8 +144,7 @@ class QualificationCertificationDraft {
   }
 
   UpdateEmployerBO toEmployerUpdateRequest() {
-    final int foundedYearValue =
-        int.tryParse(companyFoundedYear.trim()) ?? 0;
+    final int foundedYearValue = int.tryParse(companyFoundedYear.trim()) ?? 0;
     return UpdateEmployerBO(
       companyName: companyName,
       industry: companyIndustry,

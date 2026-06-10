@@ -5,11 +5,7 @@ import '../ui/app_spacing.dart';
 
 /// 统一样式的搜索框（仅 UI，占位不接搜索逻辑）。
 class AppSearchBar extends StatelessWidget {
-  const AppSearchBar({
-    super.key,
-    required this.hintText,
-    this.onTap,
-  });
+  const AppSearchBar({super.key, required this.hintText, this.onTap});
 
   final String hintText;
   final VoidCallback? onTap;
@@ -36,9 +32,9 @@ class AppSearchBar extends StatelessWidget {
                 hintText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
               ),
             ),
           ],
@@ -47,4 +43,3 @@ class AppSearchBar extends StatelessWidget {
     );
   }
 }
-

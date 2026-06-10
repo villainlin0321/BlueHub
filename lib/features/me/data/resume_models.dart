@@ -306,40 +306,40 @@ class ResumeListItemVO {
       resumeId: _readIntByKeys(json, const ['resume_id', 'resumeId']),
       isDefault: _readBoolByKeys(json, const ['is_default', 'isDefault']),
       completeness: readInt(json, 'completeness'),
-      targetPositions: _readStringListByKeys(
-        json,
-        const ['target_positions', 'targetPositions'],
-      ),
-      targetCountries: _readStringListByKeys(
-        json,
-        const ['target_countries', 'targetCountries'],
-      ),
+      targetPositions: _readStringListByKeys(json, const [
+        'target_positions',
+        'targetPositions',
+      ]),
+      targetCountries: _readStringListByKeys(json, const [
+        'target_countries',
+        'targetCountries',
+      ]),
       isPublic: _readBoolByKeys(json, const ['is_public', 'isPublic']),
       updatedAt: _readStringByKeys(json, const ['updated_at', 'updatedAt']),
       nickname: readString(json, 'nickname'),
       avatarUrl: _readStringByKeys(json, const ['avatar_url', 'avatarUrl']),
       gender: readString(json, 'gender'),
       age: _readNullableIntByKeys(json, const ['age']),
-      currentLocation: _readStringByKeys(
-        json,
-        const ['current_location', 'currentLocation'],
-      ),
-      salaryMin: _readNullableDoubleByKeys(
-        json,
-        const ['salary_min', 'salaryMin'],
-      ),
-      salaryMax: _readNullableDoubleByKeys(
-        json,
-        const ['salary_max', 'salaryMax'],
-      ),
-      salaryCurrency: _readStringByKeys(
-        json,
-        const ['salary_currency', 'salaryCurrency'],
-      ),
-      latestExperience: _readLatestExperience(
-        json,
-        const ['latest_experience', 'latestExperience'],
-      ),
+      currentLocation: _readStringByKeys(json, const [
+        'current_location',
+        'currentLocation',
+      ]),
+      salaryMin: _readNullableDoubleByKeys(json, const [
+        'salary_min',
+        'salaryMin',
+      ]),
+      salaryMax: _readNullableDoubleByKeys(json, const [
+        'salary_max',
+        'salaryMax',
+      ]),
+      salaryCurrency: _readStringByKeys(json, const [
+        'salary_currency',
+        'salaryCurrency',
+      ]),
+      latestExperience: _readLatestExperience(json, const [
+        'latest_experience',
+        'latestExperience',
+      ]),
     );
   }
 
@@ -519,11 +519,7 @@ String? _readNullableStringByKeys(JsonMap json, List<String> keys) {
   return null;
 }
 
-int _readIntByKeys(
-  JsonMap json,
-  List<String> keys, {
-  int fallback = 0,
-}) {
+int _readIntByKeys(JsonMap json, List<String> keys, {int fallback = 0}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
       return readInt(json, key, fallback: fallback);
@@ -532,11 +528,7 @@ int _readIntByKeys(
   return fallback;
 }
 
-bool _readBoolByKeys(
-  JsonMap json,
-  List<String> keys, {
-  bool fallback = false,
-}) {
+bool _readBoolByKeys(JsonMap json, List<String> keys, {bool fallback = false}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
       return readBool(json, key, fallback: fallback);

@@ -189,9 +189,7 @@ class _MerchantInfoPanel extends StatelessWidget {
         Text('服务详情.简介'.tr(), style: titleStyle),
         const SizedBox(height: 8),
         Text(
-          provider.brief.trim().isEmpty
-              ? '服务详情.暂无商家简介'.tr()
-              : provider.brief,
+          provider.brief.trim().isEmpty ? '服务详情.暂无商家简介'.tr() : provider.brief,
           style: contentStyle,
         ),
         const SizedBox(height: 24),
@@ -208,9 +206,7 @@ class _MerchantInfoPanel extends StatelessWidget {
         const SizedBox(height: 12),
         _MerchantInfoRow(
           label: '服务详情.认证状态'.tr(),
-          value: provider.isVerified
-              ? '服务详情.已认证'.tr()
-              : '服务详情.未认证'.tr(),
+          value: provider.isVerified ? '服务详情.已认证'.tr() : '服务详情.未认证'.tr(),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),

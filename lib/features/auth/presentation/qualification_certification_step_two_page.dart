@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -14,10 +15,7 @@ import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
-  const QualificationCertificationStepTwoPage({
-    super.key,
-    required this.args,
-  });
+  const QualificationCertificationStepTwoPage({super.key, required this.args});
 
   final QualificationCertificationPageArgs args;
 
@@ -116,9 +114,7 @@ class _QualificationCertificationStepTwoPageState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('认证流程.上传失败'.tr())));
+      AppToast.show('认证流程.上传失败'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -228,9 +224,7 @@ class _QualificationCertificationStepTwoPageState
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            border: Border(
-              top: BorderSide(color: Color(0xFFF0F0F0)),
-            ),
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(
@@ -352,9 +346,7 @@ class _LicenseUploadSection extends StatelessWidget {
             const Spacer(),
             TextButton(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('认证流程.查看样例占位'.tr())),
-                );
+                AppToast.show('认证流程.查看样例占位'.tr());
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

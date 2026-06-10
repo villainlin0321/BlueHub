@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class AddWorkExperiencePage extends StatefulWidget {
-  const AddWorkExperiencePage({
-    super.key,
-    this.args,
-  });
+  const AddWorkExperiencePage({super.key, this.args});
 
   final AddWorkExperiencePageArgs? args;
 
@@ -109,9 +107,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   @override
@@ -252,7 +248,6 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   }
 }
 
-
 class AddWorkExperiencePageArgs {
   const AddWorkExperiencePageArgs({this.initialValue});
 
@@ -262,9 +257,7 @@ class AddWorkExperiencePageArgs {
 class WorkExperiencePageResult {
   const WorkExperiencePageResult.saved(this.value) : deleted = false;
 
-  const WorkExperiencePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const WorkExperiencePageResult.deleted() : value = null, deleted = true;
 
   final WorkExperienceFormResult? value;
   final bool deleted;

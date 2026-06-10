@@ -43,11 +43,9 @@ class _InviteJobPickerSheetState extends ConsumerState<_InviteJobPickerSheet> {
       _errorMessage = null;
     });
     try {
-      final response = await ref.read(jobServiceProvider).listMyJobs(
-        page: 1,
-        pageSize: 50,
-        status: 'active',
-      );
+      final response = await ref
+          .read(jobServiceProvider)
+          .listMyJobs(page: 1, pageSize: 50, status: 'active');
       if (!mounted) {
         return;
       }
@@ -94,9 +92,9 @@ class _InviteJobPickerSheetState extends ConsumerState<_InviteJobPickerSheet> {
               const SizedBox(height: 16),
               Text(
                 '招聘.邀约面试'.tr(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               Expanded(child: _buildBody()),
@@ -158,9 +156,15 @@ class _InviteJobPickerSheetState extends ConsumerState<_InviteJobPickerSheet> {
   }
 
   String _formatSalary(JobDetailVO job) {
-    final String min = job.salaryMin.toStringAsFixed(job.salaryMin % 1 == 0 ? 0 : 1);
-    final String max = job.salaryMax.toStringAsFixed(job.salaryMax % 1 == 0 ? 0 : 1);
-    final String currency = job.salaryCurrency.trim().isEmpty ? 'EUR' : job.salaryCurrency;
+    final String min = job.salaryMin.toStringAsFixed(
+      job.salaryMin % 1 == 0 ? 0 : 1,
+    );
+    final String max = job.salaryMax.toStringAsFixed(
+      job.salaryMax % 1 == 0 ? 0 : 1,
+    );
+    final String currency = job.salaryCurrency.trim().isEmpty
+        ? 'EUR'
+        : job.salaryCurrency;
     return '$currency $min-$max';
   }
 }

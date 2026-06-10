@@ -247,9 +247,7 @@ class _SearchResultSection extends StatelessWidget {
     return providersAsync.when(
       data: (PageResult<VisaProviderListVO> pageResult) {
         if (pageResult.list.isEmpty) {
-          return Center(
-            child: AppEmptyState(message: '签证搜索.未找到相关签证服务商'.tr()),
-          );
+          return Center(child: AppEmptyState(message: '签证搜索.未找到相关签证服务商'.tr()));
         }
 
         final Set<int>? collectedPackageIds =

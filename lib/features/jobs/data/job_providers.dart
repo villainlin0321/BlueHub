@@ -27,9 +27,9 @@ class _CompanyJobListRefreshTickNotifier extends Notifier<int> {
 ///
 /// 当前先按首页首屏场景请求第 1 页最新岗位，后续接搜索和筛选时，
 /// 只需要把查询条件收敛到新的参数 Provider 即可。
-final jobSeekerJobsProvider = FutureProvider.autoDispose<PageResult<JobListVO>>((
-  ref,
-) async {
-  final jobService = ref.watch(jobServiceProvider);
-  return jobService.listJobs(page: 1, pageSize: 20, sort: 'latest');
-});
+final jobSeekerJobsProvider = FutureProvider.autoDispose<PageResult<JobListVO>>(
+  (ref) async {
+    final jobService = ref.watch(jobServiceProvider);
+    return jobService.listJobs(page: 1, pageSize: 20, sort: 'latest');
+  },
+);

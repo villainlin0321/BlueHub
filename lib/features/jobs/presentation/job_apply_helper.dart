@@ -27,12 +27,9 @@ Future<String?> submitJobApplication(
   }
 
   try {
-    await ProviderScope.containerOf(
-      context,
-      listen: false,
-    ).read(applicationServiceProvider).apply(
-      request: CreateApplicationBO(jobId: jobId),
-    );
+    await ProviderScope.containerOf(context, listen: false)
+        .read(applicationServiceProvider)
+        .apply(request: CreateApplicationBO(jobId: jobId));
     return null;
   } catch (error) {
     return resolveJobApplyErrorMessage(error);

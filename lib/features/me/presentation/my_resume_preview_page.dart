@@ -426,7 +426,9 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
 
   /// 构建顶部资料区，只展示真实姓名、头像和岗位信息。
   Widget _buildProfileSection() {
-    final String name = _draft.name.trim().isEmpty ? '我的.未填写姓名'.tr() : _draft.name;
+    final String name = _draft.name.trim().isEmpty
+        ? '我的.未填写姓名'.tr()
+        : _draft.name;
 
     return Container(
       color: Colors.white,
@@ -749,9 +751,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          experience.summary.isEmpty
-              ? '我的.未填写工作内容'.tr()
-              : experience.summary,
+          experience.summary.isEmpty ? '我的.未填写工作内容'.tr() : experience.summary,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -801,9 +801,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          certificate.issuer.isEmpty
-              ? '我的.未填写发证机构'.tr()
-              : certificate.issuer,
+          certificate.issuer.isEmpty ? '我的.未填写发证机构'.tr() : certificate.issuer,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 14,
@@ -877,9 +875,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  education.major.isEmpty
-                      ? '我的.未填写专业学历'.tr()
-                      : education.major,
+                  education.major.isEmpty ? '我的.未填写专业学历'.tr() : education.major,
                   style: const TextStyle(
                     color: Color(0xFF595959),
                     fontSize: 14,

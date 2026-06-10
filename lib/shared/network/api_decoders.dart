@@ -50,7 +50,9 @@ List<String> decodeStringList(dynamic raw) {
     return const <String>[];
   }
   return raw
-      .where((item) => item == null || item is String || item is num || item is bool)
+      .where(
+        (item) => item == null || item is String || item is num || item is bool,
+      )
       .map((item) => item?.toString() ?? '')
       .toList(growable: false);
 }

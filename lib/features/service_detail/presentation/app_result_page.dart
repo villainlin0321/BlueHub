@@ -36,41 +36,25 @@ class AppResultPageArgs {
 }
 
 class AppResultAction {
-  const AppResultAction._({
-    required this.type,
-    this.route,
-  });
+  const AppResultAction._({required this.type, this.route});
 
   const AppResultAction.push(String route)
-      : this._(
-          type: AppResultActionType.push,
-          route: route,
-        );
+    : this._(type: AppResultActionType.push, route: route);
 
   const AppResultAction.go(String route)
-      : this._(
-          type: AppResultActionType.go,
-          route: route,
-        );
+    : this._(type: AppResultActionType.go, route: route);
 
-  const AppResultAction.pop()
-      : this._(type: AppResultActionType.pop);
+  const AppResultAction.pop() : this._(type: AppResultActionType.pop);
 
   final AppResultActionType type;
   final String? route;
 }
 
-enum AppResultActionType {
-  push,
-  go,
-  pop,
-}
+enum AppResultActionType { push, go, pop }
 
 class AppResultPage extends StatelessWidget {
-  AppResultPage({
-    super.key,
-    AppResultPageArgs? args,
-  }) : args = args ?? AppResultPageArgs.paymentSuccess();
+  AppResultPage({super.key, AppResultPageArgs? args})
+    : args = args ?? AppResultPageArgs.paymentSuccess();
 
   final AppResultPageArgs args;
 
@@ -78,7 +62,8 @@ class AppResultPage extends StatelessWidget {
     final bool hasValidOrderId = (args.orderId ?? 0) > 0;
     switch (args.action.type) {
       case AppResultActionType.push:
-        final String route = args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+        final String route =
+            args.action.route == RoutePaths.orderDetail && !hasValidOrderId
             ? RoutePaths.myOrders
             : args.action.route!;
         context.pushReplacement(
@@ -89,7 +74,8 @@ class AppResultPage extends StatelessWidget {
         );
         return;
       case AppResultActionType.go:
-        final String route = args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+        final String route =
+            args.action.route == RoutePaths.orderDetail && !hasValidOrderId
             ? RoutePaths.myOrders
             : args.action.route!;
         context.go(

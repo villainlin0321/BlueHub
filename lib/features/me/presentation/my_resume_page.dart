@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
@@ -213,14 +215,17 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         : latestExperience.isCurrent
         ? '${latestExperience.startDate}-${'我的.至今'.tr()}'
         : '${latestExperience.startDate}-${latestExperience.endDate ?? '我的.至今'.tr()}';
-    final String summary = latestExperience?.description.trim().isNotEmpty == true
+    final String summary =
+        latestExperience?.description.trim().isNotEmpty == true
         ? latestExperience!.description.trim()
         : (latestExperience?.company.trim().isNotEmpty == true
               ? latestExperience!.company.trim()
               : '我的.请完善工作经历'.tr());
 
     return _ResumeItemData(
-      name: item.nickname.trim().isEmpty ? '我的.未命名用户'.tr() : item.nickname.trim(),
+      name: item.nickname.trim().isEmpty
+          ? '我的.未命名用户'.tr()
+          : item.nickname.trim(),
       region: item.currentLocation.trim().isEmpty
           ? '我的.地区待完善'.tr()
           : item.currentLocation.trim(),
@@ -240,7 +245,8 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   /// 构建单张简历卡片，展示列表接口返回的摘要数据。
   Widget _buildResumeCard(ResumeListItemVO resume) {
     final _ResumeItemData item = _buildResumeItemData(resume);
-    final bool isSavingVisibility = _savingVisibilityResumeId == resume.resumeId;
+    final bool isSavingVisibility =
+        _savingVisibilityResumeId == resume.resumeId;
     final bool isSettingDefault = _settingDefaultResumeId == resume.resumeId;
     final bool isDeleting = _deletingResumeId == resume.resumeId;
     final bool canSetDefault = !resume.isDefault && !isSettingDefault;
@@ -366,7 +372,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                       Text(
                         isSettingDefault
                             ? '我的.设置中'.tr()
-                            : (resume.isDefault ? '我的.已设默认'.tr() : '我的.设为默认'.tr()),
+                            : (resume.isDefault
+                                  ? '我的.已设默认'.tr()
+                                  : '我的.设为默认'.tr()),
                         style: const TextStyle(
                           color: Color(0xFF8C8C8C),
                           fontSize: 14,
@@ -581,7 +589,11 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(Icons.description_outlined, size: 32, color: Color(0xFFBFBFBF)),
+          const Icon(
+            Icons.description_outlined,
+            size: 32,
+            color: Color(0xFFBFBFBF),
+          ),
           const SizedBox(height: 12),
           Text(
             '我的.暂无简历'.tr(),
@@ -640,9 +652,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _isCreatingResume = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
@@ -667,14 +677,15 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
   /// 切换简历公开状态，并通过保存接口同步到服务端。
-  Future<void> _updateResumeVisibility(ResumeListItemVO resume, bool value) async {
+  Future<void> _updateResumeVisibility(
+    ResumeListItemVO resume,
+    bool value,
+  ) async {
     if (_savingVisibilityResumeId != null) {
       return;
     }
@@ -685,7 +696,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
     try {
       final service = ref.read(resumeServiceProvider);
-      final ResumeVO detail = await service.getResumeDetail(resumeId: resume.resumeId);
+      final ResumeVO detail = await service.getResumeDetail(
+        resumeId: resume.resumeId,
+      );
       await service.updateResume(
         resumeId: resume.resumeId,
         request: detail.toSaveResumeBO(isPublic: value),
@@ -720,13 +733,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
             )
             .toList(growable: false);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(value ? '我的.已设为可见'.tr() : '我的.已设为不可见'.tr()),
-        ),
-      );
+      AppToast.show(value ? '我的.已设为可见'.tr() : '我的.已设为不可见'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -734,9 +741,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _savingVisibilityResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
@@ -763,9 +768,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.已设为默认简历'.tr())));
+      AppToast.show('我的.已设为默认简历'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -773,15 +776,24 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _settingDefaultResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
   /// 删除当前简历，并在成功后从本地移除卡片。
   Future<void> _deleteResume(ResumeListItemVO resume) async {
     if (_deletingResumeId != null) {
+      return;
+    }
+
+    final bool confirmed = await showAppDeleteConfirmDialog(
+      context: context,
+      title: '通用.确认删除'.tr(),
+      message: '我的.删除简历不可恢复'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.删除'.tr(),
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -803,9 +815,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.简历已删除'.tr())));
+      AppToast.show('我的.简历已删除'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -813,9 +823,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _deletingResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 }
@@ -936,7 +944,6 @@ extension on _MyResumePageState {
 }
 
 extension on ResumeVO {
-
   /// 将当前简历详情转换成保存接口需要的全量请求。
   SaveResumeBO toSaveResumeBO({required bool isPublic}) {
     return SaveResumeBO(

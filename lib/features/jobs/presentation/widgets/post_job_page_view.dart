@@ -463,10 +463,7 @@ class _RequirementTagContent extends StatelessWidget {
     }
 
     if (requirementTags.isEmpty) {
-      return Text(
-        '岗位发布.暂无任职要求标签'.tr(),
-        style: PostJobPageStyles.placeholder,
-      );
+      return Text('岗位发布.暂无任职要求标签'.tr(), style: PostJobPageStyles.placeholder);
     }
 
     return GridView.builder(

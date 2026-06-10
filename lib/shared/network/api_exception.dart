@@ -52,17 +52,15 @@ class ApiException implements Exception {
     requestId: requestId,
   );
 
-  static ApiException parse(Object error) =>
-      ApiException(
-        ApiExceptionType.parse,
-        message: tr('通用.数据解析失败'),
-        original: error,
-      );
+  static ApiException parse(Object error) => ApiException(
+    ApiExceptionType.parse,
+    message: tr('通用.数据解析失败'),
+    original: error,
+  );
 
-  static ApiException unknown(Object error) =>
-      ApiException(
-        ApiExceptionType.unknown,
-        message: tr('通用.未知错误'),
-        original: error,
-      );
+  static ApiException unknown(Object error) => ApiException(
+    ApiExceptionType.unknown,
+    message: tr('通用.未知错误'),
+    original: error,
+  );
 }

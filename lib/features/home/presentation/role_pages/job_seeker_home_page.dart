@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -224,9 +225,7 @@ class _HeaderProfileRow extends ConsumerWidget {
             children: <Widget>[
               Text(
                 '首页.早上好'.tr(
-                  namedArgs: <String, String>{
-                    'name': userViewData.nickname,
-                  },
+                  namedArgs: <String, String>{'name': userViewData.nickname},
                 ),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: const Color(0xFF262626),
@@ -507,11 +506,7 @@ class _HomeLatestJobsSection extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(content: Text(errorMessage ?? '首页.投递成功'.tr())),
-    );
+    AppToast.show(errorMessage ?? '首页.投递成功'.tr());
   }
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
@@ -625,10 +620,7 @@ class _HomeSectionErrorState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: Text('通用.重试'.tr()),
-          ),
+          OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
         ],
       ),
     );
@@ -947,9 +939,7 @@ extension on JobListVO {
       if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
         visaSupportLabel,
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) urgentLabel,
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
 
     return JobPositionCardData(
       title: title,

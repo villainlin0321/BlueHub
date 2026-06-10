@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -87,10 +88,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       loading: () => const _ServiceDetailLoadingPage(),
       error: (Object error, StackTrace stackTrace) {
         return _ServiceDetailMessagePage(
-          message: _resolveErrorMessage(
-            error,
-            fallback: '服务详情.套餐详情加载失败'.tr(),
-          ),
+          message: _resolveErrorMessage(error, fallback: '服务详情.套餐详情加载失败'.tr()),
         );
       },
       data: (VisaPackageVO package) {
@@ -187,9 +185,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                             },
                             onFavoriteTap: _toggleCollection,
                             onShareTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('服务详情.分享开发中'.tr())),
-                              );
+                              AppToast.show('服务详情.分享开发中'.tr());
                             },
                           );
                         },
@@ -300,11 +296,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     required ServicePackageData? package,
   }) {
     if (package == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(content: Text('服务详情.当前套餐暂无可申请档位'.tr())),
-      );
+      AppToast.show('服务详情.当前套餐暂无可申请档位'.tr());
       return;
     }
     ServiceDetailApplyBottomSheet.show(
@@ -329,7 +321,9 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       extra: ChatPageArgs(
         targetUserId: provider.providerId,
         targetUserRole: 'visa_provider',
-        nickname: provider.name.trim().isEmpty ? '服务详情.服务商'.tr() : provider.name,
+        nickname: provider.name.trim().isEmpty
+            ? '服务详情.服务商'.tr()
+            : provider.name,
         avatarUrl: provider.logoUrl,
       ),
     );
@@ -367,9 +361,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
         _isCollectedOverride = !wasCollected;
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(
-        wasCollected ? '服务详情.已取消收藏'.tr() : '服务详情.收藏成功'.tr(),
-      );
+      _showMessage(wasCollected ? '服务详情.已取消收藏'.tr() : '服务详情.收藏成功'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -377,17 +369,13 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       setState(() {
         _isCollecting = false;
       });
-      _showMessage(
-        _resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()),
-      );
+      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()));
     }
   }
 
   /// 统一展示签证详情页的提示消息。
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 

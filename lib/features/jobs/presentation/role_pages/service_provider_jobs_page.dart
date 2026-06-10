@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/page_result.dart';
@@ -105,11 +106,7 @@ enum _PackageTab {
     secondaryActionLabel: '套餐管理.上架',
     secondaryActionStatus: 'active',
   ),
-  draft(
-    label: '套餐管理.已驳回',
-    status: 'draft',
-    emptyText: '套餐管理.暂无已驳回套餐',
-  );
+  draft(label: '套餐管理.已驳回', status: 'draft', emptyText: '套餐管理.暂无已驳回套餐');
 
   const _PackageTab({
     required this.label,
@@ -170,9 +167,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       ref.invalidate(myVisaPackageListProvider(widget.tab.status));
       ref.invalidate(myVisaPackageListProvider(nextStatus));
       _showMessage(
-        widget.tab.status == 'active'
-            ? '套餐管理.套餐已下架'.tr()
-            : '套餐管理.套餐已上架'.tr(),
+        widget.tab.status == 'active' ? '套餐管理.套餐已下架'.tr() : '套餐管理.套餐已上架'.tr(),
       );
     } catch (error) {
       if (!mounted) {
@@ -186,14 +181,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   String _normalizeError(Object error) {
@@ -496,10 +484,7 @@ class _PackageCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  _PrimaryButton(
-                    label: '企业岗位.编辑'.tr(),
-                    onTap: onPrimaryAction,
-                  ),
+                  _PrimaryButton(label: '企业岗位.编辑'.tr(), onTap: onPrimaryAction),
                 ],
               ),
             ],

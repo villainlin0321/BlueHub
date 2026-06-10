@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/localization/app_locales.dart';
@@ -44,8 +45,9 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
 
   /// 提交当前角色选择，成功后进入首页。
   Future<void> _handleConfirm() async {
-    final success =
-        await ref.read(selectRoleControllerProvider.notifier).submitSelection();
+    final success = await ref
+        .read(selectRoleControllerProvider.notifier)
+        .submitSelection();
     if (!mounted || !success) {
       return;
     }
@@ -60,13 +62,12 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
     final isChineseSelected = context.isChineseLocale;
 
     ref.listen(selectRoleControllerProvider, (previous, next) {
-      if (previous?.feedbackId == next.feedbackId || next.feedbackMessage == null) {
+      if (previous?.feedbackId == next.feedbackId ||
+          next.feedbackMessage == null) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(next.feedbackMessage!)),
-      );
+      AppToast.show(next.feedbackMessage!);
       ref.read(selectRoleControllerProvider.notifier).clearFeedback();
     });
 
@@ -128,10 +129,9 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
                         _RoleCard(
                           role: role,
                           selected: state.selectedRoleId == role.id,
-                          onTap: () =>
-                              ref
-                                  .read(selectRoleControllerProvider.notifier)
-                                  .setSelectedRole(role.id),
+                          onTap: () => ref
+                              .read(selectRoleControllerProvider.notifier)
+                              .setSelectedRole(role.id),
                         ),
                         if (role != _roles.last) const SizedBox(height: 14),
                       ],

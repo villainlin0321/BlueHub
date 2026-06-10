@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../data/application_models.dart';
 import '../../data/job_models.dart';
 import '../../data/application_providers.dart';
@@ -68,14 +70,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   Future<void> _openResumePreview(int userId) async {
@@ -83,7 +78,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   }
 
   Future<String?> _showRemarkDialog(String actionLabel) async {
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) {
         return _RemarkDialog(actionLabel: actionLabel);
@@ -116,13 +111,15 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
         _showMessage('招聘.邀约失败'.tr(), isError: true);
         return;
       }
-      await ref.read(applicationServiceProvider).inviteInterview(
-        request: InviteInterviewBO(
-          jobId: selectedJob.jobId,
-          resumeId: data.resumeId,
-          remark: remark.trim().isEmpty ? null : remark.trim(),
-        ),
-      );
+      await ref
+          .read(applicationServiceProvider)
+          .inviteInterview(
+            request: InviteInterviewBO(
+              jobId: selectedJob.jobId,
+              resumeId: data.resumeId,
+              remark: remark.trim().isEmpty ? null : remark.trim(),
+            ),
+          );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
       _showMessage(error.toString(), isError: true);
@@ -235,8 +232,8 @@ class _RemarkDialogState extends State<_RemarkDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('${widget.actionLabel}${'招聘.备注'.tr()}'),
+    return AppDialog(
+      title: '${widget.actionLabel}${'招聘.备注'.tr()}',
       content: TextField(
         controller: _controller,
         maxLines: 4,
@@ -245,14 +242,14 @@ class _RemarkDialogState extends State<_RemarkDialog> {
           border: const OutlineInputBorder(),
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('通用.取消'.tr()),
         ),
-        FilledButton(
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          child: Text('通用.确定'.tr()),
         ),
       ],
     );
@@ -371,9 +368,7 @@ class _TabBarSection extends StatelessWidget {
     return Container(
       color: Colors.white,
       child: Row(
-        children: List<Widget>.generate(_tabs.length, (
-          int index,
-        ) {
+        children: List<Widget>.generate(_tabs.length, (int index) {
           final bool selected = index == selectedIndex;
           return Expanded(
             child: InkWell(
@@ -784,7 +779,10 @@ class _CandidateCardData {
   final List<String> tags;
   final String updatedText;
 
-  factory _CandidateCardData.fromTalent(TalentVO talent, {required String sort}) {
+  factory _CandidateCardData.fromTalent(
+    TalentVO talent, {
+    required String sort,
+  }) {
     final bool isMatchSort = sort == 'match';
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
@@ -810,7 +808,9 @@ class _CandidateCardData {
   static String _buildAgeGender(TalentVO talent) {
     final List<String> parts = <String>[];
     if (talent.age != null) {
-      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': talent.age.toString()}));
+      parts.add(
+        '招聘.岁'.tr(namedArgs: <String, String>{'count': talent.age.toString()}),
+      );
     }
     final String genderText = switch (talent.gender.trim().toLowerCase()) {
       'male' => '招聘.男'.tr(),
@@ -845,7 +845,9 @@ class _CandidateCardData {
     if (talent.yearsOfExperience > 0) {
       tags.add(
         '招聘.年经验'.tr(
-          namedArgs: <String, String>{'count': talent.yearsOfExperience.toString()},
+          namedArgs: <String, String>{
+            'count': talent.yearsOfExperience.toString(),
+          },
         ),
       );
     }
@@ -939,7 +941,7 @@ class _TalentsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      return Padding(
+    return Padding(
       padding: const EdgeInsets.only(top: 48),
       child: Center(
         child: AppEmptyState(

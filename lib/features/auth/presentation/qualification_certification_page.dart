@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -207,9 +208,7 @@ class _QualificationCertificationPageState
             role: _role,
             file: pickedFile,
             docType: QualificationDocType.idCard,
-            docName: isEmblemSide
-                ? tr('认证流程.法人身份证国徽面')
-                : tr('认证流程.法人身份证人像面'),
+            docName: isEmblemSide ? tr('认证流程.法人身份证国徽面') : tr('认证流程.法人身份证人像面'),
           );
       if (!mounted) {
         return;
@@ -227,9 +226,7 @@ class _QualificationCertificationPageState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     } finally {
       if (mounted) {
         setState(() {

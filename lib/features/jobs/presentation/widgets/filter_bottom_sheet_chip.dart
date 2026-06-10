@@ -52,9 +52,8 @@ class FilterBottomSheetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String effectiveValue = options.any(
-          (FilterBottomSheetOption option) => option.value == value,
-        )
+    final String effectiveValue =
+        options.any((FilterBottomSheetOption option) => option.value == value)
         ? value
         : options.first.value;
     final FilterBottomSheetOption selectedOption = options.firstWhere(
@@ -95,7 +94,9 @@ class FilterBottomSheetChip extends StatelessWidget {
                     style: TextStyle(
                       color: textColor,
                       fontSize: 12,
-                      fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: highlighted
+                          ? FontWeight.w500
+                          : FontWeight.w400,
                       height: 18 / 12,
                     ),
                   ),
@@ -183,26 +184,29 @@ class _FilterOptionsBottomSheet extends StatelessWidget {
                     bottomPadding > 0 ? bottomPadding + 24 : 24,
                   ),
                   child: LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints constraints) {
-                      const double spacing = 12;
-                      final double itemWidth =
-                          (constraints.maxWidth - spacing * 2) / 3;
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: 18,
-                        children: options
-                            .map(
-                              (FilterBottomSheetOption option) => _FilterOptionTile(
-                                width: itemWidth,
-                                label: option.label,
-                                selected: option.value == currentValue,
-                                onTap: () =>
-                                    Navigator.of(context).pop(option.value),
-                              ),
-                            )
-                            .toList(growable: false),
-                      );
-                    },
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          const double spacing = 12;
+                          final double itemWidth =
+                              (constraints.maxWidth - spacing * 2) / 3;
+                          return Wrap(
+                            spacing: spacing,
+                            runSpacing: 18,
+                            children: options
+                                .map(
+                                  (FilterBottomSheetOption option) =>
+                                      _FilterOptionTile(
+                                        width: itemWidth,
+                                        label: option.label,
+                                        selected: option.value == currentValue,
+                                        onTap: () => Navigator.of(
+                                          context,
+                                        ).pop(option.value),
+                                      ),
+                                )
+                                .toList(growable: false),
+                          );
+                        },
                   ),
                 ),
               ),

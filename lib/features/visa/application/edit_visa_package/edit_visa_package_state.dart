@@ -56,10 +56,9 @@ class EditVisaPackageState {
       serviceTags: serviceTags ?? this.serviceTags,
       hasLoadedServiceTags: hasLoadedServiceTags ?? this.hasLoadedServiceTags,
       isLoadingServiceTags: isLoadingServiceTags ?? this.isLoadingServiceTags,
-      serviceTagsError:
-          identical(serviceTagsError, _serviceTagsErrorSentinel)
-              ? this.serviceTagsError
-              : serviceTagsError as String?,
+      serviceTagsError: identical(serviceTagsError, _serviceTagsErrorSentinel)
+          ? this.serviceTagsError
+          : serviceTagsError as String?,
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
       isPublishing: isPublishing ?? this.isPublishing,
       feedbackMessage: identical(feedbackMessage, _feedbackSentinel)

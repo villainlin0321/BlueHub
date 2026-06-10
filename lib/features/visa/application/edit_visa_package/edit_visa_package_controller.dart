@@ -74,10 +74,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       return;
     }
 
-    state = state.copyWith(
-      isLoadingServiceTags: true,
-      serviceTagsError: null,
-    );
+    state = state.copyWith(isLoadingServiceTags: true, serviceTagsError: null);
 
     try {
       final TagDictVO response = await ref
@@ -118,7 +115,10 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     return tag.tagNameEn.trim();
   }
 
-  Future<void> saveDraft(EditVisaPackageFormDraft draft, {int? packageId}) async {
+  Future<void> saveDraft(
+    EditVisaPackageFormDraft draft, {
+    int? packageId,
+  }) async {
     await _submit(draft, isDraft: true, packageId: packageId);
   }
 
@@ -147,7 +147,9 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
     try {
       if (packageId == null) {
-        await ref.read(visaPackageServiceProvider).createPackage(request: request);
+        await ref
+            .read(visaPackageServiceProvider)
+            .createPackage(request: request);
       } else {
         await ref
             .read(visaPackageServiceProvider)
@@ -161,23 +163,15 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       );
       _emitFeedback(
         packageId == null
-            ? (isDraft
-                  ? '签证编辑.草稿保存成功'.tr()
-                  : '签证编辑.签证套餐发布成功'.tr())
-            : (isDraft
-                  ? '签证编辑.草稿更新成功'.tr()
-                  : '签证编辑.签证套餐更新成功'.tr()),
+            ? (isDraft ? '签证编辑.草稿保存成功'.tr() : '签证编辑.签证套餐发布成功'.tr())
+            : (isDraft ? '签证编辑.草稿更新成功'.tr() : '签证编辑.签证套餐更新成功'.tr()),
       );
     } catch (_) {
       state = state.copyWith(isSavingDraft: false, isPublishing: false);
       _emitFeedback(
         packageId == null
-            ? (isDraft
-                  ? '签证编辑.草稿保存失败'.tr()
-                  : '签证编辑.签证套餐发布失败'.tr())
-            : (isDraft
-                  ? '签证编辑.草稿更新失败'.tr()
-                  : '签证编辑.签证套餐更新失败'.tr()),
+            ? (isDraft ? '签证编辑.草稿保存失败'.tr() : '签证编辑.签证套餐发布失败'.tr())
+            : (isDraft ? '签证编辑.草稿更新失败'.tr() : '签证编辑.签证套餐更新失败'.tr()),
         isError: true,
       );
     }
@@ -263,7 +257,11 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
       final List<MaterialBO> materials = <MaterialBO>[];
       if (tier.showMaterials) {
-        for (int materialIndex = 0; materialIndex < tier.materials.length; materialIndex++) {
+        for (
+          int materialIndex = 0;
+          materialIndex < tier.materials.length;
+          materialIndex++
+        ) {
           final EditVisaPackageMaterialDraftInput material =
               tier.materials[materialIndex];
           final String materialName = material.name.trim();

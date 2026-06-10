@@ -29,10 +29,14 @@ class LoginFormState {
 
   String get currentAccount => isPhoneLogin ? phone.trim() : email.trim();
 
-  bool get canSendCode => currentAccount.isNotEmpty && !isSendingCode && !isSubmitting;
+  bool get canSendCode =>
+      currentAccount.isNotEmpty && !isSendingCode && !isSubmitting;
 
   bool get canLogin =>
-      agreed && currentAccount.isNotEmpty && code.trim().isNotEmpty && !isSubmitting;
+      agreed &&
+      currentAccount.isNotEmpty &&
+      code.trim().isNotEmpty &&
+      !isSubmitting;
 
   LoginFormState copyWith({
     bool? isPhoneLogin,

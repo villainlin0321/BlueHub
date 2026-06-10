@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../visa/data/review_models.dart';
 import '../../visa/data/review_providers.dart';
@@ -73,9 +74,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   }
 
   void _showPlaceholder(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   Future<void> _handlePublish() async {
@@ -273,10 +272,10 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               opacity: _canPublish && !_isSubmitting ? 1 : 0.3,
               child: IgnorePointer(
                 ignoring: !_canPublish || _isSubmitting,
-                  child: PrimaryButton(
-                    label: '评价.发布'.tr(),
-                    onPressed: _handlePublish,
-                  ),
+                child: PrimaryButton(
+                  label: '评价.发布'.tr(),
+                  onPressed: _handlePublish,
+                ),
               ),
             ),
           ),

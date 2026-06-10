@@ -119,7 +119,9 @@ class PositionCategoryVO {
       'category_code': categoryCode,
       'name_zh': nameZh,
       'name_en': nameEn,
-      'positions': positions.map((item) => item.toJson()).toList(growable: false),
+      'positions': positions
+          .map((item) => item.toJson())
+          .toList(growable: false),
     };
   }
 }

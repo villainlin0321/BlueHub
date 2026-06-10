@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
@@ -92,23 +93,24 @@ class UploadPickerUtils {
         cameraErrorMessage ?? tr('上传.打开相机失败');
     final String resolvedGalleryErrorMessage =
         galleryErrorMessage ?? tr('上传.打开相册失败');
-    final _ImageSourceOption? source = await showModalBottomSheet<_ImageSourceOption>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (BuildContext sheetContext) {
-        return _UploadImageSourceBottomSheet(
-          title: resolvedTitle,
-          onClose: () => Navigator.of(sheetContext).pop(),
-          onCameraTap: () {
-            Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
-          },
-          onGalleryTap: () {
-            Navigator.of(sheetContext).pop(_ImageSourceOption.gallery);
+    final _ImageSourceOption? source =
+        await showModalBottomSheet<_ImageSourceOption>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: 0.35),
+          builder: (BuildContext sheetContext) {
+            return _UploadImageSourceBottomSheet(
+              title: resolvedTitle,
+              onClose: () => Navigator.of(sheetContext).pop(),
+              onCameraTap: () {
+                Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
+              },
+              onGalleryTap: () {
+                Navigator.of(sheetContext).pop(_ImageSourceOption.gallery);
+              },
+            );
           },
         );
-      },
-    );
 
     if (source == null) {
       return const <PickedUploadFile>[];
@@ -128,9 +130,7 @@ class UploadPickerUtils {
       final String message = source == _ImageSourceOption.camera
           ? resolvedCameraErrorMessage
           : resolvedGalleryErrorMessage;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
       return const <PickedUploadFile>[];
     }
   }
@@ -216,7 +216,9 @@ class UploadPickerUtils {
       sourceType: sourceType,
       state: UploadItemState.success,
       isImage: isImagePath(path),
-      sizeLabel: resolvedSizeBytes > 0 ? formatFileSize(resolvedSizeBytes) : null,
+      sizeLabel: resolvedSizeBytes > 0
+          ? formatFileSize(resolvedSizeBytes)
+          : null,
     );
   }
 
@@ -317,10 +319,7 @@ class _UploadImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             _BottomSheetActionItem(label: tr('上传.拍照'), onTap: onCameraTap),
-            _BottomSheetActionItem(
-              label: tr('上传.从相册选择'),
-              onTap: onGalleryTap,
-            ),
+            _BottomSheetActionItem(label: tr('上传.从相册选择'), onTap: onGalleryTap),
             const SizedBox(height: 8),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
@@ -45,8 +46,17 @@ class PostJobPage extends ConsumerStatefulWidget {
 }
 
 class _PostJobPageState extends ConsumerState<PostJobPage> {
-  static const List<String> _jobTypes = <String>['any', 'full_time', 'part_time'];
-  static const List<String> _salaryUnits = <String>['month', 'week', 'day', 'hour'];
+  static const List<String> _jobTypes = <String>[
+    'any',
+    'full_time',
+    'part_time',
+  ];
+  static const List<String> _salaryUnits = <String>[
+    'month',
+    'week',
+    'day',
+    'hour',
+  ];
 
   final TextEditingController _packageNameController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
@@ -108,10 +118,8 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     super.dispose();
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showToast(String message) {
+    AppToast.show(message);
   }
 
   /// 加载编辑态需要的岗位详情，并把接口数据回填到表单控制器。
@@ -196,7 +204,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     ) {
       if (previous?.feedbackId != next.feedbackId &&
           next.feedbackMessage != null) {
-        _showSnackBar(next.feedbackMessage!);
+        _showToast(next.feedbackMessage!);
         ref.read(postJobControllerProvider.notifier).clearFeedback();
       }
 
@@ -268,9 +276,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     }
 
     return PostJobPageView(
-      title: widget.args.isEdit
-          ? '岗位发布.编辑岗位'.tr()
-          : '岗位发布.发布岗位'.tr(),
+      title: widget.args.isEdit ? '岗位发布.编辑岗位'.tr() : '岗位发布.发布岗位'.tr(),
       publishButtonLabel: '岗位发布.立即发布'.tr(),
       packageNameController: _packageNameController,
       countryController: _countryController,

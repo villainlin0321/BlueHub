@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/me/data/dictionary_providers.dart';
@@ -62,15 +63,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   }
 
   void _showPlaceholderToast(String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
+    AppToast.show('订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}));
   }
 
   Future<void> _loadOrders({
@@ -164,9 +157,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
 
       setState(() => _isLoadingMore = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(_normalizeError(error))));
+      AppToast.show(_normalizeError(error));
     }
   }
 
@@ -179,9 +170,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleContactTap(VisaOrderVO order) {
@@ -248,9 +237,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('订单.国家列表加载失败'.tr())));
+      AppToast.show('订单.国家列表加载失败'.tr());
       return;
     }
     if (!mounted) {

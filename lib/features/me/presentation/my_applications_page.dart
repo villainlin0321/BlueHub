@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../data/my_applications_models.dart';
@@ -87,54 +88,55 @@ class MyApplicationsPage extends ConsumerWidget {
             ),
             Expanded(
               child: TabBarView(
-                children: _tabs.map((tab) {
-                  final items = itemsByTab[tab] ?? const <MyApplicationItem>[];
-                  return ListView.builder(
-                    key: PageStorageKey<String>('my-applications-${tab.name}'),
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                    itemCount: items.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == items.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Center(
-                            child: Text(
-                              '我的应聘.暂无更多记录'.tr(),
-                              style: TextStyle(
-                                color: Color(0xFFBFBFBF),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                height: 18 / 12,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: index == items.length - 1 ? 0 : 12,
+                children: _tabs
+                    .map((tab) {
+                      final items =
+                          itemsByTab[tab] ?? const <MyApplicationItem>[];
+                      return ListView.builder(
+                        key: PageStorageKey<String>(
+                          'my-applications-${tab.name}',
                         ),
-                        child: MyApplicationCard(
-                          item: items[index],
-                          onActionTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                        itemCount: items.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == items.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Center(
+                                child: Text(
+                                  '我的应聘.暂无更多记录'.tr(),
+                                  style: TextStyle(
+                                    color: Color(0xFFBFBFBF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    height: 18 / 12,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index == items.length - 1 ? 0 : 12,
+                            ),
+                            child: MyApplicationCard(
+                              item: items[index],
+                              onActionTap: () {
+                                AppToast.show(
                                   '我的.占位提示'.tr(
                                     namedArgs: <String, String>{
                                       'label': items[index].actionLabel.tr(),
                                     },
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                );
+                              },
+                            ),
+                          );
+                        },
                       );
-                    },
-                  );
-                }).toList(growable: false),
+                    })
+                    .toList(growable: false),
               ),
             ),
           ],

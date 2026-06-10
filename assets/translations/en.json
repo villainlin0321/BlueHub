@@ -5,6 +5,9 @@
   "通用": {
     "取消": "Cancel",
     "确定": "Confirm",
+    "完成": "Done",
+    "删除": "Deletion",
+    "确认删除": "Confirm Deletion",
     "搜索": "Search",
     "企业简称": "C",
     "重试": "Retry",
@@ -204,6 +207,8 @@
   "AI": {
     "AI助手": "AI Assistant",
     "历史记录": "History",
+    "编辑对话名称": "Edit Conversation Name",
+    "删除对话不可恢复": "This conversation cannot be restored after deletion.",
     "欢迎语": "Hello! I am your dedicated AI assistant. How can I help you today?",
     "用户示例提问": "I have worked in electrical technology for 8 years, hold a senior electrician certificate, and specialize in industrial electrical system installation, commissioning, maintenance upgrades, distribution planning, and safety management.",
     "匹配追问": "Please wait a moment while I match suitable jobs for you. Do you have a German language certificate?",
@@ -910,6 +915,7 @@
     "隐藏": "Hidden",
     "删除中": "Deleting...",
     "删除简历": "Delete Resume",
+    "删除简历不可恢复": "The resume cannot be restored after deletion.",
     "创建中": "Creating...",
     "创建简历": "Create Resume",
     "创建简历缺少有效ID": "Resume was created, but a valid resume ID was not returned",

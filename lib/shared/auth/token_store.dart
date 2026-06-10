@@ -9,7 +9,8 @@ class TokenStore {
 
   factory TokenStore.inMemory() => TokenStore._();
 
-  factory TokenStore.sharedPreferences(SharedPreferences prefs) => TokenStore._(prefs: prefs);
+  factory TokenStore.sharedPreferences(SharedPreferences prefs) =>
+      TokenStore._(prefs: prefs);
 
   static const _kAccessToken = 'auth.accessToken';
   static const _kRefreshToken = 'auth.refreshToken';
@@ -28,10 +29,7 @@ class TokenStore {
     _refreshToken = prefs.getString(_kRefreshToken);
   }
 
-  void setTokens({
-    required String accessToken,
-    String? refreshToken,
-  }) {
+  void setTokens({required String accessToken, String? refreshToken}) {
     _accessToken = accessToken;
     _refreshToken = refreshToken;
 

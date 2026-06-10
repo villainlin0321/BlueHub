@@ -59,7 +59,10 @@ class _LanguageOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(17),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 4,
+        ),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF1890FF) : Colors.transparent,
           borderRadius: BorderRadius.circular(17),

@@ -214,10 +214,7 @@ class _VisaProviderErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: onRetry,
-              child: Text('通用.重试'.tr()),
-            ),
+            OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),

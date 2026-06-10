@@ -133,7 +133,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
     try {
       await for (final SseEvent event
-          in ref.read(aiServiceProvider).chat(
+          in ref
+              .read(aiServiceProvider)
+              .chat(
                 request: AiChatBO(
                   sessionId: state.currentSessionId,
                   message: text,
@@ -217,7 +219,8 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       );
     });
     _voiceTimer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
-      if (_isDisposed || state.voiceInputState != AiAssistantVoiceInputState.listening) {
+      if (_isDisposed ||
+          state.voiceInputState != AiAssistantVoiceInputState.listening) {
         timer.cancel();
         return;
       }
@@ -418,10 +421,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   /// 拉取一个真实岗位，补全默认示例中的推荐岗位卡片。
   Future<void> _loadRecommendedJob() async {
     try {
-      final response = await ref.read(jobServiceProvider).listJobs(
-            page: 1,
-            pageSize: 1,
-          );
+      final response = await ref
+          .read(jobServiceProvider)
+          .listJobs(page: 1, pageSize: 1);
       if (_isDisposed) {
         return;
       }
@@ -566,10 +568,8 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         if (!_isValidAssistantIndex(assistantIndex)) {
           break;
         }
-        final List<JobListVO> pendingEmbeddedJobs = _pendingEmbeddedJobs.remove(
-          assistantIndex,
-            ) ??
-            const <JobListVO>[];
+        final List<JobListVO> pendingEmbeddedJobs =
+            _pendingEmbeddedJobs.remove(assistantIndex) ?? const <JobListVO>[];
         final List<AiAssistantMessageVM> nextMessages =
             List<AiAssistantMessageVM>.from(state.messages);
         nextMessages[assistantIndex] = nextMessages[assistantIndex].copyWith(
@@ -618,7 +618,8 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return;
     }
     final List<AiAssistantMessageVM> nextMessages =
-        List<AiAssistantMessageVM>.from(state.messages)..removeAt(assistantIndex);
+        List<AiAssistantMessageVM>.from(state.messages)
+          ..removeAt(assistantIndex);
     _pendingEmbeddedJobs.remove(assistantIndex);
     _updateState((AiAssistantState current) {
       return current.copyWith(

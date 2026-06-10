@@ -243,9 +243,7 @@ class FinanceWithdrawalTile extends StatelessWidget {
           if (item.remark.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 2),
             Text(
-              '财务.备注'.tr(
-                namedArgs: <String, String>{'remark': item.remark},
-              ),
+              '财务.备注'.tr(namedArgs: <String, String>{'remark': item.remark}),
               style: const TextStyle(
                 color: Color(0xFF8C8C8C),
                 fontSize: 12,
@@ -285,15 +283,12 @@ class FinanceBankCardTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (item.isDefault)
-                FinanceStatusBadge(label: '财务.默认卡'.tr()),
+              if (item.isDefault) FinanceStatusBadge(label: '财务.默认卡'.tr()),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            '财务.持卡人'.tr(
-              namedArgs: <String, String>{'name': item.cardHolder},
-            ),
+            '财务.持卡人'.tr(namedArgs: <String, String>{'name': item.cardHolder}),
             style: const TextStyle(
               color: Color(0xFF8C8C8C),
               fontSize: 12,
@@ -507,9 +502,7 @@ class _FinanceAddBankCardSheetState extends State<FinanceAddBankCardSheet> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text(
-                  _isSubmitting ? '认证.提交中'.tr() : '财务.确认添加'.tr(),
-                ),
+                child: Text(_isSubmitting ? '认证.提交中'.tr() : '财务.确认添加'.tr()),
               ),
             ],
           ),

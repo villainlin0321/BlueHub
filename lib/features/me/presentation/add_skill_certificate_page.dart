@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
@@ -12,10 +13,7 @@ import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
 class AddSkillCertificatePage extends ConsumerStatefulWidget {
-  const AddSkillCertificatePage({
-    super.key,
-    this.args,
-  });
+  const AddSkillCertificatePage({super.key, this.args});
 
   final AddSkillCertificatePageArgs? args;
 
@@ -61,12 +59,14 @@ class _AddSkillCertificatePageState
     final List<TagItemVO> tags = await ref.read(
       tagDictionaryProvider(TagCategory.skillCertType).future,
     );
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _openCertificateSheet() async {
@@ -129,9 +129,7 @@ class _AddSkillCertificatePageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleSave() {
@@ -313,7 +311,7 @@ class _AddSkillCertificatePageState
                   ),
                 ],
               ),
-              const SizedBox(height: 33)
+              const SizedBox(height: 33),
             ],
           ),
         ),
@@ -345,9 +343,7 @@ class AddSkillCertificatePageArgs {
 class ResumeCertificatePageResult {
   const ResumeCertificatePageResult.saved(this.value) : deleted = false;
 
-  const ResumeCertificatePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const ResumeCertificatePageResult.deleted() : value = null, deleted = true;
 
   final ResumeCertificateFormResult? value;
   final bool deleted;

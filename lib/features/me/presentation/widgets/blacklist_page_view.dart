@@ -112,9 +112,9 @@ class _BlacklistCountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      '我的.已拉黑用户统计'.tr(namedArgs: <String, String>{
-        'count': totalCount.toString(),
-      }),
+      '我的.已拉黑用户统计'.tr(
+        namedArgs: <String, String>{'count': totalCount.toString()},
+      ),
       style: BlacklistPageStyles.countText,
     );
   }

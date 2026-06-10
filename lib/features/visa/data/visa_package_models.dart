@@ -210,7 +210,11 @@ class TierVO {
       customServices: readStringList(json, 'customServices'),
       description: readString(json, 'description'),
       showMaterials: readBool(json, 'showMaterials'),
-      materials: readModelList<MaterialBO>(json, 'materials', MaterialBO.fromJson),
+      materials: readModelList<MaterialBO>(
+        json,
+        'materials',
+        MaterialBO.fromJson,
+      ),
       soldCount: readInt(json, 'soldCount'),
     );
   }
@@ -224,7 +228,9 @@ class TierVO {
       'customServices': customServices,
       'description': description,
       'showMaterials': showMaterials,
-      'materials': materials.map((item) => item.toJson()).toList(growable: false),
+      'materials': materials
+          .map((item) => item.toJson())
+          .toList(growable: false),
       'soldCount': soldCount,
     };
   }

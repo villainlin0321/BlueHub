@@ -51,9 +51,11 @@ class BlacklistController extends Notifier<BlacklistState> {
     state = state.copyWith(removingUserIds: removingUserIds);
 
     try {
-      await ref.read(userServiceProvider).manageBlacklist(
-        request: BlacklistBO(targetUserId: user.userId, action: 'remove'),
-      );
+      await ref
+          .read(userServiceProvider)
+          .manageBlacklist(
+            request: BlacklistBO(targetUserId: user.userId, action: 'remove'),
+          );
 
       final List<UserVO> nextItems = state.items
           .where((UserVO item) => item.userId != user.userId)
@@ -81,20 +83,11 @@ class BlacklistController extends Notifier<BlacklistState> {
     state = state.copyWith(feedbackMessage: null);
   }
 
-  Future<void> _fetchPage({
-    required int page,
-    required _FetchMode mode,
-  }) async {
+  Future<void> _fetchPage({required int page, required _FetchMode mode}) async {
     if (mode == _FetchMode.initial) {
-      state = state.copyWith(
-        isLoading: true,
-        errorMessage: null,
-      );
+      state = state.copyWith(isLoading: true, errorMessage: null);
     } else if (mode == _FetchMode.refresh) {
-      state = state.copyWith(
-        isRefreshing: true,
-        errorMessage: null,
-      );
+      state = state.copyWith(isRefreshing: true, errorMessage: null);
     } else {
       state = state.copyWith(isLoadingMore: true);
     }
@@ -131,10 +124,7 @@ class BlacklistController extends Notifier<BlacklistState> {
           hasNext: false,
         );
       } else if (mode == _FetchMode.refresh) {
-        state = state.copyWith(
-          isRefreshing: false,
-          errorMessage: message,
-        );
+        state = state.copyWith(isRefreshing: false, errorMessage: message);
       } else {
         state = state.copyWith(
           isLoadingMore: false,

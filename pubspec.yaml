@@ -52,6 +52,7 @@ dependencies:
   just_audio: ^0.10.5
   speech_to_text: ^7.4.0
   easy_refresh: ^3.5.0
+  flutter_easyloading: ^3.0.5
   cached_network_image: ^3.4.1
   chat_bottom_container: ^0.5.0
   dropdown_button2: ^3.1.0

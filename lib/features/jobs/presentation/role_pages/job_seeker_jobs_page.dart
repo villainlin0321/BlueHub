@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -49,7 +50,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       <_SalaryRangeOption>[
         _SalaryRangeOption(key: '', labelKey: '招聘.薪资要求'),
         _SalaryRangeOption(key: '0-1500', label: '0~1500', min: 0, max: 1500),
-        _SalaryRangeOption(key: '1500-2500', label: '1500~2500', min: 1500, max: 2500),
+        _SalaryRangeOption(
+          key: '1500-2500',
+          label: '1500~2500',
+          min: 1500,
+          max: 2500,
+        ),
         _SalaryRangeOption(key: '2500+', label: '2500以上', min: 2500),
       ];
   static const List<_SortOption> _sortOptions = <_SortOption>[
@@ -104,7 +110,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     final AsyncValue<List<PositionCategoryVO>> positionTreeAsync = ref.watch(
       positionTreeProvider(null),
     );
-    final List<CountryVO> countries = countriesAsync.asData?.value.list ?? const <CountryVO>[];
+    final List<CountryVO> countries =
+        countriesAsync.asData?.value.list ?? const <CountryVO>[];
     final List<PositionVO> positions = _flattenPositions(
       positionTreeAsync.asData?.value ?? const <PositionCategoryVO>[],
     );
@@ -214,10 +221,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       _submittedKeyword = keyword;
     });
     FocusScope.of(context).unfocus();
-    _fetchJobs(
-      reset: true,
-      showFullscreenLoading: _jobs.isEmpty,
-    );
+    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
 
   /// 切换国家筛选后重新请求岗位列表。
@@ -265,7 +269,9 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 
   /// 一次性应用国家、职位、薪资综合筛选后刷新岗位列表。
   void _handleCombinedFilterChanged(_CombinedJobFilterSelection selection) {
-    final String? nextCountryCode = _normalizeFilterValue(selection.countryCode);
+    final String? nextCountryCode = _normalizeFilterValue(
+      selection.countryCode,
+    );
     final String? nextPositionKeyword = _normalizeFilterValue(
       selection.positionKeyword,
     );
@@ -357,9 +363,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         }
       });
       if (_jobs.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        AppToast.show(message);
       }
     }
   }
@@ -381,7 +385,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   String? _buildKeywordQuery() {
     final Set<String> parts = <String>{
       if ((_submittedKeyword ?? '').isNotEmpty) _submittedKeyword!,
-      if ((_selectedPositionKeyword ?? '').isNotEmpty) _selectedPositionKeyword!,
+      if ((_selectedPositionKeyword ?? '').isNotEmpty)
+        _selectedPositionKeyword!,
     };
     if (parts.isEmpty) {
       return null;
@@ -446,16 +451,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _submittingJobIds.remove(job.jobId);
         _appliedJobIds.add(job.jobId);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('招聘.投递成功'.tr())));
+      AppToast.show('招聘.投递成功'.tr());
     } else {
       setState(() {
         _submittingJobIds.remove(job.jobId);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      AppToast.show(errorMessage);
     }
   }
 
@@ -494,15 +495,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _collectedOverrides[job.jobId] = !isCollected;
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            isCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr(),
-          ),
-        ),
-      );
+      AppToast.show(isCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -510,9 +503,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       setState(() {
         _collectingJobIds.remove(job.jobId);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_resolveCollectionErrorMessage(error))),
-      );
+      AppToast.show(_resolveCollectionErrorMessage(error));
     }
   }
 
@@ -526,10 +517,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 }
 
 class _JobsSearchBar extends StatelessWidget {
-  const _JobsSearchBar({
-    required this.controller,
-    required this.onSubmitted,
-  });
+  const _JobsSearchBar({required this.controller, required this.onSubmitted});
 
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;
@@ -622,14 +610,19 @@ class _FilterRow extends StatelessWidget {
       ...countries.map(
         (CountryVO item) => _DropdownOption(
           value: item.countryCode.trim(),
-          label: item.nameZh.trim().isNotEmpty ? item.nameZh.trim() : item.nameEn.trim(),
+          label: item.nameZh.trim().isNotEmpty
+              ? item.nameZh.trim()
+              : item.nameEn.trim(),
         ),
       ),
     ];
     final List<_DropdownOption> positionOptions = <_DropdownOption>[
       _DropdownOption(value: '', label: '招聘.全部分类'.tr()),
       ...positions.map(
-        (PositionVO item) => _DropdownOption(value: item.nameZh.trim(), label: item.nameZh.trim()),
+        (PositionVO item) => _DropdownOption(
+          value: item.nameZh.trim(),
+          label: item.nameZh.trim(),
+        ),
       ),
     ];
     final List<_DropdownOption> salaryOptions = salaryRanges
@@ -765,14 +758,19 @@ class _SalaryBottomSheetChip extends StatelessWidget {
       (selectedCustomMin != null && selectedCustomMax != null);
 
   Future<void> _handleTap(BuildContext context) async {
-    final ValueNotifier<String?> selectedPresetNotifier = ValueNotifier<String?>(
-      selectedPresetKey?.isNotEmpty == true ? selectedPresetKey : null,
-    );
+    final ValueNotifier<String?> selectedPresetNotifier =
+        ValueNotifier<String?>(
+          selectedPresetKey?.isNotEmpty == true ? selectedPresetKey : null,
+        );
     final TextEditingController minController = TextEditingController(
-      text: selectedCustomMin == null ? '' : _formatSalaryValue(selectedCustomMin!),
+      text: selectedCustomMin == null
+          ? ''
+          : _formatSalaryValue(selectedCustomMin!),
     );
     final TextEditingController maxController = TextEditingController(
-      text: selectedCustomMax == null ? '' : _formatSalaryValue(selectedCustomMax!),
+      text: selectedCustomMax == null
+          ? ''
+          : _formatSalaryValue(selectedCustomMax!),
     );
 
     void clearDraft() {
@@ -789,9 +787,9 @@ class _SalaryBottomSheetChip extends StatelessWidget {
           onConfirm: () {
             final String? selectedPreset = selectedPresetNotifier.value;
             if (selectedPreset?.isNotEmpty == true) {
-              Navigator.of(context).pop(
-                _SalaryFilterSelection(presetKey: selectedPreset),
-              );
+              Navigator.of(
+                context,
+              ).pop(_SalaryFilterSelection(presetKey: selectedPreset));
               return;
             }
 
@@ -802,18 +800,14 @@ class _SalaryBottomSheetChip extends StatelessWidget {
               return;
             }
             if (minText.isEmpty || maxText.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('请填写完整的薪资范围'.tr())),
-              );
+              AppToast.show('请填写完整的薪资范围'.tr());
               return;
             }
 
             final double min = double.parse(minText);
             final double max = double.parse(maxText);
             if (min > max) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('最低薪资不能大于最高薪资'.tr())),
-              );
+              AppToast.show('最低薪资不能大于最高薪资'.tr());
               return;
             }
 
@@ -884,7 +878,9 @@ class _SalaryBottomSheetChip extends StatelessWidget {
                     style: TextStyle(
                       color: textColor,
                       fontSize: 12,
-                      fontWeight: _highlighted ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: _highlighted
+                          ? FontWeight.w500
+                          : FontWeight.w400,
                       height: 18 / 12,
                     ),
                   ),
@@ -1070,7 +1066,9 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
                     style: TextStyle(
                       color: textColor,
                       fontSize: 12,
-                      fontWeight: _highlighted ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: _highlighted
+                          ? FontWeight.w500
+                          : FontWeight.w400,
                       height: 18 / 12,
                     ),
                   ),
@@ -1114,18 +1112,14 @@ _SalaryFilterSelection? _resolveSalarySelection(
     return const _SalaryFilterSelection();
   }
   if (minText.isEmpty || maxText.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('请填写完整的薪资范围'.tr())),
-    );
+    AppToast.show('请填写完整的薪资范围'.tr());
     return null;
   }
 
   final double min = double.parse(minText);
   final double max = double.parse(maxText);
   if (min > max) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('最低薪资不能大于最高薪资'.tr())),
-    );
+    AppToast.show('最低薪资不能大于最高薪资'.tr());
     return null;
   }
   return _SalaryFilterSelection(customMin: min, customMax: max);
@@ -1465,7 +1459,9 @@ class _SalaryInputField extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         keyboardType: TextInputType.number,
-        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.digitsOnly,
+        ],
         textAlign: TextAlign.center,
         decoration: InputDecoration(
           filled: true,
@@ -1489,7 +1485,10 @@ class _SalaryInputField extends StatelessWidget {
             borderSide: const BorderSide(color: Color(0xFF91C3FF)),
             borderRadius: BorderRadius.circular(6),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
         ),
         style: const TextStyle(
           color: Color(0xFF262626),
@@ -1732,9 +1731,7 @@ extension on JobListVO {
       if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
         visaSupportLabel,
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) urgentLabel,
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
 
     return JobPositionCardData(
       title: title,

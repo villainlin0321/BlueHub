@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -67,9 +68,7 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   Future<void> _loadFinanceData() async {
@@ -854,9 +853,7 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Text(
-          _isSubmitting ? '认证.提交中'.tr() : '财务.确认添加'.tr(),
-        ),
+        child: Text(_isSubmitting ? '认证.提交中'.tr() : '财务.确认添加'.tr()),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1011,9 +1008,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Text(
-          _isSubmitting ? '认证.提交中'.tr() : '财务.确认提现'.tr(),
-        ),
+        child: Text(_isSubmitting ? '认证.提交中'.tr() : '财务.确认提现'.tr()),
       ),
       child: widget.bankCards.isEmpty
           ? Column(

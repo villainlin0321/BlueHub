@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
@@ -154,14 +155,16 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           : '';
       final List<EditVisaPackageTierViewDraft> tiers = detail.tiers.isEmpty
           ? <EditVisaPackageTierViewDraft>[_createTierDraft()]
-          : detail.tiers.asMap().entries.map((
-              MapEntry<int, TierVO> entry,
-            ) {
-              return _createTierDraftFromModel(
-                entry.value,
-                deletable: detail.tiers.length > 1 && entry.key > 0,
-              );
-            }).toList(growable: false);
+          : detail.tiers
+                .asMap()
+                .entries
+                .map((MapEntry<int, TierVO> entry) {
+                  return _createTierDraftFromModel(
+                    entry.value,
+                    deletable: detail.tiers.length > 1 && entry.key > 0,
+                  );
+                })
+                .toList(growable: false);
       _replaceTiers(tiers);
       final EditVisaPackageController controller = ref.read(
         editVisaPackageControllerProvider.notifier,
@@ -229,11 +232,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showSnackBar('签证编辑.签证类型字典加载失败'.tr());
+      _showToast('签证编辑.签证类型字典加载失败'.tr());
       return;
     }
     if (visaTypeOptions.isEmpty) {
-      _showSnackBar('签证编辑.暂无可选签证类型'.tr());
+      _showToast('签证编辑.暂无可选签证类型'.tr());
       return;
     }
     if (!mounted) {
@@ -259,24 +262,28 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   List<SelectableSheetOption<String>> _buildVisaTypeOptions(
     List<TagItemVO> tags,
   ) {
-    return tags.map((TagItemVO item) {
-      final String code = item.tagCode.trim();
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : code;
-      return SelectableSheetOption<String>(value: code, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String code = item.tagCode.trim();
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : code;
+          return SelectableSheetOption<String>(value: code, label: label);
+        })
+        .toList(growable: false);
   }
 
   List<SelectableSheetOption<String>> _buildMaterialTypeOptions(
     List<TagItemVO> tags,
   ) {
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   /// 打开材料类型选择面板，并把选择结果写回当前材料项。
@@ -296,11 +303,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showSnackBar('签证编辑.材料类型字典加载失败'.tr());
+      _showToast('签证编辑.材料类型字典加载失败'.tr());
       return;
     }
     if (materialTypeOptions.isEmpty) {
-      _showSnackBar('签证编辑.暂无可选材料类型'.tr());
+      _showToast('签证编辑.暂无可选材料类型'.tr());
       return;
     }
     if (!mounted) {
@@ -348,19 +355,21 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           .map((EditVisaPackageTierViewDraft tier) {
             return EditVisaPackageTierDraftInput(
               tierId: tier.tierId,
-          name: tier.nameController.text,
-          price: tier.priceController.text,
-          description: tier.descriptionController.text,
-          showMaterials: tier.showMaterials,
-          selectedServiceTagCodes: tier.selectedServiceTagCodes.toList(
-            growable: false,
-          ),
-          customServices: List<String>.from(tier.customServices),
-          materials: tier.materials.map((EditVisaPackageMaterialViewDraft material) {
-            return EditVisaPackageMaterialDraftInput(
-              name: material.titleController.text,
-              description: material.descriptionController.text,
-              isRequired: material.isRequired,);
+              name: tier.nameController.text,
+              price: tier.priceController.text,
+              description: tier.descriptionController.text,
+              showMaterials: tier.showMaterials,
+              selectedServiceTagCodes: tier.selectedServiceTagCodes.toList(
+                growable: false,
+              ),
+              customServices: List<String>.from(tier.customServices),
+              materials: tier.materials
+                  .map((EditVisaPackageMaterialViewDraft material) {
+                    return EditVisaPackageMaterialDraftInput(
+                      name: material.titleController.text,
+                      description: material.descriptionController.text,
+                      isRequired: material.isRequired,
+                    );
                   })
                   .toList(growable: false),
             );
@@ -369,10 +378,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showToast(String message) {
+    AppToast.show(message);
   }
 
   Future<void> _handleSaveDraft() async {
@@ -430,11 +437,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }
     final String customService = result.trim();
     if (customService.isEmpty) {
-      _showSnackBar('签证编辑.请输入自定义服务'.tr());
+      _showToast('签证编辑.请输入自定义服务'.tr());
       return;
     }
     if (_tiers[tierIndex].customServices.contains(customService)) {
-      _showSnackBar('签证编辑.该自定义服务已添加'.tr());
+      _showToast('签证编辑.该自定义服务已添加'.tr());
       return;
     }
     setState(() {
@@ -475,7 +482,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     ) {
       if (previous?.feedbackId != next.feedbackId &&
           next.feedbackMessage != null) {
-        _showSnackBar(next.feedbackMessage!);
+        _showToast(next.feedbackMessage!);
         ref.read(editVisaPackageControllerProvider.notifier).clearFeedback();
       }
 

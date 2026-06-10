@@ -19,11 +19,8 @@ final positionServiceProvider = Provider<PositionService>((ref) {
   return PositionService(apiClient: ref.watch(apiClientProvider));
 });
 
-final schoolSearchProvider =
-    FutureProvider.autoDispose.family<PageResult<SchoolVO>, SchoolSearchQuery>((
-      ref,
-      query,
-    ) async {
+final schoolSearchProvider = FutureProvider.autoDispose
+    .family<PageResult<SchoolVO>, SchoolSearchQuery>((ref, query) async {
       final service = ref.watch(schoolServiceProvider);
       return service.searchSchools(
         keyword: query.keyword,
@@ -43,11 +40,8 @@ final countrySearchProvider = FutureProvider.autoDispose
       );
     });
 
-final positionTreeProvider =
-    FutureProvider.autoDispose.family<List<PositionCategoryVO>, String?>((
-      ref,
-      keyword,
-    ) async {
+final positionTreeProvider = FutureProvider.autoDispose
+    .family<List<PositionCategoryVO>, String?>((ref, keyword) async {
       final service = ref.watch(positionServiceProvider);
       return service.listPositionTree(keyword: keyword);
     });
@@ -81,11 +75,7 @@ class SchoolSearchQuery {
 }
 
 class CountrySearchQuery {
-  const CountrySearchQuery({
-    this.keyword,
-    this.page = 1,
-    this.pageSize = 50,
-  });
+  const CountrySearchQuery({this.keyword, this.page = 1, this.pageSize = 50});
 
   final String? keyword;
   final int page;

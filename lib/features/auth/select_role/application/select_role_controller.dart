@@ -41,7 +41,9 @@ class SelectRoleController extends Notifier<SelectRoleState> {
     state = state.copyWith(isSubmitting: true);
 
     try {
-      final login = await ref.read(authServiceProvider).selectRole(
+      final login = await ref
+          .read(authServiceProvider)
+          .selectRole(
             request: SelectRoleBO(role: apiRoleFromSelection(selectedRoleId)),
           );
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);

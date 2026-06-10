@@ -13,7 +13,8 @@ class AppLocales {
   static const List<Locale> supported = <Locale>[english, chinese];
 
   /// 判断当前 Locale 是否为中文，统一兼容仅语言码的场景。
-  static bool isChinese(Locale locale) => locale.languageCode == chinese.languageCode;
+  static bool isChinese(Locale locale) =>
+      locale.languageCode == chinese.languageCode;
 }
 
 /// 语言切换扩展：简化页面中的语言判断与切换调用。

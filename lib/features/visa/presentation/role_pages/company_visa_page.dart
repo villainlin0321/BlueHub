@@ -2,6 +2,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
@@ -11,6 +12,7 @@ import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -69,9 +71,7 @@ enum _CompanyJobTab {
 
   bool get isOffline => this == _CompanyJobTab.offline;
 
-  String get emptyText => isOffline
-      ? tr('企业岗位.暂无已下线岗位')
-      : tr('企业岗位.暂无招聘中的岗位');
+  String get emptyText => isOffline ? tr('企业岗位.暂无已下线岗位') : tr('企业岗位.暂无招聘中的岗位');
 }
 
 class _CompanyVisaHeader extends StatelessWidget {
@@ -316,41 +316,19 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   Future<bool> _confirmDeleteJob(JobDetailVO job) async {
-    final bool? confirmed = await showDialog<bool>(
+    return showAppConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('企业岗位.删除岗位'.tr()),
-          content: Text(
-            '企业岗位.确认删除岗位'.tr(
-              namedArgs: <String, String>{'title': job.title},
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('通用.取消'.tr()),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('企业岗位.删除'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '企业岗位.删除岗位'.tr(),
+      message: '企业岗位.确认删除岗位'.tr(
+        namedArgs: <String, String>{'title': job.title},
+      ),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '企业岗位.删除'.tr(),
     );
-    return confirmed ?? false;
   }
 
   Future<void> _deleteJob(JobDetailVO job) async {
@@ -494,9 +472,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       child: _jobs.isEmpty
           ? _CompanyJobEmptyState(
               message: _errorMessage ?? widget.tab.emptyText,
-              buttonLabel: _errorMessage == null
-                  ? null
-                  : '企业岗位.重新加载'.tr(),
+              buttonLabel: _errorMessage == null ? null : '企业岗位.重新加载'.tr(),
               onTap: _errorMessage == null ? null : _loadInitial,
             )
           : ListView.separated(
@@ -695,19 +671,14 @@ class _JobManageCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 _BorderActionButton(
-                  label: isOffline
-                      ? '企业岗位.发布'.tr()
-                      : '企业岗位.下线'.tr(),
+                  label: isOffline ? '企业岗位.发布'.tr() : '企业岗位.下线'.tr(),
                   onTap: isDeleting || isUpdatingStatus
                       ? null
                       : onToggleStatusTap,
                   isLoading: isUpdatingStatus,
                 ),
                 const SizedBox(width: 8),
-                _PrimaryActionButton(
-                  label: '企业岗位.编辑'.tr(),
-                  onTap: onEditTap,
-                ),
+                _PrimaryActionButton(label: '企业岗位.编辑'.tr(), onTap: onEditTap),
               ],
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
@@ -12,10 +13,7 @@ import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
 class AddEducationExperiencePage extends ConsumerStatefulWidget {
-  const AddEducationExperiencePage({
-    super.key,
-    this.args,
-  });
+  const AddEducationExperiencePage({super.key, this.args});
 
   final AddEducationExperiencePageArgs? args;
 
@@ -75,12 +73,14 @@ class _AddEducationExperiencePageState
     final List<TagItemVO> tags = await ref.read(
       tagDictionaryProvider(TagCategory.educationLevel).future,
     );
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _openDegreeSheet() async {
@@ -184,9 +184,7 @@ class _AddEducationExperiencePageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   @override
@@ -333,9 +331,7 @@ class AddEducationExperiencePageArgs {
 class EducationExperiencePageResult {
   const EducationExperiencePageResult.saved(this.value) : deleted = false;
 
-  const EducationExperiencePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const EducationExperiencePageResult.deleted() : value = null, deleted = true;
 
   final EducationExperienceFormResult? value;
   final bool deleted;
@@ -368,10 +364,7 @@ class EducationExperienceFormResult {
 }
 
 class _EducationInputField extends StatelessWidget {
-  const _EducationInputField({
-    required this.label,
-    required this.controller,
-  });
+  const _EducationInputField({required this.label, required this.controller});
 
   final String label;
   final TextEditingController controller;

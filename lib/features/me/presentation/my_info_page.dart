@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -226,7 +228,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
     }
     final String currentPhone =
         ref.read(authSessionProvider).user?.phone.trim() ?? '';
-    final String? nextPhone = await showDialog<String>(
+    final String? nextPhone = await showAppDialog<String>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (BuildContext dialogContext) {
@@ -403,9 +405,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 统一通过页面级 Snackbar 提示保存结果与异常信息。
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -720,133 +720,84 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                const Expanded(
-                  child: Text(
-                    '修改手机号',
-                    style: TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 17,
-                    ),
-                  ),
-                ),
-                InkWell(
-                  onTap: () => Navigator.of(context).pop(),
-                  borderRadius: BorderRadius.circular(12),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.close,
-                      size: 18,
-                      color: Color(0xFF8C8C8C),
-                    ),
-                  ),
-                ),
-              ],
+    return AppDialog(
+      title: '修改手机号',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const Text(
+            '请输入新的手机号',
+            style: TextStyle(
+              color: Color(0xFF8C8C8C),
+              fontSize: 14,
+              height: 20 / 14,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              '请输入新的手机号',
-              style: TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(20),
+            ],
+            cursorColor: AppColors.brand,
+            onChanged: (_) {
+              if (_errorText == null) {
+                return;
+              }
+              setState(() {
+                _errorText = null;
+              });
+            },
+            onSubmitted: (_) => _handleConfirm(),
+            decoration: InputDecoration(
+              hintText: '请输入手机号',
+              hintStyle: const TextStyle(
+                color: Color(0xFFBFBFBF),
+                fontSize: 15,
+                height: 22 / 15,
+              ),
+              filled: true,
+              fillColor: const Color(0xFFF5F7FA),
+              errorText: _errorText,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.brand),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.danger),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.danger),
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(20),
-              ],
-              cursorColor: AppColors.brand,
-              onChanged: (_) {
-                if (_errorText == null) {
-                  return;
-                }
-                setState(() {
-                  _errorText = null;
-                });
-              },
-              onSubmitted: (_) => _handleConfirm(),
-              decoration: InputDecoration(
-                hintText: '请输入手机号',
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBFBFBF),
-                  fontSize: 15,
-                  height: 22 / 15,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5F7FA),
-                errorText: _errorText,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.brand),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.danger),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.danger),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: FilledButton(
-                onPressed: _handleConfirm,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF096DD9),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  '确认',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(label: '确认', onPressed: _handleConfirm),
+      ],
     );
   }
 }

@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import '../../data/my_applications_models.dart';
 
 class MyApplicationCard extends StatelessWidget {
-  const MyApplicationCard({
-    super.key,
-    required this.item,
-    this.onActionTap,
-  });
+  const MyApplicationCard({super.key, required this.item, this.onActionTap});
 
   final MyApplicationItem item;
   final VoidCallback? onActionTap;
@@ -61,11 +57,7 @@ class MyApplicationCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: <Widget>[
-                  Expanded(
-                    child: _CompanyRow(
-                      companyName: item.companyName,
-                    ),
-                  ),
+                  Expanded(child: _CompanyRow(companyName: item.companyName)),
                   const SizedBox(width: 12),
                   _LocationRow(locationText: item.locationText),
                 ],
@@ -111,23 +103,11 @@ class MyApplicationCard extends StatelessWidget {
   (Color, Color, Color?) _statusColorsFor(MyApplicationStatus status) {
     switch (status) {
       case MyApplicationStatus.applied:
-        return (
-          Colors.white,
-          const Color(0xFF546D96),
-          const Color(0xFFA3AFD4),
-        );
+        return (Colors.white, const Color(0xFF546D96), const Color(0xFFA3AFD4));
       case MyApplicationStatus.viewed:
-        return (
-          const Color(0xFFEDF5FF),
-          const Color(0xFF386EF8),
-          null,
-        );
+        return (const Color(0xFFEDF5FF), const Color(0xFF386EF8), null);
       case MyApplicationStatus.interview:
-        return (
-          const Color(0xFFEDF5FF),
-          const Color(0xFF386EF8),
-          null,
-        );
+        return (const Color(0xFFEDF5FF), const Color(0xFF386EF8), null);
     }
   }
 }
@@ -172,9 +152,7 @@ class _StatusTag extends StatelessWidget {
 }
 
 class _CompanyRow extends StatelessWidget {
-  const _CompanyRow({
-    required this.companyName,
-  });
+  const _CompanyRow({required this.companyName});
 
   final String companyName;
 
@@ -260,7 +238,9 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final backgroundColor = filled ? const Color(0xFF096DD9) : Colors.white;
     final foregroundColor = filled ? Colors.white : const Color(0xFF262626);
-    final borderColor = filled ? const Color(0xFF096DD9) : const Color(0xFFD9D9D9);
+    final borderColor = filled
+        ? const Color(0xFF096DD9)
+        : const Color(0xFFD9D9D9);
 
     return SizedBox(
       width: 77,

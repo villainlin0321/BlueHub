@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../../shared/widgets/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,12 +78,8 @@ class ServiceProviderMePage extends ConsumerWidget {
 
   /// 展示暂未接入功能的占位提示。
   void _showPlaceholderToast(BuildContext context, String labelKey) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
-        ),
-      ),
+    AppToast.show(
+      '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
     );
   }
 
@@ -140,9 +137,7 @@ class ServiceProviderMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '我的.加载服务商资料失败'.tr();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
     }
   }
 }

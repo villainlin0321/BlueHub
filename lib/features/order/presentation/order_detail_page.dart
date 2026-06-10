@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -52,10 +53,7 @@ class OrderDetailPage extends ConsumerStatefulWidget {
           title: '订单.厨师资格证公证件'.tr(),
           required: true,
         ),
-        _MaterialRequirement(
-          id: 'german_certificate',
-          title: '订单.德语语言证明'.tr(),
-        ),
+        _MaterialRequirement(id: 'german_certificate', title: '订单.德语语言证明'.tr()),
       ];
 
   @override
@@ -303,9 +301,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleConsultTap() {
@@ -807,7 +803,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     if (missingRequirement != null) {
       _showMessage(
-        '订单.请先上传'.tr(namedArgs: <String, String>{'title': missingRequirement.title}),
+        '订单.请先上传'.tr(
+          namedArgs: <String, String>{'title': missingRequirement.title},
+        ),
       );
       return;
     }
@@ -869,9 +867,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return;
       }
       setState(() => _isSubmitting = false);
-      _showMessage(
-        _resolveErrorMessage(error, fallback: '订单.提交材料失败'.tr()),
-      );
+      _showMessage(_resolveErrorMessage(error, fallback: '订单.提交材料失败'.tr()));
     }
   }
 
@@ -932,9 +928,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(
-        _resolveErrorMessage(error, fallback: '订单.上传出证材料失败'.tr()),
-      );
+      _showMessage(_resolveErrorMessage(error, fallback: '订单.上传出证材料失败'.tr()));
     } finally {
       if (mounted) {
         setState(() {
@@ -1178,9 +1172,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(
-        action == 'approve' ? '订单.审核已通过'.tr() : '订单.已驳回重传'.tr(),
-      );
+      _showMessage(action == 'approve' ? '订单.审核已通过'.tr() : '订单.已驳回重传'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -1414,12 +1406,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   uploadsByRequirement: displayedUploadsByRequirement,
                   allowUpload: isUploadMaterialsStage,
                   allowDelete: isUploadMaterialsStage,
-                  onPreviewTap: (String title) =>
-                      _showMessage(
-                        '订单.查看样例占位'.tr(
-                          namedArgs: <String, String>{'title': title},
-                        ),
-                      ),
+                  onPreviewTap: (String title) => _showMessage(
+                    '订单.查看样例占位'.tr(namedArgs: <String, String>{'title': title}),
+                  ),
                   onUploadTap: _openUploadSheet,
                   onDeleteFile: _removeUploadFile,
                 )
@@ -1685,7 +1674,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
               ),
               Text(
                 '订单.共份'.tr(
-                  namedArgs: <String, String>{'count': materials.length.toString()},
+                  namedArgs: <String, String>{
+                    'count': materials.length.toString(),
+                  },
                 ),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF8C8C8C),

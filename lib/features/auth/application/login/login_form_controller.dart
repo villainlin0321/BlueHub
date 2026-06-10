@@ -12,9 +12,7 @@ final loginFormControllerProvider =
     );
 
 class LoginFormController extends Notifier<LoginFormState> {
-  static final RegExp _emailPattern = RegExp(
-    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-  );
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   LoginFormState build() => const LoginFormState();
@@ -69,10 +67,7 @@ class LoginFormController extends Notifier<LoginFormState> {
         _emitFeedback(tr('认证.已发送短信验证码'));
       } else {
         await authService.sendEmailCode(
-          request: SendEmailBO(
-            email: state.email.trim(),
-            scene: 'login',
-          ),
+          request: SendEmailBO(email: state.email.trim(), scene: 'login'),
         );
         _emitFeedback(tr('认证.已发送邮箱验证码'));
       }
@@ -176,9 +171,7 @@ class LoginFormController extends Notifier<LoginFormState> {
       return sendCodeError;
     }
     if (state.code.trim().isEmpty) {
-      return state.isPhoneLogin
-          ? tr('认证.请输入短信验证码')
-          : tr('认证.请输入邮箱验证码校验');
+      return state.isPhoneLogin ? tr('认证.请输入短信验证码') : tr('认证.请输入邮箱验证码校验');
     }
     return null;
   }

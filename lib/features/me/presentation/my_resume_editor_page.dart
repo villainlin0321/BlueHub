@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -1717,9 +1718,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 统一处理尚未接真实交互的点击反馈。
   void _showComingSoon() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('我的.编辑功能开发中'.tr())));
+    AppToast.show('我的.编辑功能开发中'.tr());
   }
 
   /// 提交保存接口，并在成功后把结果回传上一页用于刷新。
@@ -1734,13 +1733,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         return;
       }
       _didSave = true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isCreateMode ? '我的.创建简历已保存'.tr() : '我的.简历修改已保存'.tr(),
-          ),
-        ),
-      );
+      AppToast.show(_isCreateMode ? '我的.创建简历已保存'.tr() : '我的.简历修改已保存'.tr());
       context.pop(true);
     } catch (error) {
       if (!mounted) {
@@ -1749,9 +1742,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       setState(() {
         _isSaving = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveSaveErrorMessage(error))));
+      AppToast.show(_resolveSaveErrorMessage(error));
     }
   }
 
@@ -1778,9 +1769,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       setState(() {
         _isSaving = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveSaveErrorMessage(error))));
+      AppToast.show(_resolveSaveErrorMessage(error));
     }
   }
 
@@ -2013,9 +2002,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.职位字典加载失败'.tr())));
+      AppToast.show('我的.职位字典加载失败'.tr());
       return;
     }
 
@@ -2023,9 +2010,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.暂无可选职位'.tr())));
+      AppToast.show('我的.暂无可选职位'.tr());
       return;
     }
 
@@ -2115,18 +2100,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.语言字典加载失败'.tr())));
+      AppToast.show('我的.语言字典加载失败'.tr());
       return;
     }
     if (languageOptions.isEmpty) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.暂无可选语言能力'.tr())));
+      AppToast.show('我的.暂无可选语言能力'.tr());
       return;
     }
     if (!mounted) {

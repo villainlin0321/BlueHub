@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -26,7 +27,8 @@ final _companyMyInfoProfileProvider =
 class CompanyMyInfoPage extends ConsumerStatefulWidget {
   const CompanyMyInfoPage({super.key});
 
-  static const String _avatarFallbackAsset = 'assets/images/mou64ult-sj15mxj.png';
+  static const String _avatarFallbackAsset =
+      'assets/images/mou64ult-sj15mxj.png';
   static const String _qualificationPlaceholderAsset =
       'assets/images/qualification_license_placeholder.png';
 
@@ -70,7 +72,8 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (_, __) => _CompanyMyInfoErrorView(
-                      onRetry: () => ref.invalidate(_companyMyInfoProfileProvider),
+                      onRetry: () =>
+                          ref.invalidate(_companyMyInfoProfileProvider),
                     ),
                   ),
                 ),
@@ -245,9 +248,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -330,10 +331,7 @@ class _CompanyMyInfoContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            '我的.注意重新提交审核'.tr(),
-            style: CompanyMyInfoStyles.noteText,
-          ),
+          Text('我的.注意重新提交审核'.tr(), style: CompanyMyInfoStyles.noteText),
           const SizedBox(height: 24),
           CompanyMyInfoPrimaryButton(
             label: '我的.修改信息'.tr(),

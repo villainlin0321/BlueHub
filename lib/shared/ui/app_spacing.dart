@@ -5,4 +5,3 @@ class AppSpacing {
   static const double chipRadius = 6;
   static const double buttonRadius = 8;
 }
-

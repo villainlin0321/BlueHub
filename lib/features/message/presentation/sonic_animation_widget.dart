@@ -36,10 +36,8 @@ class _SonicAnimationWidgetState extends State<SonicAnimationWidget>
   void initState() {
     super.initState();
     // 初始化动画控制器并无限循环
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
   }
 
   @override
@@ -68,8 +66,8 @@ class _SonicAnimationWidgetState extends State<SonicAnimationWidget>
         final double paintWidth = widget.width != null
             ? widget.width!
             : (constraints.hasBoundedWidth && constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : 20);
+                  ? constraints.maxWidth
+                  : 20);
         return RepaintBoundary(
           child: CustomPaint(
             size: Size(paintWidth, widget.height),
@@ -115,8 +113,8 @@ class _SonicPainter extends CustomPainter {
     required this.minBarHeightRatio,
     required this.maxBarHeightRatio,
   }) : super(
-            repaint:
-                animation); // 关键：将动画作为 repaint 参数传入，确保动画值改变时自动重绘而不调用 widget build
+         repaint: animation,
+       ); // 关键：将动画作为 repaint 参数传入，确保动画值改变时自动重绘而不调用 widget build
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -147,7 +145,7 @@ class _SonicPainter extends CustomPainter {
       final double nextHeightRatio = _states[nextIndex][i];
       final double heightRatio =
           ui.lerpDouble(currentHeightRatio, nextHeightRatio, localProgress) ??
-              0.0;
+          0.0;
       _drawBar(
         canvas: canvas,
         size: size,
@@ -171,33 +169,36 @@ class _SonicPainter extends CustomPainter {
     for (int i = 0; i < safeBarCount; i++) {
       final double position = safeBarCount == 1 ? 0 : i / (safeBarCount - 1);
       final double centerDistance = (position - 0.5).abs() * 2;
-      final double envelope =
-          (1 - math.pow(centerDistance, 1.25)).clamp(0.12, 1.0).toDouble();
+      final double envelope = (1 - math.pow(centerDistance, 1.25))
+          .clamp(0.12, 1.0)
+          .toDouble();
 
       final double waveA =
           (math.sin(time * 1.15 - position * math.pi * 3.8) + 1) / 2;
       final double waveB =
           (math.sin(time * 2.1 + position * math.pi * 11.5 + (i % 5) * 0.42) +
-                  1) /
-              2;
+              1) /
+          2;
       final double waveC =
           (math.sin(time * 3.35 - position * math.pi * 17.0 + (i % 9) * 0.21) +
-                  1) /
-              2;
+              1) /
+          2;
       final double micro =
           (math.sin(time * 5.4 + i * 0.38 + envelope * 2.4) + 1) / 2;
       final double beat = (math.sin(time * 0.85) + 1) / 2;
 
-      final double mixed = (waveA * 0.34) +
+      final double mixed =
+          (waveA * 0.34) +
           (waveB * 0.26) +
           (waveC * 0.18) +
           (micro * 0.12) +
           (beat * 0.10);
-      final double energy =
-          ((mixed * 0.72) + (envelope * 0.28)).clamp(0.0, 1.0).toDouble();
+      final double energy = ((mixed * 0.72) + (envelope * 0.28))
+          .clamp(0.0, 1.0)
+          .toDouble();
       final double heightRatio =
           ui.lerpDouble(minBarHeightRatio, maxBarHeightRatio, energy) ??
-              minBarHeightRatio;
+          minBarHeightRatio;
 
       _drawBar(
         canvas: canvas,

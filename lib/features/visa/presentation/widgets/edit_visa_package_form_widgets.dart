@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../config/data/config_models.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
 
 class EditVisaPackageTierViewDraft {
@@ -60,7 +61,7 @@ class EditVisaPackageMaterialViewDraft {
 Future<String?> showEditVisaPackageCustomServiceDialog(
   BuildContext context,
 ) async {
-  return showDialog<String>(
+  return showAppDialog<String>(
     context: context,
     useRootNavigator: false,
     builder: (BuildContext dialogContext) {
@@ -95,77 +96,43 @@ class _EditVisaPackageCustomServiceDialogState
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              '签证编辑.添加自定义服务'.tr(),
-              style: TextStyle(
-                color: EditVisaPackageStyles.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 24 / 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              maxLines: 1,
-              maxLength: 12,
-              inputFormatters: <TextInputFormatter>[
-                LengthLimitingTextInputFormatter(12),
-              ],
-              cursorColor: EditVisaPackageStyles.primary,
-              decoration: InputDecoration(
-                hintText: '签证编辑.请输入自定义服务'.tr(),
-                hintStyle: EditVisaPackageStyles.fieldHint,
-                counterText: '',
-                filled: true,
-                fillColor: EditVisaPackageStyles.fieldBackground,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: EditVisaPackageStyles.inputBorder(Colors.transparent),
-                enabledBorder: EditVisaPackageStyles.inputBorder(
-                  Colors.transparent,
-                ),
-                focusedBorder: EditVisaPackageStyles.inputBorder(
-                  EditVisaPackageStyles.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(_controller.text.trim());
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: EditVisaPackageStyles.primary,
-                  foregroundColor: EditVisaPackageStyles.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  '通用.确定'.tr(),
-                  style: EditVisaPackageStyles.primaryButton,
-                ),
-              ),
-            ),
-          ],
+    return AppDialog(
+      title: '签证编辑.添加自定义服务'.tr(),
+      content: TextField(
+        controller: _controller,
+        maxLines: 1,
+        maxLength: 12,
+        inputFormatters: <TextInputFormatter>[
+          LengthLimitingTextInputFormatter(12),
+        ],
+        cursorColor: EditVisaPackageStyles.primary,
+        decoration: InputDecoration(
+          hintText: '签证编辑.请输入自定义服务'.tr(),
+          hintStyle: EditVisaPackageStyles.fieldHint,
+          counterText: '',
+          filled: true,
+          fillColor: EditVisaPackageStyles.fieldBackground,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
+          border: EditVisaPackageStyles.inputBorder(Colors.transparent),
+          enabledBorder: EditVisaPackageStyles.inputBorder(Colors.transparent),
+          focusedBorder: EditVisaPackageStyles.inputBorder(
+            EditVisaPackageStyles.primary,
+          ),
         ),
       ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+        ),
+      ],
     );
   }
 }
@@ -271,9 +238,7 @@ class EditVisaPackageHeader extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      isSavingDraft
-                          ? '签证编辑.保存中'.tr()
-                          : '签证编辑.存草稿'.tr(),
+                      isSavingDraft ? '签证编辑.保存中'.tr() : '签证编辑.存草稿'.tr(),
                       style: EditVisaPackageStyles.headerAction,
                     ),
                   ),
@@ -803,10 +768,7 @@ class EditVisaPackageAddCustomServiceChip extends StatelessWidget {
             borderRadius: EditVisaPackageStyles.chipRadius,
             border: Border.all(color: EditVisaPackageStyles.border),
           ),
-          child: Text(
-            '签证编辑.自定义'.tr(),
-            style: EditVisaPackageStyles.plainChip,
-          ),
+          child: Text('签证编辑.自定义'.tr(), style: EditVisaPackageStyles.plainChip),
         ),
       ),
     );
@@ -1130,9 +1092,7 @@ class _EditVisaPackageChipCheckIcon extends StatelessWidget {
       width: 15,
       height: 12,
       child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(4),
-        ),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(4)),
         child: CustomPaint(painter: _EditVisaPackageChipCheckIconPainter()),
       ),
     );

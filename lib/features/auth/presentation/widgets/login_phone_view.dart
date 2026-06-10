@@ -6,10 +6,7 @@ import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
 class LoginRegionOption {
-  const LoginRegionOption({
-    required this.label,
-    required this.code,
-  });
+  const LoginRegionOption({required this.label, required this.code});
 
   final String label;
   final String code;
@@ -63,9 +60,7 @@ class LoginPhoneView extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(32, 10, 32, 18),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight - 28,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 28),
             child: IntrinsicHeight(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,10 +76,10 @@ class LoginPhoneView extends StatelessWidget {
                   Text(
                     '认证.注册登录'.tr(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF262626),
-                          fontSize: 26,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: const Color(0xFF262626),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 41),
                   _LoginModeTabs(
@@ -154,9 +149,8 @@ class LoginPhoneView extends StatelessWidget {
                         Expanded(
                           child: RichText(
                             text: TextSpan(
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
                                     height: 22 / 12,
                                     color: const Color(0xFF171A1D),
                                     fontSize: 12,
@@ -166,7 +160,9 @@ class LoginPhoneView extends StatelessWidget {
                                 TextSpan(
                                   text:
                                       '${'认证.用户服务协议'.tr()}${'认证.用户隐私政策'.tr()}',
-                                  style: const TextStyle(color: AppColors.brand),
+                                  style: const TextStyle(
+                                    color: AppColors.brand,
+                                  ),
                                 ),
                               ],
                             ),
@@ -189,10 +185,7 @@ class LoginPhoneView extends StatelessWidget {
 }
 
 class _LoginModeTabs extends StatelessWidget {
-  const _LoginModeTabs({
-    required this.isPhoneLogin,
-    required this.onChanged,
-  });
+  const _LoginModeTabs({required this.isPhoneLogin, required this.onChanged});
 
   final bool isPhoneLogin;
   final ValueChanged<bool> onChanged;
@@ -254,10 +247,10 @@ class _ModeTab extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: selected ? AppColors.brand : const Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
-              ),
+            color: selected ? AppColors.brand : const Color(0xFF8C8C8C),
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
+          ),
         ),
       ),
     );
@@ -294,10 +287,10 @@ class _PhoneInputRow extends StatelessWidget {
                     Text(
                       regionCode,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF262626),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
+                        color: const Color(0xFF262626),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     const Icon(
@@ -323,10 +316,7 @@ class _PhoneInputRow extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
                 onChanged: onChanged,
               ),
             ),
@@ -364,15 +354,9 @@ class _TextInputRow extends StatelessWidget {
             hintText: hintText,
             isDense: true,
             border: InputBorder.none,
-            hintStyle: const TextStyle(
-              color: Color(0xFFBFBFBF),
-              fontSize: 16,
-            ),
+            hintStyle: const TextStyle(color: Color(0xFFBFBFBF), fontSize: 16),
           ),
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 16,
-          ),
+          style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
           onChanged: onChanged,
         ),
         const SizedBox(height: 12),
@@ -417,10 +401,7 @@ class _CodeInputRow extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
                 onChanged: onChanged,
               ),
             ),
@@ -430,12 +411,12 @@ class _CodeInputRow extends StatelessWidget {
               child: Text(
                 isSending ? '认证.发送中'.tr() : '认证.获取验证码'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isSending
-                          ? AppColors.brand.withValues(alpha: 0.45)
-                          : AppColors.brand,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
+                  color: isSending
+                      ? AppColors.brand.withValues(alpha: 0.45)
+                      : AppColors.brand,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ],
@@ -468,20 +449,20 @@ class _LoginButton extends StatelessWidget {
         onPressed: enabled ? onPressed : null,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF096DD9),
-          disabledBackgroundColor: const Color(0xFF096DD9).withValues(alpha: 0.45),
+          disabledBackgroundColor: const Color(
+            0xFF096DD9,
+          ).withValues(alpha: 0.45),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: EdgeInsets.zero,
         ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ),
     );
@@ -489,10 +470,7 @@ class _LoginButton extends StatelessWidget {
 }
 
 class _AgreementCheckbox extends StatelessWidget {
-  const _AgreementCheckbox({
-    required this.value,
-    required this.onChanged,
-  });
+  const _AgreementCheckbox({required this.value, required this.onChanged});
 
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -581,9 +559,9 @@ class RegionPickerSheet extends StatelessWidget {
             Text(
               '认证.选择地区'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: const Color(0xFF262626),
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             ...options.map((option) {

@@ -41,8 +41,7 @@ class AiAssistantMessageVM {
       embeddedJobs: identical(embeddedJobs, _aiAssistantMessageSentinel)
           ? this.embeddedJobs
           : embeddedJobs as List<JobListVO>,
-      isEmbeddedJobLoading:
-          isEmbeddedJobLoading ?? this.isEmbeddedJobLoading,
+      isEmbeddedJobLoading: isEmbeddedJobLoading ?? this.isEmbeddedJobLoading,
     );
   }
 }
@@ -113,10 +112,7 @@ class AiAssistantState {
       voiceInputState: voiceInputState ?? this.voiceInputState,
       voiceSeconds: voiceSeconds ?? this.voiceSeconds,
       recognizedText: recognizedText ?? this.recognizedText,
-      applyingJobIds: identical(
-            applyingJobIds,
-            _aiAssistantStateIntSetSentinel,
-          )
+      applyingJobIds: identical(applyingJobIds, _aiAssistantStateIntSetSentinel)
           ? this.applyingJobIds
           : applyingJobIds as Set<int>,
       appliedJobIds: identical(appliedJobIds, _aiAssistantStateIntSetSentinel)

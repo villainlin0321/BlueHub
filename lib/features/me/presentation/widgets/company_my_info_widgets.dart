@@ -331,10 +331,7 @@ class CompanyImageSourceBottomSheet extends StatelessWidget {
               onTap: onGalleryTap,
             ),
             const SizedBox(height: 8),
-            _CompanyBottomSheetActionTile(
-              label: '我的.取消'.tr(),
-              onTap: onClose,
-            ),
+            _CompanyBottomSheetActionTile(label: '我的.取消'.tr(), onTap: onClose),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../current_user_view_data.dart';
@@ -114,14 +115,8 @@ class JobSeekerMePage extends ConsumerWidget {
 
   /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。
   void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-        ),
-      ),
+    AppToast.show(
+      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
     );
   }
 }
