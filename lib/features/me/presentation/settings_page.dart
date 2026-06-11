@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -23,6 +24,13 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _isLoggingOut = false;
+  String _versionLabel = '--';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersionCode();
+  }
 
   @override
   /// 构建设置页主体，按设计稿组织顶部导航、列表项与底部操作区。
@@ -69,6 +77,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         label: '设置.注销'.tr(),
                         onTap: _handleDeleteTap,
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '— $_versionLabel —',
+                        style: const TextStyle(
+                          color: Color(0xFFBFBFBF),
+                          fontSize: 12,
+                          height: 20 / 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -101,6 +118,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 切换应用全局语言，并让设置页与其他页面共享同一份 Locale 状态。
   Future<void> _handleLanguageChanged(bool isChinese) async {
     await context.switchAppLocale(isChinese);
+  }
+
+  /// 读取平台版本号与构建号，组合成设置页底部展示文案。
+  Future<void> _loadVersionCode() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version.trim();
+    final String buildNumber = packageInfo.buildNumber.trim();
+    final String nextVersionLabel = switch ((version.isEmpty, buildNumber.isEmpty)) {
+      (true, true) => '--',
+      (false, true) => 'v$version',
+      (true, false) => '($buildNumber)',
+      (false, false) => 'v$version ($buildNumber)',
+    };
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _versionLabel = nextVersionLabel;
+    });
   }
 
   /// 按当前角色分流“我的信息”入口，避免不同身份误入不匹配的资料页。
