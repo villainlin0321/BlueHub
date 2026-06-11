@@ -42,6 +42,10 @@
       "description": "余额概览、结算流水、提现申请、银行卡管理"
     },
     {
+      "name": "支付模块",
+      "description": "微信/支付宝 APP 支付、回调通知、状态查询"
+    },
+    {
       "name": "收藏模块",
       "description": "收藏/取消收藏岗位或签证套餐"
     },
@@ -3270,6 +3274,78 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/create": {
+      "post": {
+        "tags": [
+          "支付模块"
+        ],
+        "summary": "创建支付",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "createPayment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPaymentResultVO"
                 }
               }
             }
@@ -6545,6 +6621,80 @@
         }
       }
     },
+    "/payments/{orderId}/status": {
+      "get": {
+        "tags": [
+          "支付模块"
+        ],
+        "summary": "查询支付状态",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "queryPaymentStatus",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "订单ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPaymentStatusVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs/mine": {
       "get": {
         "tags": [
@@ -9474,6 +9624,107 @@
           "cardNoMask"
         ]
       },
+      "CreatePaymentBO": {
+        "type": "object",
+        "description": "创建支付请求",
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "订单ID",
+            "example": 1
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "支付方式：wechat_pay / alipay",
+            "example": "wechat_pay",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentMethod"
+        ]
+      },
+      "AppResultPaymentResultVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PaymentResultVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PaymentResultVO": {
+        "type": "object",
+        "description": "支付参数响应",
+        "properties": {
+          "paymentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "支付流水ID"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "支付方式"
+          },
+          "outTradeNo": {
+            "type": "string",
+            "description": "商户订单号"
+          },
+          "wxPartnerId": {
+            "type": "string",
+            "description": "微信-商户号"
+          },
+          "wxPrepayId": {
+            "type": "string",
+            "description": "微信-prepay_id"
+          },
+          "wxPackageValue": {
+            "type": "string",
+            "description": "微信-扩展字段"
+          },
+          "wxNonceStr": {
+            "type": "string",
+            "description": "微信-随机字符串"
+          },
+          "wxTimestamp": {
+            "type": "string",
+            "description": "微信-时间戳"
+          },
+          "wxSign": {
+            "type": "string",
+            "description": "微信-签名"
+          },
+          "alipayOrderString": {
+            "type": "string",
+            "description": "支付宝-orderString（完整参数串）"
+          }
+        }
+      },
       "FilePresignBO": {
         "type": "object",
         "description": "获取预签名上传地址请求",
@@ -10166,8 +10417,9 @@
           },
           "message": {
             "type": "string",
-            "description": "用户消息内容",
-            "minLength": 1
+            "description": "用户消息内容（最大 500 字符）",
+            "maxLength": 500,
+            "minLength": 0
           },
           "contextType": {
             "type": "string",
@@ -12144,6 +12396,71 @@
           "name_en": {
             "type": "string",
             "description": "英文名称"
+          }
+        }
+      },
+      "AppResultPaymentStatusVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PaymentStatusVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PaymentStatusVO": {
+        "type": "object",
+        "description": "支付状态响应",
+        "properties": {
+          "paymentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "支付流水ID"
+          },
+          "orderId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "订单ID"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "支付方式"
+          },
+          "amount": {
+            "type": "number",
+            "description": "支付金额"
+          },
+          "status": {
+            "type": "string",
+            "description": "支付状态：pending / success / failed"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "支付完成时间"
           }
         }
       },

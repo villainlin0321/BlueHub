@@ -247,6 +247,16 @@ class _ApplyBottomSheetContentState
     if (_isSubmitting) {
       return;
     }
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    if (name.isEmpty) {
+      _showMessage('请输入姓名');
+      return;
+    }
+    if (phone.isEmpty) {
+      _showMessage('请输入手机号');
+      return;
+    }
     FocusScope.of(context).unfocus();
     setState(() => _isSubmitting = true);
     try {
@@ -823,7 +833,7 @@ class _ApplyApplicantSection extends StatelessWidget {
           label: '服务详情.姓名'.tr(),
           controller: nameController,
           textColor: const Color(0xFF262626),
-          hintText: '',
+         hintText: '通用.请输入'.tr(),
         ),
         const SizedBox(height: 12),
         _ApplyLabeledInput(

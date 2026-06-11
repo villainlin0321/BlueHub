@@ -13,7 +13,7 @@ class FilterBottomSheetOption {
 class FilterBottomSheetChip extends StatelessWidget {
   const FilterBottomSheetChip({
     super.key,
-    this.width = 88,
+    this.width = 80,
     required this.title,
     required this.value,
     required this.options,

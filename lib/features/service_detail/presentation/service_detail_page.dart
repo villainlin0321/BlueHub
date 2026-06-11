@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'dart:ui';
 import '../../../shared/widgets/app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -63,6 +67,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   bool _isCollecting = false;
   bool _showCollapsedTitle = false;
   bool? _isCollectedOverride;
+  final Set<String> _downloadingMaterialUrls = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +222,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                         setState(() => _selectedPackageIndex = index);
                       },
                       materials: serviceMaterials,
+                      downloadingFileUrls: _downloadingMaterialUrls,
+                      onMaterialTap: _downloadAndOpenMaterial,
                     ),
                     ServiceDetailReviewTab(
                       review: reviewAsync?.asData?.value,
@@ -376,6 +383,188 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   /// 统一展示签证详情页的提示消息。
   void _showMessage(String message) {
     AppToast.show(message);
+  }
+
+  Future<Directory> _resolveDownloadDirectory() async {
+    final List<Directory> candidates = <Directory>[];
+    try {
+      final Directory? downloadsDirectory = await getDownloadsDirectory();
+      if (downloadsDirectory != null) {
+        candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
+      }
+    } catch (_) {}
+
+    try {
+      final Directory documentsDirectory =
+          await getApplicationDocumentsDirectory();
+      candidates.add(Directory('${documentsDirectory.path}/downloads'));
+    } catch (_) {}
+
+    final Directory temporaryDirectory = await getTemporaryDirectory();
+    candidates.add(Directory('${temporaryDirectory.path}/downloads'));
+
+    for (final Directory candidate in candidates) {
+      if (await _canWriteToDirectory(candidate)) {
+        return candidate;
+      }
+    }
+    throw Exception('服务详情.下载目录无访问权限'.tr());
+  }
+
+  Future<bool> _canWriteToDirectory(Directory directory) async {
+    try {
+      if (!directory.existsSync()) {
+        await directory.create(recursive: true);
+      }
+      final File probeFile = File(
+        '${directory.path}/.bluehub_write_test_${DateTime.now().microsecondsSinceEpoch}',
+      );
+      await probeFile.writeAsString('ok', flush: true);
+      if (probeFile.existsSync()) {
+        await probeFile.delete();
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String _materialDisplayName(ServiceMaterialData material) {
+    final String materialName = material.title.trim();
+    if (materialName.isNotEmpty) {
+      return materialName;
+    }
+    final Uri? uri = Uri.tryParse(material.fileUrl);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    return '服务详情.所需材料'.tr();
+  }
+
+  String _materialFileExtension(ServiceMaterialData material) {
+    final String name = _materialDisplayName(material);
+    final int dotIndex = name.lastIndexOf('.');
+    if (dotIndex >= 0 && dotIndex < name.length - 1) {
+      return name.substring(dotIndex);
+    }
+
+    final Uri? uri = Uri.tryParse(material.fileUrl);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      final String lastSegment = Uri.decodeComponent(uri.pathSegments.last);
+      final int urlDotIndex = lastSegment.lastIndexOf('.');
+      if (urlDotIndex >= 0 && urlDotIndex < lastSegment.length - 1) {
+        return lastSegment.substring(urlDotIndex);
+      }
+    }
+
+    final String type = material.fileType.trim().toLowerCase();
+    if (type.contains('png')) {
+      return '.png';
+    }
+    if (type.contains('jpeg') || type.contains('jpg')) {
+      return '.jpg';
+    }
+    if (type.contains('pdf')) {
+      return '.pdf';
+    }
+    if (type.contains('docx')) {
+      return '.docx';
+    }
+    if (type == 'doc' || type.contains('msword')) {
+      return '.doc';
+    }
+    return '';
+  }
+
+  String _sanitizeFileName(String name) {
+    return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+  }
+
+  Future<void> _downloadAndOpenMaterial(ServiceMaterialData material) async {
+    final String fileUrl = material.fileUrl.trim();
+    if (fileUrl.isEmpty) {
+      _showMessage('服务详情.文件地址不存在'.tr());
+      return;
+    }
+    if (_downloadingMaterialUrls.contains(fileUrl)) {
+      return;
+    }
+
+    setState(() {
+      _downloadingMaterialUrls.add(fileUrl);
+    });
+
+    final Dio dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: const Duration(seconds: 60),
+      ),
+    );
+
+    try {
+      final Directory directory = await _resolveDownloadDirectory();
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
+      }
+
+      final String displayName = _materialDisplayName(material);
+      final String extension = _materialFileExtension(material);
+      final String normalizedName =
+          displayName.contains('.') || extension.isEmpty
+          ? displayName
+          : '$displayName$extension';
+      final String sanitizedName = _sanitizeFileName(normalizedName);
+      String savePath = '${directory.path}/$sanitizedName';
+      if (File(savePath).existsSync()) {
+        final String timestamp = DateTime.now().millisecondsSinceEpoch
+            .toString();
+        final int nameDotIndex = sanitizedName.lastIndexOf('.');
+        final String uniqueName = nameDotIndex > 0
+            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
+            : '${sanitizedName}_$timestamp';
+        savePath = '${directory.path}/$uniqueName';
+      }
+
+      await dio.download(
+        fileUrl,
+        savePath,
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+        deleteOnError: true,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final OpenResult openResult = await OpenFilex.open(savePath);
+      if (openResult.type != ResultType.done) {
+        final String message = openResult.message.trim();
+        _showMessage(
+          message.isEmpty ? '服务详情.文件打开失败'.tr() : message,
+        );
+      }
+    } on DioException {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('服务详情.文件下载失败'.tr());
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
+    } finally {
+      dio.close(force: true);
+      if (mounted) {
+        setState(() {
+          _downloadingMaterialUrls.remove(fileUrl);
+        });
+      }
+    }
   }
 }
 
@@ -1156,7 +1345,13 @@ extension on VisaPackageVO {
                 : material.materialName,
             subtitle: _buildMaterialSubtitle(material),
             status: _buildMaterialStatus(material),
-            required: true,
+            required: material.isRequired,
+            description: material.description,
+            fileUrl: material.fileUrl,
+            fileType: material.fileType,
+            fileSize: material.fileSize,
+            uploadedAt: material.uploadedAt,
+            sortOrder: material.sortOrder,
           ),
         )
         .toList(growable: false);
@@ -1165,6 +1360,9 @@ extension on VisaPackageVO {
 
 /// 组装材料副标题，尽量从文件元信息拼出可读文案。
 String _buildMaterialSubtitle(MaterialVO material) {
+  if (material.description.trim().isNotEmpty) {
+    return material.description;
+  }
   final List<String> parts = <String>[
     if (material.fileType.trim().isNotEmpty)
       material.fileType.trim().toUpperCase(),
@@ -1180,8 +1378,14 @@ String _buildMaterialSubtitle(MaterialVO material) {
 
 /// 组装材料状态文案，优先展示文件类型。
 String _buildMaterialStatus(MaterialVO material) {
+  if (material.isRequired) {
+    return '服务详情.必填'.tr();
+  }
   final String fileType = material.fileType.trim();
-  return fileType.isEmpty ? '服务详情.材料'.tr() : fileType.toUpperCase();
+  if (fileType.isNotEmpty) {
+    return fileType.toUpperCase();
+  }
+  return material.fileUrl.trim().isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
 }
 
 /// 格式化详情页价格，统一复用币种前缀转换规则。

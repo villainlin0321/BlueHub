@@ -458,7 +458,11 @@
     "服务年限": "Years of Service",
     "年数": "{count} years",
     "服务承诺": "Service Promise",
-    "暂无服务承诺说明": "No service promise yet"
+    "暂无服务承诺说明": "No service promise yet",
+    "文件地址不存在": "File URL does not exist. Unable to download right now.",
+    "下载目录无访问权限": "No access to the download directory. Please check storage permission and try again.",
+    "文件下载失败": "File download failed. Please try again later.",
+    "文件打开失败": "Failed to open the file. Please check whether this format is supported on your device."
   },
   "订单": {
     "订单管理": "Order Management",

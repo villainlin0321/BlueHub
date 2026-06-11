@@ -650,31 +650,46 @@ class _FilterRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        FilterBottomSheetChip(
-          title: '选择国家'.tr(),
-          value: selectedCountryCode ?? '',
-          options: countrySheetOptions,
-          enabled: isCountryEnabled,
-          onChanged: onCountryChanged,
+        Expanded(
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: FilterBottomSheetChip(
+                  title: '选择国家'.tr(),
+                  value: selectedCountryCode ?? '',
+                  options: countrySheetOptions,
+                  enabled: isCountryEnabled,
+                  onChanged: onCountryChanged,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: FilterBottomSheetChip(
+                  title: '选择分类'.tr(),
+                  value: selectedPositionKeyword ?? '',
+                  options: positionSheetOptions,
+                  enabled: isPositionEnabled,
+                  onChanged: onPositionChanged,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _SalaryBottomSheetChip(
+                  title: '选择薪资'.tr(),
+                  placeholderLabel: salaryOptions.first.label,
+                  selectedPresetKey: selectedSalaryRangeKey,
+                  selectedCustomMin: selectedCustomSalaryMin,
+                  selectedCustomMax: selectedCustomSalaryMax,
+                  presetOptions: salaryPresetOptions,
+                  onChanged: onSalaryFilterChanged,
+                ),
+              ),
+            ],
+          ),
         ),
-        FilterBottomSheetChip(
-          title: '选择分类'.tr(),
-          value: selectedPositionKeyword ?? '',
-          options: positionSheetOptions,
-          enabled: isPositionEnabled,
-          onChanged: onPositionChanged,
-        ),
-        _SalaryBottomSheetChip(
-          title: '选择薪资'.tr(),
-          placeholderLabel: salaryOptions.first.label,
-          selectedPresetKey: selectedSalaryRangeKey,
-          selectedCustomMin: selectedCustomSalaryMin,
-          selectedCustomMax: selectedCustomSalaryMax,
-          presetOptions: salaryPresetOptions,
-          onChanged: onSalaryFilterChanged,
-        ),
+        SizedBox(width: 8),
         _CombinedFilterBottomSheetChip(
-          width: 76,
+          width: 64,
           title: '筛选'.tr(),
           enabled: isCountryEnabled && isPositionEnabled,
           selectedCountryCode: selectedCountryCode,

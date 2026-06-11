@@ -29,12 +29,24 @@ class ServiceMaterialData {
     required this.subtitle,
     required this.status,
     required this.required,
+    required this.description,
+    required this.fileUrl,
+    required this.fileType,
+    required this.fileSize,
+    required this.uploadedAt,
+    required this.sortOrder,
   });
 
   final String title;
   final String subtitle;
   final String status;
   final bool required;
+  final String description;
+  final String fileUrl;
+  final String fileType;
+  final int fileSize;
+  final String uploadedAt;
+  final int sortOrder;
 }
 
 class ServiceDetailPackageTab extends StatelessWidget {
@@ -44,12 +56,16 @@ class ServiceDetailPackageTab extends StatelessWidget {
     required this.selectedPackageIndex,
     required this.onPackageSelected,
     required this.materials,
+    required this.onMaterialTap,
+    this.downloadingFileUrls = const <String>{},
   });
 
   final List<ServicePackageData> packages;
   final int selectedPackageIndex;
   final ValueChanged<int> onPackageSelected;
   final List<ServiceMaterialData> materials;
+  final ValueChanged<ServiceMaterialData> onMaterialTap;
+  final Set<String> downloadingFileUrls;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +87,11 @@ class ServiceDetailPackageTab extends StatelessWidget {
           );
         }),
         const SizedBox(height: 16),
-        _MaterialsSection(materials: materials),
+        _MaterialsSection(
+          materials: materials,
+          downloadingFileUrls: downloadingFileUrls,
+          onMaterialTap: onMaterialTap,
+        ),
       ],
     );
   }
@@ -181,9 +201,15 @@ class _PackageOptionCard extends StatelessWidget {
 }
 
 class _MaterialsSection extends StatelessWidget {
-  const _MaterialsSection({required this.materials});
+  const _MaterialsSection({
+    required this.materials,
+    required this.downloadingFileUrls,
+    required this.onMaterialTap,
+  });
 
   final List<ServiceMaterialData> materials;
+  final Set<String> downloadingFileUrls;
+  final ValueChanged<ServiceMaterialData> onMaterialTap;
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +252,13 @@ class _MaterialsSection extends StatelessWidget {
               padding: EdgeInsets.only(
                 bottom: index == materials.length - 1 ? 0 : 12,
               ),
-              child: _MaterialCard(material: material),
+              child: _MaterialCard(
+                material: material,
+                isDownloading: downloadingFileUrls.contains(
+                  material.fileUrl.trim(),
+                ),
+                onTap: () => onMaterialTap(material),
+              ),
             );
           }),
         ],
@@ -236,70 +268,91 @@ class _MaterialsSection extends StatelessWidget {
 }
 
 class _MaterialCard extends StatelessWidget {
-  const _MaterialCard({required this.material});
+  const _MaterialCard({
+    required this.material,
+    required this.isDownloading,
+    required this.onTap,
+  });
 
   static const String _materialIconAsset =
       'assets/images/service_detail_material_file.svg';
 
   final ServiceMaterialData material;
+  final bool isDownloading;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 64),
-      padding: const EdgeInsets.fromLTRB(12, 12, 17, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+    final bool canTap = material.fileUrl.trim().isNotEmpty && !isDownloading;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          SvgPicture.asset(
-            _materialIconAsset,
-            width: 24,
-            height: 24,
-            fit: BoxFit.contain,
+        onTap: canTap ? onTap : null,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.fromLTRB(12, 12, 17, 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  material.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              SvgPicture.asset(
+                _materialIconAsset,
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      material.title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFF262626),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 20 / 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      material.subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF8C8C8C),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 16 / 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  material.subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 16 / 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 12),
+              if (isDownloading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                _MaterialStatusTag(
+                  label: material.status,
+                  required: material.required,
                 ),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(width: 12),
-          _MaterialStatusTag(
-            label: material.status,
-            required: material.required,
-          ),
-        ],
+        ),
       ),
     );
   }

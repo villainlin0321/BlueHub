@@ -87,6 +87,9 @@ class MaterialBO {
 class MaterialVO {
   const MaterialVO({
     required this.materialName,
+    required this.description,
+    required this.isRequired,
+    required this.sortOrder,
     required this.fileUrl,
     required this.fileType,
     required this.fileSize,
@@ -94,6 +97,9 @@ class MaterialVO {
   });
 
   final String materialName;
+  final String description;
+  final bool isRequired;
+  final int sortOrder;
   final String fileUrl;
   final String fileType;
   final int fileSize;
@@ -101,7 +107,14 @@ class MaterialVO {
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
-      materialName: readString(json, 'materialName'),
+      materialName: readString(
+        json,
+        'materialName',
+        fallback: readString(json, 'name'),
+      ),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+      sortOrder: readInt(json, 'sortOrder'),
       fileUrl: readString(json, 'fileUrl'),
       fileType: readString(json, 'fileType'),
       fileSize: readInt(json, 'fileSize'),
@@ -112,6 +125,10 @@ class MaterialVO {
   JsonMap toJson() {
     return <String, dynamic>{
       'materialName': materialName,
+      'name': materialName,
+      'description': description,
+      'isRequired': isRequired,
+      'sortOrder': sortOrder,
       'fileUrl': fileUrl,
       'fileType': fileType,
       'fileSize': fileSize,
