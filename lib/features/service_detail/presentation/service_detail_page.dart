@@ -1058,7 +1058,7 @@ class _BottomActionBar extends StatelessWidget {
           case 1:
             return const SizedBox.shrink();
           case 2:
-            return const _MerchantBottomActionBar();
+            return _MerchantBottomActionBar(onConsultTap: onConsultTap);
           case 0:
           default:
             return _PackageBottomActionBar(
@@ -1162,7 +1162,9 @@ class _PackageBottomActionBar extends StatelessWidget {
 }
 
 class _MerchantBottomActionBar extends StatelessWidget {
-  const _MerchantBottomActionBar();
+  const _MerchantBottomActionBar({required this.onConsultTap});
+
+  final VoidCallback onConsultTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1210,7 +1212,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
             Expanded(
               flex: 170,
               child: FilledButton(
-                onPressed: () {},
+                onPressed: onConsultTap,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
                   backgroundColor: const Color(0xFF096DD9),

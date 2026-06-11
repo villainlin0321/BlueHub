@@ -13,6 +13,7 @@ class MyApplicationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColors = _statusColorsFor(item.status);
     final isApplied = item.status == MyApplicationStatus.applied;
+    final bool hasLocation = item.locationText.trim().isNotEmpty;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -58,8 +59,10 @@ class MyApplicationCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Expanded(child: _CompanyRow(companyName: item.companyName)),
-                  const SizedBox(width: 12),
-                  _LocationRow(locationText: item.locationText),
+                  if (hasLocation) ...<Widget>[
+                    const SizedBox(width: 12),
+                    _LocationRow(locationText: item.locationText),
+                  ],
                 ],
               ),
               const Spacer(),

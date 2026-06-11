@@ -239,7 +239,7 @@ class _ReportSubmitBar extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                '订单.提交材料'.tr(),
+                '通用.提交'.tr(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,

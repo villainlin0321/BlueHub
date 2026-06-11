@@ -1,34 +1,48 @@
 import 'package:easy_localization/easy_localization.dart';
 
-enum MyApplicationTabType {
-  all('我的应聘.全部'),
-  applied('我的应聘.已投递'),
-  viewed('我的应聘.被查看'),
-  interview('我的应聘.邀面试');
+import '../../jobs/data/application_models.dart';
 
-  const MyApplicationTabType(this.label);
+enum MyApplicationTabType {
+  all('我的应聘.全部', apiStatus: 'all'),
+  applied('我的应聘.已投递', apiStatus: 'submitted'),
+  viewed('我的应聘.被查看', apiStatus: 'viewed'),
+  interview('我的应聘.邀面试', apiStatus: 'interview');
+
+  const MyApplicationTabType(this.label, {required this.apiStatus});
 
   final String label;
+  final String apiStatus;
 
   /// 返回“我的应聘”页 Tab 的本地化标题。
   String get localizedLabel => label.tr();
 }
 
 enum MyApplicationStatus {
-  applied('我的应聘.已投递'),
-  viewed('我的应聘.被查看'),
-  interview('我的应聘.邀面试');
+  applied('我的应聘.已投递', apiStatus: 'submitted'),
+  viewed('我的应聘.被查看', apiStatus: 'viewed'),
+  interview('我的应聘.邀面试', apiStatus: 'interview');
 
-  const MyApplicationStatus(this.label);
+  const MyApplicationStatus(this.label, {required this.apiStatus});
 
   final String label;
+  final String apiStatus;
 
   /// 返回卡片状态标签的本地化文案。
   String get localizedLabel => label.tr();
+
+  factory MyApplicationStatus.fromApiStatus(String rawStatus) {
+    final String normalized = rawStatus.trim().toLowerCase();
+    return MyApplicationStatus.values.firstWhere(
+      (MyApplicationStatus status) => status.apiStatus == normalized,
+      orElse: () => MyApplicationStatus.applied,
+    );
+  }
 }
 
 class MyApplicationItem {
   const MyApplicationItem({
+    required this.applicationId,
+    required this.employerId,
     required this.status,
     required this.updatedText,
     required this.title,
@@ -38,6 +52,8 @@ class MyApplicationItem {
     this.actionLabel = '我的应聘.联系HR',
   });
 
+  final int applicationId;
+  final int employerId;
   final MyApplicationStatus status;
   final String updatedText;
   final String title;
@@ -45,4 +61,60 @@ class MyApplicationItem {
   final String companyName;
   final String locationText;
   final String actionLabel;
+
+  factory MyApplicationItem.fromApplication(ApplicationVO application) {
+    return MyApplicationItem(
+      applicationId: application.applicationId,
+      employerId: application.employer.employerId,
+      status: MyApplicationStatus.fromApiStatus(application.status),
+      updatedText: _formatUpdatedText(
+        application.updatedAt,
+        fallback: application.submittedAt,
+      ),
+      title: application.job.title.trim(),
+      salary: _formatSalary(application.job),
+      companyName: application.employer.name.trim(),
+      locationText: '',
+    );
+  }
+}
+
+String _formatSalary(JobSimpleVO job) {
+  final double min = job.salaryMin;
+  final double max = job.salaryMax;
+  if (min <= 0 && max <= 0) {
+    return '暂无'.tr();
+  }
+
+  final String currency = job.salaryCurrency.trim().isEmpty
+      ? '¥'
+      : job.salaryCurrency.trim();
+  final String minText = _formatNumber(min > 0 ? min : max);
+  if (max <= 0 || min == max) {
+    return '$currency$minText';
+  }
+  final String maxText = _formatNumber(max);
+  return '$currency$minText~$currency$maxText';
+}
+
+String _formatUpdatedText(String raw, {required String fallback}) {
+  final String effective = raw.trim().isNotEmpty ? raw.trim() : fallback.trim();
+  final DateTime? parsed = DateTime.tryParse(effective)?.toLocal();
+  if (parsed == null) {
+    return effective;
+  }
+
+  final String year = parsed.year.toString().padLeft(4, '0');
+  final String month = parsed.month.toString().padLeft(2, '0');
+  final String day = parsed.day.toString().padLeft(2, '0');
+  final String hour = parsed.hour.toString().padLeft(2, '0');
+  final String minute = parsed.minute.toString().padLeft(2, '0');
+  return '$year-$month-$day $hour:$minute';
+}
+
+String _formatNumber(double value) {
+  if (value % 1 == 0) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 }

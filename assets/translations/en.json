@@ -18,7 +18,8 @@
     "业务异常": "Business error",
     "数据解析失败": "Failed to parse data",
     "未知错误": "Unknown error",
-    "HTTP请求失败": "HTTP request failed"
+    "HTTP请求失败": "HTTP request failed",
+    "提交": "Submit"
   },
   "认证": {
     "注册登录": "Sign up / Log in",
@@ -758,6 +759,8 @@
     "被查看": "Viewed",
     "邀面试": "Interview",
     "联系HR": "Contact HR",
+    "暂无应聘记录": "No application records",
+    "加载中": "Loading...",
     "暂无更多记录": "No more records"
   },
   "语言": {
