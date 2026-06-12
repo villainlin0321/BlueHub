@@ -45,7 +45,7 @@ class OrderReviewPage extends ConsumerStatefulWidget {
 class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   final TextEditingController _commentController = TextEditingController();
 
-  double _rating = 1.5;
+  double _rating = 5;
   bool _isSubmitting = false;
   bool _isUploadingImages = false;
   List<String> _uploadedImageUrls = const <String>[];

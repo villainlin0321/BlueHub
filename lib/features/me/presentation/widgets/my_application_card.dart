@@ -91,7 +91,8 @@ class MyApplicationCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _ActionButton(
                     label: item.actionLabel.tr(),
-                    filled: !isApplied,
+                    // filled: !isApplied,
+                    filled: true,
                     onPressed: onActionTap,
                   ),
                 ],
