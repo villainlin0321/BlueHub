@@ -1,4 +1,4 @@
-package com.bluehub.bluehub_app
+package com.europepass.europepass
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
