@@ -14,7 +14,6 @@ class JobPositionCardData {
     this.locationIconAssetPath,
     this.showApplyButton = false,
     this.archived = false,
-    this.isCollected = false,
     this.statusText,
     this.previewImageAssetPath,
   });
@@ -29,7 +28,6 @@ class JobPositionCardData {
   final String? locationIconAssetPath;
   final bool showApplyButton;
   final bool archived;
-  final bool isCollected;
   final String? statusText;
   final String? previewImageAssetPath;
 }
@@ -40,18 +38,14 @@ class JobPositionCard extends StatelessWidget {
     required this.data,
     this.onApply,
     this.onTap,
-    this.onFavoriteTap,
     this.isApplying = false,
-    this.isCollecting = false,
     this.applyButtonText = '',
   });
 
   final JobPositionCardData data;
   final VoidCallback? onApply;
   final VoidCallback? onTap;
-  final VoidCallback? onFavoriteTap;
   final bool isApplying;
-  final bool isCollecting;
   final String applyButtonText;
 
   /// 构建职位卡片，并根据外部状态展示投递按钮的禁用或加载文案。
@@ -85,12 +79,6 @@ class JobPositionCard extends StatelessWidget {
                       height: 24 / 16,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                _JobFavoriteButton(
-                  isCollected: data.isCollected,
-                  isLoading: isCollecting,
-                  onTap: onFavoriteTap,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -246,46 +234,6 @@ class JobPositionCard extends StatelessWidget {
       return _JobPositionTagStyle.urgent().build(urgentLabel);
     }
     return const _JobPositionTagStyle.highlightBlue().build(tag);
-  }
-}
-
-class _JobFavoriteButton extends StatelessWidget {
-  const _JobFavoriteButton({
-    required this.isCollected,
-    required this.isLoading,
-    this.onTap,
-  });
-
-  final bool isCollected;
-  final bool isLoading;
-  final VoidCallback? onTap;
-
-  /// 渲染职位卡片收藏按钮，支持显示真实初始态与请求中的加载态。
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  isCollected ? Icons.star_rounded : Icons.star_border_rounded,
-                  size: 20,
-                  color: isCollected
-                      ? const Color(0xFFFE5815)
-                      : const Color(0xFFBFBFBF),
-                ),
-        ),
-      ),
-    );
   }
 }
 

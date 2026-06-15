@@ -79,13 +79,20 @@ class JobSeekerHomePage extends ConsumerWidget {
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              'assets/images/mon5bjog-qq5tufd.png',
-              height: 80,
-              width: double.infinity,
-              fit: BoxFit.cover,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.go(RoutePaths.ai),
+              borderRadius: BorderRadius.circular(12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  'assets/images/mon5bjog-qq5tufd.png',
+                  height: 80,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
           ),
         ),
@@ -213,10 +220,14 @@ class _HeaderProfileRow extends ConsumerWidget {
 
     return Row(
       children: <Widget>[
-        AppUserAvatar(
-          imageUrl: userViewData.avatarUrl,
-          size: 32,
-          placeholderAssetPath: 'assets/images/mon5bjog-wv3qvoa.png',
+        GestureDetector(
+          onTap: () => context.push(RoutePaths.myInfo),
+          behavior: HitTestBehavior.opaque,
+          child: AppUserAvatar(
+            imageUrl: userViewData.avatarUrl,
+            size: 32,
+            placeholderAssetPath: 'assets/images/mon5bjog-wv3qvoa.png',
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -949,7 +960,6 @@ extension on JobListVO {
       company: employer.name,
       location: _formatHomeLocation(),
       showApplyButton: true,
-      isCollected: isCollected,
     );
   }
 

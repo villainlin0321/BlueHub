@@ -301,10 +301,14 @@ class _ProviderInfoRow extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        AppUserAvatar(
-          imageUrl: providerProfile?.logoUrl ?? '',
-          size: 40,
-          placeholderAssetPath: 'assets/images/mon6azmx-ecnf5h2.png',
+        GestureDetector(
+          onTap: () => context.push(RoutePaths.serviceProviderMyInfo),
+          behavior: HitTestBehavior.opaque,
+          child: AppUserAvatar(
+            imageUrl: providerProfile?.logoUrl ?? '',
+            size: 40,
+            placeholderAssetPath: 'assets/images/mon6azmx-ecnf5h2.png',
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(

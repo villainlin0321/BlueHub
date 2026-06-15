@@ -5,6 +5,8 @@
   "通用": {
     "取消": "Cancel",
     "确定": "Confirm",
+    "退出应用标题": "Exit App",
+    "退出应用内容": "Are you sure you want to exit the app?",
     "完成": "Done",
     "删除": "Deletion",
     "确认删除": "Confirm Deletion",

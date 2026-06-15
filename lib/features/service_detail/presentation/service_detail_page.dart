@@ -12,6 +12,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
@@ -385,6 +386,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
         _isCollecting = false;
         _isCollectedOverride = !wasCollected;
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(wasCollected ? '服务详情.已取消收藏'.tr() : '服务详情.收藏成功'.tr());
     } catch (error) {

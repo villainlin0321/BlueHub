@@ -15,8 +15,6 @@ import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../me/data/dictionary_providers.dart';
-import '../../../me/data/collection_models.dart' show CollectionBO;
-import '../../../me/data/collection_providers.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import '../job_apply_helper.dart';
@@ -67,8 +65,6 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   final List<JobListVO> _jobs = <JobListVO>[];
   final Set<int> _submittingJobIds = <int>{};
   final Set<int> _appliedJobIds = <int>{};
-  final Set<int> _collectingJobIds = <int>{};
-  final Map<int, bool> _collectedOverrides = <int, bool>{};
   late final TextEditingController _searchController = TextEditingController();
   int _currentPage = 0;
   bool _hasNext = true;
@@ -101,9 +97,6 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final AsyncValue<Set<int>> collectedJobIdsAsync = ref.watch(
-      collectedJobIdsProvider,
-    );
     final AsyncValue<PageResult<CountryVO>> countriesAsync = ref.watch(
       countrySearchProvider(const CountrySearchQuery(page: 1, pageSize: 200)),
     );
@@ -175,10 +168,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
                     onRetry: _loadInitialJobs,
                     applyingJobIds: _submittingJobIds,
                     appliedJobIds: _appliedJobIds,
-                    collectingJobIds: _collectingJobIds,
-                    collectedJobIdsAsync: collectedJobIdsAsync,
                     onApply: _handleApply,
-                    onToggleCollection: _handleToggleCollection,
                   ),
                   SliverToBoxAdapter(
                     child: SizedBox(height: bottomPadding + 24),
@@ -458,61 +448,6 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       });
       AppToast.show(errorMessage);
     }
-  }
-
-  /// 切换列表页岗位收藏状态，并与收藏页、详情页保持同步。
-  Future<void> _handleToggleCollection(JobListVO job) async {
-    if (_collectingJobIds.contains(job.jobId)) {
-      return;
-    }
-
-    final Set<int>? collectedJobIds = ref
-        .read(collectedJobIdsProvider)
-        .asData
-        ?.value;
-    final bool isCollected =
-        _collectedOverrides[job.jobId] ??
-        collectedJobIds?.contains(job.jobId) ??
-        job.isCollected;
-
-    setState(() {
-      _collectingJobIds.add(job.jobId);
-    });
-
-    try {
-      final request = CollectionBO(targetType: 'job', targetId: job.jobId);
-      final service = ref.read(collectionServiceProvider);
-      if (isCollected) {
-        await service.removeCollection(request: request);
-      } else {
-        await service.addCollection(request: request);
-      }
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _collectingJobIds.remove(job.jobId);
-        _collectedOverrides[job.jobId] = !isCollected;
-      });
-      ref.read(collectionRefreshTickProvider.notifier).bump();
-      AppToast.show(isCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _collectingJobIds.remove(job.jobId);
-      });
-      AppToast.show(_resolveCollectionErrorMessage(error));
-    }
-  }
-
-  /// 提取列表收藏操作的错误文案。
-  String _resolveCollectionErrorMessage(Object error) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    return '招聘.收藏操作失败'.tr();
   }
 }
 
@@ -1561,10 +1496,7 @@ class _JobsListSection extends StatelessWidget {
     required this.onRetry,
     required this.applyingJobIds,
     required this.appliedJobIds,
-    required this.collectingJobIds,
-    required this.collectedJobIdsAsync,
     required this.onApply,
-    required this.onToggleCollection,
   });
 
   final List<JobListVO> jobs;
@@ -1573,10 +1505,7 @@ class _JobsListSection extends StatelessWidget {
   final Future<void> Function() onRetry;
   final Set<int> applyingJobIds;
   final Set<int> appliedJobIds;
-  final Set<int> collectingJobIds;
-  final AsyncValue<Set<int>> collectedJobIdsAsync;
   final Future<void> Function(JobListVO job) onApply;
-  final Future<void> Function(JobListVO job) onToggleCollection;
 
   /// 根据列表状态切换首屏加载、错误、空态和正常卡片列表。
   @override
@@ -1619,21 +1548,17 @@ class _JobsListSection extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.only(bottom: index == jobs.length - 1 ? 0 : 12),
             child: JobPositionCard(
-              data: item.toCardData(isCollected: _resolveCollectedState(item)),
+              data: item.toCardData(),
               onTap: () => context.push(
                 RoutePaths.jobDetail,
                 extra: JobDetailPageArgs(jobId: item.jobId),
               ),
-              onFavoriteTap: () {
-                onToggleCollection(item);
-              },
               onApply: appliedJobIds.contains(item.jobId)
                   ? null
                   : () {
                       onApply(item);
                     },
               isApplying: applyingJobIds.contains(item.jobId),
-              isCollecting: collectingJobIds.contains(item.jobId),
               applyButtonText: appliedJobIds.contains(item.jobId)
                   ? '招聘.已投递'.tr()
                   : '招聘卡片.一键投递'.tr(),
@@ -1642,15 +1567,6 @@ class _JobsListSection extends StatelessWidget {
         }, childCount: jobs.length),
       ),
     );
-  }
-
-  /// 解析职位卡片当前的收藏态，优先使用收藏接口同步结果。
-  bool _resolveCollectedState(JobListVO item) {
-    final Set<int>? collectedJobIds = collectedJobIdsAsync.asData?.value;
-    if (collectedJobIds != null) {
-      return collectedJobIds.contains(item.jobId);
-    }
-    return item.isCollected;
   }
 }
 
@@ -1734,7 +1650,7 @@ class _JobsErrorState extends StatelessWidget {
 
 extension on JobListVO {
   /// 将接口返回的岗位列表项映射为职位卡片数据。
-  JobPositionCardData toCardData({required bool isCollected}) {
+  JobPositionCardData toCardData() {
     final String urgentLabel = '招聘卡片.急招'.tr();
     final String visaSupportLabel = '招聘卡片.提供签证'.tr();
     final List<String> tagLabels = tags
@@ -1756,7 +1672,6 @@ extension on JobListVO {
       company: employer.name,
       location: _formatLocation(),
       showApplyButton: true,
-      isCollected: isCollected,
     );
   }
 

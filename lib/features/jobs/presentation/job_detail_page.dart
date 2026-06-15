@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/job_models.dart';
@@ -146,6 +147,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isCollecting = false;
         _isCollectedOverride = !wasCollected;
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(context, wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
     } catch (error) {

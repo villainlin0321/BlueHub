@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -27,10 +28,19 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
   static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
+  static const int _pageSize = 50;
   late final TabController _tabController = TabController(
     length: 2,
     vsync: this,
   )..addListener(_handleTabChanged);
+  final EasyRefreshController _serviceRefreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
+  final EasyRefreshController _jobRefreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
 
   List<collection_models.VisaPackageVO> _serviceItems =
       <collection_models.VisaPackageVO>[];
@@ -40,6 +50,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   FavoriteTabType _currentTab = FavoriteTabType.services;
   bool _isServiceLoading = false;
   bool _isJobLoading = false;
+  int _serviceNextPage = 1;
+  int _jobNextPage = 1;
+  bool _serviceHasMore = true;
+  bool _jobHasMore = true;
   String? _serviceErrorMessage;
   String? _jobErrorMessage;
   final Set<String> _selectedServiceIds = <String>{};
@@ -58,6 +72,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   @override
   void dispose() {
+    _serviceRefreshController.dispose();
+    _jobRefreshController.dispose();
     _tabController
       ..removeListener(_handleTabChanged)
       ..dispose();
@@ -112,63 +128,174 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   }
 
   /// 加载收藏签证套餐列表，成功后用于详情跳转与取消收藏。
-  Future<void> _loadCollectedPackages() async {
+  Future<bool> _loadCollectedPackages({bool refresh = false}) async {
+    final int page = refresh ? 1 : _serviceNextPage;
+    if (_isServiceLoading || (!refresh && !_serviceHasMore)) {
+      return false;
+    }
     setState(() {
       _isServiceLoading = true;
-      _serviceErrorMessage = null;
+      if (refresh) {
+        _serviceErrorMessage = null;
+      }
     });
 
     try {
       final response = await ref
           .read(collectionServiceProvider)
-          .listCollectedPackages(page: 1, pageSize: 50);
+          .listCollectedPackages(page: page, pageSize: _pageSize);
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isServiceLoading = false;
-        _serviceItems = response.list;
+        _serviceItems = refresh
+            ? response.list
+            : <collection_models.VisaPackageVO>[
+                ..._serviceItems,
+                ...response.list,
+              ];
+        _serviceNextPage = response.pagination.page + 1;
+        _serviceHasMore = response.pagination.hasNext;
         _serviceErrorMessage = null;
       });
+      return true;
     } catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isServiceLoading = false;
         _serviceErrorMessage = _resolveServiceErrorMessage(error);
       });
+      return false;
     }
   }
 
   /// 加载收藏岗位列表，成功后用于详情跳转与投递。
-  Future<void> _loadCollectedJobs() async {
+  Future<bool> _loadCollectedJobs({bool refresh = false}) async {
+    final int page = refresh ? 1 : _jobNextPage;
+    if (_isJobLoading || (!refresh && !_jobHasMore)) {
+      return false;
+    }
     setState(() {
       _isJobLoading = true;
-      _jobErrorMessage = null;
+      if (refresh) {
+        _jobErrorMessage = null;
+      }
     });
 
     try {
       final response = await ref
           .read(collectionServiceProvider)
-          .listCollectedJobs(page: 1, pageSize: 50);
+          .listCollectedJobs(page: page, pageSize: _pageSize);
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isJobLoading = false;
-        _jobItems = response.list;
+        _jobItems = refresh
+            ? response.list
+            : <collection_models.JobListVO>[..._jobItems, ...response.list];
+        _jobNextPage = response.pagination.page + 1;
+        _jobHasMore = response.pagination.hasNext;
         _jobErrorMessage = null;
       });
+      return true;
     } catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isJobLoading = false;
         _jobErrorMessage = _resolveJobErrorMessage(error);
       });
+      return false;
     }
+  }
+
+  Future<void> _onServiceRefresh() async {
+    final bool success = await _loadCollectedPackages(refresh: true);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _serviceRefreshController.finishRefresh();
+      _serviceRefreshController.resetFooter();
+      return;
+    }
+    _serviceRefreshController.finishRefresh(IndicatorResult.fail);
+    if (_serviceErrorMessage != null &&
+        _serviceErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_serviceErrorMessage!);
+    }
+  }
+
+  Future<void> _onServiceLoadMore() async {
+    final bool success = await _loadCollectedPackages();
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _serviceRefreshController.finishLoad(
+        _serviceHasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+      return;
+    }
+    _serviceRefreshController.finishLoad(IndicatorResult.fail);
+    if (_serviceErrorMessage != null &&
+        _serviceErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_serviceErrorMessage!);
+    }
+  }
+
+  Future<void> _onJobRefresh() async {
+    final bool success = await _loadCollectedJobs(refresh: true);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _jobRefreshController.finishRefresh();
+      _jobRefreshController.resetFooter();
+      return;
+    }
+    _jobRefreshController.finishRefresh(IndicatorResult.fail);
+    if (_jobErrorMessage != null && _jobErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_jobErrorMessage!);
+    }
+  }
+
+  Future<void> _onJobLoadMore() async {
+    final bool success = await _loadCollectedJobs();
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _jobRefreshController.finishLoad(
+        _jobHasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+      return;
+    }
+    _jobRefreshController.finishLoad(IndicatorResult.fail);
+    if (_jobErrorMessage != null && _jobErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_jobErrorMessage!);
+    }
+  }
+
+  Widget _buildScrollableState({
+    required BuildContext context,
+    required Widget child,
+  }) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        96,
+        24,
+        MediaQuery.paddingOf(context).bottom + (_isManaging ? 104 : 24),
+      ),
+      children: <Widget>[Center(child: child)],
+    );
   }
 
   /// 统一提取收藏岗位列表的错误文案。
@@ -389,8 +516,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       if (previous == next) {
         return;
       }
-      _loadCollectedPackages();
-      _loadCollectedJobs();
+      _loadCollectedPackages(refresh: true);
+      _loadCollectedJobs(refresh: true);
     });
 
     return Scaffold(
@@ -490,51 +617,87 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   /// 根据收藏岗位加载状态切换列表、空态和错误态。
   Widget _buildJobTab() {
+    final Widget child;
     if (_isJobLoading && _jobItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_jobErrorMessage != null && _jobItems.isEmpty) {
-      return _FavoriteJobsErrorState(
-        message: _jobErrorMessage!,
-        onRetry: _loadCollectedJobs,
+      child = _buildScrollableState(
+        context: context,
+        child: const CircularProgressIndicator(),
+      );
+    } else if (_jobErrorMessage != null && _jobItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: _FavoriteJobsErrorState(
+          message: _jobErrorMessage!,
+          onRetry: _onJobRefresh,
+        ),
+      );
+    } else if (_jobItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: const _FavoriteJobsEmptyState(),
+      );
+    } else {
+      child = _FavoriteJobList(
+        items: _jobItems,
+        isManaging: _isManaging,
+        selectedIds: _selectedJobIds,
+        mapAssetPath: _mapAsset,
+        onItemSelectionToggle: _toggleJobSelection,
+        applyingJobIds: _submittingJobIds,
+        appliedJobIds: _appliedJobIds,
+        onApplyTap: _handleApplyJob,
+        onDeleteItem: _deleteJobItem,
       );
     }
-    if (_jobItems.isEmpty) {
-      return const _FavoriteJobsEmptyState();
-    }
-    return _FavoriteJobList(
-      items: _jobItems,
-      isManaging: _isManaging,
-      selectedIds: _selectedJobIds,
-      mapAssetPath: _mapAsset,
-      onItemSelectionToggle: _toggleJobSelection,
-      applyingJobIds: _submittingJobIds,
-      appliedJobIds: _appliedJobIds,
-      onApplyTap: _handleApplyJob,
-      onDeleteItem: _deleteJobItem,
+    return EasyRefresh(
+      controller: _jobRefreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _onJobRefresh,
+      onLoad: _jobHasMore && _jobItems.isNotEmpty ? _onJobLoadMore : null,
+      child: child,
     );
   }
 
   /// 根据收藏签证加载状态切换列表、空态和错误态。
   Widget _buildServiceTab() {
+    final Widget child;
     if (_isServiceLoading && _serviceItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_serviceErrorMessage != null && _serviceItems.isEmpty) {
-      return _FavoriteServicesErrorState(
-        message: _serviceErrorMessage!,
-        onRetry: _loadCollectedPackages,
+      child = _buildScrollableState(
+        context: context,
+        child: const CircularProgressIndicator(),
+      );
+    } else if (_serviceErrorMessage != null && _serviceItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: _FavoriteServicesErrorState(
+          message: _serviceErrorMessage!,
+          onRetry: _onServiceRefresh,
+        ),
+      );
+    } else if (_serviceItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: const _FavoriteServicesEmptyState(),
+      );
+    } else {
+      child = _FavoriteServiceList(
+        items: _serviceItems,
+        isManaging: _isManaging,
+        selectedIds: _selectedServiceIds,
+        onItemSelectionToggle: _toggleServiceSelection,
+        onDeleteItem: _deleteServiceItem,
       );
     }
-    if (_serviceItems.isEmpty) {
-      return const _FavoriteServicesEmptyState();
-    }
-    return _FavoriteServiceList(
-      items: _serviceItems,
-      isManaging: _isManaging,
-      selectedIds: _selectedServiceIds,
-      onItemSelectionToggle: _toggleServiceSelection,
-      onDeleteItem: _deleteServiceItem,
+    return EasyRefresh(
+      controller: _serviceRefreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _onServiceRefresh,
+      onLoad: _serviceHasMore && _serviceItems.isNotEmpty
+          ? _onServiceLoadMore
+          : null,
+      child: child,
     );
   }
 }
@@ -559,6 +722,7 @@ class _FavoriteServiceList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(12, 12, 12, isManaging ? 104 : 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -603,6 +767,7 @@ class _FavoriteJobList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(12, 12, 12, isManaging ? 104 : 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -1004,7 +1169,6 @@ extension on collection_models.JobListVO {
       company: employer.name,
       location: parts.join('·'),
       showApplyButton: true,
-      isCollected: true,
       previewImageAssetPath: mapAssetPath,
     );
   }
