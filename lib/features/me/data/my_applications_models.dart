@@ -53,7 +53,7 @@ class MyApplicationItem {
   });
 
   final int applicationId;
-  final int employerId;
+  final int? employerId;
   final MyApplicationStatus status;
   final String updatedText;
   final String title;

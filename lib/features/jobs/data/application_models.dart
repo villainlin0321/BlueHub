@@ -155,13 +155,13 @@ class EmployerSimpleVO {
     required this.logoUrl,
   });
 
-  final int employerId;
+  final int? employerId;
   final String name;
   final String logoUrl;
 
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: readInt(json, 'employerId'),
+      employerId: _readNullableInt(json['employerId']),
       name: readString(json, 'name'),
       logoUrl: readString(json, 'logoUrl'),
     );
@@ -169,7 +169,7 @@ class EmployerSimpleVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'employerId': employerId,
+      if (employerId != null) 'employerId': employerId,
       'name': name,
       'logoUrl': logoUrl,
     };
@@ -274,6 +274,19 @@ String? _readNullableString(dynamic value) {
   }
   if (value is num || value is bool) {
     return value.toString();
+  }
+  return null;
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
   }
   return null;
 }

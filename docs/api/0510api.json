@@ -90,6 +90,10 @@
       "description": "热门套餐、最新岗位、角色统计"
     },
     {
+      "name": "投诉模块",
+      "description": "用户投诉企业或签证服务商"
+    },
+    {
       "name": "雇主模块",
       "description": "雇主企业信息管理"
     },
@@ -4113,6 +4117,78 @@
         }
       }
     },
+    "/complaints": {
+      "post": {
+        "tags": [
+          "投诉模块"
+        ],
+        "summary": "提交投诉",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "createComplaint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplaintBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultLong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/collections": {
       "post": {
         "tags": [
@@ -7543,6 +7619,166 @@
         }
       }
     },
+    "/complaints/{complaintId}": {
+      "get": {
+        "tags": [
+          "投诉模块"
+        ],
+        "summary": "查看投诉详情（仅本人可查）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "getComplaintDetail",
+        "parameters": [
+          {
+            "name": "complaintId",
+            "in": "path",
+            "description": "投诉 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultComplaintVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/complaints/mine": {
+      "get": {
+        "tags": [
+          "投诉模块"
+        ],
+        "summary": "查看本人投诉列表",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listMyComplaints",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultComplaintVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/collections/visa-packages": {
       "get": {
         "tags": [
@@ -8383,6 +8619,14 @@
             "type": "integer",
             "format": "int32",
             "description": "排序序号"
+          },
+          "exampleFileIds": {
+            "type": "array",
+            "description": "示例文件 ID 列表",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         },
         "required": [
@@ -10043,6 +10287,80 @@
           }
         }
       },
+      "CreateComplaintBO": {
+        "type": "object",
+        "description": "提交投诉请求",
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "description": "投诉对象类型：employer / visa_provider",
+            "minLength": 1
+          },
+          "targetId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "投诉对象 profile_id"
+          },
+          "title": {
+            "type": "string",
+            "description": "投诉标题（最多200字）",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "content": {
+            "type": "string",
+            "description": "投诉内容",
+            "minLength": 1
+          },
+          "attachmentFileIds": {
+            "type": "array",
+            "description": "附件文件 ID 列表（可选）",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "required": [
+          "content",
+          "targetId",
+          "targetType",
+          "title"
+        ]
+      },
+      "AppResultLong": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
       "CollectionBO": {
         "type": "object",
         "description": "添加/取消收藏请求",
@@ -10110,41 +10428,9 @@
           }
         }
       },
-      "LoginVO": {
+      "LoginUserSimpleVO": {
         "type": "object",
-        "description": "登录响应",
-        "properties": {
-          "accessToken": {
-            "type": "string",
-            "description": "访问令牌"
-          },
-          "refreshToken": {
-            "type": "string",
-            "description": "刷新令牌"
-          },
-          "expiresIn": {
-            "type": "integer",
-            "format": "int64",
-            "description": "令牌有效期（秒）",
-            "example": 7200
-          },
-          "isNewUser": {
-            "type": "boolean",
-            "description": "是否首次注册"
-          },
-          "needSelectRole": {
-            "type": "boolean",
-            "description": "是否需要选择角色"
-          },
-          "user": {
-            "$ref": "#/components/schemas/UserSimpleVO",
-            "description": "用户基本信息"
-          }
-        }
-      },
-      "UserSimpleVO": {
-        "type": "object",
-        "description": "用户简要信息",
+        "description": "登录响应中的用户简要信息",
         "properties": {
           "userId": {
             "type": "integer",
@@ -10174,6 +10460,38 @@
           "email": {
             "type": "string",
             "description": "邮箱"
+          }
+        }
+      },
+      "LoginVO": {
+        "type": "object",
+        "description": "登录响应",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "访问令牌"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64",
+            "description": "令牌有效期（秒）",
+            "example": 7200
+          },
+          "isNewUser": {
+            "type": "boolean",
+            "description": "是否首次注册"
+          },
+          "needSelectRole": {
+            "type": "boolean",
+            "description": "是否需要选择角色"
+          },
+          "user": {
+            "$ref": "#/components/schemas/LoginUserSimpleVO",
+            "description": "用户基本信息"
           }
         }
       },
@@ -10631,7 +10949,7 @@
             "description": "评价ID"
           },
           "user": {
-            "$ref": "#/components/schemas/UserSimpleVO",
+            "$ref": "#/components/schemas/ReviewUserSimpleVO",
             "description": "用户简要信息"
           },
           "rating": {
@@ -10658,6 +10976,20 @@
           "isExpanded": {
             "type": "boolean",
             "description": "是否展开"
+          }
+        }
+      },
+      "ReviewUserSimpleVO": {
+        "type": "object",
+        "description": "评价列表中的用户简要信息",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "description": "昵称"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "头像URL"
           }
         }
       },
@@ -10725,6 +11057,31 @@
             "type": "string",
             "description": "请求追踪ID",
             "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PackageMaterialVO": {
+        "type": "object",
+        "description": "套餐所需材料（区别于订单已上传材料 VisaOrderVO.MaterialVO）",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "材料名称"
+          },
+          "description": {
+            "type": "string",
+            "description": "材料描述"
+          },
+          "isRequired": {
+            "type": "boolean",
+            "description": "是否必需"
+          },
+          "exampleFileUrls": {
+            "type": "array",
+            "description": "示例文件访问 URL 列表（由 exampleFileIds 动态解析）",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -10865,7 +11222,7 @@
             "type": "array",
             "description": "所需材料列表",
             "items": {
-              "$ref": "#/components/schemas/MaterialVO"
+              "$ref": "#/components/schemas/PackageMaterialVO"
             }
           }
         }
@@ -10916,39 +11273,6 @@
             "type": "string",
             "description": "请求追踪ID",
             "example": "req_abc123xyz"
-          }
-        }
-      },
-      "QualificationDocVO": {
-        "type": "object",
-        "description": "资质证明文件项",
-        "properties": {
-          "docId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "文件记录 ID"
-          },
-          "docType": {
-            "type": "string",
-            "description": "文档类型：business_license / special_permit / id_card"
-          },
-          "docName": {
-            "type": "string",
-            "description": "文档名称"
-          },
-          "fileUrl": {
-            "type": "string",
-            "description": "文件访问 URL"
-          },
-          "fileId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "文件 ID（关联 es_uploaded_files）"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "上传时间"
           }
         }
       },
@@ -11057,8 +11381,41 @@
             "type": "array",
             "description": "已上传的资质证明文件列表",
             "items": {
-              "$ref": "#/components/schemas/QualificationDocVO"
+              "$ref": "#/components/schemas/VisaProviderQualificationDocVO"
             }
+          }
+        }
+      },
+      "VisaProviderQualificationDocVO": {
+        "type": "object",
+        "description": "签证服务商资质证明文件项",
+        "properties": {
+          "docId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件记录 ID"
+          },
+          "docType": {
+            "type": "string",
+            "description": "文档类型：business_license / special_permit / id_card"
+          },
+          "docName": {
+            "type": "string",
+            "description": "文档名称"
+          },
+          "fileUrl": {
+            "type": "string",
+            "description": "文件访问 URL"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件 ID（关联 es_uploaded_files）"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "上传时间"
           }
         }
       },
@@ -12496,8 +12853,9 @@
           }
         }
       },
-      "EmployerSimpleVO": {
+      "JobListEmployerSimpleVO": {
         "type": "object",
+        "description": "职位列表中的雇主简要信息",
         "properties": {
           "employerId": {
             "type": "integer",
@@ -12563,7 +12921,7 @@
             "description": "是否提供签证支持"
           },
           "employer": {
-            "$ref": "#/components/schemas/EmployerSimpleVO",
+            "$ref": "#/components/schemas/JobListEmployerSimpleVO",
             "description": "雇主信息"
           },
           "isUrgent": {
@@ -13156,8 +13514,41 @@
             "type": "array",
             "description": "已上传的资质证明文件列表",
             "items": {
-              "$ref": "#/components/schemas/QualificationDocVO"
+              "$ref": "#/components/schemas/EmployerQualificationDocVO"
             }
+          }
+        }
+      },
+      "EmployerQualificationDocVO": {
+        "type": "object",
+        "description": "雇主资质证明文件项",
+        "properties": {
+          "docId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件记录 ID"
+          },
+          "docType": {
+            "type": "string",
+            "description": "文档类型：business_license / special_permit / id_card"
+          },
+          "docName": {
+            "type": "string",
+            "description": "文档名称"
+          },
+          "fileUrl": {
+            "type": "string",
+            "description": "文件访问 URL"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件 ID（关联 es_uploaded_files）"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "上传时间"
           }
         }
       },
@@ -13445,6 +13836,144 @@
           }
         }
       },
+      "AppResultComplaintVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ComplaintVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "ComplaintVO": {
+        "type": "object",
+        "description": "投诉详情响应",
+        "properties": {
+          "complaintId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "投诉 ID"
+          },
+          "targetType": {
+            "type": "string",
+            "description": "投诉对象类型：employer / visa_provider"
+          },
+          "targetId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "投诉对象 profile_id"
+          },
+          "targetName": {
+            "type": "string",
+            "description": "被投诉方名称"
+          },
+          "title": {
+            "type": "string",
+            "description": "投诉标题"
+          },
+          "content": {
+            "type": "string",
+            "description": "投诉内容"
+          },
+          "attachmentUrls": {
+            "type": "array",
+            "description": "附件文件访问 URL 列表（由 attachmentFileIds 动态解析）",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "投诉状态：pending / processing / resolved / rejected"
+          },
+          "statusLabel": {
+            "type": "string",
+            "description": "状态中文标签：待处理 / 处理中 / 已解决 / 已驳回"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "AppResultPageResultComplaintVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultComplaintVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "PageResultComplaintVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/ComplaintVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
       "AppResultPageResultApplicationVO": {
         "type": "object",
         "description": "统一响应体",
@@ -13516,6 +14045,20 @@
           }
         }
       },
+      "ApplicationEmployerSimpleVO": {
+        "type": "object",
+        "description": "投递详情中的雇主简要信息",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "雇主名称"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Logo URL"
+          }
+        }
+      },
       "ApplicationVO": {
         "type": "object",
         "description": "应聘记录响应",
@@ -13539,7 +14082,7 @@
             "description": "关联岗位信息"
           },
           "employer": {
-            "$ref": "#/components/schemas/EmployerSimpleVO",
+            "$ref": "#/components/schemas/ApplicationEmployerSimpleVO",
             "description": "雇主信息"
           },
           "applicant": {

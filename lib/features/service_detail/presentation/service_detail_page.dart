@@ -26,6 +26,7 @@ import '../../visa/data/visa_package_providers.dart';
 import 'service_detail_bottom_sheets.dart';
 import 'service_detail_merchant_tab.dart';
 import 'service_detail_package_tab.dart';
+import 'service_detail_report_page.dart';
 import 'service_detail_review_tab.dart';
 
 class ServiceDetailPageArgs {
@@ -116,6 +117,23 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
             backgroundColor: Colors.white,
             bottomNavigationBar: _BottomActionBar(
               consultIconAsset: _consultIconAsset,
+              onReportTap: () {
+                if (provider == null || provider.providerId <= 0) {
+                  AppToast.show('服务详情.暂无商家信息'.tr());
+                  return;
+                }
+                context.push(
+                  RoutePaths.serviceDetailReport,
+                  extra: ServiceDetailReportPageArgs(
+                    targetType: 'visa_provider',
+                    targetId: provider.providerId,
+                    targetName: provider.name,
+                    initialTitle: provider.name.trim().isEmpty
+                        ? ''
+                        : '投诉 ${provider.name.trim()}',
+                  ),
+                );
+              },
               onConsultTap: () => _handleConsultTap(provider),
               onApplyTap: () => _showApplyBottomSheet(
                 serviceTitle: package.name,
@@ -457,22 +475,6 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       }
     }
 
-    final String type = material.fileType.trim().toLowerCase();
-    if (type.contains('png')) {
-      return '.png';
-    }
-    if (type.contains('jpeg') || type.contains('jpg')) {
-      return '.jpg';
-    }
-    if (type.contains('pdf')) {
-      return '.pdf';
-    }
-    if (type.contains('docx')) {
-      return '.docx';
-    }
-    if (type == 'doc' || type.contains('msword')) {
-      return '.doc';
-    }
     return '';
   }
 
@@ -543,9 +545,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       final OpenResult openResult = await OpenFilex.open(savePath);
       if (openResult.type != ResultType.done) {
         final String message = openResult.message.trim();
-        _showMessage(
-          message.isEmpty ? '服务详情.文件打开失败'.tr() : message,
-        );
+        _showMessage(message.isEmpty ? '服务详情.文件打开失败'.tr() : message);
       }
     } on DioException {
       if (!mounted) {
@@ -1040,11 +1040,13 @@ class _PinnedTopTabBarDelegate extends SliverPersistentHeaderDelegate {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.consultIconAsset,
+    required this.onReportTap,
     required this.onConsultTap,
     required this.onApplyTap,
   });
 
   final String consultIconAsset;
+  final VoidCallback onReportTap;
   final VoidCallback onConsultTap;
   final VoidCallback onApplyTap;
 
@@ -1058,7 +1060,10 @@ class _BottomActionBar extends StatelessWidget {
           case 1:
             return const SizedBox.shrink();
           case 2:
-            return _MerchantBottomActionBar(onConsultTap: onConsultTap);
+            return _MerchantBottomActionBar(
+              onReportTap: onReportTap,
+              onConsultTap: onConsultTap,
+            );
           case 0:
           default:
             return _PackageBottomActionBar(
@@ -1162,8 +1167,12 @@ class _PackageBottomActionBar extends StatelessWidget {
 }
 
 class _MerchantBottomActionBar extends StatelessWidget {
-  const _MerchantBottomActionBar({required this.onConsultTap});
+  const _MerchantBottomActionBar({
+    required this.onReportTap,
+    required this.onConsultTap,
+  });
 
+  final VoidCallback onReportTap;
   final VoidCallback onConsultTap;
 
   @override
@@ -1196,7 +1205,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
             Expanded(
               flex: 169,
               child: OutlinedButton(
-                onPressed: () => context.push(RoutePaths.serviceDetailReport),
+                onPressed: onReportTap,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
                   side: const BorderSide(color: Color(0xFFD9D9D9)),
@@ -1349,43 +1358,29 @@ extension on VisaPackageVO {
             status: _buildMaterialStatus(material),
             required: material.isRequired,
             description: material.description,
-            fileUrl: material.fileUrl,
-            fileType: material.fileType,
-            fileSize: material.fileSize,
-            uploadedAt: material.uploadedAt,
-            sortOrder: material.sortOrder,
+            exampleFileUrls: material.exampleFileUrls,
           ),
         )
         .toList(growable: false);
   }
 }
 
-/// 组装材料副标题，尽量从文件元信息拼出可读文案。
+/// 组装材料副标题，优先展示材料说明，其次回退为示例文件数量。
 String _buildMaterialSubtitle(MaterialVO material) {
   if (material.description.trim().isNotEmpty) {
     return material.description;
   }
-  final List<String> parts = <String>[
-    if (material.fileType.trim().isNotEmpty)
-      material.fileType.trim().toUpperCase(),
-    if (material.fileSize > 0) _formatFileSize(material.fileSize),
-    if (material.uploadedAt.trim().isNotEmpty)
-      _formatMaterialDate(material.uploadedAt),
-  ];
-  if (parts.isEmpty) {
-    return '服务详情.请按服务要求准备相关材料'.tr();
+  final int sampleCount = material.exampleFileUrls.length;
+  if (sampleCount > 0) {
+    return '已提供 $sampleCount 个示例文件';
   }
-  return parts.join(' · ');
+  return '服务详情.请按服务要求准备相关材料'.tr();
 }
 
-/// 组装材料状态文案，优先展示文件类型。
+/// 组装材料状态文案，优先展示必填/选填。
 String _buildMaterialStatus(MaterialVO material) {
   if (material.isRequired) {
     return '服务详情.必填'.tr();
-  }
-  final String fileType = material.fileType.trim();
-  if (fileType.isNotEmpty) {
-    return fileType.toUpperCase();
   }
   return material.fileUrl.trim().isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
 }
@@ -1432,29 +1427,4 @@ String _formatVisaTypeLabel(String visaType) {
     'study' => '服务详情.留学签'.tr(),
     _ => visaType.trim().isEmpty ? '服务详情.签证服务'.tr() : visaType.trim(),
   };
-}
-
-/// 格式化文件大小，优先展示为 KB/MB。
-String _formatFileSize(int bytes) {
-  if (bytes <= 0) {
-    return '服务详情.未知大小'.tr();
-  }
-  if (bytes >= 1024 * 1024) {
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
-  }
-  if (bytes >= 1024) {
-    return '${(bytes / 1024).toStringAsFixed(1)}KB';
-  }
-  return '${bytes}B';
-}
-
-/// 格式化材料时间，解析失败时回退原始值。
-String _formatMaterialDate(String raw) {
-  final DateTime? parsed = DateTime.tryParse(raw);
-  if (parsed == null) {
-    return raw;
-  }
-  final String month = parsed.month.toString().padLeft(2, '0');
-  final String day = parsed.day.toString().padLeft(2, '0');
-  return '${parsed.year}.$month.$day';
 }

@@ -30,11 +30,7 @@ class ServiceMaterialData {
     required this.status,
     required this.required,
     required this.description,
-    required this.fileUrl,
-    required this.fileType,
-    required this.fileSize,
-    required this.uploadedAt,
-    required this.sortOrder,
+    required this.exampleFileUrls,
   });
 
   final String title;
@@ -42,11 +38,10 @@ class ServiceMaterialData {
   final String status;
   final bool required;
   final String description;
-  final String fileUrl;
-  final String fileType;
-  final int fileSize;
-  final String uploadedAt;
-  final int sortOrder;
+  final List<String> exampleFileUrls;
+
+  String get fileUrl =>
+      exampleFileUrls.isEmpty ? '' : exampleFileUrls.first.trim();
 }
 
 class ServiceDetailPackageTab extends StatelessWidget {

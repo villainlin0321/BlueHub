@@ -513,15 +513,10 @@ String _resolveReviewUserName(ReviewItemVO review) {
   if (nickname.isNotEmpty) {
     return nickname;
   }
-  final String phone = review.user.phone.trim();
-  if (phone.isNotEmpty) {
-    return phone;
-  }
-  final String email = review.user.email.trim();
-  return email.isEmpty ? '服务详情.匿名用户'.tr() : email;
+  return '服务详情.匿名用户'.tr();
 }
 
-/// 提取评价头像占位字，优先取昵称首字，其次取手机号首字符。
+/// 提取评价头像占位字，优先取昵称首字，否则展示占位符。
 String _resolveReviewInitial(ReviewItemVO review) {
   final String userName = _resolveReviewUserName(review);
   return userName.isEmpty ? '?' : userName.characters.first;

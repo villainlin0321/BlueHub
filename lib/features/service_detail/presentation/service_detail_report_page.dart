@@ -1,46 +1,78 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../complaint/data/complaint_models.dart';
+import '../../complaint/data/complaint_providers.dart';
+import '../../complaint/presentation/complaint_detail_page.dart';
 import '../../files/data/file_models.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-class ServiceDetailReportPage extends StatefulWidget {
-  const ServiceDetailReportPage({super.key});
+class ServiceDetailReportPageArgs {
+  const ServiceDetailReportPageArgs({
+    required this.targetType,
+    required this.targetId,
+    required this.targetName,
+    this.initialTitle = '',
+  });
+
+  final String targetType;
+  final int targetId;
+  final String targetName;
+  final String initialTitle;
+}
+
+class ServiceDetailReportPage extends ConsumerStatefulWidget {
+  const ServiceDetailReportPage({super.key, required this.args});
+
+  final ServiceDetailReportPageArgs args;
 
   @override
-  State<ServiceDetailReportPage> createState() =>
+  ConsumerState<ServiceDetailReportPage> createState() =>
       _ServiceDetailReportPageState();
 }
 
-class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
+class _ServiceDetailReportPageState
+    extends ConsumerState<ServiceDetailReportPage> {
+  static const int _maxTitleLength = 200;
   static const int _maxContentLength = 500;
   static const int _maxAttachments = 9;
   static const String _uploadAsset =
       'assets/images/service_detail_report_upload.svg';
 
+  final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-  List<String> _attachmentUrls = const <String>[];
+  List<UploadedImageValue> _attachments = const <UploadedImageValue>[];
   bool _isUploadingImages = false;
+  bool _isSubmitting = false;
 
   bool get _canSubmit =>
       !_isUploadingImages &&
-      (_contentController.text.trim().isNotEmpty || _attachmentUrls.isNotEmpty);
+      !_isSubmitting &&
+      widget.args.targetId > 0 &&
+      _titleController.text.trim().isNotEmpty &&
+      _contentController.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _titleController.text = widget.args.initialTitle.trim();
+    _titleController.addListener(_handleContentChanged);
     _contentController.addListener(_handleContentChanged);
   }
 
   @override
   void dispose() {
+    _titleController
+      ..removeListener(_handleContentChanged)
+      ..dispose();
     _contentController
       ..removeListener(_handleContentChanged)
       ..dispose();
@@ -55,11 +87,44 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
     AppToast.show(message);
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (!_canSubmit) {
       return;
     }
-    _showMessage('服务详情.举报已提交'.tr());
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      final int complaintId = await ref
+          .read(complaintServiceProvider)
+          .createComplaint(
+            request: CreateComplaintBO(
+              targetType: widget.args.targetType,
+              targetId: widget.args.targetId,
+              title: _titleController.text.trim(),
+              content: _contentController.text.trim(),
+              attachmentFileIds: _attachments
+                  .map((UploadedImageValue item) => item.fileId)
+                  .toList(growable: false),
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      _showMessage('投诉已提交');
+      context.pushReplacement(
+        RoutePaths.complaintDetail,
+        extra: ComplaintDetailPageArgs(complaintId: complaintId),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error));
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   void _handleBack() {
@@ -114,6 +179,71 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
                 children: <Widget>[
                   Text(
                     '服务详情.举报内容'.tr(),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      widget.args.targetName.trim().isEmpty
+                          ? '未命名对象'
+                          : widget.args.targetName.trim(),
+                      style: const TextStyle(
+                        color: Color(0xFF262626),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '投诉标题',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: TextField(
+                      controller: _titleController,
+                      inputFormatters: <TextInputFormatter>[
+                        LengthLimitingTextInputFormatter(_maxTitleLength),
+                      ],
+                      decoration: const InputDecoration(
+                        hintText: '请输入投诉标题',
+                        border: InputBorder.none,
+                      ),
+                      style: const TextStyle(
+                        color: Color(0xFF262626),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '投诉内容',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
                       fontSize: 14,
@@ -182,7 +312,10 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
                     maxImages: _maxAttachments,
                     uploadAssetPath: _uploadAsset,
                     onChanged: (List<String> imageUrls) {
-                      _attachmentUrls = imageUrls;
+                      imageUrls;
+                    },
+                    onUploadedChanged: (List<UploadedImageValue> items) {
+                      _attachments = items;
                     },
                     onUploadingChanged: (bool isUploading) {
                       setState(() {
@@ -198,16 +331,30 @@ class _ServiceDetailReportPageState extends State<ServiceDetailReportPage> {
       ),
       bottomNavigationBar: _ReportSubmitBar(
         enabled: _canSubmit,
+        isSubmitting: _isSubmitting,
         onPressed: _handleSubmit,
       ),
     );
   }
+
+  String _resolveErrorMessage(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message.isEmpty ? '投诉提交失败' : message;
+  }
 }
 
 class _ReportSubmitBar extends StatelessWidget {
-  const _ReportSubmitBar({required this.enabled, required this.onPressed});
+  const _ReportSubmitBar({
+    required this.enabled,
+    required this.isSubmitting,
+    required this.onPressed,
+  });
 
   final bool enabled;
+  final bool isSubmitting;
   final VoidCallback onPressed;
 
   @override
@@ -239,7 +386,7 @@ class _ReportSubmitBar extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                '通用.提交'.tr(),
+                isSubmitting ? '提交中...' : '通用.提交'.tr(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,

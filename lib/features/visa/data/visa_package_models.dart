@@ -58,12 +58,14 @@ class MaterialBO {
     required this.description,
     required this.isRequired,
     required this.sortOrder,
+    this.exampleFileIds = const <int>[],
   });
 
   final String name;
   final String description;
   final bool isRequired;
   final int sortOrder;
+  final List<int> exampleFileIds;
 
   factory MaterialBO.fromJson(JsonMap json) {
     return MaterialBO(
@@ -71,6 +73,7 @@ class MaterialBO {
       description: readString(json, 'description'),
       isRequired: readBool(json, 'isRequired'),
       sortOrder: readInt(json, 'sortOrder'),
+      exampleFileIds: readIntList(json, 'exampleFileIds'),
     );
   }
 
@@ -80,6 +83,7 @@ class MaterialBO {
       'description': description,
       'isRequired': isRequired,
       'sortOrder': sortOrder,
+      if (exampleFileIds.isNotEmpty) 'exampleFileIds': exampleFileIds,
     };
   }
 }
@@ -94,6 +98,7 @@ class MaterialVO {
     required this.fileType,
     required this.fileSize,
     required this.uploadedAt,
+    this.exampleFileUrls = const <String>[],
   });
 
   final String materialName;
@@ -104,6 +109,7 @@ class MaterialVO {
   final String fileType;
   final int fileSize;
   final String uploadedAt;
+  final List<String> exampleFileUrls;
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
@@ -119,6 +125,7 @@ class MaterialVO {
       fileType: readString(json, 'fileType'),
       fileSize: readInt(json, 'fileSize'),
       uploadedAt: readString(json, 'uploadedAt'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
@@ -133,6 +140,7 @@ class MaterialVO {
       'fileType': fileType,
       'fileSize': fileSize,
       'uploadedAt': uploadedAt,
+      'exampleFileUrls': exampleFileUrls,
     };
   }
 }

@@ -23,6 +23,7 @@ class UploadImageGrid extends ConsumerStatefulWidget {
     this.sourceSheetTitle,
     this.uploadErrorMessage,
     this.onUploadingChanged,
+    this.onUploadedChanged,
   });
 
   final FileScene scene;
@@ -34,6 +35,7 @@ class UploadImageGrid extends ConsumerStatefulWidget {
   final String? sourceSheetTitle;
   final String? uploadErrorMessage;
   final ValueChanged<bool>? onUploadingChanged;
+  final ValueChanged<List<UploadedImageValue>>? onUploadedChanged;
 
   @override
   ConsumerState<UploadImageGrid> createState() => _UploadImageGridState();
@@ -137,7 +139,11 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
         }
         _replaceEntry(
           entryId,
-          entry.copyWith(uploadedUrl: uploaded.fileUrl, isUploading: false),
+          entry.copyWith(
+            uploadedUrl: uploaded.fileUrl,
+            uploadedFileId: uploaded.fileId,
+            isUploading: false,
+          ),
         );
         _notifyChanged();
       } catch (error) {
@@ -196,12 +202,26 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
   }
 
   void _notifyChanged() {
+    final List<UploadedImageValue> uploadedValues = _entries
+        .where(
+          (_UploadImageEntry entry) =>
+              entry.uploadedUrl != null && entry.uploadedFileId != null,
+        )
+        .map(
+          (_UploadImageEntry entry) => UploadedImageValue(
+            fileId: entry.uploadedFileId!,
+            fileUrl: entry.uploadedUrl!,
+            previewPath: entry.previewPath,
+          ),
+        )
+        .toList(growable: false);
     widget.onChanged(
       _entries
-          .map((entry) => entry.uploadedUrl)
+          .map((_UploadImageEntry entry) => entry.uploadedUrl)
           .whereType<String>()
           .toList(growable: false),
     );
+    widget.onUploadedChanged?.call(uploadedValues);
   }
 
   void _showMessage(String message) {
@@ -288,6 +308,7 @@ class _UploadImageEntry {
     required this.id,
     required this.previewPath,
     this.uploadedUrl,
+    this.uploadedFileId,
     this.localPath,
     this.isUploading = false,
   });
@@ -295,12 +316,14 @@ class _UploadImageEntry {
   final String id;
   final String previewPath;
   final String? uploadedUrl;
+  final int? uploadedFileId;
   final String? localPath;
   final bool isUploading;
 
   _UploadImageEntry copyWith({
     String? previewPath,
     Object? uploadedUrl = _sentinel,
+    Object? uploadedFileId = _sentinel,
     Object? localPath = _sentinel,
     bool? isUploading,
   }) {
@@ -310,6 +333,9 @@ class _UploadImageEntry {
       uploadedUrl: identical(uploadedUrl, _sentinel)
           ? this.uploadedUrl
           : uploadedUrl as String?,
+      uploadedFileId: identical(uploadedFileId, _sentinel)
+          ? this.uploadedFileId
+          : uploadedFileId as int?,
       localPath: identical(localPath, _sentinel)
           ? this.localPath
           : localPath as String?,
@@ -318,6 +344,18 @@ class _UploadImageEntry {
   }
 
   static const Object _sentinel = Object();
+}
+
+class UploadedImageValue {
+  const UploadedImageValue({
+    required this.fileId,
+    required this.fileUrl,
+    required this.previewPath,
+  });
+
+  final int fileId;
+  final String fileUrl;
+  final String previewPath;
 }
 
 class _UploadImageTile extends StatelessWidget {
