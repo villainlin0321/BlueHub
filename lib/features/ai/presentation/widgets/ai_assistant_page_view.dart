@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -82,6 +84,7 @@ class AiAssistantPageView extends StatelessWidget {
                   scrollController: scrollController,
                   messages: state.messages,
                   isHistoryLoading: state.isHistoryLoading,
+                  isSending: state.isSending,
                   applyingJobIds: state.applyingJobIds,
                   appliedJobIds: state.appliedJobIds,
                   onApplyJob: onApplyJob,
@@ -116,6 +119,7 @@ class _ChatMessageList extends StatelessWidget {
     required this.scrollController,
     required this.messages,
     required this.isHistoryLoading,
+    required this.isSending,
     required this.applyingJobIds,
     required this.appliedJobIds,
     required this.onApplyJob,
@@ -125,6 +129,7 @@ class _ChatMessageList extends StatelessWidget {
   final ScrollController scrollController;
   final List<AiAssistantMessageVM> messages;
   final bool isHistoryLoading;
+  final bool isSending;
   final Set<int> applyingJobIds;
   final Set<int> appliedJobIds;
   final Future<void> Function(JobListVO job) onApplyJob;
@@ -161,6 +166,7 @@ class _ChatMessageList extends StatelessWidget {
             '${message.isEmbeddedJobLoading}',
           ),
           message: message,
+          isSending: isSending,
           applyingJobIds: applyingJobIds,
           appliedJobIds: appliedJobIds,
           onApplyJob: onApplyJob,
@@ -175,6 +181,7 @@ class _ChatMessageItem extends StatelessWidget {
   const _ChatMessageItem({
     super.key,
     required this.message,
+    required this.isSending,
     required this.applyingJobIds,
     required this.appliedJobIds,
     required this.onApplyJob,
@@ -182,6 +189,7 @@ class _ChatMessageItem extends StatelessWidget {
   });
 
   final AiAssistantMessageVM message;
+  final bool isSending;
   final Set<int> applyingJobIds;
   final Set<int> appliedJobIds;
   final Future<void> Function(JobListVO job) onApplyJob;
@@ -192,6 +200,7 @@ class _ChatMessageItem extends StatelessWidget {
     if (message.role == AiAssistantChatRole.assistant) {
       return _AssistantMessageItem(
         message: message,
+        isSending: isSending,
         applyingJobIds: applyingJobIds,
         appliedJobIds: appliedJobIds,
         onApplyJob: onApplyJob,
@@ -205,6 +214,7 @@ class _ChatMessageItem extends StatelessWidget {
 class _AssistantMessageItem extends StatelessWidget {
   const _AssistantMessageItem({
     required this.message,
+    required this.isSending,
     required this.applyingJobIds,
     required this.appliedJobIds,
     required this.onApplyJob,
@@ -212,6 +222,7 @@ class _AssistantMessageItem extends StatelessWidget {
   });
 
   final AiAssistantMessageVM message;
+  final bool isSending;
   final Set<int> applyingJobIds;
   final Set<int> appliedJobIds;
   final Future<void> Function(JobListVO job) onApplyJob;
@@ -220,8 +231,10 @@ class _AssistantMessageItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<JobListVO> embeddedJobs = message.embeddedJobs;
-    const double bubbleStartInset = 18;
-    const double bubbleTopInset = 20;
+    final bool showPendingPlaceholder =
+        isSending && message.text.trim().isEmpty;
+    const double bubbleStartInset = 0;
+    const double bubbleTopInset = 38;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Stack(
@@ -235,29 +248,32 @@ class _AssistantMessageItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.sizeOf(context).width * 0.7,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                if (showPendingPlaceholder)
+                  const _AssistantPendingIndicator()
+                else
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.7,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      message.text,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        message.text,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.4,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 if (message.footer != null &&
                     message.footer!.trim().isNotEmpty) ...<Widget>[
                   const SizedBox(height: 6),
@@ -309,12 +325,90 @@ class _AssistantMessageItem extends StatelessWidget {
             top: 0,
             child: Image.asset(
               'assets/images/icon_ai_bot.png',
-              width: 34,
-              height: 34,
+              width: 48,
+              height: 48,
               fit: BoxFit.contain,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AssistantPendingIndicator extends StatefulWidget {
+  const _AssistantPendingIndicator();
+
+  @override
+  State<_AssistantPendingIndicator> createState() =>
+      _AssistantPendingIndicatorState();
+}
+
+class _AssistantPendingIndicatorState
+    extends State<_AssistantPendingIndicator> {
+  static const List<List<double>> _frames = <List<double>>[
+    <double>[0.4, 0.7, 1],
+    <double>[1, 0.4, 0.7],
+    <double>[0.7, 1, 0.4],
+  ];
+  static const Duration _frameDuration = Duration(milliseconds: 360);
+  static const Color _dotColor = Color(0xFF096DD9);
+
+  Timer? _timer;
+  int _frameIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_frameDuration, (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _frameIndex = (_frameIndex + 1) % _frames.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<double> opacities = _frames[_frameIndex];
+    return Container(
+      width: 60,
+      height: 54,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List<Widget>.generate(opacities.length, (int index) {
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index == opacities.length - 1 ? 0 : 7,
+            ),
+            child: AnimatedOpacity(
+              opacity: opacities[index],
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: _dotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

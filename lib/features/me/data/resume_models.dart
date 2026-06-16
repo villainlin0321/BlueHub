@@ -528,6 +528,39 @@ int _readIntByKeys(JsonMap json, List<String> keys, {int fallback = 0}) {
   return fallback;
 }
 
+String _normalizeYearMonthValue(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  final RegExpMatch? match = RegExp(r'^(\d{4})[.-](\d{1,2})$').firstMatch(trimmed);
+  if (match == null) {
+    return trimmed.replaceAll('.', '-');
+  }
+  final String year = match.group(1)!;
+  final String month = match.group(2)!.padLeft(2, '0');
+  return '$year-$month';
+}
+
+String? _normalizeOptionalYearMonthValue(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return _normalizeYearMonthValue(trimmed);
+}
+
+String _normalizeUrlValue(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  return trimmed.replaceAll('`', '').trim();
+}
+
 bool _readBoolByKeys(JsonMap json, List<String> keys, {bool fallback = false}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
@@ -709,8 +742,8 @@ class SkillCertificateBO {
       'name': name,
       'level': level,
       'issuer': issuer,
-      'issuedDate': issuedDate,
-      'imageUrl': imageUrl,
+      'issuedDate': _normalizeYearMonthValue(issuedDate),
+      'imageUrl': _normalizeUrlValue(imageUrl),
       'sortOrder': sortOrder,
     };
   }
@@ -774,7 +807,7 @@ class WorkExperienceBO {
   final String department;
   final String position;
   final String startDate;
-  final String endDate;
+  final String? endDate;
   final bool isCurrent;
   final String description;
   final int sortOrder;
@@ -786,7 +819,7 @@ class WorkExperienceBO {
       department: readString(json, 'department'),
       position: readString(json, 'position'),
       startDate: readString(json, 'startDate'),
-      endDate: readString(json, 'endDate'),
+      endDate: _readNullableStringByKeys(json, const ['endDate']),
       isCurrent: readBool(json, 'isCurrent'),
       description: readString(json, 'description'),
       sortOrder: readInt(json, 'sortOrder'),
@@ -799,8 +832,8 @@ class WorkExperienceBO {
       'company': company,
       'department': department,
       'position': position,
-      'startDate': startDate,
-      'endDate': endDate,
+      'startDate': _normalizeYearMonthValue(startDate),
+      'endDate': isCurrent ? null : _normalizeOptionalYearMonthValue(endDate),
       'isCurrent': isCurrent,
       'description': description,
       'sortOrder': sortOrder,

@@ -17,6 +17,7 @@ import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../../shared/widgets/app_text_input_dialog.dart';
 import '../data/resume_models.dart';
 import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
@@ -604,7 +605,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3
+                  ),
                   Text(
                     '我的.完善简历提示'.tr(),
                     style: TextStyle(
@@ -680,7 +682,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           Column(
             children: <Widget>[
               GestureDetector(
-                onTap: _showComingSoon,
+                onTap: _openMyInfoPage,
                 child: SvgPicture.asset(
                   _ResumeEditorAssets.basicInfoEdit,
                   width: 20,
@@ -737,6 +739,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          onIconTap: () => _removeJobTag(item),
                         ),
                       )
                       .toList(),
@@ -748,6 +751,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             backgroundColor: const Color(0xFFF5F7FA),
             textColor: const Color(0xFF171A1D),
             borderColor: const Color(0xFFD9D9D9),
+            onTap: _openCustomExpectedJobDialog,
           ),
           const SizedBox(height: 24),
           _buildLabeledRow(
@@ -770,6 +774,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          onIconTap: () => _removeCountryTag(item),
                         ),
                       )
                       .toList(),
@@ -930,6 +935,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                           iconPath: _ResumeEditorAssets.languageTagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          onIconTap: () => _removeLanguageTag(item),
                         ),
                       )
                       .toList(),
@@ -1507,8 +1513,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     required Color backgroundColor,
     required Color textColor,
     Color? borderColor,
+    VoidCallback? onTap,
+    VoidCallback? onIconTap,
   }) {
-    return Container(
+    final Widget content = Container(
       height: 34,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -1534,10 +1542,25 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ),
           if (iconPath != _ResumeEditorAssets.tagAdd) ...<Widget>[
             const SizedBox(width: 8),
-            SvgPicture.asset(iconPath, width: 8, height: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onIconTap,
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: SvgPicture.asset(iconPath, width: 8, height: 8),
+              ),
+            ),
           ],
         ],
       ),
+    );
+    if (onTap == null) {
+      return content;
+    }
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: content,
     );
   }
 
@@ -1716,9 +1739,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     );
   }
 
-  /// 统一处理尚未接真实交互的点击反馈。
-  void _showComingSoon() {
-    AppToast.show('我的.编辑功能开发中'.tr());
+  /// 打开我的信息页，并在返回后刷新基础信息展示。
+  Future<void> _openMyInfoPage() async {
+    await context.push<bool>(RoutePaths.myInfo);
   }
 
   /// 提交保存接口，并在成功后把结果回传上一页用于刷新。
@@ -2042,6 +2065,29 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
   }
 
+  Future<void> _openCustomExpectedJobDialog() async {
+    final String? result = await showAppTextInputDialog(
+      context: context,
+      title: '期望职位',
+      hintText: '期望职位',
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+    final String value = result.trim();
+    if (value.isEmpty) {
+      AppToast.show('期望职位不能为空');
+      return;
+    }
+    if (_jobTags.contains(value)) {
+      AppToast.show('期望职位已存在');
+      return;
+    }
+    setState(() {
+      _jobTags.add(value);
+    });
+  }
+
   List<SelectableSheetOption<String>> _buildPositionSheetOptions(
     List<PositionCategoryVO> categories,
   ) {
@@ -2089,6 +2135,24 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _countryTags
         ..clear()
         ..addAll(result.map((CountryVO item) => item.countryCode.trim()));
+    });
+  }
+
+  void _removeJobTag(String value) {
+    setState(() {
+      _jobTags.remove(value);
+    });
+  }
+
+  void _removeCountryTag(String value) {
+    setState(() {
+      _countryTags.remove(value);
+    });
+  }
+
+  void _removeLanguageTag(_ResumeLanguage value) {
+    setState(() {
+      _languages.remove(value);
     });
   }
 
@@ -2431,16 +2495,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   }
 
   List<int>? _tryParseYearMonth(String value) {
-    final RegExpMatch? match = RegExp(r'^(\d{4})\.(\d{2})$').firstMatch(value);
+    final RegExpMatch? match = RegExp(
+      r'^(\d{4})[.-](\d{1,2})$',
+    ).firstMatch(value.trim());
     if (match == null) {
       return null;
     }
     return <int>[int.parse(match.group(1)!), int.parse(match.group(2)!)];
   }
 
-  /// 将年月组装成接口兼容的 `yyyy.MM` 字符串。
+  /// 将年月组装成接口文档要求的 `yyyy-MM` 字符串。
   String _formatYearMonth(int year, int month) {
-    return '${year.toString().padLeft(4, '0')}.${month.toString().padLeft(2, '0')}';
+    return '${year.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}';
   }
 }
 

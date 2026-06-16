@@ -5,14 +5,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/widgets/app_text_input_dialog.dart';
 import '../../data/ai_models.dart';
 import '../../data/ai_providers.dart';
 
 const String _kAiHistoryEditIconAsset = 'assets/images/ai_history_edit.svg';
 const String _kAiHistoryDeleteIconAsset = 'assets/images/ai_history_delete.svg';
-const String _kAiHistoryRenameClearIconAsset =
-    'assets/images/ai_history_rename_clear.svg';
-
 Future<void> showAiSessionHistorySheet(
   BuildContext context, {
   required int? currentSessionId,
@@ -95,16 +93,11 @@ class _AiSessionHistorySheetState
     if (_isBusy) {
       return;
     }
-    final String? nextTitle = await showAppDialog<String>(
+    final String? nextTitle = await showAppTextInputDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return _AiSessionRenameDialog(
-          initialValue: session.title.trim(),
-          onCancel: () => Navigator.of(dialogContext).pop(),
-          onComplete: (String value) =>
-              Navigator.of(dialogContext).pop(value.trim()),
-        );
-      },
+      title: 'AI.编辑对话名称'.tr(),
+      initialValue: session.title.trim(),
+      hintText: 'AI.AI助手'.tr(),
     );
     if (nextTitle == null ||
         nextTitle.isEmpty ||
@@ -275,213 +268,6 @@ class _AiSessionHistorySheetState
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _AiSessionRenameDialog extends StatefulWidget {
-  const _AiSessionRenameDialog({
-    required this.initialValue,
-    required this.onCancel,
-    required this.onComplete,
-  });
-
-  final String initialValue;
-  final VoidCallback onCancel;
-  final ValueChanged<String> onComplete;
-
-  @override
-  State<_AiSessionRenameDialog> createState() => _AiSessionRenameDialogState();
-}
-
-class _AiSessionRenameDialogState extends State<_AiSessionRenameDialog> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 296),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                'AI.编辑对话名称'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _AiSessionRenameInput(
-                controller: _controller,
-                onSubmitted: (_) => widget.onComplete(_controller.text),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _AiSessionRenameButton(
-                      label: '通用.取消'.tr(),
-                      isPrimary: false,
-                      onTap: widget.onCancel,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _AiSessionRenameButton(
-                      label: '通用.完成'.tr(),
-                      isPrimary: true,
-                      onTap: () => widget.onComplete(_controller.text),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AiSessionRenameInput extends StatelessWidget {
-  const _AiSessionRenameInput({
-    required this.controller,
-    required this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (BuildContext context, TextEditingValue value, Widget? child) {
-        final bool canClear = value.text.isNotEmpty;
-        return Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: onSubmitted,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
-                  decoration: InputDecoration(
-                    isCollapsed: true,
-                    border: InputBorder.none,
-                    hintText: 'AI.AI助手'.tr(),
-                    hintStyle: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IgnorePointer(
-                ignoring: !canClear,
-                child: Opacity(
-                  opacity: canClear ? 1 : 0,
-                  child: GestureDetector(
-                    onTap: () => controller.clear(),
-                    behavior: HitTestBehavior.opaque,
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: SvgPicture.asset(
-                        _kAiHistoryRenameClearIconAsset,
-                        width: 16,
-                        height: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _AiSessionRenameButton extends StatelessWidget {
-  const _AiSessionRenameButton({
-    required this.label,
-    required this.isPrimary,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isPrimary;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: Material(
-        color: isPrimary ? const Color(0xFF096DD9) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-          side: BorderSide(
-            color: isPrimary
-                ? const Color(0xFF096DD9)
-                : const Color(0xFFD9D9D9),
-          ),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isPrimary ? Colors.white : const Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
