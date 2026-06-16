@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../home/data/home_providers.dart';
@@ -209,7 +210,11 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                             },
                             onFavoriteTap: _toggleCollection,
                             onShareTap: () {
-                              AppToast.show('服务详情.分享开发中'.tr());
+                              _shareServiceDetail(
+                                package: package,
+                                provider: provider,
+                                selectedPackage: selectedPackage,
+                              );
                             },
                           );
                         },
@@ -403,6 +408,53 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   /// 统一展示签证详情页的提示消息。
   void _showMessage(String message) {
     AppToast.show(message);
+  }
+
+  Future<void> _shareServiceDetail({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final String title = package.name.trim().isEmpty
+        ? '服务详情.标题'.tr()
+        : package.name.trim();
+    final List<String> lines = <String>[
+      title,
+      if (provider != null && provider.name.trim().isNotEmpty)
+        '服务详情.分享商家'.tr(
+          namedArgs: <String, String>{'merchant': provider.name.trim()},
+        ),
+      if (selectedPackage != null && selectedPackage.title.trim().isNotEmpty)
+        '服务详情.分享套餐'.tr(
+          namedArgs: <String, String>{'package': selectedPackage.title.trim()},
+        ),
+      if (package.estimatedDays > 0)
+        '服务详情.预计办理天数'.tr(
+          namedArgs: <String, String>{'days': package.estimatedDays.toString()},
+        ),
+      if (provider != null && provider.brief.trim().isNotEmpty)
+        provider.brief.trim(),
+    ];
+
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          title: title,
+          subject: title,
+          text: lines.join('\n'),
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('服务详情.分享失败'.tr());
+    }
   }
 
   Future<Directory> _resolveDownloadDirectory() async {
