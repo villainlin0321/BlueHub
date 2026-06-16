@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/ui/app_colors.dart';
+import '../../../../utils/upload_picker_utils.dart';
 import '../../../config/data/config_models.dart';
 import '../../application/edit_visa_package/edit_visa_package_state.dart';
 import '../edit_visa_package_styles.dart';
@@ -12,7 +15,6 @@ import 'edit_visa_package_form_widgets.dart';
 class EditVisaPackagePageView extends StatelessWidget {
   const EditVisaPackagePageView({
     super.key,
-    required this.topPadding,
     required this.bottomPadding,
     required this.serviceNameController,
     required this.durationController,
@@ -35,10 +37,11 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onShowMaterialsChanged,
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
+    required this.onExampleUploadTap,
+    required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
 
-  final double topPadding;
   final double bottomPadding;
   final TextEditingController serviceNameController;
   final TextEditingController durationController;
@@ -62,12 +65,21 @@ class EditVisaPackagePageView extends StatelessWidget {
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
+  final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
+  onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: EditVisaPackageStyles.pageBackground,
+      appBar: EditVisaPackageHeader(
+        onBackTap: onBackTap,
+        onSaveDraftTap: onSaveDraftTap,
+        isSavingDraft: state.isSavingDraft,
+        actionsEnabled: !state.isSavingDraft && !state.isPublishing,
+      ),
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double contentWidth = math.min(
@@ -82,51 +94,39 @@ class EditVisaPackagePageView extends StatelessWidget {
                   child: Center(
                     child: SizedBox(
                       width: contentWidth,
-                      child: Column(
-                        children: <Widget>[
-                          EditVisaPackageHeader(
-                            topPadding: topPadding,
-                            onBackTap: onBackTap,
-                            onSaveDraftTap: onSaveDraftTap,
-                            isSavingDraft: state.isSavingDraft,
-                            actionsEnabled:
-                                !state.isSavingDraft && !state.isPublishing,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                            child: Column(
-                              children: <Widget>[
-                                _BasicInfoSection(
-                                  serviceNameController: serviceNameController,
-                                  durationController: durationController,
-                                  selectedCountryLabel: selectedCountryLabel,
-                                  selectedVisaTypeLabel: selectedVisaTypeLabel,
-                                  onCountryTap: onCountryTap,
-                                  onVisaTypeTap: onVisaTypeTap,
-                                ),
-                                const SizedBox(height: 12),
-                                _TierConfigSection(
-                                  state: state,
-                                  tiers: tiers,
-                                  onRetryLoadServiceTags:
-                                      onRetryLoadServiceTags,
-                                  onAddTier: onAddTier,
-                                  onDeleteTier: onDeleteTier,
-                                  onAddMaterial: onAddMaterial,
-                                  onAddCustomService: onAddCustomService,
-                                  onRemoveCustomService: onRemoveCustomService,
-                                  onToggleServiceTag: onToggleServiceTag,
-                                  onShowMaterialsChanged:
-                                      onShowMaterialsChanged,
-                                  onMaterialRequiredChanged:
-                                      onMaterialRequiredChanged,
-                                  onMaterialTypeTap: onMaterialTypeTap,
-                                  tagLabelBuilder: tagLabelBuilder,
-                                ),
-                              ],
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                        child: Column(
+                          children: <Widget>[
+                            _BasicInfoSection(
+                              serviceNameController: serviceNameController,
+                              durationController: durationController,
+                              selectedCountryLabel: selectedCountryLabel,
+                              selectedVisaTypeLabel: selectedVisaTypeLabel,
+                              onCountryTap: onCountryTap,
+                              onVisaTypeTap: onVisaTypeTap,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            _TierConfigSection(
+                              state: state,
+                              tiers: tiers,
+                              onRetryLoadServiceTags: onRetryLoadServiceTags,
+                              onAddTier: onAddTier,
+                              onDeleteTier: onDeleteTier,
+                              onAddMaterial: onAddMaterial,
+                              onAddCustomService: onAddCustomService,
+                              onRemoveCustomService: onRemoveCustomService,
+                              onToggleServiceTag: onToggleServiceTag,
+                              onShowMaterialsChanged: onShowMaterialsChanged,
+                              onMaterialRequiredChanged:
+                                  onMaterialRequiredChanged,
+                              onMaterialTypeTap: onMaterialTypeTap,
+                              onExampleUploadTap: onExampleUploadTap,
+                              onDeleteExampleFile: onDeleteExampleFile,
+                              tagLabelBuilder: tagLabelBuilder,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -233,6 +233,8 @@ class _TierConfigSection extends StatelessWidget {
     required this.onShowMaterialsChanged,
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
+    required this.onExampleUploadTap,
+    required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
 
@@ -249,6 +251,9 @@ class _TierConfigSection extends StatelessWidget {
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
+  final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
+  onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
   @override
@@ -280,6 +285,8 @@ class _TierConfigSection extends StatelessWidget {
                 onShowMaterialsChanged: onShowMaterialsChanged,
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
                 onMaterialTypeTap: onMaterialTypeTap,
+                onExampleUploadTap: onExampleUploadTap,
+                onDeleteExampleFile: onDeleteExampleFile,
                 tagLabelBuilder: tagLabelBuilder,
               ),
             );
@@ -309,6 +316,8 @@ class _TierCard extends StatelessWidget {
     required this.onShowMaterialsChanged,
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
+    required this.onExampleUploadTap,
+    required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
 
@@ -325,6 +334,9 @@ class _TierCard extends StatelessWidget {
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
+  final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
+  onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
 
   @override
@@ -412,6 +424,8 @@ class _TierCard extends StatelessWidget {
                 material: entry.value,
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
                 onMaterialTypeTap: onMaterialTypeTap,
+                onExampleUploadTap: onExampleUploadTap,
+                onDeleteExampleFile: onDeleteExampleFile,
               ),
             );
           }),
@@ -433,6 +447,8 @@ class _MaterialCard extends StatelessWidget {
     required this.material,
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
+    required this.onExampleUploadTap,
+    required this.onDeleteExampleFile,
   });
 
   final int tierIndex;
@@ -441,6 +457,9 @@ class _MaterialCard extends StatelessWidget {
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
+  final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
+  onDeleteExampleFile;
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +506,314 @@ class _MaterialCard extends StatelessWidget {
           controller: material.descriptionController,
           hintText: '签证编辑.请输入材料描述'.tr(),
         ),
+        const SizedBox(height: 12),
+        if (material.existingExampleFileIds.isNotEmpty) ...<Widget>[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '已关联 ${material.existingExampleFileIds.length} 个历史事例文件',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF8C8C8C),
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        _ExampleUploadContent(
+          files: material.exampleFiles,
+          onAddTap: () => onExampleUploadTap(tierIndex, materialIndex),
+          onDeleteFile: (PickedUploadFile file) =>
+              onDeleteExampleFile(tierIndex, materialIndex, file),
+        ),
       ],
+    );
+  }
+}
+
+class _ExampleUploadContent extends StatelessWidget {
+  const _ExampleUploadContent({
+    required this.files,
+    required this.onAddTap,
+    required this.onDeleteFile,
+  });
+
+  final List<PickedUploadFile> files;
+  final VoidCallback onAddTap;
+  final ValueChanged<PickedUploadFile> onDeleteFile;
+
+  @override
+  Widget build(BuildContext context) {
+    if (files.isEmpty) {
+      return _UploadPlaceholder(onTap: onAddTap, label: '上传事例');
+    }
+
+    return Column(
+      children: <Widget>[
+        ...List<Widget>.generate(files.length, (int index) {
+          final PickedUploadFile file = files[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _UploadFileCard(
+              file: file,
+              onRemoveTap: () => onDeleteFile(file),
+            ),
+          );
+        }),
+        _UploadPlaceholder(onTap: onAddTap, label: '上传事例'),
+      ],
+    );
+  }
+}
+
+class _UploadFileCard extends StatelessWidget {
+  const _UploadFileCard({required this.file, this.onRemoveTap});
+
+  final PickedUploadFile file;
+  final VoidCallback? onRemoveTap;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (file.state) {
+      case UploadItemState.uploading:
+        return _UploadFileCardFrame(
+          child: Row(
+            children: <Widget>[
+              _UploadFileLeading(file: file),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      file.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF333333),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: file.progress,
+                        minHeight: 4,
+                        backgroundColor: Colors.white,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF096DD9),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      case UploadItemState.success:
+        return _UploadFileCardFrame(
+          child: Row(
+            children: <Widget>[
+              _UploadFileLeading(file: file),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      file.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF333333),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    if (file.sizeLabel != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        file.sizeLabel!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF8C8C8C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          height: 18 / 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
+            ],
+          ),
+        );
+      case UploadItemState.failure:
+        return _UploadFileCardFrame(
+          child: Row(
+            children: <Widget>[
+              _UploadFileLeading(file: file),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      file.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFD4380D),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      (file.errorMessage ?? '上传失败请重试'.tr()).trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFFD4380D),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 18 / 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
+            ],
+          ),
+        );
+    }
+  }
+}
+
+class _UploadFileCardFrame extends StatelessWidget {
+  const _UploadFileCardFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _UploadFileLeading extends StatelessWidget {
+  const _UploadFileLeading({required this.file});
+
+  final PickedUploadFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    final String filePath = file.path.toLowerCase();
+    final String fileName = file.name.toLowerCase();
+    final bool isPdfFile =
+        filePath.endsWith('.pdf') || fileName.endsWith('.pdf');
+
+    return Image.asset(
+      isPdfFile ? 'assets/images/icon_pdf.png' : 'assets/images/icon_file.png',
+      width: 32,
+      height: 32,
+      fit: BoxFit.cover,
+    );
+  }
+}
+
+class _RemoveUploadButton extends StatelessWidget {
+  const _RemoveUploadButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 20,
+        height: 20,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF707788),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: SvgPicture.asset(
+          'assets/images/order_upload_remove.svg',
+          width: 8,
+          height: 8,
+        ),
+      ),
+    );
+  }
+}
+
+class _UploadPlaceholder extends StatelessWidget {
+  const _UploadPlaceholder({required this.onTap, required this.label});
+
+  final VoidCallback onTap;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Opacity(
+            opacity: 0.6,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SvgPicture.asset(
+                  'assets/images/order_upload_add_inline.svg',
+                  width: 16,
+                  height: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF171A1D),
+                    fontWeight: FontWeight.w400,
+                    fontSize: 14,
+                    height: 20 / 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

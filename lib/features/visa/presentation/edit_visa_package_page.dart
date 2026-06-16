@@ -1,12 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/ui/app_colors.dart';
+import '../../../utils/upload_picker_utils.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
+import '../../files/data/file_models.dart';
+import '../../files/data/file_providers.dart';
 import '../../me/data/dictionary_providers.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../shared/network/services/config_service.dart';
@@ -76,6 +82,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       titleController: TextEditingController(),
       descriptionController: TextEditingController(),
       isRequired: false,
+      exampleFiles: <PickedUploadFile>[],
+      existingExampleFileIds: const <int>[],
     );
   }
 
@@ -86,6 +94,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       titleController: TextEditingController(text: material.name),
       descriptionController: TextEditingController(text: material.description),
       isRequired: material.isRequired,
+      exampleFiles: <PickedUploadFile>[],
+      existingExampleFileIds: List<int>.from(material.exampleFileIds),
     );
   }
 
@@ -369,6 +379,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
                       name: material.titleController.text,
                       description: material.descriptionController.text,
                       isRequired: material.isRequired,
+                      exampleFileIds: _collectExampleFileIds(material),
                     );
                   })
                   .toList(growable: false),
@@ -378,12 +389,50 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     );
   }
 
+  List<int> _collectExampleFileIds(EditVisaPackageMaterialViewDraft material) {
+    final Set<int> fileIds = <int>{
+      ...material.existingExampleFileIds,
+      ...material.exampleFiles
+          .where(
+            (PickedUploadFile file) => file.state == UploadItemState.success,
+          )
+          .map((PickedUploadFile file) => file.uploadedFileId)
+          .whereType<int>(),
+    };
+    return fileIds.toList(growable: false);
+  }
+
+  bool _ensureExampleFilesUploaded() {
+    for (int tierIndex = 0; tierIndex < _tiers.length; tierIndex++) {
+      final EditVisaPackageTierViewDraft tier = _tiers[tierIndex];
+      for (
+        int materialIndex = 0;
+        materialIndex < tier.materials.length;
+        materialIndex++
+      ) {
+        final EditVisaPackageMaterialViewDraft material =
+            tier.materials[materialIndex];
+        final bool hasPendingFiles = material.exampleFiles.any(
+          (PickedUploadFile file) => file.state != UploadItemState.success,
+        );
+        if (hasPendingFiles) {
+          _showToast('请等待第${tierIndex + 1}档材料${materialIndex + 1}的事例上传完成后再提交');
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   void _showToast(String message) {
     AppToast.show(message);
   }
 
   Future<void> _handleSaveDraft() async {
     FocusScope.of(context).unfocus();
+    if (!_ensureExampleFilesUploaded()) {
+      return;
+    }
     await ref
         .read(editVisaPackageControllerProvider.notifier)
         .saveDraft(_buildFormDraft(), packageId: widget.packageId);
@@ -391,6 +440,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
 
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
+    if (!_ensureExampleFilesUploaded()) {
+      return;
+    }
     await ref
         .read(editVisaPackageControllerProvider.notifier)
         .publish(_buildFormDraft(), packageId: widget.packageId);
@@ -472,6 +524,231 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     setState(() {
       _tiers[tierIndex].materials[materialIndex].isRequired = value;
     });
+  }
+
+  Future<void> _openExampleUploadSheet(int tierIndex, int materialIndex) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (BuildContext sheetContext) {
+        return _VisaPackageUploadTypeBottomSheet(
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCameraTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickExampleFilesFromCamera(tierIndex, materialIndex);
+          },
+          onGalleryTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickExampleFilesFromGallery(tierIndex, materialIndex);
+          },
+          onFileTap: () async {
+            Navigator.of(sheetContext).pop();
+            await _pickExampleFilesFromFiles(tierIndex, materialIndex);
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _pickExampleFilesFromCamera(
+    int tierIndex,
+    int materialIndex,
+  ) async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromCamera();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendExampleFiles(tierIndex, materialIndex, pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showToast('打开相机失败'.tr());
+    }
+  }
+
+  Future<void> _pickExampleFilesFromGallery(
+    int tierIndex,
+    int materialIndex,
+  ) async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromGallery();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      await _appendExampleFiles(tierIndex, materialIndex, pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showToast('打开相册失败'.tr());
+    }
+  }
+
+  Future<void> _pickExampleFilesFromFiles(
+    int tierIndex,
+    int materialIndex,
+  ) async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromFiles();
+      if (pickedFiles.isEmpty) {
+        _showToast('未能读取所选文件'.tr());
+        return;
+      }
+      await _appendExampleFiles(tierIndex, materialIndex, pickedFiles);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showToast('选择文件失败'.tr());
+    }
+  }
+
+  Future<void> _appendExampleFiles(
+    int tierIndex,
+    int materialIndex,
+    List<PickedUploadFile> files,
+  ) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final List<PickedUploadFile> pendingFiles = files
+        .map(
+          (PickedUploadFile file) => file.copyWith(
+            state: UploadItemState.uploading,
+            progress: 0,
+            errorMessage: null,
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        )
+        .toList(growable: false);
+    setState(() {
+      _tiers[tierIndex].materials[materialIndex].exampleFiles =
+          <PickedUploadFile>[
+            ..._tiers[tierIndex].materials[materialIndex].exampleFiles,
+            ...pendingFiles,
+          ];
+    });
+    await _uploadPickedExampleFiles(tierIndex, materialIndex, pendingFiles);
+  }
+
+  Future<void> _uploadPickedExampleFiles(
+    int tierIndex,
+    int materialIndex,
+    List<PickedUploadFile> files,
+  ) async {
+    if (files.isEmpty) {
+      return;
+    }
+    final fileService = ref.read(fileServiceProvider);
+    for (final PickedUploadFile file in files) {
+      try {
+        final uploaded = await fileService.uploadFile(
+          path: file.path,
+          scene: FileScene.material,
+          errorMessage: '签证材料事例上传失败',
+          onSendProgress: (int sent, int total) {
+            if (!mounted || total <= 0) {
+              return;
+            }
+            final double progress = (sent / total).clamp(0, 1).toDouble();
+            _updateExampleFile(
+              tierIndex,
+              materialIndex,
+              file.id,
+              (PickedUploadFile current) => current.copyWith(
+                state: UploadItemState.uploading,
+                progress: progress,
+                errorMessage: null,
+              ),
+            );
+          },
+        );
+        if (!mounted) {
+          return;
+        }
+        _updateExampleFile(
+          tierIndex,
+          materialIndex,
+          file.id,
+          (PickedUploadFile current) => current.copyWith(
+            state: UploadItemState.success,
+            progress: 1,
+            errorMessage: null,
+            uploadedFileId: uploaded.fileId,
+            uploadedFileUrl: uploaded.fileUrl,
+          ),
+        );
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+        _updateExampleFile(
+          tierIndex,
+          materialIndex,
+          file.id,
+          (PickedUploadFile current) => current.copyWith(
+            state: UploadItemState.failure,
+            progress: 0,
+            errorMessage: _resolveUploadErrorMessage(
+              error,
+              fallback: '上传失败请重试'.tr(),
+            ),
+            uploadedFileId: null,
+            uploadedFileUrl: null,
+          ),
+        );
+      }
+    }
+  }
+
+  void _updateExampleFile(
+    int tierIndex,
+    int materialIndex,
+    String fileId,
+    PickedUploadFile Function(PickedUploadFile current) update,
+  ) {
+    setState(() {
+      _tiers[tierIndex].materials[materialIndex].exampleFiles =
+          _tiers[tierIndex].materials[materialIndex].exampleFiles
+              .map((PickedUploadFile item) {
+                if (item.id != fileId) {
+                  return item;
+                }
+                return update(item);
+              })
+              .toList(growable: false);
+    });
+  }
+
+  void _handleDeleteExampleFile(
+    int tierIndex,
+    int materialIndex,
+    PickedUploadFile file,
+  ) {
+    setState(() {
+      _tiers[tierIndex].materials[materialIndex].exampleFiles =
+          _tiers[tierIndex].materials[materialIndex].exampleFiles
+              .where((PickedUploadFile item) => item.id != file.id)
+              .toList();
+    });
+  }
+
+  String _resolveUploadErrorMessage(Object error, {required String fallback}) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      final String normalized = message.substring('Exception: '.length).trim();
+      return normalized.isEmpty ? fallback : normalized;
+    }
+    return message.isEmpty ? fallback : message;
   }
 
   @override
@@ -567,7 +844,6 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     }
 
     return EditVisaPackagePageView(
-      topPadding: mediaQuery.padding.top,
       bottomPadding: mediaQuery.padding.bottom,
       serviceNameController: _serviceNameController,
       durationController: _durationController,
@@ -595,7 +871,166 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       onShowMaterialsChanged: _handleShowMaterialsChanged,
       onMaterialRequiredChanged: _handleMaterialRequiredChanged,
       onMaterialTypeTap: _openMaterialTypeSheet,
+      onExampleUploadTap: _openExampleUploadSheet,
+      onDeleteExampleFile: _handleDeleteExampleFile,
       tagLabelBuilder: controller.tagLabel,
+    );
+  }
+}
+
+class _VisaPackageUploadTypeBottomSheet extends StatelessWidget {
+  const _VisaPackageUploadTypeBottomSheet({
+    required this.onClose,
+    required this.onCameraTap,
+    required this.onGalleryTap,
+    required this.onFileTap,
+  });
+
+  final VoidCallback onClose;
+  final VoidCallback onCameraTap;
+  final VoidCallback onGalleryTap;
+  final VoidCallback onFileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final double bottomSafeArea = MediaQuery.paddingOf(context).bottom;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(bottom: bottomSafeArea),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SizedBox(
+                  height: 52,
+                  child: Row(
+                    children: <Widget>[
+                      const SizedBox(width: 40),
+                      const Spacer(),
+                      Text(
+                        '上传事例',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: const Color(0xFF171A1D),
+                              fontWeight: FontWeight.w400,
+                              fontSize: 17,
+                              height: 25 / 17,
+                            ),
+                      ),
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: InkWell(
+                          onTap: onClose,
+                          borderRadius: BorderRadius.circular(10),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/images/order_upload_sheet_close.svg',
+                                width: 14,
+                                height: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(36.75, 24, 36.75, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      _VisaPackageUploadTypeAction(
+                        label: '拍照上传'.tr(),
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_camera.svg',
+                        onTap: onCameraTap,
+                      ),
+                      _VisaPackageUploadTypeAction(
+                        label: '本地相册'.tr(),
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_gallery.svg',
+                        onTap: onGalleryTap,
+                      ),
+                      _VisaPackageUploadTypeAction(
+                        label: '本地文件'.tr(),
+                        iconAssetPath:
+                            'assets/images/order_upload_sheet_file.svg',
+                        onTap: onFileTap,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisaPackageUploadTypeAction extends StatelessWidget {
+  const _VisaPackageUploadTypeAction({
+    required this.label,
+    required this.iconAssetPath,
+    required this.onTap,
+  });
+
+  final String label;
+  final String iconAssetPath;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: <Widget>[
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(iconAssetPath, width: 24, height: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF595959),
+                fontWeight: FontWeight.w400,
+                fontSize: 13,
+                height: 18 / 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

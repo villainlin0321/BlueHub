@@ -1404,10 +1404,10 @@ extension on VisaPackageVO {
   List<ServiceMaterialData> toServiceMaterials() {
     return requiredMaterials
         .map(
-          (MaterialVO material) => ServiceMaterialData(
-            title: material.materialName.trim().isEmpty
+          (PackageMaterialVO material) => ServiceMaterialData(
+            title: material.name.trim().isEmpty
                 ? '服务详情.所需材料'.tr()
-                : material.materialName,
+                : material.name,
             subtitle: _buildMaterialSubtitle(material),
             status: _buildMaterialStatus(material),
             required: material.isRequired,
@@ -1420,7 +1420,7 @@ extension on VisaPackageVO {
 }
 
 /// 组装材料副标题，优先展示材料说明，其次回退为示例文件数量。
-String _buildMaterialSubtitle(MaterialVO material) {
+String _buildMaterialSubtitle(PackageMaterialVO material) {
   if (material.description.trim().isNotEmpty) {
     return material.description;
   }
@@ -1432,11 +1432,11 @@ String _buildMaterialSubtitle(MaterialVO material) {
 }
 
 /// 组装材料状态文案，优先展示必填/选填。
-String _buildMaterialStatus(MaterialVO material) {
+String _buildMaterialStatus(PackageMaterialVO material) {
   if (material.isRequired) {
     return '服务详情.必填'.tr();
   }
-  return material.fileUrl.trim().isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
+  return material.exampleFileUrls.isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
 }
 
 /// 格式化详情页价格，统一复用币种前缀转换规则。

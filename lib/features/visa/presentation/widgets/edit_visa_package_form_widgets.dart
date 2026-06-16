@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../config/data/config_models.dart';
+import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
 
@@ -45,11 +46,15 @@ class EditVisaPackageMaterialViewDraft {
     required this.titleController,
     required this.descriptionController,
     required this.isRequired,
+    this.exampleFiles = const <PickedUploadFile>[],
+    this.existingExampleFileIds = const <int>[],
   });
 
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   bool isRequired;
+  List<PickedUploadFile> exampleFiles;
+  List<int> existingExampleFileIds;
 
   void dispose() {
     titleController.dispose();
@@ -137,117 +142,66 @@ class _EditVisaPackageCustomServiceDialogState
   }
 }
 
-class EditVisaPackageHeader extends StatelessWidget {
+class EditVisaPackageHeader extends StatelessWidget
+    implements PreferredSizeWidget {
   const EditVisaPackageHeader({
     super.key,
-    required this.topPadding,
     required this.onBackTap,
     required this.onSaveDraftTap,
     required this.isSavingDraft,
     required this.actionsEnabled,
   });
 
-  final double topPadding;
   final VoidCallback onBackTap;
   final VoidCallback onSaveDraftTap;
   final bool isSavingDraft;
   final bool actionsEnabled;
 
   @override
-  Widget build(BuildContext context) {
-    final double statusBarHeight = topPadding > 0 ? topPadding : 44;
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-    return Container(
-      color: EditVisaPackageStyles.surface,
-      child: Column(
-        children: <Widget>[
-          SizedBox(
-            height: statusBarHeight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 20, 0),
-              child: Row(
-                children: <Widget>[
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        '10:41',
-                        style: TextStyle(
-                          color: EditVisaPackageStyles.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 19 / 16,
-                          fontFamilyFallback: <String>[
-                            'SF Pro Text',
-                            'PingFang SC',
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/images/visa_package_status_icons.svg',
-                    width: 71,
-                    height: 12,
-                  ),
-                ],
-              ),
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: EditVisaPackageStyles.surface,
+      surfaceTintColor: EditVisaPackageStyles.surface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: true,
+      automaticallyImplyLeading: false,
+      leadingWidth: 44,
+      leading: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onBackTap,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/images/visa_package_back.svg',
+              width: 12,
+              height: 24,
             ),
           ),
-          SizedBox(
-            height: 44,
-            child: Stack(
-              children: <Widget>[
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onBackTap,
-                      child: SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/images/visa_package_back.svg',
-                            width: 12,
-                            height: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    '签证编辑.编辑签证套餐'.tr(),
-                    style: EditVisaPackageStyles.headerTitle,
-                  ),
-                ),
-                Positioned(
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: TextButton(
-                    onPressed: actionsEnabled ? onSaveDraftTap : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: EditVisaPackageStyles.textPrimary,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(44, 44),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      isSavingDraft ? '签证编辑.保存中'.tr() : '签证编辑.存草稿'.tr(),
-                      style: EditVisaPackageStyles.headerAction,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
+      title: Text('签证编辑.编辑签证套餐'.tr(), style: EditVisaPackageStyles.headerTitle),
+      actions: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: TextButton(
+            onPressed: actionsEnabled ? onSaveDraftTap : null,
+            style: TextButton.styleFrom(
+              foregroundColor: EditVisaPackageStyles.textPrimary,
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              isSavingDraft ? '签证编辑.保存中'.tr() : '签证编辑.存草稿'.tr(),
+              style: EditVisaPackageStyles.headerAction,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

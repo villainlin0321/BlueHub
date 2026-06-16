@@ -88,58 +88,33 @@ class MaterialBO {
   }
 }
 
-class MaterialVO {
-  const MaterialVO({
-    required this.materialName,
+class PackageMaterialVO {
+  const PackageMaterialVO({
+    required this.name,
     required this.description,
     required this.isRequired,
-    required this.sortOrder,
-    required this.fileUrl,
-    required this.fileType,
-    required this.fileSize,
-    required this.uploadedAt,
     this.exampleFileUrls = const <String>[],
   });
 
-  final String materialName;
+  final String name;
   final String description;
   final bool isRequired;
-  final int sortOrder;
-  final String fileUrl;
-  final String fileType;
-  final int fileSize;
-  final String uploadedAt;
   final List<String> exampleFileUrls;
 
-  factory MaterialVO.fromJson(JsonMap json) {
-    return MaterialVO(
-      materialName: readString(
-        json,
-        'materialName',
-        fallback: readString(json, 'name'),
-      ),
+  factory PackageMaterialVO.fromJson(JsonMap json) {
+    return PackageMaterialVO(
+      name: readString(json, 'name'),
       description: readString(json, 'description'),
       isRequired: readBool(json, 'isRequired'),
-      sortOrder: readInt(json, 'sortOrder'),
-      fileUrl: readString(json, 'fileUrl'),
-      fileType: readString(json, 'fileType'),
-      fileSize: readInt(json, 'fileSize'),
-      uploadedAt: readString(json, 'uploadedAt'),
       exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'materialName': materialName,
-      'name': materialName,
+      'name': name,
       'description': description,
       'isRequired': isRequired,
-      'sortOrder': sortOrder,
-      'fileUrl': fileUrl,
-      'fileType': fileType,
-      'fileSize': fileSize,
-      'uploadedAt': uploadedAt,
       'exampleFileUrls': exampleFileUrls,
     };
   }
@@ -227,6 +202,7 @@ class TierVO {
   final int soldCount;
 
   factory TierVO.fromJson(JsonMap json) {
+    // 文档只定义了基础档位字段；其余字段保留兼容，避免编辑页读取旧返回时崩溃。
     return TierVO(
       tierId: readInt(json, 'tierId'),
       name: readString(json, 'name'),
@@ -298,9 +274,10 @@ class VisaPackageVO {
   final String currency;
   final List<String> coverImages;
   final List<TierVO> tiers;
-  final List<MaterialVO> requiredMaterials;
+  final List<PackageMaterialVO> requiredMaterials;
 
-  /// 安全解析签证套餐详情，兼容后端返回币种和材料字段的类型波动。
+  /// 按接口文档解析签证套餐详情：
+  /// `requiredMaterials` 为 `PackageMaterialVO[]`，`tiers` 仅保证基础档位字段。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
       providerId: readInt(json, 'providerId'),
@@ -312,10 +289,10 @@ class VisaPackageVO {
       currency: readString(json, 'currency', fallback: 'CNY'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
-      requiredMaterials: readModelList<MaterialVO>(
+      requiredMaterials: readModelList<PackageMaterialVO>(
         json,
         'requiredMaterials',
-        MaterialVO.fromJson,
+        PackageMaterialVO.fromJson,
       ),
     );
   }

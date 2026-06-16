@@ -19,11 +19,13 @@ class EditVisaPackageMaterialDraftInput {
     required this.name,
     required this.description,
     required this.isRequired,
+    required this.exampleFileIds,
   });
 
   final String name;
   final String description;
   final bool isRequired;
+  final List<int> exampleFileIds;
 }
 
 class EditVisaPackageTierDraftInput {
@@ -284,6 +286,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
               description: materialDescription,
               isRequired: material.isRequired,
               sortOrder: materials.length + 1,
+              exampleFileIds: material.exampleFileIds,
             ),
           );
         }
