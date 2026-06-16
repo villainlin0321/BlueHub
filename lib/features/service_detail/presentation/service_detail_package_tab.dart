@@ -1,7 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
+import '../../../shared/network/services/config_service.dart';
+import '../../../shared/localization/app_locales.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 
@@ -44,7 +49,7 @@ class ServiceMaterialData {
       exampleFileUrls.isEmpty ? '' : exampleFileUrls.first.trim();
 }
 
-class ServiceDetailPackageTab extends StatelessWidget {
+class ServiceDetailPackageTab extends ConsumerWidget {
   const ServiceDetailPackageTab({
     super.key,
     required this.packages,
@@ -63,7 +68,16 @@ class ServiceDetailPackageTab extends StatelessWidget {
   final Set<String> downloadingFileUrls;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<TagItemVO>> serviceTagsAsync = ref.watch(
+      tagDictionaryProvider(TagCategory.service),
+    );
+    final List<TagItemVO> serviceTags =
+        serviceTagsAsync.asData?.value ?? const <TagItemVO>[];
+    final Map<String, String> serviceTagLabelMap = <String, String>{
+      for (final TagItemVO item in serviceTags)
+        item.tagCode.trim(): _resolveTagLabel(context, item),
+    };
     return ListView(
       key: const PageStorageKey<String>('service-detail-package-tab'),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
@@ -76,6 +90,7 @@ class ServiceDetailPackageTab extends StatelessWidget {
             ),
             child: _PackageOptionCard(
               data: data,
+              serviceTagLabelMap: serviceTagLabelMap,
               selected: index == selectedPackageIndex,
               onTap: () => onPackageSelected(index),
             ),
@@ -90,16 +105,35 @@ class ServiceDetailPackageTab extends StatelessWidget {
       ],
     );
   }
+
+  String _resolveTagLabel(BuildContext context, TagItemVO item) {
+    if (context.isChineseLocale) {
+      final String zh = item.tagNameZh.trim();
+      if (zh.isNotEmpty) {
+        return zh;
+      }
+      final String en = item.tagNameEn.trim();
+      return en.isNotEmpty ? en : item.tagCode.trim();
+    }
+    final String en = item.tagNameEn.trim();
+    if (en.isNotEmpty) {
+      return en;
+    }
+    final String zh = item.tagNameZh.trim();
+    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  }
 }
 
 class _PackageOptionCard extends StatelessWidget {
   const _PackageOptionCard({
     required this.data,
+    required this.serviceTagLabelMap,
     required this.selected,
     required this.onTap,
   });
 
   final ServicePackageData data;
+  final Map<String, String> serviceTagLabelMap;
   final bool selected;
   final VoidCallback onTap;
 
@@ -160,7 +194,11 @@ class _PackageOptionCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: data.tags
-                    .map((tag) => _PackageTag(label: tag))
+                    .map(
+                      (String tag) => _PackageTag(
+                        label: serviceTagLabelMap[tag.trim()] ?? tag,
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 12),

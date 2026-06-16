@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_session_provider.dart';
+import '../../config/data/config_providers.dart';
 import '../../message/application/message_session/message_session_controller.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/logging/app_logger.dart';
@@ -29,6 +30,13 @@ class MainShellPage extends ConsumerStatefulWidget {
 class _MainShellPageState extends ConsumerState<MainShellPage> {
   bool _isExitDialogShowing = false;
 
+  void _refreshTagDictionaryForIndex(int index) {
+    if (index != 0) {
+      return;
+    }
+    unawaited(ref.read(tagDictionaryCacheControllerProvider).refreshAll());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +47,7 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
       unawaited(
         ref.read(messageSessionControllerProvider.notifier).startSession(),
       );
+      _refreshTagDictionaryForIndex(widget.navigationShell.currentIndex);
     });
   }
 
@@ -112,6 +121,9 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
                 'toIndex': index,
               },
             );
+            if (index == 0 && index != widget.navigationShell.currentIndex) {
+              _refreshTagDictionaryForIndex(index);
+            }
             // 切换分支时保留各 Tab 的导航栈，符合 Figma 对应业务场景的保活体验。
             widget.navigationShell.goBranch(
               index,

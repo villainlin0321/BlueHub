@@ -420,11 +420,9 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
     JobDetailVO? prefetchedJobDetail;
 
     try {
-      final TagDictVO tagDict = await ref.read(configServiceProvider).getTags();
-      final List<TagItemVO> tags = List<TagItemVO>.from(
-        tagDict.tags[TagCategory.requirement.value] ?? const <TagItemVO>[],
-      )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
-      prefetchedRequirementTags = tags;
+      prefetchedRequirementTags = await ref
+          .read(tagDictionaryCacheControllerProvider)
+          .getTagsForCategory(TagCategory.requirement);
       prefetchedJobDetail = await ref
           .read(jobServiceProvider)
           .getJobDetail(jobId: job.jobId);

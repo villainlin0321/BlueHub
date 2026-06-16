@@ -77,12 +77,9 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     state = state.copyWith(isLoadingServiceTags: true, serviceTagsError: null);
 
     try {
-      final TagDictVO response = await ref
-          .read(configServiceProvider)
-          .getTags();
-      final List<TagItemVO> tags = List<TagItemVO>.from(
-        response.tags[TagCategory.service.value] ?? const <TagItemVO>[],
-      )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+      final List<TagItemVO> tags = await ref
+          .read(tagDictionaryCacheControllerProvider)
+          .getTagsForCategory(TagCategory.service);
       state = state.copyWith(
         serviceTags: tags,
         hasLoadedServiceTags: true,
