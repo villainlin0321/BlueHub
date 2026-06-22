@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -133,8 +134,141 @@ class _PackageTabView extends ConsumerStatefulWidget {
 }
 
 class _PackageTabViewState extends ConsumerState<_PackageTabView> {
-  List<VisaPackageVO>? _packages;
+  static const int _pageSize = 20;
+
+  List<VisaPackageVO> _packages = const <VisaPackageVO>[];
   final Set<int> _updatingPackageIds = <int>{};
+  int _currentPage = 1;
+  bool _hasMore = false;
+  bool _isInitialLoading = true;
+  bool _isRefreshing = false;
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_loadPackages);
+  }
+
+  Future<void> _loadPackages() async {
+    setState(() {
+      _isInitialLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = pageResult.list;
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isInitialLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isInitialLoading = false;
+        _hasMore = false;
+        _errorMessage = _normalizeError(error);
+      });
+    }
+  }
+
+  Future<void> _refreshPackages() async {
+    if (_isRefreshing) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      if (_packages.isEmpty) {
+        _errorMessage = null;
+      }
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = pageResult.list;
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isRefreshing = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isRefreshing = false;
+        if (_packages.isEmpty) {
+          _errorMessage = _normalizeError(error);
+        }
+      });
+      if (_packages.isNotEmpty) {
+        _showMessage(_normalizeError(error), isError: true);
+      }
+    }
+  }
+
+  Future<void> _loadMorePackages() async {
+    if (_isInitialLoading || _isRefreshing || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = <VisaPackageVO>[..._packages, ...pageResult.list];
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingMore = false;
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
 
   Future<void> _handleSecondaryAction(VisaPackageVO package) async {
     final String? nextStatus = widget.tab.secondaryActionStatus;
@@ -158,9 +292,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       }
       setState(() {
         _updatingPackageIds.remove(package.packageId);
-        final List<VisaPackageVO> currentPackages =
-            _packages ?? const <VisaPackageVO>[];
-        _packages = currentPackages
+        _packages = _packages
             .where((VisaPackageVO item) => item.packageId != package.packageId)
             .toList(growable: false);
       });
@@ -224,7 +356,12 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
           onPrimaryAction: () {
             context.push(
               '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
-            );
+            ).then((_) {
+              if (!mounted) {
+                return;
+              }
+              _refreshPackages();
+            });
           },
           isSecondaryActionLoading: _updatingPackageIds.contains(
             package.packageId,
@@ -237,43 +374,34 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final AsyncValue<PageResult<VisaPackageVO>> packagesAsync = ref.watch(
-      myVisaPackageListProvider(widget.tab.status),
-    );
-    ref.listen<AsyncValue<PageResult<VisaPackageVO>>>(
-      myVisaPackageListProvider(widget.tab.status),
-      (_, AsyncValue<PageResult<VisaPackageVO>> next) {
-        next.whenData((PageResult<VisaPackageVO> pageResult) {
-          if (!mounted) {
-            return;
+    return EasyRefresh(
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _refreshPackages,
+      onLoad: _hasMore && _packages.isNotEmpty ? _loadMorePackages : null,
+      child: Builder(
+        builder: (BuildContext context) {
+          if (_isInitialLoading && _packages.isEmpty) {
+            return _PackageLoadingState(bottomPadding: bottomPadding);
           }
-          setState(() {
-            _packages = pageResult.list;
-          });
-        });
-      },
-    );
-
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.refresh(myVisaPackageListProvider(widget.tab.status).future),
-      child: packagesAsync.when(
-        data: (PageResult<VisaPackageVO> pageResult) {
-          final List<VisaPackageVO> packages = _packages ?? pageResult.list;
-          return _buildPackageList(context, bottomPadding, packages);
-        },
-        loading: () => _packages != null
-            ? _buildPackageList(context, bottomPadding, _packages!)
-            : _PackageLoadingState(bottomPadding: bottomPadding),
-        error: (Object error, StackTrace _) => _packages != null
-            ? _buildPackageList(context, bottomPadding, _packages!)
-            : _PackageLoadError(
-                bottomPadding: bottomPadding,
-                errorText: error.toString(),
-                onRetry: () {
-                  ref.invalidate(myVisaPackageListProvider(widget.tab.status));
-                },
+          if (_errorMessage != null && _packages.isEmpty) {
+            return _PackageLoadError(
+              bottomPadding: bottomPadding,
+              errorText: _errorMessage!,
+              onRetry: _loadPackages,
+            );
+          }
+          if (_packages.isEmpty) {
+            return _PackageEmptyState(
+              key: PageStorageKey<String>(
+                'service-provider-jobs-empty-${widget.tab.name}',
               ),
+              text: widget.tab.emptyText,
+              bottomPadding: bottomPadding,
+            );
+          }
+          return _buildPackageList(context, bottomPadding, _packages);
+        },
       ),
     );
   }

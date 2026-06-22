@@ -20,6 +20,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.durationController,
     required this.selectedCountryLabel,
     required this.selectedVisaTypeLabel,
+    required this.selectedCurrencyLabel,
     required this.state,
     required this.tiers,
     required this.onBackTap,
@@ -27,6 +28,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onPublishTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
+    required this.onCurrencyTap,
     required this.onRetryLoadServiceTags,
     required this.onAddTier,
     required this.onDeleteTier,
@@ -47,6 +49,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final TextEditingController durationController;
   final String? selectedCountryLabel;
   final String? selectedVisaTypeLabel;
+  final String selectedCurrencyLabel;
   final EditVisaPackageState state;
   final List<EditVisaPackageTierViewDraft> tiers;
   final VoidCallback onBackTap;
@@ -54,6 +57,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onPublishTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
+  final VoidCallback onCurrencyTap;
   final VoidCallback onRetryLoadServiceTags;
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
@@ -110,7 +114,9 @@ class EditVisaPackagePageView extends StatelessWidget {
                             _TierConfigSection(
                               state: state,
                               tiers: tiers,
+                              selectedCurrencyLabel: selectedCurrencyLabel,
                               onRetryLoadServiceTags: onRetryLoadServiceTags,
+                              onCurrencyTap: onCurrencyTap,
                               onAddTier: onAddTier,
                               onDeleteTier: onDeleteTier,
                               onAddMaterial: onAddMaterial,
@@ -223,7 +229,9 @@ class _TierConfigSection extends StatelessWidget {
   const _TierConfigSection({
     required this.state,
     required this.tiers,
+    required this.selectedCurrencyLabel,
     required this.onRetryLoadServiceTags,
+    required this.onCurrencyTap,
     required this.onAddTier,
     required this.onDeleteTier,
     required this.onAddMaterial,
@@ -240,7 +248,9 @@ class _TierConfigSection extends StatelessWidget {
 
   final EditVisaPackageState state;
   final List<EditVisaPackageTierViewDraft> tiers;
+  final String selectedCurrencyLabel;
   final VoidCallback onRetryLoadServiceTags;
+  final VoidCallback onCurrencyTap;
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
@@ -276,7 +286,9 @@ class _TierConfigSection extends StatelessWidget {
                 tierIndex: entry.key,
                 tier: entry.value,
                 state: state,
+                selectedCurrencyLabel: selectedCurrencyLabel,
                 onRetryLoadServiceTags: onRetryLoadServiceTags,
+                onCurrencyTap: onCurrencyTap,
                 onDeleteTier: onDeleteTier,
                 onAddMaterial: onAddMaterial,
                 onAddCustomService: onAddCustomService,
@@ -307,7 +319,9 @@ class _TierCard extends StatelessWidget {
     required this.tierIndex,
     required this.tier,
     required this.state,
+    required this.selectedCurrencyLabel,
     required this.onRetryLoadServiceTags,
+    required this.onCurrencyTap,
     required this.onDeleteTier,
     required this.onAddMaterial,
     required this.onAddCustomService,
@@ -324,7 +338,9 @@ class _TierCard extends StatelessWidget {
   final int tierIndex;
   final EditVisaPackageTierViewDraft tier;
   final EditVisaPackageState state;
+  final String selectedCurrencyLabel;
   final VoidCallback onRetryLoadServiceTags;
+  final VoidCallback onCurrencyTap;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
   final ValueChanged<int> onAddCustomService;
@@ -350,30 +366,30 @@ class _TierCard extends StatelessWidget {
           onDeleteTap: tier.deletable ? () => onDeleteTier(tierIndex) : null,
         ),
         const SizedBox(height: 16),
-        Row(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Expanded(
-              child: EditVisaPackageLabeledField(
-                label: '签证编辑.档位名称'.tr(),
-                child: EditVisaPackageInputField(
-                  controller: tier.nameController,
-                  hintText: '通用.请输入'.tr(),
-                ),
+            EditVisaPackageLabeledField(
+              label: '签证编辑.档位名称'.tr(),
+              child: EditVisaPackageInputField(
+                controller: tier.nameController,
+                hintText: '通用.请输入'.tr(),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: EditVisaPackageLabeledField(
-                label: '签证编辑.价格元'.tr(),
-                child: EditVisaPackageInputField(
-                  controller: tier.priceController,
-                  hintText: '通用.请输入'.tr(),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
+            const SizedBox(height: 12),
+            EditVisaPackageLabeledField(
+              label: '签证编辑.价格'.tr(),
+              trailing: EditVisaPackageCurrencyTrigger(
+                label: selectedCurrencyLabel,
+                onTap: onCurrencyTap,
+              ),
+              child: EditVisaPackageInputField(
+                controller: tier.priceController,
+                hintText: '通用.请输入'.tr(),
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                ],
               ),
             ),
           ],
@@ -507,25 +523,6 @@ class _MaterialCard extends StatelessWidget {
           hintText: '签证编辑.请输入材料描述'.tr(),
         ),
         const SizedBox(height: 12),
-        if (material.existingExampleFileIds.isNotEmpty) ...<Widget>[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '已关联 ${material.existingExampleFileIds.length} 个历史事例文件',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF8C8C8C),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
         _ExampleUploadContent(
           files: material.exampleFiles,
           onAddTap: () => onExampleUploadTap(tierIndex, materialIndex),

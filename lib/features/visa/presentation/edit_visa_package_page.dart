@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,8 +21,10 @@ import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
+import '../data/visa_currency.dart';
 import '../data/visa_package_models.dart';
 import '../data/visa_package_providers.dart';
+import 'currency_options_bottom_sheet.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
@@ -90,13 +94,60 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   EditVisaPackageMaterialViewDraft _createMaterialDraftFromModel(
     VisaPackageEditMaterialVO material,
   ) {
+    final List<PickedUploadFile> existingExampleFiles =
+        _buildExistingExampleFiles(material);
     return EditVisaPackageMaterialViewDraft(
       titleController: TextEditingController(text: material.name),
       descriptionController: TextEditingController(text: material.description),
       isRequired: material.isRequired,
-      exampleFiles: <PickedUploadFile>[],
+      exampleFiles: existingExampleFiles,
       existingExampleFileIds: List<int>.from(material.exampleFileIds),
     );
+  }
+
+  List<PickedUploadFile> _buildExistingExampleFiles(
+    VisaPackageEditMaterialVO material,
+  ) {
+    final int itemCount = math.min(
+      material.exampleFileIds.length,
+      material.exampleFileUrls.length,
+    );
+    return List<PickedUploadFile>.generate(itemCount, (int index) {
+      final int fileId = material.exampleFileIds[index];
+      final String fileUrl = material.exampleFileUrls[index].trim();
+      final String normalizedPath = _normalizedPathFromUrl(fileUrl);
+      return PickedUploadFile(
+        id: 'visa_example_$fileId',
+        name: _displayNameFromUrl(fileUrl),
+        path: normalizedPath.isEmpty ? fileUrl : normalizedPath,
+        sourceType: UploadSourceType.file,
+        state: UploadItemState.success,
+        isImage: UploadPickerUtils.isImagePath(normalizedPath),
+        progress: 1,
+        uploadedFileId: fileId,
+        uploadedFileUrl: fileUrl,
+      );
+    });
+  }
+
+  String _normalizedPathFromUrl(String value) {
+    final Uri? uri = Uri.tryParse(value);
+    if (uri == null) {
+      return value;
+    }
+    final String path = uri.path.trim();
+    return path.isEmpty ? value : path;
+  }
+
+  String _displayNameFromUrl(String value) {
+    final Uri? uri = Uri.tryParse(value);
+    final String lastSegment = uri?.pathSegments.isNotEmpty == true
+        ? uri!.pathSegments.last.trim()
+        : value.trim().split('/').last.trim();
+    if (lastSegment.isEmpty) {
+      return '事例文件';
+    }
+    return Uri.decodeComponent(lastSegment);
   }
 
   EditVisaPackageTierViewDraft _createTierDraftFromModel(
@@ -181,6 +232,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       );
       controller.setCountryCode(detail.targetCountry);
       controller.setVisaTypeCode(detail.visaType);
+      controller.setCurrency(VisaCurrency.fromApiValue(detail.currency));
       setState(() {
         _isLoadingPackageDetail = false;
       });
@@ -267,6 +319,20 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     ref
         .read(editVisaPackageControllerProvider.notifier)
         .setVisaTypeCode(result.first);
+  }
+
+  Future<void> _openCurrencySheet() async {
+    final EditVisaPackageState state = ref.read(
+      editVisaPackageControllerProvider,
+    );
+    final VisaCurrency? result = await showVisaCurrencyOptionsBottomSheet(
+      context: context,
+      initialValue: state.selectedCurrency,
+    );
+    if (result == null) {
+      return;
+    }
+    ref.read(editVisaPackageControllerProvider.notifier).setCurrency(result);
   }
 
   List<SelectableSheetOption<String>> _buildVisaTypeOptions(
@@ -358,9 +424,11 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
 
   /// 从页面控制器和档位草稿构建提交所需的表单草稿。
   EditVisaPackageFormDraft _buildFormDraft() {
+    final EditVisaPackageState state = ref.read(editVisaPackageControllerProvider);
     return EditVisaPackageFormDraft(
       name: _serviceNameController.text,
       estimatedDays: _durationController.text,
+      currency: state.selectedCurrency,
       tiers: _tiers
           .map((EditVisaPackageTierViewDraft tier) {
             return EditVisaPackageTierDraftInput(
@@ -735,10 +803,17 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     PickedUploadFile file,
   ) {
     setState(() {
-      _tiers[tierIndex].materials[materialIndex].exampleFiles =
-          _tiers[tierIndex].materials[materialIndex].exampleFiles
-              .where((PickedUploadFile item) => item.id != file.id)
-              .toList();
+      final EditVisaPackageMaterialViewDraft material =
+          _tiers[tierIndex].materials[materialIndex];
+      material.exampleFiles = material.exampleFiles
+          .where((PickedUploadFile item) => item.id != file.id)
+          .toList(growable: false);
+      final int? uploadedFileId = file.uploadedFileId;
+      if (uploadedFileId != null) {
+        material.existingExampleFileIds = material.existingExampleFileIds
+            .where((int item) => item != uploadedFileId)
+            .toList(growable: false);
+      }
     });
   }
 
@@ -854,6 +929,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
         visaTypeOptions,
         state.selectedVisaTypeCode,
       ),
+      selectedCurrencyLabel: state.selectedCurrency.labelKey.tr(),
       state: state,
       tiers: _tiers,
       onBackTap: () => Navigator.of(context).maybePop(),
@@ -861,6 +937,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       onPublishTap: _handlePublish,
       onCountryTap: _openCountrySheet,
       onVisaTypeTap: _openVisaTypeSheet,
+      onCurrencyTap: _openCurrencySheet,
       onRetryLoadServiceTags: () => controller.loadServiceTags(force: true),
       onAddTier: _handleAddTier,
       onDeleteTier: _handleDeleteTier,

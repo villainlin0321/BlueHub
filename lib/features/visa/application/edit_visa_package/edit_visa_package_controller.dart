@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
+import '../../data/visa_currency.dart';
 import '../../data/visa_package_models.dart';
 import '../../data/visa_package_providers.dart';
 import 'edit_visa_package_state.dart';
@@ -54,17 +55,17 @@ class EditVisaPackageFormDraft {
   const EditVisaPackageFormDraft({
     required this.name,
     required this.estimatedDays,
+    required this.currency,
     required this.tiers,
   });
 
   final String name;
   final String estimatedDays;
+  final VisaCurrency currency;
   final List<EditVisaPackageTierDraftInput> tiers;
 }
 
 class EditVisaPackageController extends Notifier<EditVisaPackageState> {
-  static const String _currency = 'CNY';
-
   @override
   EditVisaPackageState build() => const EditVisaPackageState();
 
@@ -101,6 +102,10 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
   void setVisaTypeCode(String code) {
     state = state.copyWith(selectedVisaTypeCode: code);
+  }
+
+  void setCurrency(VisaCurrency currency) {
+    state = state.copyWith(selectedCurrency: currency);
   }
 
   void clearFeedback() {
@@ -312,7 +317,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       targetCountry: countryCode,
       visaType: visaTypeCode,
       estimatedDays: estimatedDays,
-      currency: _currency,
+      currency: draft.currency.symbol,
       coverImageIds: const <int>[],
       coverImages: const <String>[],
       tiers: tiers,

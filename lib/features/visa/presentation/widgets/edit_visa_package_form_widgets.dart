@@ -305,38 +305,92 @@ class EditVisaPackageLabeledField extends StatelessWidget {
     required this.label,
     required this.child,
     this.required = false,
+    this.trailing,
   });
 
   final String label;
   final bool required;
   final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        RichText(
-          text: TextSpan(
-            style: EditVisaPackageStyles.fieldLabel,
-            children: <InlineSpan>[
-              TextSpan(text: label),
-              if (required)
-                const TextSpan(
-                  text: '  *',
-                  style: TextStyle(
-                    color: EditVisaPackageStyles.required,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 20 / 10,
-                  ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: EditVisaPackageStyles.fieldLabel,
+                  children: <InlineSpan>[
+                    TextSpan(text: label),
+                    if (required)
+                      const TextSpan(
+                        text: '  *',
+                        style: TextStyle(
+                          color: EditVisaPackageStyles.required,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          height: 20 / 10,
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+            ),
+            if (trailing != null) ...<Widget>[
+              const SizedBox(width: 12),
+              trailing!,
             ],
-          ),
+          ],
         ),
         const SizedBox(height: 8),
         child,
       ],
+    );
+  }
+}
+
+class EditVisaPackageCurrencyTrigger extends StatelessWidget {
+  const EditVisaPackageCurrencyTrigger({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                style: EditVisaPackageStyles.fieldValue.copyWith(
+                  color: EditVisaPackageStyles.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const RotatedBox(
+                quarterTurns: 1,
+                child: EditVisaPackageFieldArrow(),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

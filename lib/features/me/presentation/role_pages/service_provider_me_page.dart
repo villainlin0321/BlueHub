@@ -62,7 +62,7 @@ class ServiceProviderMePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _HeaderSection(onSettingsTap: () => _handleSettingsTap(context)),
-          const SizedBox(height: 40),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(

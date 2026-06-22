@@ -599,17 +599,42 @@ class _OrdersSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          '订单.全部'.tr(),
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            height: 20 / 14,
+        InkWell(
+          onTap: () => context.push(RoutePaths.orderManagement),
+          borderRadius: BorderRadius.circular(4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _OrdersSectionAllText(),
+                SizedBox(width: 2),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Color(0xFF8C8C8C),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 2),
-        const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF8C8C8C)),
       ],
+    );
+  }
+}
+
+class _OrdersSectionAllText extends StatelessWidget {
+  const _OrdersSectionAllText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '订单.全部'.tr(),
+      style: const TextStyle(
+        color: Color(0xFF8C8C8C),
+        fontSize: 14,
+        height: 20 / 14,
+      ),
     );
   }
 }

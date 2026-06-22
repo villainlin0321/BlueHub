@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,6 +13,7 @@ import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../order/presentation/order_review_page.dart';
+import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
 class MyOrdersPage extends ConsumerStatefulWidget {
@@ -29,10 +31,20 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     _OrderFilter.processing,
     _OrderFilter.completed,
   ];
+  static const int _pageSize = 20;
+
+  final EasyRefreshController _refreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
 
   _OrderFilter _selectedFilter = _OrderFilter.all;
   List<VisaOrderVO> _orders = const <VisaOrderVO>[];
+  int _currentPage = 1;
+  bool _hasMore = false;
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _isLoadingMore = false;
   String? _errorMessage;
 
   Future<void> _handleActionTap(_OrderItem order, _OrderAction action) async {
@@ -106,18 +118,26 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     Future<void>.microtask(_loadOrders);
   }
 
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadOrders() async {
     setState(() {
       _isLoading = true;
+      _isRefreshing = false;
+      _isLoadingMore = false;
       _errorMessage = null;
     });
 
     try {
-      final response = await ref
+      final PageResult<VisaOrderVO> response = await ref
           .read(visaOrderServiceProvider)
           .listMyOrders(
             page: 1,
-            pageSize: 20,
+            pageSize: _pageSize,
             status: _selectedFilter.apiValue,
           );
       if (!mounted) {
@@ -125,16 +145,111 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       }
       setState(() {
         _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
         _isLoading = false;
       });
+      _refreshController.resetFooter();
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
         _isLoading = false;
+        _hasMore = false;
         _errorMessage = _normalizeError(error);
       });
+    }
+  }
+
+  Future<void> _refreshOrders() async {
+    if (_isRefreshing) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      if (_orders.isEmpty) {
+        _errorMessage = null;
+      }
+    });
+
+    try {
+      final PageResult<VisaOrderVO> response = await ref
+          .read(visaOrderServiceProvider)
+          .listMyOrders(
+            page: 1,
+            pageSize: _pageSize,
+            status: _selectedFilter.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isRefreshing = false;
+        _errorMessage = null;
+      });
+      _refreshController.finishRefresh();
+      _refreshController.resetFooter();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final String message = _normalizeError(error);
+      setState(() {
+        _isRefreshing = false;
+        if (_orders.isEmpty) {
+          _errorMessage = message;
+        }
+      });
+      _refreshController.finishRefresh(IndicatorResult.fail);
+      if (_orders.isNotEmpty) {
+        AppToast.show(message);
+      }
+    }
+  }
+
+  Future<void> _loadMoreOrders() async {
+    if (_isLoading || _isRefreshing || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final PageResult<VisaOrderVO> response = await ref
+          .read(visaOrderServiceProvider)
+          .listMyOrders(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: _selectedFilter.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = <VisaOrderVO>[..._orders, ...response.list];
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+      _refreshController.finishLoad(
+        _hasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingMore = false;
+      });
+      _refreshController.finishLoad(IndicatorResult.fail);
+      AppToast.show(_normalizeError(error));
     }
   }
 
@@ -207,37 +322,54 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
   }
 
   Widget _buildOrderList(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return EasyRefresh(
+      controller: _refreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _refreshOrders,
+      onLoad: _hasMore && _orders.isNotEmpty ? _loadMoreOrders : null,
+      child: Builder(
+        builder: (BuildContext context) {
+          if (_isLoading) {
+            return const _OrderLoadingView();
+          }
 
-    if (_errorMessage != null) {
-      return _OrderStateView(
-        message: _errorMessage!,
-        buttonLabel: '通用.重试'.tr(),
-        onTap: _loadOrders,
-      );
-    }
+          if (_errorMessage != null && _orders.isEmpty) {
+            return _OrderStateView(
+              message: _errorMessage!,
+              buttonLabel: '通用.重试'.tr(),
+              onTap: _loadOrders,
+            );
+          }
 
-    if (_orders.isEmpty) {
-      return _OrderStateView(message: '我的.暂无订单数据'.tr());
-    }
+          if (_orders.isEmpty) {
+            return _OrderStateView(message: '我的.暂无订单数据'.tr());
+          }
 
-    final List<_OrderItem> visibleOrders = _orders
-        .map(_OrderItem.fromVisaOrder)
-        .toList(growable: false);
+          final List<_OrderItem> visibleOrders = _orders
+              .map(_OrderItem.fromVisaOrder)
+              .toList(growable: false);
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-      itemCount: visibleOrders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _OrderCard(
-          order: visibleOrders[index],
-          onActionTap: _handleActionTap,
-          onTap: () => _openOrderDetail(visibleOrders[index].orderId),
-        );
-      },
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12,
+              12,
+              MediaQuery.paddingOf(context).bottom + 24,
+            ),
+            itemCount: visibleOrders.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _OrderCard(
+                order: visibleOrders[index],
+                onActionTap: _handleActionTap,
+                onTap: () => _openOrderDetail(visibleOrders[index].orderId),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -517,19 +649,27 @@ class _OrderStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     if (buttonLabel == null && onTap == null) {
-      return Center(
-        child: AppEmptyState(
-          message: message,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-        ),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(24, 96, 24, bottomPadding + 24),
+        children: <Widget>[
+          Center(
+            child: AppEmptyState(
+              message: message,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+          ),
+        ],
       );
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(24, 120, 24, bottomPadding + 24),
+      children: <Widget>[
+        Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
@@ -547,7 +687,29 @@ class _OrderStateView extends StatelessWidget {
             ],
           ],
         ),
-      ),
+      ],
+    );
+  }
+}
+
+class _OrderLoadingView extends StatelessWidget {
+  const _OrderLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 24),
+      children: const <Widget>[
+        SizedBox(height: 96),
+        Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ],
     );
   }
 }
