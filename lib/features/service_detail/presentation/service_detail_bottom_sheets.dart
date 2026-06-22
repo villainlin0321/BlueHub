@@ -37,14 +37,16 @@ class ServiceDetailConfirmPaymentBottomSheet {
 
   static Future<void> show({
     required BuildContext context,
-    required String amountText,
+    required double amount,
+    required String? currency,
     required int orderId,
     required String packageName,
     required BuildContext parentContext,
   }) async {
     await OrderPaymentBottomSheet.show(
       context: context,
-      amountText: amountText,
+      amount: amount,
+      currency: currency,
       orderId: orderId,
       packageName: packageName,
       parentContext: parentContext,
@@ -266,7 +268,6 @@ class _ApplyBottomSheetContentState
       if (!mounted) {
         return;
       }
-      final amountText = _formatPaymentAmount(widget.package.price);
       Navigator.of(context).pop();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!widget.parentContext.mounted) {
@@ -274,7 +275,8 @@ class _ApplyBottomSheetContentState
         }
         ServiceDetailConfirmPaymentBottomSheet.show(
           context: widget.parentContext,
-          amountText: amountText,
+          amount: widget.package.amount,
+          currency: widget.package.currency,
           orderId: order.orderId,
           packageName: widget.package.title,
           parentContext: widget.parentContext,
@@ -525,26 +527,6 @@ class _ApplyLabeledInput extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatPaymentAmount(String priceText) {
-  final numericText = priceText.replaceAll(RegExp(r'[^0-9.]'), '');
-  if (numericText.isEmpty) {
-    return '¥0.00';
-  }
-  final amount = double.tryParse(numericText.replaceAll(',', '')) ?? 0;
-  final hasDecimals = numericText.contains('.');
-  final formatted = hasDecimals
-      ? amount.toStringAsFixed(2)
-      : amount.toStringAsFixed(2);
-  final parts = formatted.split('.');
-  final integerPart = parts.first;
-  final decimalPart = parts.last;
-  final groupedInteger = integerPart.replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (match) => ',',
-  );
-  return '¥$groupedInteger.$decimalPart';
 }
 
 String _resolveBottomSheetErrorMessage(

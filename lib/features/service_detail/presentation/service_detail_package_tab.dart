@@ -15,6 +15,8 @@ class ServicePackageData {
     required this.packageId,
     required this.tierId,
     required this.title,
+    required this.amount,
+    required this.currency,
     required this.price,
     required this.description,
     required this.tags,
@@ -23,6 +25,8 @@ class ServicePackageData {
   final int packageId;
   final int tierId;
   final String title;
+  final double amount;
+  final String currency;
   final String price;
   final String description;
   final List<String> tags;

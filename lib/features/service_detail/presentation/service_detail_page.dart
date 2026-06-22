@@ -1390,6 +1390,8 @@ extension on VisaPackageVO {
             packageId: packageId,
             tierId: tier.tierId,
             title: tier.name.trim().isEmpty ? '服务详情.套餐档位'.tr() : tier.name,
+            amount: tier.price,
+            currency: currency,
             price: _formatPrice(tier.price, currency),
             description: tier.description.trim().isEmpty
                 ? '服务详情.暂无套餐说明'.tr()
