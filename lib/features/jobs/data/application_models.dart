@@ -150,18 +150,18 @@ class CreateApplicationBO {
 
 class EmployerSimpleVO {
   const EmployerSimpleVO({
-    required this.employerId,
+    required this.profileId,
     required this.name,
     required this.logoUrl,
   });
 
-  final int? employerId;
+  final int? profileId;
   final String name;
   final String logoUrl;
 
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: _readNullableInt(json['employerId']),
+      profileId: _readNullableInt(json['profileId']),
       name: readString(json, 'name'),
       logoUrl: readString(json, 'logoUrl'),
     );
@@ -169,7 +169,7 @@ class EmployerSimpleVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
-      if (employerId != null) 'employerId': employerId,
+      if (profileId != null) 'profileId': profileId,
       'name': name,
       'logoUrl': logoUrl,
     };

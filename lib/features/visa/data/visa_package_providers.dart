@@ -16,6 +16,13 @@ final visaPackageDetailProvider = FutureProvider.autoDispose
       return service.getPackageDetail(packageId: packageId);
     });
 
+/// 根据套餐 ID 获取签证套餐编辑态详情，供服务商编辑页回填使用。
+final visaPackageEditDetailProvider = FutureProvider.autoDispose
+    .family<VisaPackageEditVO, int>((ref, packageId) async {
+      final service = ref.watch(visaPackageServiceProvider);
+      return service.getPackageEditDetail(packageId: packageId);
+    });
+
 /// 根据服务商套餐状态获取我的套餐列表。
 final myVisaPackageListProvider =
     FutureProvider.family<PageResult<VisaPackageVO>, String>((

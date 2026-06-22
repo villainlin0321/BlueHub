@@ -596,8 +596,8 @@ class ChatPageController extends Notifier<ChatPageState> {
         return;
       }
 
-      final int resolvedConversationId = message.conversationId > 0
-          ? message.conversationId
+      final int resolvedConversationId = (message.conversationId ?? 0) > 0
+          ? message.conversationId!
           : state.conversationId;
       _updateState(
         (ChatPageState current) => current.copyWith(
@@ -754,8 +754,8 @@ class ChatPageController extends Notifier<ChatPageState> {
 
     final List<MessageVO> candidates = messages ?? const <MessageVO>[];
     for (final MessageVO message in candidates) {
-      if (message.conversationId > 0) {
-        return message.conversationId;
+      if ((message.conversationId ?? 0) > 0) {
+        return message.conversationId!;
       }
     }
 
@@ -869,7 +869,7 @@ class ChatPageController extends Notifier<ChatPageState> {
   }
 
   bool _isCurrentConversationMessage(MessageVO message) {
-    if (state.conversationId > 0 && message.conversationId > 0) {
+    if (state.conversationId > 0 && (message.conversationId ?? 0) > 0) {
       return message.conversationId == state.conversationId;
     }
 

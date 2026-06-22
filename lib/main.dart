@@ -11,6 +11,8 @@ import 'shared/localization/app_locales.dart';
 import 'shared/auth/token_store.dart';
 import 'shared/logging/app_logger.dart';
 import 'shared/network/providers.dart';
+import 'shared/payment/payment_channel_config.dart';
+import 'shared/payment/payment_launcher.dart';
 
 /// 应用入口：初始化依赖、挂接全局异常处理，并启动 Riverpod 根节点。
 Future<void> main() async {
@@ -20,6 +22,9 @@ Future<void> main() async {
       WidgetsFlutterBinding.ensureInitialized();
       await EasyLocalization.ensureInitialized();
       await AppLogger.instance.init();
+      await PaymentLauncher.instance.initialize(
+        config: PaymentChannelConfig.fromEnvironment(),
+      );
       _registerGlobalErrorHandlers();
 
       final prefs = await SharedPreferences.getInstance();

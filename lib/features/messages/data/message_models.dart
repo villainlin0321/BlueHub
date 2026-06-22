@@ -147,7 +147,7 @@ class MessageVO {
   });
 
   final int messageId;
-  final int conversationId;
+  final int? conversationId;
   final int senderId;
   final String type;
   final String content;
@@ -162,7 +162,7 @@ class MessageVO {
   factory MessageVO.fromJson(JsonMap json) {
     return MessageVO(
       messageId: readInt(json, 'messageId'),
-      conversationId: readInt(json, 'conversationId'),
+      conversationId: _readNullableInt(json['conversationId']),
       senderId: readInt(json, 'senderId'),
       type: readString(json, 'type'),
       content: readString(json, 'content'),
@@ -242,7 +242,7 @@ class RelatedOrderVO {
 
 class SendMessageBO {
   const SendMessageBO({
-    this.type,
+    required this.type,
     this.content,
     this.fileId,
     this.fileUrl,
@@ -251,7 +251,7 @@ class SendMessageBO {
     this.duration,
   });
 
-  final String? type;
+  final String type;
   final String? content;
   final int? fileId;
   final String? fileUrl;
@@ -261,7 +261,7 @@ class SendMessageBO {
 
   factory SendMessageBO.fromJson(JsonMap json) {
     return SendMessageBO(
-      type: _readNullableString(json['type']),
+      type: readString(json, 'type'),
       content: _readNullableString(json['content']),
       fileId: _readNullableInt(json['fileId']),
       fileUrl: _readNullableString(json['fileUrl']),
@@ -273,7 +273,7 @@ class SendMessageBO {
 
   JsonMap toJson() {
     return <String, dynamic>{
-      if (type != null) 'type': type,
+      'type': type,
       if (content != null) 'content': content,
       if (fileId != null) 'fileId': fileId,
       if (fileUrl != null) 'fileUrl': fileUrl,

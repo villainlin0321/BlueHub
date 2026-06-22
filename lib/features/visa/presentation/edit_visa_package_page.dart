@@ -88,7 +88,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }
 
   EditVisaPackageMaterialViewDraft _createMaterialDraftFromModel(
-    MaterialBO material,
+    VisaPackageEditMaterialVO material,
   ) {
     return EditVisaPackageMaterialViewDraft(
       titleController: TextEditingController(text: material.name),
@@ -100,7 +100,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   }
 
   EditVisaPackageTierViewDraft _createTierDraftFromModel(
-    TierVO tier, {
+    VisaPackageEditTierVO tier, {
     required bool deletable,
   }) {
     final List<EditVisaPackageMaterialViewDraft> materials = tier.materials
@@ -153,9 +153,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       _packageDetailError = null;
     });
     try {
-      final VisaPackageVO detail = await ref
+      final VisaPackageEditVO detail = await ref
           .read(visaPackageServiceProvider)
-          .getPackageDetail(packageId: packageId);
+          .getPackageEditDetail(packageId: packageId);
       if (!mounted) {
         return;
       }
@@ -168,7 +168,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           : detail.tiers
                 .asMap()
                 .entries
-                .map((MapEntry<int, TierVO> entry) {
+                .map((MapEntry<int, VisaPackageEditTierVO> entry) {
                   return _createTierDraftFromModel(
                     entry.value,
                     deletable: detail.tiers.length > 1 && entry.key > 0,

@@ -60,6 +60,8 @@ dependencies:
   package_info_plus: ^9.0.1
   open_filex: ^4.7.0
   share_plus: ^12.0.1
+  tobias: ^5.3.4
+  fluwx: ^5.7.5
 
 
 dev_dependencies:
@@ -76,6 +78,8 @@ dev_dependencies:
 dependency_overrides:
   file_picker:
     path: third_party/file_picker
+  tobias:
+    path: third_party/tobias
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

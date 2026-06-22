@@ -63,6 +63,20 @@ class VisaPackageService {
     return response;
   }
 
+  /// 获取签证套餐编辑态详情。
+  ///
+  /// 返回专门用于服务商编辑页回填的数据结构，包含 `coverImageIds`、
+  /// `status` 以及材料示例文件 ID 等编辑态字段。
+  Future<VisaPackageEditVO> getPackageEditDetail({
+    required int packageId,
+  }) async {
+    final response = await _apiClient.get<VisaPackageEditVO>(
+      '/visa-packages/$packageId/edit',
+      decode: (data) => VisaPackageEditVO.fromJson(asJsonMap(data)),
+    );
+    return response;
+  }
+
   /// 更新指定签证套餐的完整信息。
   Future<void> updatePackage({
     required int packageId,

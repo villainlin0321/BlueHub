@@ -42,7 +42,7 @@ enum MyApplicationStatus {
 class MyApplicationItem {
   const MyApplicationItem({
     required this.applicationId,
-    required this.employerId,
+    required this.profileId,
     required this.status,
     required this.updatedText,
     required this.title,
@@ -53,7 +53,7 @@ class MyApplicationItem {
   });
 
   final int applicationId;
-  final int? employerId;
+  final int? profileId;
   final MyApplicationStatus status;
   final String updatedText;
   final String title;
@@ -65,7 +65,7 @@ class MyApplicationItem {
   factory MyApplicationItem.fromApplication(ApplicationVO application) {
     return MyApplicationItem(
       applicationId: application.applicationId,
-      employerId: application.employer.employerId,
+      profileId: application.employer.profileId,
       status: MyApplicationStatus.fromApiStatus(application.status),
       updatedText: _formatUpdatedText(
         application.updatedAt,

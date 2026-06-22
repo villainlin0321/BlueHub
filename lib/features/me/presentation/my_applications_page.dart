@@ -352,15 +352,15 @@ class _MyApplicationListView extends StatelessWidget {
           key: ValueKey<int>(item.applicationId),
           item: item,
           onActionTap: () {
-            final int? employerId = item.employerId;
-            if (employerId == null || employerId <= 0) {
+            final int? profileId = item.profileId;
+            if (profileId == null || profileId <= 0) {
               AppToast.show('暂无法联系该雇主');
               return;
             }
             context.push(
               RoutePaths.chat,
               extra: ChatPageArgs(
-                targetUserId: employerId,
+                targetUserId: profileId,
                 targetUserRole: 'employer',
                 nickname: item.companyName.trim().isEmpty
                     ? item.title

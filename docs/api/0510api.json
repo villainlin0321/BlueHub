@@ -5533,6 +5533,80 @@
         }
       }
     },
+    "/visa-packages/{packageId}/edit": {
+      "get": {
+        "tags": [
+          "签证套餐模块"
+        ],
+        "summary": "获取套餐编辑详情（服务商端，含 fileId 用于表单回填）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "getMyPackageForEdit",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "description": "套餐 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultProviderPackageEditVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/visa-packages/mine": {
       "get": {
         "tags": [
@@ -11451,6 +11525,192 @@
           }
         }
       },
+      "AppResultProviderPackageEditVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProviderPackageEditVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "ProviderMaterialEditVO": {
+        "type": "object",
+        "description": "套餐材料编辑信息",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "材料名称"
+          },
+          "description": {
+            "type": "string",
+            "description": "材料描述"
+          },
+          "isRequired": {
+            "type": "boolean",
+            "description": "是否必填"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序权重（升序）"
+          },
+          "exampleFileIds": {
+            "type": "array",
+            "description": "示例文件 file ID 列表（回填用）",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "exampleFileUrls": {
+            "type": "array",
+            "description": "示例文件访问 URL 列表（展示用）",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProviderPackageEditVO": {
+        "type": "object",
+        "description": "服务商套餐编辑详情（含 fileId，用于表单回填）",
+        "properties": {
+          "packageId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "套餐 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "套餐名称"
+          },
+          "targetCountry": {
+            "type": "string",
+            "description": "目标国家（ISO 码，如 DE）"
+          },
+          "visaType": {
+            "type": "string",
+            "description": "签证类型"
+          },
+          "estimatedDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "预计办理天数"
+          },
+          "currency": {
+            "type": "string",
+            "description": "结算货币"
+          },
+          "coverImageIds": {
+            "type": "array",
+            "description": "封面图片 file ID 列表（回填用）",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "coverImages": {
+            "type": "array",
+            "description": "封面图片访问 URL 列表（展示用）",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "套餐状态：draft / active / pending_review / rejected"
+          },
+          "tiers": {
+            "type": "array",
+            "description": "档位列表",
+            "items": {
+              "$ref": "#/components/schemas/ProviderTierEditVO"
+            }
+          }
+        }
+      },
+      "ProviderTierEditVO": {
+        "type": "object",
+        "description": "套餐档位编辑信息",
+        "properties": {
+          "tierId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "档位 ID（编辑已有档位时有值）"
+          },
+          "name": {
+            "type": "string",
+            "description": "档位名称"
+          },
+          "price": {
+            "type": "number",
+            "description": "价格"
+          },
+          "services": {
+            "type": "array",
+            "description": "固定服务项列表",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customServices": {
+            "type": "array",
+            "description": "自定义服务项列表",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "档位描述"
+          },
+          "showMaterials": {
+            "type": "boolean",
+            "description": "是否展示材料清单"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序权重（升序）"
+          },
+          "soldCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "已售数量（只读，>0 时不可删除）"
+          },
+          "materials": {
+            "type": "array",
+            "description": "材料清单",
+            "items": {
+              "$ref": "#/components/schemas/ProviderMaterialEditVO"
+            }
+          }
+        }
+      },
       "AppResultPageResultVisaPackageVO": {
         "type": "object",
         "description": "统一响应体",
@@ -14049,6 +14309,11 @@
         "type": "object",
         "description": "投递详情中的雇主简要信息",
         "properties": {
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "雇主档案 ID（profile_id，用于获取雇主详情）"
+          },
           "name": {
             "type": "string",
             "description": "雇主名称"

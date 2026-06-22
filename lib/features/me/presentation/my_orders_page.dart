@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../message/application/chat/chat_page_args.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
+import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../order/presentation/order_review_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
@@ -53,8 +55,23 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.contactMerchant:
-        AppToast.show(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
+        if (order.providerId <= 0) {
+          AppToast.show('订单.商家信息缺失'.tr());
+          return;
+        }
+        await context.push(
+          RoutePaths.chat,
+          extra: ChatPageArgs(
+            targetUserId: order.providerId,
+            targetUserRole: 'visa_provider',
+            nickname: order.provider.trim().isEmpty
+                ? '订单.服务商'.tr()
+                : order.provider,
+            avatarUrl: '',
+            relatedOrderId: order.orderId,
+            packageName: order.title,
+            orderStatus: order.tagLabel ?? '',
+          ),
         );
         return;
       case _OrderActionType.uploadMaterials:
@@ -66,6 +83,15 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.goPay:
+        await OrderPaymentBottomSheet.show(
+          context: context,
+          amountText: order.price,
+          orderId: order.orderId,
+          packageName: order.title,
+          parentContext: context,
+          onFlowCompleted: _loadOrders,
+        );
+        return;
       case _OrderActionType.supplementMaterials:
         AppToast.show(
           '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),

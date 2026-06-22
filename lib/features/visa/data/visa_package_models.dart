@@ -237,6 +237,168 @@ class TierVO {
   }
 }
 
+class VisaPackageEditMaterialVO {
+  const VisaPackageEditMaterialVO({
+    required this.name,
+    required this.description,
+    required this.isRequired,
+    required this.sortOrder,
+    required this.exampleFileIds,
+    required this.exampleFileUrls,
+  });
+
+  final String name;
+  final String description;
+  final bool isRequired;
+  final int sortOrder;
+  final List<int> exampleFileIds;
+  final List<String> exampleFileUrls;
+
+  factory VisaPackageEditMaterialVO.fromJson(JsonMap json) {
+    return VisaPackageEditMaterialVO(
+      name: readString(json, 'name'),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+      sortOrder: readInt(json, 'sortOrder'),
+      exampleFileIds: readIntList(json, 'exampleFileIds'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'name': name,
+      'description': description,
+      'isRequired': isRequired,
+      'sortOrder': sortOrder,
+      'exampleFileIds': exampleFileIds,
+      'exampleFileUrls': exampleFileUrls,
+    };
+  }
+}
+
+class VisaPackageEditTierVO {
+  const VisaPackageEditTierVO({
+    required this.tierId,
+    required this.name,
+    required this.price,
+    required this.services,
+    required this.customServices,
+    required this.description,
+    required this.showMaterials,
+    required this.sortOrder,
+    required this.soldCount,
+    required this.materials,
+  });
+
+  final int tierId;
+  final String name;
+  final double price;
+  final List<String> services;
+  final List<String> customServices;
+  final String description;
+  final bool showMaterials;
+  final int sortOrder;
+  final int soldCount;
+  final List<VisaPackageEditMaterialVO> materials;
+
+  factory VisaPackageEditTierVO.fromJson(JsonMap json) {
+    return VisaPackageEditTierVO(
+      tierId: readInt(json, 'tierId'),
+      name: readString(json, 'name'),
+      price: readDouble(json, 'price'),
+      services: readStringList(json, 'services'),
+      customServices: readStringList(json, 'customServices'),
+      description: readString(json, 'description'),
+      showMaterials: readBool(json, 'showMaterials'),
+      sortOrder: readInt(json, 'sortOrder'),
+      soldCount: readInt(json, 'soldCount'),
+      materials: readModelList<VisaPackageEditMaterialVO>(
+        json,
+        'materials',
+        VisaPackageEditMaterialVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'tierId': tierId,
+      'name': name,
+      'price': price,
+      'services': services,
+      'customServices': customServices,
+      'description': description,
+      'showMaterials': showMaterials,
+      'sortOrder': sortOrder,
+      'soldCount': soldCount,
+      'materials': materials
+          .map((item) => item.toJson())
+          .toList(growable: false),
+    };
+  }
+}
+
+class VisaPackageEditVO {
+  const VisaPackageEditVO({
+    required this.packageId,
+    required this.name,
+    required this.targetCountry,
+    required this.visaType,
+    required this.estimatedDays,
+    required this.currency,
+    required this.coverImageIds,
+    required this.coverImages,
+    required this.status,
+    required this.tiers,
+  });
+
+  final int packageId;
+  final String name;
+  final String targetCountry;
+  final String visaType;
+  final int estimatedDays;
+  final String currency;
+  final List<int> coverImageIds;
+  final List<String> coverImages;
+  final String status;
+  final List<VisaPackageEditTierVO> tiers;
+
+  factory VisaPackageEditVO.fromJson(JsonMap json) {
+    return VisaPackageEditVO(
+      packageId: readInt(json, 'packageId'),
+      name: readString(json, 'name'),
+      targetCountry: readString(json, 'targetCountry'),
+      visaType: readString(json, 'visaType'),
+      estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
+      coverImageIds: readIntList(json, 'coverImageIds'),
+      coverImages: readStringList(json, 'coverImages'),
+      status: readString(json, 'status'),
+      tiers: readModelList<VisaPackageEditTierVO>(
+        json,
+        'tiers',
+        VisaPackageEditTierVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'packageId': packageId,
+      'name': name,
+      'targetCountry': targetCountry,
+      'visaType': visaType,
+      'estimatedDays': estimatedDays,
+      'currency': currency,
+      'coverImageIds': coverImageIds,
+      'coverImages': coverImages,
+      'status': status,
+      'tiers': tiers.map((item) => item.toJson()).toList(growable: false),
+    };
+  }
+}
+
 class UpdatePackageStatusBO {
   const UpdatePackageStatusBO({required this.status});
 
