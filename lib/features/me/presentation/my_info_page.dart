@@ -239,7 +239,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
       return;
     }
 
-    _showMessage('当前版本暂不支持直接修改手机号');
+    _showMessage('我的.暂不支持直接修改手机号'.tr());
   }
 
   /// 选择头像后完成预签名上传，并把返回的文件 ID 回写到资料接口。
@@ -705,13 +705,13 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
     final String phone = _controller.text.trim();
     if (phone.isEmpty) {
       setState(() {
-        _errorText = '请输入手机号';
+        _errorText = '通用.请输入手机号'.tr();
       });
       return;
     }
     if (!RegExp(r'^\d{6,20}$').hasMatch(phone)) {
       setState(() {
-        _errorText = '请输入正确的手机号';
+        _errorText = '通用.请输入正确的手机号'.tr();
       });
       return;
     }
@@ -721,13 +721,13 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: '修改手机号',
+      title: '我的.修改手机号'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Text(
-            '请输入新的手机号',
+          Text(
+            '我的.请输入新的手机号'.tr(),
             style: TextStyle(
               color: Color(0xFF8C8C8C),
               fontSize: 14,
@@ -754,7 +754,7 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
             },
             onSubmitted: (_) => _handleConfirm(),
             decoration: InputDecoration(
-              hintText: '请输入手机号',
+              hintText: '通用.请输入手机号'.tr(),
               hintStyle: const TextStyle(
                 color: Color(0xFFBFBFBF),
                 fontSize: 15,
@@ -796,7 +796,10 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
           label: '通用.取消'.tr(),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        AppDialogAction.primary(label: '确认', onPressed: _handleConfirm),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: _handleConfirm,
+        ),
       ],
     );
   }

@@ -133,7 +133,11 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                     targetName: provider.name,
                     initialTitle: provider.name.trim().isEmpty
                         ? ''
-                        : '投诉 ${provider.name.trim()}',
+                        : '投诉.默认标题'.tr(
+                            namedArgs: <String, String>{
+                              'name': provider.name.trim(),
+                            },
+                          ),
                   ),
                 );
               },
@@ -1429,7 +1433,9 @@ String _buildMaterialSubtitle(PackageMaterialVO material) {
   }
   final int sampleCount = material.exampleFileUrls.length;
   if (sampleCount > 0) {
-    return '已提供 $sampleCount 个示例文件';
+    return '服务详情.已提供示例文件'.tr(
+      namedArgs: <String, String>{'count': sampleCount.toString()},
+    );
   }
   return '服务详情.请按服务要求准备相关材料'.tr();
 }

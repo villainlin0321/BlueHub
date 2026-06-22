@@ -84,7 +84,7 @@ String _formatSalary(JobSimpleVO job) {
   final double min = job.salaryMin;
   final double max = job.salaryMax;
   if (min <= 0 && max <= 0) {
-    return '暂无'.tr();
+    return '通用.暂无'.tr();
   }
 
   return AppCurrency.formatRange(

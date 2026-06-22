@@ -52,7 +52,7 @@ class ComplaintDetailPage extends ConsumerWidget {
           ),
         ),
         title: Text(
-          '投诉详情',
+          '投诉.详情标题'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: const Color(0xE6000000),
             fontWeight: FontWeight.w500,
@@ -66,7 +66,7 @@ class ComplaintDetailPage extends ConsumerWidget {
         error: (Object error, StackTrace _) {
           final String message = error is ApiException
               ? error.message
-              : '投诉详情加载失败';
+              : '投诉.详情加载失败'.tr();
           return _ComplaintErrorState(
             message: message,
             onRetry: () =>
@@ -90,16 +90,19 @@ class _ComplaintDetailBody extends StatelessWidget {
       children: <Widget>[
         _SectionCard(
           children: <Widget>[
-            _InfoRow(label: '投诉编号', value: '#${detail.complaintId}'),
-            _InfoRow(label: '投诉对象', value: detail.targetName),
-            _InfoRow(label: '对象类型', value: _targetTypeLabel(detail.targetType)),
-            _InfoRow(label: '状态', value: detail.displayStatusLabel),
+            _InfoRow(label: '投诉.编号'.tr(), value: '#${detail.complaintId}'),
+            _InfoRow(label: '投诉.对象'.tr(), value: detail.targetName),
+            _InfoRow(
+              label: '投诉.对象类型'.tr(),
+              value: _targetTypeLabel(detail.targetType),
+            ),
+            _InfoRow(label: '投诉.状态'.tr(), value: detail.displayStatusLabel),
           ],
         ),
         const SizedBox(height: 12),
         _SectionCard(
           children: <Widget>[
-            _BlockTitle(title: '投诉标题'),
+            _BlockTitle(title: '投诉.标题'.tr()),
             const SizedBox(height: 8),
             Text(
               detail.title.trim().isEmpty ? '-' : detail.title.trim(),
@@ -110,7 +113,7 @@ class _ComplaintDetailBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _BlockTitle(title: '投诉内容'),
+            _BlockTitle(title: '投诉.内容'.tr()),
             const SizedBox(height: 8),
             Text(
               detail.content.trim().isEmpty ? '-' : detail.content.trim(),
@@ -125,11 +128,11 @@ class _ComplaintDetailBody extends StatelessWidget {
         const SizedBox(height: 12),
         _SectionCard(
           children: <Widget>[
-            _BlockTitle(title: '附件'),
+            _BlockTitle(title: '投诉.附件'.tr()),
             const SizedBox(height: 12),
             if (detail.attachmentUrls.isEmpty)
-              const Text(
-                '暂无附件',
+              Text(
+                '投诉.暂无附件'.tr(),
                 style: TextStyle(color: Color(0xFF8C8C8C), fontSize: 13),
               )
             else
@@ -144,8 +147,8 @@ class _ComplaintDetailBody extends StatelessWidget {
         const SizedBox(height: 12),
         _SectionCard(
           children: <Widget>[
-            _InfoRow(label: '创建时间', value: _formatDate(detail.createdAt)),
-            _InfoRow(label: '更新时间', value: _formatDate(detail.updatedAt)),
+            _InfoRow(label: '投诉.创建时间'.tr(), value: _formatDate(detail.createdAt)),
+            _InfoRow(label: '投诉.更新时间'.tr(), value: _formatDate(detail.updatedAt)),
           ],
         ),
       ],
@@ -155,9 +158,9 @@ class _ComplaintDetailBody extends StatelessWidget {
   String _targetTypeLabel(String raw) {
     switch (raw.trim().toLowerCase()) {
       case 'visa_provider':
-        return '签证服务商';
+        return '投诉.对象类型签证服务商'.tr();
       case 'employer':
-        return '雇主';
+        return '投诉.对象类型雇主'.tr();
       default:
         return raw.trim().isEmpty ? '-' : raw.trim();
     }
@@ -301,7 +304,7 @@ class _AttachmentItem extends StatelessWidget {
   Future<void> _openUrl(BuildContext context) async {
     final Uri? uri = Uri.tryParse(url);
     if (uri == null) {
-      AppToast.show('附件链接无效');
+      AppToast.show('投诉.附件链接无效'.tr());
       return;
     }
     final bool launched = await launchUrl(
@@ -309,7 +312,7 @@ class _AttachmentItem extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     );
     if (!launched) {
-      AppToast.show('附件打开失败');
+      AppToast.show('投诉.附件打开失败'.tr());
     }
   }
 
@@ -368,7 +371,7 @@ class _ComplaintErrorState extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),

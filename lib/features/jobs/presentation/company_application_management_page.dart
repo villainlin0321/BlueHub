@@ -232,7 +232,7 @@ class _CompanyApplicationTabViewState
               children: <Widget>[
                 Center(
                   child: AppEmptyState(
-                    message: listState.errorMessage ?? '暂无数据'.tr(),
+                    message: listState.errorMessage ?? '通用.暂无数据'.tr(),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                 ),

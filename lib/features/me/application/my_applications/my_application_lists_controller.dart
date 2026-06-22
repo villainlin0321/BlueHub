@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/network/api_exception.dart';
@@ -177,7 +178,7 @@ class MyApplicationListsController
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '我的应聘加载失败，请稍后重试' : message;
+    return message.isEmpty ? '我的应聘.加载失败请稍后重试'.tr() : message;
   }
 }
 

@@ -45,7 +45,7 @@ class MyComplaintsPage extends ConsumerWidget {
           ),
         ),
         title: Text(
-          '我的投诉',
+          '投诉.我的投诉'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: const Color(0xE6000000),
             fontWeight: FontWeight.w500,
@@ -90,7 +90,7 @@ class MyComplaintsPage extends ConsumerWidget {
         error: (Object error, StackTrace _) {
           final String message = error is ApiException
               ? error.message
-              : '投诉列表加载失败';
+              : '投诉.列表加载失败'.tr();
           return _ErrorState(
             message: message,
             onRetry: () => ref.invalidate(myComplaintsProvider(query)),
@@ -124,7 +124,9 @@ class _ComplaintListTile extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      item.title.trim().isEmpty ? '未命名投诉' : item.title.trim(),
+                      item.title.trim().isEmpty
+                          ? '投诉.未命名投诉'.tr()
+                          : item.title.trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -224,12 +226,15 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text(
-              '暂无投诉记录',
+            Text(
+              '投诉.暂无投诉记录'.tr(),
               style: TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRefresh, child: const Text('刷新')),
+            OutlinedButton(
+              onPressed: onRefresh,
+              child: Text('通用.刷新'.tr()),
+            ),
           ],
         ),
       ),
@@ -257,7 +262,7 @@ class _ErrorState extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
           ],
         ),
       ),

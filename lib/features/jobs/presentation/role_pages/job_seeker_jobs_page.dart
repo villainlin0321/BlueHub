@@ -57,7 +57,11 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
           min: 1500,
           max: 2500,
         ),
-        _SalaryRangeOption(key: '2500+', label: '2500以上', min: 2500),
+        _SalaryRangeOption(
+          key: '2500+',
+          labelKey: '招聘.薪资2500以上',
+          min: 2500,
+        ),
       ];
   static const List<_SortOption> _sortOptions = <_SortOption>[
     _SortOption(key: 'latest', labelKey: '招聘.最新'),
@@ -617,7 +621,7 @@ class _FilterRow extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: FilterBottomSheetChip(
-                  title: '选择国家'.tr(),
+                  title: '订单.选择国家'.tr(),
                   value: selectedCountryCode ?? '',
                   options: countrySheetOptions,
                   enabled: isCountryEnabled,
@@ -627,7 +631,7 @@ class _FilterRow extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: FilterBottomSheetChip(
-                  title: '选择分类'.tr(),
+                  title: '招聘.选择分类'.tr(),
                   value: selectedPositionKeyword ?? '',
                   options: positionSheetOptions,
                   enabled: isPositionEnabled,
@@ -637,7 +641,7 @@ class _FilterRow extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: _SalaryBottomSheetChip(
-                  title: '选择薪资'.tr(),
+                  title: '岗位发布.选择薪资'.tr(),
                   placeholderLabel: salaryOptions.first.label,
                   selectedPresetKey: selectedSalaryRangeKey,
                   selectedCustomMin: selectedCustomSalaryMin,
@@ -653,7 +657,7 @@ class _FilterRow extends StatelessWidget {
         SizedBox(width: 8),
         _CombinedFilterBottomSheetChip(
           width: 64,
-          title: '筛选'.tr(),
+          title: '招聘.筛选'.tr(),
           enabled: isCountryEnabled && isPositionEnabled,
           selectedCountryCode: selectedCountryCode,
           selectedPositionKeyword: selectedPositionKeyword,
@@ -795,14 +799,14 @@ class _SalaryBottomSheetChip extends StatelessWidget {
               return;
             }
             if (minText.isEmpty || maxText.isEmpty) {
-              AppToast.show('请填写完整的薪资范围'.tr());
+              AppToast.show('岗位发布.请填写完整的薪资范围'.tr());
               return;
             }
 
             final double min = double.parse(minText);
             final double max = double.parse(maxText);
             if (min > max) {
-              AppToast.show('最低薪资不能大于最高薪资'.tr());
+              AppToast.show('岗位发布.最低薪资不能大于最高薪资'.tr());
               return;
             }
 
@@ -1150,14 +1154,14 @@ _SalaryFilterSelection? _resolveSalarySelection(
     return const _SalaryFilterSelection();
   }
   if (minText.isEmpty || maxText.isEmpty) {
-    AppToast.show('请填写完整的薪资范围'.tr());
+    AppToast.show('岗位发布.请填写完整的薪资范围'.tr());
     return null;
   }
 
   final double min = double.parse(minText);
   final double max = double.parse(maxText);
   if (min > max) {
-    AppToast.show('最低薪资不能大于最高薪资'.tr());
+    AppToast.show('岗位发布.最低薪资不能大于最高薪资'.tr());
     return null;
   }
   return _SalaryFilterSelection(customMin: min, customMax: max);
@@ -1262,7 +1266,7 @@ class _CombinedFilterSheetContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    '自定义薪资'.tr(),
+                    '岗位发布.自定义薪资'.tr(),
                     style: const TextStyle(
                       color: Color(0xFF262626),
                       fontSize: 14,
@@ -1276,14 +1280,14 @@ class _CombinedFilterSheetContent extends StatelessWidget {
                       Expanded(
                         child: _SalaryInputField(
                           controller: minController,
-                          hintText: '最低薪资'.tr(),
+                          hintText: '岗位发布.最低薪资'.tr(),
                           onChanged: (_) => onCustomSalaryChanged(),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          '至'.tr(),
+                          '岗位发布.至'.tr(),
                           style: const TextStyle(
                             color: Color(0xFF262626),
                             fontSize: 14,
@@ -1303,7 +1307,7 @@ class _CombinedFilterSheetContent extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 32),
                 child: _SalaryInputField(
                   controller: maxController,
-                  hintText: '最高薪资'.tr(),
+                  hintText: '岗位发布.最高薪资'.tr(),
                   onChanged: (_) => onCustomSalaryChanged(),
                 ),
               ),
@@ -1428,7 +1432,7 @@ class _SalaryFilterSheetContent extends StatelessWidget {
         ),
         const SizedBox(height: 30),
         Text(
-          '自定义薪资'.tr(),
+          '岗位发布.自定义薪资'.tr(),
           style: const TextStyle(
             color: Color(0xFF262626),
             fontSize: 14,
@@ -1442,14 +1446,14 @@ class _SalaryFilterSheetContent extends StatelessWidget {
             Expanded(
               child: _SalaryInputField(
                 controller: minController,
-                hintText: '最低薪资'.tr(),
+                hintText: '岗位发布.最低薪资'.tr(),
                 onChanged: (_) => onCustomValueChanged(),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                '至'.tr(),
+                '岗位发布.至'.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 14,
@@ -1461,7 +1465,7 @@ class _SalaryFilterSheetContent extends StatelessWidget {
             Expanded(
               child: _SalaryInputField(
                 controller: maxController,
-                hintText: '最高薪资'.tr(),
+                hintText: '岗位发布.最高薪资'.tr(),
                 onChanged: (_) => onCustomValueChanged(),
               ),
             ),

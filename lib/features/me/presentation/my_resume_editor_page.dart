@@ -2060,19 +2060,19 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   Future<void> _openCustomExpectedJobDialog() async {
     final String? result = await showAppTextInputDialog(
       context: context,
-      title: '期望职位',
-      hintText: '期望职位',
+      title: '我的.自定义期望职位标题'.tr(),
+      hintText: '我的.自定义期望职位占位'.tr(),
     );
     if (!mounted || result == null) {
       return;
     }
     final String value = result.trim();
     if (value.isEmpty) {
-      AppToast.show('期望职位不能为空');
+      AppToast.show('我的.期望职位不能为空'.tr());
       return;
     }
     if (_jobTags.contains(value)) {
-      AppToast.show('期望职位已存在');
+      AppToast.show('我的.期望职位已存在'.tr());
       return;
     }
     setState(() {

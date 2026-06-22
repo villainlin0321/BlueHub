@@ -199,7 +199,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return;
     }
     if (!initialized) {
-      _emitFeedback('语音识别不可用，请检查麦克风和语音识别权限', isError: true);
+      _emitFeedback('AI.语音识别不可用'.tr(), isError: true);
       return;
     }
 
@@ -293,7 +293,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return;
     }
     if (recognizedText.isEmpty) {
-      _emitFeedback('未识别到语音内容', isError: true);
+      _emitFeedback('AI.未识别到语音内容'.tr(), isError: true);
       return;
     }
     await sendText(recognizedText, language: language);

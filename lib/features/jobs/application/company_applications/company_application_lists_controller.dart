@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/application_models.dart';
@@ -144,9 +145,9 @@ class CompanyApplicationListsController
   }) async {
     final CompanyApplicationListState current = getState(sourceStatus);
     if (current.processingActions.containsKey(applicationId)) {
-      return const ApplicationStatusUpdateResult(
+      return ApplicationStatusUpdateResult(
         success: false,
-        message: '正在处理中，请稍候',
+        message: '应聘管理.正在处理中请稍候'.tr(),
       );
     }
 
@@ -185,7 +186,9 @@ class CompanyApplicationListsController
 
       return ApplicationStatusUpdateResult(
         success: true,
-        message: '${nextStatus.label}成功',
+        message: '应聘管理.操作成功'.tr(
+          namedArgs: <String, String>{'action': nextStatus.labelKey.tr()},
+        ),
       );
     } catch (error) {
       final CompanyApplicationListState latest = getState(sourceStatus);
@@ -263,7 +266,7 @@ class CompanyApplicationListsController
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '加载失败，请稍后重试' : message;
+    return message.isEmpty ? '应聘管理.加载失败'.tr() : message;
   }
 }
 

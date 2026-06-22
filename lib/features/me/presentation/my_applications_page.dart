@@ -354,7 +354,7 @@ class _MyApplicationListView extends StatelessWidget {
           onActionTap: () {
             final int? profileId = item.profileId;
             if (profileId == null || profileId <= 0) {
-              AppToast.show('暂无法联系该雇主');
+              AppToast.show('招聘.雇主信息缺失'.tr());
               return;
             }
             context.push(

@@ -145,7 +145,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
         ? uri!.pathSegments.last.trim()
         : value.trim().split('/').last.trim();
     if (lastSegment.isEmpty) {
-      return '事例文件';
+      return '签证编辑.示例文件'.tr();
     }
     return Uri.decodeComponent(lastSegment);
   }
@@ -485,7 +485,14 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           (PickedUploadFile file) => file.state != UploadItemState.success,
         );
         if (hasPendingFiles) {
-          _showToast('请等待第${tierIndex + 1}档材料${materialIndex + 1}的事例上传完成后再提交');
+          _showToast(
+            '签证编辑.请等待示例文件上传完成'.tr(
+              namedArgs: <String, String>{
+                'tierIndex': (tierIndex + 1).toString(),
+                'materialIndex': (materialIndex + 1).toString(),
+              },
+            ),
+          );
           return false;
         }
       }
@@ -637,7 +644,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showToast('打开相机失败'.tr());
+      _showToast('上传.打开相机失败'.tr());
     }
   }
 
@@ -656,7 +663,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showToast('打开相册失败'.tr());
+      _showToast('上传.打开相册失败'.tr());
     }
   }
 
@@ -668,7 +675,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       final List<PickedUploadFile> pickedFiles =
           await UploadPickerUtils.pickFromFiles();
       if (pickedFiles.isEmpty) {
-        _showToast('未能读取所选文件'.tr());
+        _showToast('订单.未能读取所选文件'.tr());
         return;
       }
       await _appendExampleFiles(tierIndex, materialIndex, pickedFiles);
@@ -676,7 +683,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (!mounted) {
         return;
       }
-      _showToast('选择文件失败'.tr());
+      _showToast('订单.选择文件失败'.tr());
     }
   }
 
@@ -723,7 +730,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
         final uploaded = await fileService.uploadFile(
           path: file.path,
           scene: FileScene.material,
-          errorMessage: '签证材料事例上传失败',
+          errorMessage: '签证编辑.示例文件上传失败'.tr(),
           onSendProgress: (int sent, int total) {
             if (!mounted || total <= 0) {
               return;
@@ -769,7 +776,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
             progress: 0,
             errorMessage: _resolveUploadErrorMessage(
               error,
-              fallback: '上传失败请重试'.tr(),
+              fallback: '订单.上传失败请重试'.tr(),
             ),
             uploadedFileId: null,
             uploadedFileUrl: null,
@@ -999,7 +1006,7 @@ class _VisaPackageUploadTypeBottomSheet extends StatelessWidget {
                       const SizedBox(width: 40),
                       const Spacer(),
                       Text(
-                        '上传事例',
+                        '签证编辑.上传示例文件'.tr(),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: const Color(0xFF171A1D),
@@ -1036,19 +1043,19 @@ class _VisaPackageUploadTypeBottomSheet extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       _VisaPackageUploadTypeAction(
-                        label: '拍照上传'.tr(),
+                        label: '订单.拍照上传'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_camera.svg',
                         onTap: onCameraTap,
                       ),
                       _VisaPackageUploadTypeAction(
-                        label: '本地相册'.tr(),
+                        label: '订单.本地相册'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_gallery.svg',
                         onTap: onGalleryTap,
                       ),
                       _VisaPackageUploadTypeAction(
-                        label: '本地文件'.tr(),
+                        label: '订单.本地文件'.tr(),
                         iconAssetPath:
                             'assets/images/order_upload_sheet_file.svg',
                         onTap: onFileTap,

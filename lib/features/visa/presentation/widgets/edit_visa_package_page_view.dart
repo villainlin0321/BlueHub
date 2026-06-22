@@ -552,7 +552,10 @@ class _ExampleUploadContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (files.isEmpty) {
-      return _UploadPlaceholder(onTap: onAddTap, label: '上传事例');
+      return _UploadPlaceholder(
+        onTap: onAddTap,
+        label: '签证编辑.上传示例文件'.tr(),
+      );
     }
 
     return Column(
@@ -567,7 +570,10 @@ class _ExampleUploadContent extends StatelessWidget {
             ),
           );
         }),
-        _UploadPlaceholder(onTap: onAddTap, label: '上传事例'),
+        _UploadPlaceholder(
+          onTap: onAddTap,
+          label: '签证编辑.上传示例文件'.tr(),
+        ),
       ],
     );
   }
@@ -684,7 +690,7 @@ class _UploadFileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      (file.errorMessage ?? '上传失败请重试'.tr()).trim(),
+                      (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(

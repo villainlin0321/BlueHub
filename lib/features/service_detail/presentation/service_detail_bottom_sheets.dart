@@ -247,11 +247,11 @@ class _ApplyBottomSheetContentState
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     if (name.isEmpty) {
-      _showMessage('请输入姓名');
+      _showMessage('通用.请输入姓名'.tr());
       return;
     }
     if (phone.isEmpty) {
-      _showMessage('请输入手机号');
+      _showMessage('通用.请输入手机号'.tr());
       return;
     }
     FocusScope.of(context).unfocus();

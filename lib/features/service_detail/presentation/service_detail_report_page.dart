@@ -111,7 +111,7 @@ class _ServiceDetailReportPageState
       if (!mounted) {
         return;
       }
-      _showMessage('投诉已提交');
+      _showMessage('投诉.已提交'.tr());
       context.pushReplacement(
         RoutePaths.complaintDetail,
         extra: ComplaintDetailPageArgs(complaintId: complaintId),
@@ -199,7 +199,7 @@ class _ServiceDetailReportPageState
                     ),
                     child: Text(
                       widget.args.targetName.trim().isEmpty
-                          ? '未命名对象'
+                          ? '投诉.未命名对象'.tr()
                           : widget.args.targetName.trim(),
                       style: const TextStyle(
                         color: Color(0xFF262626),
@@ -210,7 +210,7 @@ class _ServiceDetailReportPageState
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '投诉标题',
+                    '投诉.标题'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
                       fontSize: 14,
@@ -230,8 +230,8 @@ class _ServiceDetailReportPageState
                       inputFormatters: <TextInputFormatter>[
                         LengthLimitingTextInputFormatter(_maxTitleLength),
                       ],
-                      decoration: const InputDecoration(
-                        hintText: '请输入投诉标题',
+                      decoration: InputDecoration(
+                        hintText: '投诉.请输入投诉标题'.tr(),
                         border: InputBorder.none,
                       ),
                       style: const TextStyle(
@@ -243,7 +243,7 @@ class _ServiceDetailReportPageState
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '投诉内容',
+                    '投诉.内容'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
                       fontSize: 14,
@@ -342,7 +342,7 @@ class _ServiceDetailReportPageState
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
-    return message.isEmpty ? '投诉提交失败' : message;
+    return message.isEmpty ? '投诉.提交失败'.tr() : message;
   }
 }
 
@@ -386,7 +386,7 @@ class _ReportSubmitBar extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                isSubmitting ? '提交中...' : '通用.提交'.tr(),
+                isSubmitting ? '通用.提交中'.tr() : '通用.提交'.tr(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,

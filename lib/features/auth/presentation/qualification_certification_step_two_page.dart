@@ -96,7 +96,7 @@ class _QualificationCertificationStepTwoPageState
             role: _role,
             file: pickedFile,
             docType: docType,
-            docName: docType.defaultDocName,
+            docName: docType.localizedDefaultDocName,
           );
       if (!mounted) {
         return;

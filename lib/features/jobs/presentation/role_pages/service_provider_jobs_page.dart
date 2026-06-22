@@ -335,7 +335,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
         key: PageStorageKey<String>(
           'service-provider-jobs-empty-${widget.tab.name}',
         ),
-        text: widget.tab.emptyText,
+        text: widget.tab.emptyText.tr(),
         bottomPadding: bottomPadding,
       );
     }
@@ -397,7 +397,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
               key: PageStorageKey<String>(
                 'service-provider-jobs-empty-${widget.tab.name}',
               ),
-              text: widget.tab.emptyText,
+              text: widget.tab.emptyText.tr(),
               bottomPadding: bottomPadding,
             );
           }

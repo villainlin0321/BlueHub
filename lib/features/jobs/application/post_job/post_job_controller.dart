@@ -77,8 +77,8 @@ class PostJobController extends Notifier<PostJobState> {
     '捷克': 'CZ',
     '匈牙利': 'HU',
   };
-  static final Map<String, String> _countryNameMap = _countryCodeMap.map(
-    (String key, String value) => MapEntry<String, String>(value, key),
+  static final Map<String, String> _countryLabelKeyMap = _countryCodeMap.map(
+    (String key, String value) => MapEntry<String, String>(value, '国家.$key'),
   );
 
   @override
@@ -461,7 +461,8 @@ class PostJobController extends Notifier<PostJobState> {
     if (detail.address.trim().isNotEmpty) {
       return detail.address.trim();
     }
-    final String country = _countryNameMap[detail.country] ?? detail.country;
+    final String countryKey = _countryLabelKeyMap[detail.country] ?? '';
+    final String country = countryKey.isEmpty ? detail.country : countryKey.tr();
     final List<String> parts = <String>[
       country.trim(),
       detail.city.trim(),

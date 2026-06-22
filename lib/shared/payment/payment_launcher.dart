@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fluwx/fluwx.dart';
 import 'package:tobias/tobias.dart';
 
@@ -73,17 +74,17 @@ class PaymentLauncher {
   Future<AppPaymentLaunchResult> payWithAlipay(PaymentResultVO payload) async {
     final String orderString = (payload.alipayOrderString ?? '').trim();
     if (orderString.isEmpty) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '支付宝支付参数缺失',
+        message: '支付.支付宝支付参数缺失'.tr(),
       );
     }
 
     final bool isInstalled = await _tobias.isAliPayInstalled;
     if (!isInstalled) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '请先安装支付宝客户端',
+        message: '支付.请先安装支付宝客户端'.tr(),
       );
     }
 
@@ -106,25 +107,25 @@ class PaymentLauncher {
         case '9000':
           return AppPaymentLaunchResult(
             status: AppPaymentLaunchStatus.success,
-            message: memo.isEmpty ? '支付宝支付成功' : memo,
+            message: memo.isEmpty ? '支付.支付宝支付成功'.tr() : memo,
             raw: result,
           );
         case '6001':
           return AppPaymentLaunchResult(
             status: AppPaymentLaunchStatus.cancel,
-            message: memo.isEmpty ? '已取消支付宝支付' : memo,
+            message: memo.isEmpty ? '支付.已取消支付宝支付'.tr() : memo,
             raw: result,
           );
         case '8000':
           return AppPaymentLaunchResult(
             status: AppPaymentLaunchStatus.pending,
-            message: memo.isEmpty ? '支付宝支付结果确认中' : memo,
+            message: memo.isEmpty ? '支付.支付宝支付结果确认中'.tr() : memo,
             raw: result,
           );
         default:
           return AppPaymentLaunchResult(
             status: AppPaymentLaunchStatus.failed,
-            message: memo.isEmpty ? '支付宝支付失败' : memo,
+            message: memo.isEmpty ? '支付.支付宝支付失败'.tr() : memo,
             raw: result,
           );
       }
@@ -135,27 +136,27 @@ class PaymentLauncher {
         error: error,
         stackTrace: stackTrace,
       );
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '支付宝支付拉起失败',
+        message: '支付.支付宝支付拉起失败'.tr(),
       );
     }
   }
 
   Future<AppPaymentLaunchResult> payWithWeChat(PaymentResultVO payload) async {
     if (!_config.hasWeChatConfig) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '微信支付配置缺失',
+        message: '支付.微信支付配置缺失'.tr(),
       );
     }
     if (!_didInitWeChat) {
       await initialize(config: _config);
     }
     if (!_didInitWeChat) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '微信支付初始化失败',
+        message: '支付.微信支付初始化失败'.tr(),
       );
     }
 
@@ -171,17 +172,17 @@ class PaymentLauncher {
         nonceStr == null ||
         sign == null ||
         timestamp == null) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '微信支付参数缺失',
+        message: '支付.微信支付参数缺失'.tr(),
       );
     }
 
     final bool isInstalled = await _fluwx.isWeChatInstalled;
     if (!isInstalled) {
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '请先安装微信客户端',
+        message: '支付.请先安装微信客户端'.tr(),
       );
     }
 
@@ -210,18 +211,18 @@ class PaymentLauncher {
       );
       if (!launched) {
         cancelable.cancel();
-        return const AppPaymentLaunchResult(
+        return AppPaymentLaunchResult(
           status: AppPaymentLaunchStatus.failed,
-          message: '微信支付拉起失败',
+          message: '支付.微信支付拉起失败'.tr(),
         );
       }
       return completer.future.timeout(
         const Duration(minutes: 3),
         onTimeout: () {
           cancelable.cancel();
-          return const AppPaymentLaunchResult(
+          return AppPaymentLaunchResult(
             status: AppPaymentLaunchStatus.unknown,
-            message: '微信支付结果回调超时',
+            message: '支付.微信支付结果回调超时'.tr(),
           );
         },
       );
@@ -233,9 +234,9 @@ class PaymentLauncher {
         error: error,
         stackTrace: stackTrace,
       );
-      return const AppPaymentLaunchResult(
+      return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.failed,
-        message: '微信支付拉起失败',
+        message: '支付.微信支付拉起失败'.tr(),
       );
     }
   }
@@ -250,21 +251,21 @@ class PaymentLauncher {
     if (code == 0) {
       return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.success,
-        message: '微信支付成功',
+        message: '支付.微信支付成功'.tr(),
         raw: response.toRecord(),
       );
     }
     if (code == -2) {
       return AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.cancel,
-        message: '已取消微信支付',
+        message: '支付.已取消微信支付'.tr(),
         raw: response.toRecord(),
       );
     }
     return AppPaymentLaunchResult(
       status: AppPaymentLaunchStatus.failed,
       message: (response.errStr ?? '').trim().isEmpty
-          ? '微信支付失败'
+          ? '支付.微信支付失败'.tr()
           : response.errStr!.trim(),
       raw: response.toRecord(),
     );

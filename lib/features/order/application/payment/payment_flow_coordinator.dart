@@ -70,9 +70,9 @@ class PaymentFlowCoordinator {
           message: launchResult.message,
         );
       case AppPaymentLaunchStatus.pending:
-        return const PaymentFlowResult(
+        return PaymentFlowResult(
           status: PaymentFlowStatus.pending,
-          message: '支付结果确认中，请稍后刷新订单状态',
+          message: '支付.支付结果确认中请稍后刷新订单状态'.tr(),
         );
       case AppPaymentLaunchStatus.failed:
       case AppPaymentLaunchStatus.unknown:
@@ -98,7 +98,7 @@ class PaymentFlowCoordinator {
       if (normalized == 'failed') {
         return PaymentFlowResult(
           status: PaymentFlowStatus.failed,
-          message: '支付失败，请稍后重试',
+          message: '支付.支付失败请稍后重试'.tr(),
           paymentStatus: latestStatus,
         );
       }
@@ -108,7 +108,7 @@ class PaymentFlowCoordinator {
     }
     return PaymentFlowResult(
       status: PaymentFlowStatus.pending,
-      message: '支付结果确认中，请稍后刷新订单状态',
+      message: '支付.支付结果确认中请稍后刷新订单状态'.tr(),
       paymentStatus: latestStatus,
     );
   }

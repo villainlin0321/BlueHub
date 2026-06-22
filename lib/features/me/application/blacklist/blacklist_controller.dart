@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/network/api_exception.dart';
@@ -139,14 +140,14 @@ class BlacklistController extends Notifier<BlacklistState> {
     if (error is ApiException && error.message.trim().isNotEmpty) {
       return error.message;
     }
-    return '黑名单加载失败，请稍后重试';
+    return '我的.黑名单加载失败'.tr();
   }
 
   String _resolveRemoveErrorMessage(Object error) {
     if (error is ApiException && error.message.trim().isNotEmpty) {
       return error.message;
     }
-    return '移除失败，请稍后重试';
+    return '我的.移除失败'.tr();
   }
 }
 

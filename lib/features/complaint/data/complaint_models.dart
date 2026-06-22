@@ -1,15 +1,19 @@
+import 'package:easy_localization/easy_localization.dart';
+
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
 enum ComplaintStatus {
-  pending('pending', '待处理'),
-  processing('processing', '处理中'),
-  resolved('resolved', '已解决'),
-  rejected('rejected', '已驳回');
+  pending('pending', '投诉.待处理'),
+  processing('processing', '投诉.处理中'),
+  resolved('resolved', '投诉.已解决'),
+  rejected('rejected', '投诉.已驳回');
 
-  const ComplaintStatus(this.value, this.fallbackLabel);
+  const ComplaintStatus(this.value, this.fallbackLabelKey);
 
   final String value;
-  final String fallbackLabel;
+  final String fallbackLabelKey;
+
+  String get localizedFallbackLabel => fallbackLabelKey.tr();
 
   static ComplaintStatus? fromValue(String raw) {
     final String normalized = raw.trim().toLowerCase();
@@ -107,7 +111,7 @@ class ComplaintVO {
   ComplaintStatus? get statusEnum => ComplaintStatus.fromValue(status);
   String get displayStatusLabel => statusLabel.trim().isNotEmpty
       ? statusLabel.trim()
-      : (statusEnum?.fallbackLabel ?? status.trim());
+      : (statusEnum?.localizedFallbackLabel ?? status.trim());
 
   factory ComplaintVO.fromJson(JsonMap json) {
     return ComplaintVO(
