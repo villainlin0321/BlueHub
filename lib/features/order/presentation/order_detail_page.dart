@@ -15,6 +15,7 @@ import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../shell/application/shell_role_provider.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -1480,7 +1481,7 @@ class _OrderInfoCard extends StatelessWidget {
           const SizedBox(height: 8),
           _OrderInfoRow(
             label: '订单.套餐价格'.tr(),
-            value: _formatAmount(order.amount),
+            value: _formatAmount(order.amount, order.currency),
           ),
           const SizedBox(height: 8),
           _OrderInfoRow(label: '订单.订单号'.tr(), value: order.orderNo),
@@ -1489,11 +1490,13 @@ class _OrderInfoCard extends StatelessWidget {
     );
   }
 
-  static String _formatAmount(double amount) {
-    final String value = amount == amount.roundToDouble()
-        ? amount.toInt().toString()
-        : amount.toStringAsFixed(2);
-    return '¥$value';
+  static String _formatAmount(double amount, String? currency) {
+    return AppCurrency.formatAmount(
+      amount,
+      currency,
+      fractionDigitsWhenNeeded: 2,
+      trimTrailingZeros: false,
+    );
   }
 }
 

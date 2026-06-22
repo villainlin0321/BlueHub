@@ -16,8 +16,11 @@ import '../../config/data/config_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/network/services/config_service.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 import '../../../shared/widgets/app_text_input_dialog.dart';
+import '../../../shared/widgets/field_trailing_selector.dart';
 import '../data/resume_models.dart';
 import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
@@ -187,6 +190,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   late final TextEditingController _salaryValueController;
   late final TextEditingController _salaryMaxValueController;
   late String _selfEvaluation;
+  late AppCurrency _selectedSalaryCurrency;
   bool _isSaving = false;
   bool _didSave = false;
 
@@ -230,6 +234,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       text: _extractSalaryMaxValue(_draft.salary),
     );
     _selfEvaluation = _draft.summary;
+    _selectedSalaryCurrency = AppCurrency.fromApiValue(
+      _draft.salaryCurrency,
+      fallback: AppCurrency.eur,
+    );
   }
 
   @override
@@ -707,9 +715,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       data: (result) => buildCountryLabelMap(result.list),
       orElse: () => const <String, String>{},
     );
-    final String currencyLabel = _draft.salaryCurrency.trim().isEmpty
-        ? '我的.币种未设置'.tr()
-        : _draft.salaryCurrency;
+    final String currencyLabel = _selectedSalaryCurrency.labelKey.tr();
 
     return Container(
       color: Colors.white,
@@ -782,28 +788,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           const SizedBox(height: 24),
           _buildLabeledRow(
             label: '我的.期望薪资月'.tr(),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  currencyLabel,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                SvgPicture.asset(
-                  'assets/images/icon_arrow_down.svg',
-                  width: 16,
-                  height: 16,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.black,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ],
+            trailing: FieldTrailingSelector(
+              label: currencyLabel,
+              onTap: _openSalaryCurrencySheet,
+              textStyle: const TextStyle(
+                color: Color(0xFF595959),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1816,7 +1808,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         countries: _countryTags,
         salaryMin: _parseSalaryMin(),
         salaryMax: _parseSalaryMax(),
-        salaryCurrency: _draft.salaryCurrency,
+        salaryCurrency: _selectedSalaryCurrency.apiValue,
       ),
       workExperiences: _experiences
           .asMap()
@@ -1960,7 +1952,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       salary: _salaryMaxValue.isEmpty
           ? _salaryValue
           : '$_salaryValue-$_salaryMaxValue',
-      salaryCurrency: _draft.salaryCurrency,
+      salaryCurrency: _selectedSalaryCurrency.labelKey.tr(),
       jobTitle: firstExperience == null
           ? _draft.jobTitle
           : _buildDraftTitleFromExperience(firstExperience),
@@ -2135,6 +2127,19 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _countryTags
         ..clear()
         ..addAll(result.map((CountryVO item) => item.countryCode.trim()));
+    });
+  }
+
+  Future<void> _openSalaryCurrencySheet() async {
+    final AppCurrency? result = await showAppCurrencyOptionsBottomSheet(
+      context: context,
+      initialValue: _selectedSalaryCurrency,
+    );
+    if (!mounted || result == null || result == _selectedSalaryCurrency) {
+      return;
+    }
+    setState(() {
+      _selectedSalaryCurrency = result;
     });
   }
 

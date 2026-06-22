@@ -12,6 +12,7 @@ import '../../../../features/message/application/chat/chat_page_args.dart';
 import '../../../../features/order/data/visa_order_models.dart';
 import '../../../../features/order/data/visa_order_providers.dart';
 import '../../../../features/order/presentation/order_detail_page.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/models/dictionary_models.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -609,7 +610,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _formatAmount(order.amount),
+                      _formatAmount(order.amount, order.currency),
                       style: const TextStyle(
                         color: Color(0xFFFE5815),
                         fontSize: 16,
@@ -982,25 +983,13 @@ _OrderStatusStyle _statusStyleFor(String status) {
   }
 }
 
-String _formatAmount(double amount) {
-  final bool hasFraction = amount % 1 != 0;
-  final String raw = hasFraction
-      ? amount.toStringAsFixed(2)
-      : amount.toStringAsFixed(0);
-  final List<String> parts = raw.split('.');
-  final String integerPart = parts.first;
-  final StringBuffer buffer = StringBuffer();
-  for (int i = 0; i < integerPart.length; i++) {
-    final int reverseIndex = integerPart.length - i;
-    buffer.write(integerPart[i]);
-    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-  if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
-    return '¥${buffer.toString()}.${parts[1]}';
-  }
-  return '¥${buffer.toString()}';
+String _formatAmount(double amount, String? currency) {
+  return AppCurrency.formatAmount(
+    amount,
+    currency,
+    fractionDigitsWhenNeeded: 2,
+    trimTrailingZeros: false,
+  );
 }
 
 String _formatUpdatedText(String raw) {

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
@@ -97,7 +98,8 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       case _OrderActionType.goPay:
         await OrderPaymentBottomSheet.show(
           context: context,
-          amountText: order.price,
+          amount: order.amount,
+          currency: order.currency,
           orderId: order.orderId,
           packageName: order.title,
           parentContext: context,
@@ -406,6 +408,8 @@ class _OrderItem {
     required this.filter,
     required this.timeText,
     required this.title,
+    required this.amount,
+    required this.currency,
     required this.price,
     required this.provider,
     required this.packageType,
@@ -424,6 +428,8 @@ class _OrderItem {
   final _OrderTagStyle? tagStyle;
   final String timeText;
   final String title;
+  final double amount;
+  final String? currency;
   final String price;
   final String provider;
   final String packageType;
@@ -447,7 +453,9 @@ class _OrderItem {
       tagStyle: tag.style,
       timeText: _formatTime(order.createdAt),
       title: order.packageName.isEmpty ? '订单.未命名订单'.tr() : order.packageName,
-      price: _formatAmount(order.amount),
+      amount: order.amount,
+      currency: order.currency,
+      price: _formatAmount(order.amount, order.currency),
       provider: order.providerName,
       packageType: order.tierName,
       orderNo: order.orderNo,
@@ -520,11 +528,13 @@ class _OrderItem {
     }
   }
 
-  static String _formatAmount(double amount) {
-    final String value = amount == amount.roundToDouble()
-        ? amount.toInt().toString()
-        : amount.toStringAsFixed(2);
-    return '¥$value';
+  static String _formatAmount(double amount, String? currency) {
+    return AppCurrency.formatAmount(
+      amount,
+      currency,
+      fractionDigitsWhenNeeded: 2,
+      trimTrailingZeros: false,
+    );
   }
 
   static String _formatTime(String raw) {

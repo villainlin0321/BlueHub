@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../config/data/config_models.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../edit_visa_package_styles.dart';
 
 class EditVisaPackageTierViewDraft {
@@ -350,47 +351,6 @@ class EditVisaPackageLabeledField extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ],
-    );
-  }
-}
-
-class EditVisaPackageCurrencyTrigger extends StatelessWidget {
-  const EditVisaPackageCurrencyTrigger({
-    super.key,
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                label,
-                style: EditVisaPackageStyles.fieldValue.copyWith(
-                  color: EditVisaPackageStyles.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const RotatedBox(
-                quarterTurns: 1,
-                child: EditVisaPackageFieldArrow(),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

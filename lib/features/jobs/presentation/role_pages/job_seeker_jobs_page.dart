@@ -12,8 +12,11 @@ import '../../../../shared/network/models/dictionary_models.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/job_position_card.dart';
+import '../../../../shared/widgets/app_currency_bottom_sheet.dart';
+import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../me/data/dictionary_providers.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
@@ -78,6 +81,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   String? _selectedSalaryRangeKey;
   double? _selectedCustomSalaryMin;
   double? _selectedCustomSalaryMax;
+  AppCurrency _selectedSalaryCurrency = AppCurrency.eur;
   final String _selectedSortKey = _sortOptions.first.key;
 
   @override
@@ -145,6 +149,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
               selectedSalaryRangeKey: _selectedSalaryRangeKey,
               selectedCustomSalaryMin: _selectedCustomSalaryMin,
               selectedCustomSalaryMax: _selectedCustomSalaryMax,
+              selectedSalaryCurrency: _selectedSalaryCurrency,
               isCountryEnabled: countriesAsync.hasValue,
               isPositionEnabled: positionTreeAsync.hasValue,
               onCountryChanged: _handleCountryChanged,
@@ -245,14 +250,23 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     final String? rangeKey = _normalizeFilterValue(selection.presetKey);
     if (_selectedSalaryRangeKey == rangeKey &&
         _selectedCustomSalaryMin == selection.customMin &&
-        _selectedCustomSalaryMax == selection.customMax) {
+        _selectedCustomSalaryMax == selection.customMax &&
+        _selectedSalaryCurrency == selection.salaryCurrency) {
       return;
     }
+    final bool shouldRefresh =
+        _selectedSalaryRangeKey != rangeKey ||
+        _selectedCustomSalaryMin != selection.customMin ||
+        _selectedCustomSalaryMax != selection.customMax;
     setState(() {
       _selectedSalaryRangeKey = rangeKey;
       _selectedCustomSalaryMin = selection.customMin;
       _selectedCustomSalaryMax = selection.customMax;
+      _selectedSalaryCurrency = selection.salaryCurrency;
     });
+    if (!shouldRefresh) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
@@ -272,16 +286,27 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _selectedPositionKeyword == nextPositionKeyword &&
         _selectedSalaryRangeKey == nextSalaryRangeKey &&
         _selectedCustomSalaryMin == selection.salarySelection.customMin &&
-        _selectedCustomSalaryMax == selection.salarySelection.customMax) {
+        _selectedCustomSalaryMax == selection.salarySelection.customMax &&
+        _selectedSalaryCurrency == selection.salaryCurrency) {
       return;
     }
+    final bool shouldRefresh =
+        _selectedCountryCode != nextCountryCode ||
+        _selectedPositionKeyword != nextPositionKeyword ||
+        _selectedSalaryRangeKey != nextSalaryRangeKey ||
+        _selectedCustomSalaryMin != selection.salarySelection.customMin ||
+        _selectedCustomSalaryMax != selection.salarySelection.customMax;
     setState(() {
       _selectedCountryCode = nextCountryCode;
       _selectedPositionKeyword = nextPositionKeyword;
       _selectedSalaryRangeKey = nextSalaryRangeKey;
       _selectedCustomSalaryMin = selection.salarySelection.customMin;
       _selectedCustomSalaryMax = selection.salarySelection.customMax;
+      _selectedSalaryCurrency = selection.salaryCurrency;
     });
+    if (!shouldRefresh) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
@@ -515,6 +540,7 @@ class _FilterRow extends StatelessWidget {
     required this.selectedSalaryRangeKey,
     required this.selectedCustomSalaryMin,
     required this.selectedCustomSalaryMax,
+    required this.selectedSalaryCurrency,
     required this.isCountryEnabled,
     required this.isPositionEnabled,
     required this.onCountryChanged,
@@ -531,6 +557,7 @@ class _FilterRow extends StatelessWidget {
   final String? selectedSalaryRangeKey;
   final double? selectedCustomSalaryMin;
   final double? selectedCustomSalaryMax;
+  final AppCurrency selectedSalaryCurrency;
   final bool isCountryEnabled;
   final bool isPositionEnabled;
   final ValueChanged<String?>? onCountryChanged;
@@ -615,6 +642,7 @@ class _FilterRow extends StatelessWidget {
                   selectedPresetKey: selectedSalaryRangeKey,
                   selectedCustomMin: selectedCustomSalaryMin,
                   selectedCustomMax: selectedCustomSalaryMax,
+                  selectedSalaryCurrency: selectedSalaryCurrency,
                   presetOptions: salaryPresetOptions,
                   onChanged: onSalaryFilterChanged,
                 ),
@@ -632,6 +660,7 @@ class _FilterRow extends StatelessWidget {
           selectedSalaryRangeKey: selectedSalaryRangeKey,
           selectedCustomSalaryMin: selectedCustomSalaryMin,
           selectedCustomSalaryMax: selectedCustomSalaryMax,
+          selectedSalaryCurrency: selectedSalaryCurrency,
           countryOptions: countryOptions
               .where((_DropdownOption option) => option.value.isNotEmpty)
               .toList(growable: false),
@@ -651,11 +680,13 @@ class _SalaryFilterSelection {
     this.presetKey,
     this.customMin,
     this.customMax,
+    this.salaryCurrency = AppCurrency.eur,
   });
 
   final String? presetKey;
   final double? customMin;
   final double? customMax;
+  final AppCurrency salaryCurrency;
 }
 
 class _CombinedJobFilterSelection {
@@ -663,11 +694,13 @@ class _CombinedJobFilterSelection {
     this.countryCode,
     this.positionKeyword,
     required this.salarySelection,
+    required this.salaryCurrency,
   });
 
   final String? countryCode;
   final String? positionKeyword;
   final _SalaryFilterSelection salarySelection;
+  final AppCurrency salaryCurrency;
 }
 
 class _SalaryBottomSheetChip extends StatelessWidget {
@@ -677,6 +710,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
     required this.selectedPresetKey,
     required this.selectedCustomMin,
     required this.selectedCustomMax,
+    required this.selectedSalaryCurrency,
     required this.presetOptions,
     required this.onChanged,
   });
@@ -686,6 +720,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
   final String? selectedPresetKey;
   final double? selectedCustomMin;
   final double? selectedCustomMax;
+  final AppCurrency selectedSalaryCurrency;
   final List<_DropdownOption> presetOptions;
   final ValueChanged<_SalaryFilterSelection> onChanged;
 
@@ -708,10 +743,10 @@ class _SalaryBottomSheetChip extends StatelessWidget {
       (selectedCustomMin != null && selectedCustomMax != null);
 
   Future<void> _handleTap(BuildContext context) async {
-    final ValueNotifier<String?> selectedPresetNotifier =
-        ValueNotifier<String?>(
-          selectedPresetKey?.isNotEmpty == true ? selectedPresetKey : null,
-        );
+    String? draftSalaryPresetKey = selectedPresetKey?.isNotEmpty == true
+        ? selectedPresetKey
+        : null;
+    AppCurrency draftSalaryCurrency = selectedSalaryCurrency;
     final TextEditingController minController = TextEditingController(
       text: selectedCustomMin == null
           ? ''
@@ -722,11 +757,14 @@ class _SalaryBottomSheetChip extends StatelessWidget {
           ? ''
           : _formatSalaryValue(selectedCustomMax!),
     );
+    StateSetter? updateSheetState;
 
     void clearDraft() {
-      selectedPresetNotifier.value = null;
+      draftSalaryPresetKey = null;
+      draftSalaryCurrency = AppCurrency.eur;
       minController.clear();
       maxController.clear();
+      updateSheetState?.call(() {});
     }
 
     final _SalaryFilterSelection? result =
@@ -735,18 +773,25 @@ class _SalaryBottomSheetChip extends StatelessWidget {
           title: title,
           onReset: clearDraft,
           onConfirm: () {
-            final String? selectedPreset = selectedPresetNotifier.value;
+            final String? selectedPreset = draftSalaryPresetKey;
             if (selectedPreset?.isNotEmpty == true) {
               Navigator.of(
                 context,
-              ).pop(_SalaryFilterSelection(presetKey: selectedPreset));
+              ).pop(
+                _SalaryFilterSelection(
+                  presetKey: selectedPreset,
+                  salaryCurrency: draftSalaryCurrency,
+                ),
+              );
               return;
             }
 
             final String minText = minController.text.trim();
             final String maxText = maxController.text.trim();
             if (minText.isEmpty && maxText.isEmpty) {
-              Navigator.of(context).pop(const _SalaryFilterSelection());
+              Navigator.of(
+                context,
+              ).pop(_SalaryFilterSelection(salaryCurrency: draftSalaryCurrency));
               return;
             }
             if (minText.isEmpty || maxText.isEmpty) {
@@ -763,24 +808,48 @@ class _SalaryBottomSheetChip extends StatelessWidget {
 
             Navigator.of(
               context,
-            ).pop(_SalaryFilterSelection(customMin: min, customMax: max));
+            ).pop(
+              _SalaryFilterSelection(
+                customMin: min,
+                customMax: max,
+                salaryCurrency: draftSalaryCurrency,
+              ),
+            );
           },
-          child: ValueListenableBuilder<String?>(
-            valueListenable: selectedPresetNotifier,
-            builder: (BuildContext context, String? selectedPreset, _) {
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              updateSheetState = setState;
               return _SalaryFilterSheetContent(
                 presetOptions: presetOptions,
-                selectedPresetKey: selectedPreset,
+                selectedPresetKey: draftSalaryPresetKey,
                 minController: minController,
                 maxController: maxController,
+                selectedSalaryCurrency: draftSalaryCurrency,
+                onSalaryCurrencyTap: () {
+                  showAppCurrencyOptionsBottomSheet(
+                    context: context,
+                    initialValue: draftSalaryCurrency,
+                  ).then((AppCurrency? result) {
+                    if (result == null) {
+                      return;
+                    }
+                    setState(() {
+                      draftSalaryCurrency = result;
+                    });
+                  });
+                },
                 onPresetSelected: (String value) {
-                  selectedPresetNotifier.value = value;
-                  minController.clear();
-                  maxController.clear();
+                  setState(() {
+                    draftSalaryPresetKey = value;
+                    minController.clear();
+                    maxController.clear();
+                  });
                 },
                 onCustomValueChanged: () {
-                  if (selectedPresetNotifier.value != null) {
-                    selectedPresetNotifier.value = null;
+                  if (draftSalaryPresetKey != null) {
+                    setState(() {
+                      draftSalaryPresetKey = null;
+                    });
                   }
                 },
               );
@@ -861,6 +930,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
     required this.selectedSalaryRangeKey,
     required this.selectedCustomSalaryMin,
     required this.selectedCustomSalaryMax,
+    required this.selectedSalaryCurrency,
     required this.countryOptions,
     required this.positionOptions,
     required this.salaryPresetOptions,
@@ -875,6 +945,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
   final String? selectedSalaryRangeKey;
   final double? selectedCustomSalaryMin;
   final double? selectedCustomSalaryMax;
+  final AppCurrency selectedSalaryCurrency;
   final List<_DropdownOption> countryOptions;
   final List<_DropdownOption> positionOptions;
   final List<_DropdownOption> salaryPresetOptions;
@@ -890,6 +961,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
     String? draftCountryCode = selectedCountryCode;
     String? draftPositionKeyword = selectedPositionKeyword;
     String? draftSalaryPresetKey = selectedSalaryRangeKey;
+    AppCurrency draftSalaryCurrency = selectedSalaryCurrency;
     final TextEditingController minController = TextEditingController(
       text: selectedCustomSalaryMin == null
           ? ''
@@ -906,6 +978,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
       draftCountryCode = null;
       draftPositionKeyword = null;
       draftSalaryPresetKey = null;
+      draftSalaryCurrency = AppCurrency.eur;
       minController.clear();
       maxController.clear();
       updateSheetState?.call(() {});
@@ -932,6 +1005,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
                 countryCode: draftCountryCode,
                 positionKeyword: draftPositionKeyword,
                 salarySelection: salarySelection,
+                salaryCurrency: draftSalaryCurrency,
               ),
             );
           },
@@ -957,6 +1031,20 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
                 selectedSalaryPresetKey: draftSalaryPresetKey,
                 minController: minController,
                 maxController: maxController,
+                selectedSalaryCurrency: draftSalaryCurrency,
+                onSalaryCurrencyTap: () {
+                  showAppCurrencyOptionsBottomSheet(
+                    context: context,
+                    initialValue: draftSalaryCurrency,
+                  ).then((AppCurrency? result) {
+                    if (result == null) {
+                      return;
+                    }
+                    setState(() {
+                      draftSalaryCurrency = result;
+                    });
+                  });
+                },
                 onSalaryPresetSelected: (String value) {
                   setState(() {
                     draftSalaryPresetKey = value;
@@ -1087,6 +1175,8 @@ class _CombinedFilterSheetContent extends StatelessWidget {
     required this.selectedSalaryPresetKey,
     required this.minController,
     required this.maxController,
+    required this.selectedSalaryCurrency,
+    required this.onSalaryCurrencyTap,
     required this.onSalaryPresetSelected,
     required this.onCustomSalaryChanged,
   });
@@ -1101,6 +1191,8 @@ class _CombinedFilterSheetContent extends StatelessWidget {
   final String? selectedSalaryPresetKey;
   final TextEditingController minController;
   final TextEditingController maxController;
+  final AppCurrency selectedSalaryCurrency;
+  final VoidCallback onSalaryCurrencyTap;
   final ValueChanged<String> onSalaryPresetSelected;
   final VoidCallback onCustomSalaryChanged;
 
@@ -1123,14 +1215,28 @@ class _CombinedFilterSheetContent extends StatelessWidget {
           onSelected: onPositionSelected,
         ),
         const SizedBox(height: 34),
-        Text(
-          '招聘.薪资范围'.tr(),
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 22 / 16,
-          ),
+        Row(
+          children: <Widget>[
+            Text(
+              '招聘.薪资范围'.tr(),
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                height: 22 / 16,
+              ),
+            ),
+            const Spacer(),
+            FieldTrailingSelector(
+              label: selectedSalaryCurrency.labelKey.tr(),
+              onTap: onSalaryCurrencyTap,
+              textStyle: const TextStyle(
+                color: Color(0xFF595959),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Wrap(
@@ -1262,6 +1368,8 @@ class _SalaryFilterSheetContent extends StatelessWidget {
     required this.selectedPresetKey,
     required this.minController,
     required this.maxController,
+    required this.selectedSalaryCurrency,
+    required this.onSalaryCurrencyTap,
     required this.onPresetSelected,
     required this.onCustomValueChanged,
   });
@@ -1270,6 +1378,8 @@ class _SalaryFilterSheetContent extends StatelessWidget {
   final String? selectedPresetKey;
   final TextEditingController minController;
   final TextEditingController maxController;
+  final AppCurrency selectedSalaryCurrency;
+  final VoidCallback onSalaryCurrencyTap;
   final ValueChanged<String> onPresetSelected;
   final VoidCallback onCustomValueChanged;
 
@@ -1278,6 +1388,30 @@ class _SalaryFilterSheetContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        Row(
+          children: <Widget>[
+            Text(
+              '招聘.薪资范围'.tr(),
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                height: 22 / 16,
+              ),
+            ),
+            const Spacer(),
+            FieldTrailingSelector(
+              label: selectedSalaryCurrency.labelKey.tr(),
+              onTap: onSalaryCurrencyTap,
+              textStyle: const TextStyle(
+                color: Color(0xFF595959),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         Wrap(
           spacing: 12,
           runSpacing: 18,
@@ -1677,16 +1811,12 @@ extension on JobListVO {
 
   /// 组装职位卡片展示的薪资文案。
   String _formatSalary() {
-    final String currency = salaryCurrency.isEmpty ? '¥' : salaryCurrency;
-    final String minText = _formatNumber(salaryMin);
-    final String maxText = _formatNumber(salaryMax);
-    final String rangeText = salaryMax > 0
-        ? '$currency$minText~$maxText'
-        : '$currency$minText';
-    if (salaryPeriod.isEmpty) {
-      return rangeText;
-    }
-    return '$rangeText/$salaryPeriod';
+    return AppCurrency.formatRange(
+      min: salaryMin,
+      max: salaryMax,
+      rawCurrency: salaryCurrency,
+      period: salaryPeriod,
+    );
   }
 
   /// 组装职位卡片展示的地点文案。
@@ -1698,11 +1828,4 @@ extension on JobListVO {
     return parts.join('·');
   }
 
-  /// 格式化数字，尽量保持薪资文案简洁。
-  String _formatNumber(double value) {
-    if (value % 1 == 0) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(1);
-  }
 }

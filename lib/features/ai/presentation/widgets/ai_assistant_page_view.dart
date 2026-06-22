@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
@@ -606,17 +607,12 @@ class _EmbeddedJobCard extends StatelessWidget {
 
 extension on JobListVO {
   String formatAiSalary() {
-    final String currency = salaryCurrency.isEmpty ? '¥' : salaryCurrency;
-    final String minText = salaryMin % 1 == 0
-        ? salaryMin.toInt().toString()
-        : salaryMin.toStringAsFixed(1);
-    final String maxText = salaryMax % 1 == 0
-        ? salaryMax.toInt().toString()
-        : salaryMax.toStringAsFixed(1);
-    final String rangeText = salaryMax > 0
-        ? '$currency$minText~$maxText'
-        : '$currency$minText';
-    return salaryPeriod.isEmpty ? rangeText : '$rangeText/$salaryPeriod';
+    return AppCurrency.formatRange(
+      min: salaryMin,
+      max: salaryMax,
+      rawCurrency: salaryCurrency,
+      period: salaryPeriod,
+    );
   }
 }
 

@@ -5,6 +5,7 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/logging/app_logger.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'post_job_state.dart';
@@ -202,6 +203,10 @@ class PostJobController extends Notifier<PostJobState> {
     state = state.copyWith(selectedSalaryUnit: value);
   }
 
+  void setSalaryCurrency(AppCurrency value) {
+    state = state.copyWith(selectedSalaryCurrency: value);
+  }
+
   void toggleRequirementTag(String tagCode) {
     final Set<String> nextCodes = Set<String>.from(
       state.selectedRequirementTagCodes,
@@ -338,6 +343,10 @@ class PostJobController extends Notifier<PostJobState> {
       selectedSalaryUnit: _salaryPeriods.contains(detail.salaryPeriod)
           ? detail.salaryPeriod
           : state.selectedSalaryUnit,
+      selectedSalaryCurrency: AppCurrency.fromApiValue(
+        detail.salaryCurrency,
+        fallback: AppCurrency.eur,
+      ),
       selectedRequirementTagCodes: selectedCodes,
       customTags: customTags,
     );
@@ -415,7 +424,7 @@ class PostJobController extends Notifier<PostJobState> {
           : 'any',
       salaryMin: salaryMin,
       salaryMax: salaryMax,
-      salaryCurrency: 'EUR',
+      salaryCurrency: state.selectedSalaryCurrency.apiValue,
       salaryPeriod: _salaryPeriods.contains(state.selectedSalaryUnit)
           ? state.selectedSalaryUnit
           : 'month',

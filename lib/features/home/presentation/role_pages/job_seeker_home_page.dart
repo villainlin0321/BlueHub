@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -890,11 +891,9 @@ extension on HomeHotPackageVO {
 
   /// 格式化签证套餐价格，兼容常见币种符号与整数价格展示。
   ({String prefix, String value}) _buildPriceDisplay() {
-    final String symbol = _resolveCurrencyPrefix(currency);
-    final String priceText = priceFrom % 1 == 0
-        ? priceFrom.toInt().toString()
-        : priceFrom.toStringAsFixed(1);
-    return (prefix: symbol, value: priceText);
+    final ({String symbol, String value}) priceParts =
+        AppCurrency.buildAmountParts(priceFrom, currency);
+    return (prefix: priceParts.symbol, value: priceParts.value);
   }
 
   /// 格式化评分，确保 UI 始终展示单个小数位。
@@ -965,16 +964,12 @@ extension on JobListVO {
 
   /// 组装首页岗位卡片的薪资展示。
   String _formatHomeSalary() {
-    final String currencyText = _resolveCurrencyPrefix(salaryCurrency);
-    final String minText = _formatHomeNumber(salaryMin);
-    final String maxText = _formatHomeNumber(salaryMax);
-    final String rangeText = salaryMax > 0
-        ? '$currencyText$minText~$maxText'
-        : '$currencyText$minText';
-    if (salaryPeriod.isEmpty) {
-      return rangeText;
-    }
-    return '$rangeText/$salaryPeriod';
+    return AppCurrency.formatRange(
+      min: salaryMin,
+      max: salaryMax,
+      rawCurrency: salaryCurrency,
+      period: salaryPeriod,
+    );
   }
 
   /// 组装首页岗位卡片的地点文案。
@@ -986,21 +981,4 @@ extension on JobListVO {
     return parts.join('·');
   }
 
-  /// 格式化首页岗位中的薪资数字，尽量避免多余的小数位。
-  String _formatHomeNumber(double value) {
-    if (value % 1 == 0) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(1);
-  }
-}
-
-/// 统一处理首页卡片中的币种前缀，优先转成常见符号展示。
-String _resolveCurrencyPrefix(String rawCurrency) {
-  return switch (rawCurrency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => rawCurrency.trim().isEmpty ? '¥' : '${rawCurrency.trim()} ',
-  };
 }

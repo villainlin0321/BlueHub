@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
@@ -933,13 +934,16 @@ extension on _MyResumePageState {
     if ((min == null || min <= 0) && (max == null || max <= 0)) {
       return '我的.薪资待完善'.tr();
     }
-    final String currency = item.salaryCurrency.trim().isEmpty
+    final String currencyPrefix = item.salaryCurrency.trim().isEmpty
         ? ''
-        : '${item.salaryCurrency.trim()} ';
+        : AppCurrency.displayPrefixFor(
+            item.salaryCurrency,
+            fallback: AppCurrency.eur,
+          );
     if (max != null && max > 0) {
-      return '$currency${_formatNullableDouble(min)}-${_formatNullableDouble(max)}';
+      return '$currencyPrefix${_formatNullableDouble(min)}-${_formatNullableDouble(max)}';
     }
-    return '$currency${_formatNullableDouble(min)}';
+    return '$currencyPrefix${_formatNullableDouble(min)}';
   }
 
   String _formatNullableDouble(double? value) {

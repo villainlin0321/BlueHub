@@ -7,6 +7,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/models/app_currency.dart';
+import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../utils/upload_picker_utils.dart';
 
@@ -21,10 +23,8 @@ import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
-import '../data/visa_currency.dart';
 import '../data/visa_package_models.dart';
 import '../data/visa_package_providers.dart';
-import 'currency_options_bottom_sheet.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
@@ -232,7 +232,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       );
       controller.setCountryCode(detail.targetCountry);
       controller.setVisaTypeCode(detail.visaType);
-      controller.setCurrency(VisaCurrency.fromApiValue(detail.currency));
+      controller.setCurrency(AppCurrency.fromApiValue(detail.currency));
       setState(() {
         _isLoadingPackageDetail = false;
       });
@@ -325,9 +325,10 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     final EditVisaPackageState state = ref.read(
       editVisaPackageControllerProvider,
     );
-    final VisaCurrency? result = await showVisaCurrencyOptionsBottomSheet(
+    final AppCurrency? result = await showAppCurrencyOptionsBottomSheet(
       context: context,
       initialValue: state.selectedCurrency,
+      title: '通用.选择货币'.tr(),
     );
     if (result == null) {
       return;

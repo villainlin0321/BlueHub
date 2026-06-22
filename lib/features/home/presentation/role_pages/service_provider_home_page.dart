@@ -18,6 +18,7 @@ import '../../../../features/order/presentation/order_detail_page.dart'
 import '../../../../features/visa/data/provider_models.dart'
     show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -1039,7 +1040,7 @@ class _PendingOrderItem {
       statusText: _displayStatusText(order),
       updateText: _formatOrderUpdatedText(order.updatedAt),
       materialsText: _buildMaterialsText(order),
-      priceText: _formatOrderAmount(order.amount),
+      priceText: _formatOrderAmount(order.amount, order.currency),
     );
   }
 }
@@ -1124,23 +1125,11 @@ String _formatOrderUpdatedText(String raw) {
   );
 }
 
-String _formatOrderAmount(double amount) {
-  final bool hasFraction = amount % 1 != 0;
-  final String raw = hasFraction
-      ? amount.toStringAsFixed(2)
-      : amount.toStringAsFixed(0);
-  final List<String> parts = raw.split('.');
-  final String integerPart = parts.first;
-  final StringBuffer buffer = StringBuffer();
-  for (int index = 0; index < integerPart.length; index++) {
-    final int reverseIndex = integerPart.length - index;
-    buffer.write(integerPart[index]);
-    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-  if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
-    return '¥${buffer.toString()}.${parts[1]}';
-  }
-  return '¥${buffer.toString()}';
+String _formatOrderAmount(double amount, String? currency) {
+  return AppCurrency.formatAmount(
+    amount,
+    currency,
+    fractionDigitsWhenNeeded: 2,
+    trimTrailingZeros: false,
+  );
 }

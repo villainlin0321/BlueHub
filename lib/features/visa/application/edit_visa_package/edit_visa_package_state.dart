@@ -1,5 +1,5 @@
 import '../../../config/data/config_models.dart';
-import '../../data/visa_currency.dart';
+import '../../../../shared/models/app_currency.dart';
 
 const Object _feedbackSentinel = Object();
 const Object _serviceTagsErrorSentinel = Object();
@@ -8,7 +8,7 @@ class EditVisaPackageState {
   const EditVisaPackageState({
     this.selectedCountryCode,
     this.selectedVisaTypeCode,
-    this.selectedCurrency = VisaCurrency.cny,
+    this.selectedCurrency = AppCurrency.cny,
     this.serviceTags = const <TagItemVO>[],
     this.hasLoadedServiceTags = false,
     this.isLoadingServiceTags = false,
@@ -23,7 +23,7 @@ class EditVisaPackageState {
 
   final String? selectedCountryCode;
   final String? selectedVisaTypeCode;
-  final VisaCurrency selectedCurrency;
+  final AppCurrency selectedCurrency;
   final List<TagItemVO> serviceTags;
   final bool hasLoadedServiceTags;
   final bool isLoadingServiceTags;
@@ -38,7 +38,7 @@ class EditVisaPackageState {
   EditVisaPackageState copyWith({
     Object? selectedCountryCode = _feedbackSentinel,
     Object? selectedVisaTypeCode = _feedbackSentinel,
-    VisaCurrency? selectedCurrency,
+    AppCurrency? selectedCurrency,
     List<TagItemVO>? serviceTags,
     bool? hasLoadedServiceTags,
     bool? isLoadingServiceTags,

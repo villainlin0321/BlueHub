@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
-import '../../data/visa_currency.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../data/visa_package_models.dart';
 import '../../data/visa_package_providers.dart';
 import 'edit_visa_package_state.dart';
@@ -61,7 +61,7 @@ class EditVisaPackageFormDraft {
 
   final String name;
   final String estimatedDays;
-  final VisaCurrency currency;
+  final AppCurrency currency;
   final List<EditVisaPackageTierDraftInput> tiers;
 }
 
@@ -104,7 +104,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     state = state.copyWith(selectedVisaTypeCode: code);
   }
 
-  void setCurrency(VisaCurrency currency) {
+  void setCurrency(AppCurrency currency) {
     state = state.copyWith(selectedCurrency: currency);
   }
 
@@ -317,7 +317,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       targetCountry: countryCode,
       visaType: visaTypeCode,
       estimatedDays: estimatedDays,
-      currency: draft.currency.symbol,
+      currency: draft.currency.apiValue,
       coverImageIds: const <int>[],
       coverImages: const <String>[],
       tiers: tiers,

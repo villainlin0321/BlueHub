@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -1441,21 +1442,7 @@ String _buildMaterialStatus(PackageMaterialVO material) {
 
 /// 格式化详情页价格，统一复用币种前缀转换规则。
 String _formatPrice(double amount, String currency) {
-  final String prefix = _resolveCurrencyPrefix(currency);
-  final String value = amount % 1 == 0
-      ? amount.toInt().toString()
-      : amount.toStringAsFixed(1);
-  return '$prefix$value';
-}
-
-/// 统一处理常见币种前缀，缺省回退为人民币。
-String _resolveCurrencyPrefix(String rawCurrency) {
-  return switch (rawCurrency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => rawCurrency.trim().isEmpty ? '¥' : '${rawCurrency.trim()} ',
-  };
+  return AppCurrency.formatAmount(amount, currency);
 }
 
 /// 将国家代码转为详情页展示文案。

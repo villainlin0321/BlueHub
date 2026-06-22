@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
+import '../../../shared/models/app_currency.dart';
 import '../../jobs/data/application_models.dart';
 
 enum MyApplicationTabType {
@@ -86,15 +87,11 @@ String _formatSalary(JobSimpleVO job) {
     return '暂无'.tr();
   }
 
-  final String currency = job.salaryCurrency.trim().isEmpty
-      ? '¥'
-      : job.salaryCurrency.trim();
-  final String minText = _formatNumber(min > 0 ? min : max);
-  if (max <= 0 || min == max) {
-    return '$currency$minText';
-  }
-  final String maxText = _formatNumber(max);
-  return '$currency$minText~$currency$maxText';
+  return AppCurrency.formatRange(
+    min: min,
+    max: max,
+    rawCurrency: job.salaryCurrency,
+  );
 }
 
 String _formatUpdatedText(String raw, {required String fallback}) {
@@ -110,11 +107,4 @@ String _formatUpdatedText(String raw, {required String fallback}) {
   final String hour = parsed.hour.toString().padLeft(2, '0');
   final String minute = parsed.minute.toString().padLeft(2, '0');
   return '$year-$month-$day $hour:$minute';
-}
-
-String _formatNumber(double value) {
-  if (value % 1 == 0) {
-    return value.toInt().toString();
-  }
-  return value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../shared/ui/app_colors.dart';
+import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../config/data/config_models.dart';
 import '../../application/edit_visa_package/edit_visa_package_state.dart';
@@ -379,9 +380,12 @@ class _TierCard extends StatelessWidget {
             const SizedBox(height: 12),
             EditVisaPackageLabeledField(
               label: '签证编辑.价格'.tr(),
-              trailing: EditVisaPackageCurrencyTrigger(
+              trailing: FieldTrailingSelector(
                 label: selectedCurrencyLabel,
                 onTap: onCurrencyTap,
+                textStyle: EditVisaPackageStyles.fieldValue.copyWith(
+                  color: EditVisaPackageStyles.textSecondary,
+                ),
               ),
               child: EditVisaPackageInputField(
                 controller: tier.priceController,

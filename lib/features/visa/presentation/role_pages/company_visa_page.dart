@@ -10,6 +10,7 @@ import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
 import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
@@ -725,28 +726,15 @@ class _JobManageCard extends StatelessWidget {
   }
 
   String _formatSalary(JobDetailVO job) {
-    final String currency = job.salaryCurrency;
-    final String period = job.salaryPeriod.isEmpty
-        ? ''
-        : '/${job.salaryPeriod}';
-
     if (job.salaryMin <= 0 && job.salaryMax <= 0) {
       return '企业岗位.薪资面议'.tr();
     }
-
-    if (job.salaryMin > 0 && job.salaryMax > 0) {
-      return '$currency${_formatAmount(job.salaryMin)}~${_formatAmount(job.salaryMax)}$period';
-    }
-
-    final double salary = job.salaryMax > 0 ? job.salaryMax : job.salaryMin;
-    return '$currency${_formatAmount(salary)}$period';
-  }
-
-  String _formatAmount(double value) {
-    if (value == value.truncateToDouble()) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(1);
+    return AppCurrency.formatRange(
+      min: job.salaryMin,
+      max: job.salaryMax,
+      rawCurrency: job.salaryCurrency,
+      period: job.salaryPeriod,
+    );
   }
 }
 

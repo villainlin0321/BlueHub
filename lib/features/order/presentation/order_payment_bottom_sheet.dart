@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
@@ -16,7 +17,8 @@ class OrderPaymentBottomSheet {
 
   static Future<void> show({
     required BuildContext context,
-    required String amountText,
+    required double amount,
+    required String? currency,
     required int orderId,
     required String packageName,
     required BuildContext parentContext,
@@ -29,7 +31,8 @@ class OrderPaymentBottomSheet {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _OrderPaymentBottomSheetContent(
-          amountText: amountText,
+          amount: amount,
+          currency: currency,
           orderId: orderId,
           packageName: packageName,
           parentContext: parentContext,
@@ -42,14 +45,16 @@ class OrderPaymentBottomSheet {
 
 class _OrderPaymentBottomSheetContent extends ConsumerStatefulWidget {
   const _OrderPaymentBottomSheetContent({
-    required this.amountText,
+    required this.amount,
+    required this.currency,
     required this.orderId,
     required this.packageName,
     required this.parentContext,
     this.onFlowCompleted,
   });
 
-  final String amountText;
+  final double amount;
+  final String? currency;
   final int orderId;
   final String packageName;
   final BuildContext parentContext;
@@ -147,7 +152,8 @@ class _OrderPaymentBottomSheetContentState
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 24, 12, 12),
                 child: _PaymentAmountCard(
-                  amountText: widget.amountText,
+                  amount: widget.amount,
+                  currency: widget.currency,
                   remaining: _remaining,
                 ),
               ),
@@ -249,15 +255,26 @@ class _OrderPaymentBottomSheetContentState
 }
 
 class _PaymentAmountCard extends StatelessWidget {
-  const _PaymentAmountCard({required this.amountText, required this.remaining});
+  const _PaymentAmountCard({
+    required this.amount,
+    required this.currency,
+    required this.remaining,
+  });
 
-  final String amountText;
+  final double amount;
+  final String? currency;
   final Duration remaining;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String amountValue = amountText.replaceFirst('¥', '');
+    final ({String symbol, String value}) amountParts =
+        AppCurrency.buildAmountParts(
+          amount,
+          currency,
+          fractionDigitsWhenNeeded: 2,
+          trimTrailingZeros: false,
+        );
     final String minutes = remaining.inMinutes
         .remainder(60)
         .toString()
@@ -282,7 +299,7 @@ class _PaymentAmountCard extends StatelessWidget {
               text: TextSpan(
                 children: <InlineSpan>[
                   TextSpan(
-                    text: '¥',
+                    text: amountParts.symbol,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: const Color(0xFFFE5815),
                       fontSize: 20,
@@ -291,7 +308,7 @@ class _PaymentAmountCard extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: amountValue,
+                    text: amountParts.value,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: const Color(0xFFFE5815),
                       fontSize: 24,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
@@ -1074,36 +1075,5 @@ String _resolveVisaTypeLabel(String value) {
 }
 
 String _formatCurrencyAmount(String currency, double amount) {
-  final String prefix = switch (currency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => 'EUR ',
-    'USD' => 'USD ',
-    _ => currency.trim().isEmpty ? '' : '${currency.trim().toUpperCase()} ',
-  };
-  return '$prefix${_formatDecimal(amount)}';
-}
-
-String _formatDecimal(double amount) {
-  final bool isInteger = amount == amount.roundToDouble();
-  final String raw = isInteger
-      ? amount.toStringAsFixed(0)
-      : amount.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-  final List<String> parts = raw.split('.');
-  final StringBuffer buffer = StringBuffer();
-  final String integerPart = parts.first;
-
-  for (int index = 0; index < integerPart.length; index++) {
-    final int remaining = integerPart.length - index;
-    buffer.write(integerPart[index]);
-    if (remaining > 1 && remaining % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-
-  if (parts.length > 1 && parts[1].isNotEmpty) {
-    buffer
-      ..write('.')
-      ..write(parts[1]);
-  }
-  return buffer.toString();
+  return AppCurrency.formatAmount(amount, currency);
 }
