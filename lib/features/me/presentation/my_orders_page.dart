@@ -106,11 +106,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           onFlowCompleted: _loadOrders,
         );
         return;
-      case _OrderActionType.supplementMaterials:
-        AppToast.show(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
-        );
-        return;
     }
   }
 
@@ -396,7 +391,6 @@ enum _OrderActionType {
   uploadMaterials,
   goPay,
   viewProgress,
-  supplementMaterials,
   goReview,
   viewDetail,
 }

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../data/visa_order_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import '../data/payment_providers.dart';
@@ -210,6 +211,15 @@ class _OrderPaymentBottomSheetContentState
     }
     setState(() => _isPaying = true);
     try {
+      if (_selectedMethod == AppPaymentMethod.wechat) {
+        // Temporary fallback: backend directly marks the order as paid for WeChat.
+        await ref.read(visaOrderServiceProvider).payOrder(orderId: widget.orderId);
+        if (!mounted) {
+          return;
+        }
+        _handlePaymentSuccess();
+        return;
+      }
       final PaymentFlowResult result = await ref
           .read(paymentFlowCoordinatorProvider)
           .startPayment(orderId: widget.orderId, method: _selectedMethod);
@@ -218,20 +228,7 @@ class _OrderPaymentBottomSheetContentState
       }
       switch (result.status) {
         case PaymentFlowStatus.success:
-          Navigator.of(context).pop();
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!widget.parentContext.mounted) {
-              return;
-            }
-            await widget.parentContext.push(
-              RoutePaths.appResult,
-              extra: AppResultPageArgs.paymentSuccess(orderId: widget.orderId),
-            );
-            if (widget.onFlowCompleted != null &&
-                widget.parentContext.mounted) {
-              await widget.onFlowCompleted!.call();
-            }
-          });
+          _handlePaymentSuccess();
           return;
         case PaymentFlowStatus.cancel:
         case PaymentFlowStatus.failed:
@@ -247,6 +244,22 @@ class _OrderPaymentBottomSheetContentState
       setState(() => _isPaying = false);
       _showMessage(_resolvePaymentErrorMessage(error));
     }
+  }
+
+  void _handlePaymentSuccess() {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!widget.parentContext.mounted) {
+        return;
+      }
+      await widget.parentContext.push(
+        RoutePaths.appResult,
+        extra: AppResultPageArgs.paymentSuccess(orderId: widget.orderId),
+      );
+      if (widget.onFlowCompleted != null && widget.parentContext.mounted) {
+        await widget.onFlowCompleted!.call();
+      }
+    });
   }
 
   void _showMessage(String message) {

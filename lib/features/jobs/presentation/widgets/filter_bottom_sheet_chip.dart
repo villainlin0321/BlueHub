@@ -34,6 +34,8 @@ class FilterBottomSheetChip extends StatelessWidget {
     }
     final String? result = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
@@ -135,84 +137,99 @@ class _FilterOptionsBottomSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const SizedBox.expand(),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.center,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        height: 25 / 17,
+                    SizedBox(
+                      height: 52,
+                      width: double.infinity,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF171A1D),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                              height: 25 / 17,
+                            ),
+                          ),
+                          Positioned(
+                            right: 12,
+                            child: IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: Color(0xFF171A1D),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      right: 12,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 22,
-                          color: Color(0xFF171A1D),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          24,
+                          16,
+                          bottomPadding > 0 ? bottomPadding + 24 : 24,
+                        ),
+                        child: LayoutBuilder(
+                          builder:
+                              (BuildContext context, BoxConstraints constraints) {
+                                const double spacing = 12;
+                                final double itemWidth =
+                                    (constraints.maxWidth - spacing * 2) / 3;
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: 18,
+                                  children: options
+                                      .map(
+                                        (FilterBottomSheetOption option) =>
+                                            _FilterOptionTile(
+                                              width: itemWidth,
+                                              label: option.label,
+                                              selected:
+                                                  option.value == currentValue,
+                                              onTap: () => Navigator.of(
+                                                context,
+                                              ).pop(option.value),
+                                            ),
+                                      )
+                                      .toList(growable: false),
+                                );
+                              },
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    24,
-                    16,
-                    bottomPadding > 0 ? bottomPadding + 24 : 24,
-                  ),
-                  child: LayoutBuilder(
-                    builder:
-                        (BuildContext context, BoxConstraints constraints) {
-                          const double spacing = 12;
-                          final double itemWidth =
-                              (constraints.maxWidth - spacing * 2) / 3;
-                          return Wrap(
-                            spacing: spacing,
-                            runSpacing: 18,
-                            children: options
-                                .map(
-                                  (FilterBottomSheetOption option) =>
-                                      _FilterOptionTile(
-                                        width: itemWidth,
-                                        label: option.label,
-                                        selected: option.value == currentValue,
-                                        onTap: () => Navigator.of(
-                                          context,
-                                        ).pop(option.value),
-                                      ),
-                                )
-                                .toList(growable: false),
-                          );
-                        },
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -283,6 +300,8 @@ Future<T?> showFilterActionBottomSheet<T>({
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    isDismissible: true,
+    enableDrag: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (BuildContext context) {
@@ -330,113 +349,127 @@ class _FilterActionBottomSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const SizedBox.expand(),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.center,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        height: 25 / 17,
+                    SizedBox(
+                      height: 52,
+                      width: double.infinity,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF171A1D),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                              height: 25 / 17,
+                            ),
+                          ),
+                          Positioned(
+                            right: 12,
+                            child: IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: Color(0xFF171A1D),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      right: 12,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 22,
-                          color: Color(0xFF171A1D),
-                        ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                        child: child,
+                      ),
+                    ),
+                    Container(
+                      color: Colors.white,
+                      padding: EdgeInsets.fromLTRB(
+                        12,
+                        32,
+                        12,
+                        bottomPadding > 0 ? bottomPadding + 12 : 16,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: onReset,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(44),
+                                side: const BorderSide(color: Color(0xFFD9D9D9)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                resetText,
+                                style: const TextStyle(
+                                  color: Color(0xFF262626),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  height: 22 / 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isConfirmEnabled ? onConfirm : null,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(44),
+                                elevation: 0,
+                                disabledBackgroundColor: const Color(0xFFBFBFBF),
+                                backgroundColor: const Color(0xFF096DD9),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                confirmText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  height: 22 / 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                  child: child,
-                ),
-              ),
-              Container(
-                color: Colors.white,
-                padding: EdgeInsets.fromLTRB(
-                  12,
-                  32,
-                  12,
-                  bottomPadding > 0 ? bottomPadding + 12 : 16,
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: onReset,
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(44),
-                          side: const BorderSide(color: Color(0xFFD9D9D9)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          resetText,
-                          style: const TextStyle(
-                            color: Color(0xFF262626),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: isConfirmEnabled ? onConfirm : null,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(44),
-                          elevation: 0,
-                          disabledBackgroundColor: const Color(0xFFBFBFBF),
-                          backgroundColor: const Color(0xFF096DD9),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          confirmText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

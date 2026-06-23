@@ -81,12 +81,6 @@ class CompanyMePage extends ConsumerWidget {
     );
   }
 
-  void _showPlaceholderToast(BuildContext context, String label) {
-    AppToast.show(
-      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-    );
-  }
-
   Future<void> _handleMenuTap(
     BuildContext context,
     WidgetRef ref,
@@ -108,7 +102,6 @@ class CompanyMePage extends ConsumerWidget {
       context.go(RoutePaths.jobs);
       return;
     }
-    _showPlaceholderToast(context, label);
   }
 
   Future<void> _openQualificationCertification(

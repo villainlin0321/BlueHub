@@ -305,6 +305,40 @@ class _LicenseUploadSection extends StatelessWidget {
   final bool isRequired;
   final String? optionalLabel;
 
+  void _showSampleDialog(BuildContext context) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierLabel: 'business-license-sample',
+      barrierDismissible: true,
+      barrierColor: const Color(0x99000000),
+      pageBuilder: (
+        BuildContext dialogContext,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+      ) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(dialogContext).pop(),
+          child: Material(
+            color: Colors.transparent,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/image_business_license.png',
+                    width: double.infinity,
+                    fit: BoxFit.fitWidth,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -345,9 +379,7 @@ class _LicenseUploadSection extends StatelessWidget {
             ],
             const Spacer(),
             TextButton(
-              onPressed: () {
-                AppToast.show('认证流程.查看样例占位'.tr());
-              },
+              onPressed: () => _showSampleDialog(context),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,

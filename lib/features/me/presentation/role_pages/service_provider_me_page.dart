@@ -76,13 +76,6 @@ class ServiceProviderMePage extends ConsumerWidget {
     );
   }
 
-  /// 展示暂未接入功能的占位提示。
-  void _showPlaceholderToast(BuildContext context, String labelKey) {
-    AppToast.show(
-      '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
-    );
-  }
-
   /// 处理功能菜单点击，根据菜单 key 跳转到对应页面。
   Future<void> _handleMenuTap(
     BuildContext context,
@@ -101,7 +94,6 @@ class ServiceProviderMePage extends ConsumerWidget {
       context.push(RoutePaths.financeSettlement);
       return;
     }
-    _showPlaceholderToast(context, labelKey);
   }
 
   void _handleSettingsTap(BuildContext context) {

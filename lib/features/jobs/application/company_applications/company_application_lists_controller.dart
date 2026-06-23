@@ -12,6 +12,13 @@ final companyApplicationListsControllerProvider =
       Map<String, CompanyApplicationListState>
     >(CompanyApplicationListsController.new);
 
+String buildCompanyApplicationListStateKey({
+  required String status,
+  int? jobId,
+}) {
+  return '$status::${jobId ?? 'all'}';
+}
+
 class CompanyApplicationListsController
     extends Notifier<Map<String, CompanyApplicationListState>> {
   static const int _pageSize = 10;
@@ -22,12 +29,20 @@ class CompanyApplicationListsController
     return const <String, CompanyApplicationListState>{};
   }
 
-  CompanyApplicationListState getState(String status) {
-    return state[status] ?? const CompanyApplicationListState();
+  CompanyApplicationListState getState(String status, {int? jobId}) {
+    final String key = buildCompanyApplicationListStateKey(
+      status: status,
+      jobId: jobId,
+    );
+    return state[key] ?? const CompanyApplicationListState();
   }
 
-  Future<bool> loadInitial({required String status, bool force = false}) async {
-    final CompanyApplicationListState current = getState(status);
+  Future<bool> loadInitial({
+    required String status,
+    int? jobId,
+    bool force = false,
+  }) async {
+    final CompanyApplicationListState current = getState(status, jobId: jobId);
     if (current.isInitialLoading) {
       return false;
     }
@@ -38,29 +53,35 @@ class CompanyApplicationListsController
     _setStatus(
       status,
       current.copyWith(isInitialLoading: true, errorMessage: null),
+      jobId: jobId,
     );
 
     try {
-      final ListPagePayload payload = await _fetchPage(status: status, page: 1);
-      _setStatus(status, payload.state);
+      final ListPagePayload payload = await _fetchPage(
+        status: status,
+        jobId: jobId,
+        page: 1,
+      );
+      _setStatus(status, payload.state, jobId: jobId);
       return true;
     } catch (error) {
       _setStatus(
         status,
-        getState(status).copyWith(
+        getState(status, jobId: jobId).copyWith(
           isInitialLoading: false,
           isRefreshing: false,
           isLoadingMore: false,
           hasLoadedOnce: true,
           errorMessage: _normalizeError(error),
         ),
+        jobId: jobId,
       );
       return false;
     }
   }
 
-  Future<bool> refresh({required String status}) async {
-    final CompanyApplicationListState current = getState(status);
+  Future<bool> refresh({required String status, int? jobId}) async {
+    final CompanyApplicationListState current = getState(status, jobId: jobId);
     if (current.isRefreshing || current.isInitialLoading) {
       return false;
     }
@@ -68,10 +89,15 @@ class CompanyApplicationListsController
     _setStatus(
       status,
       current.copyWith(isRefreshing: true, errorMessage: null),
+      jobId: jobId,
     );
 
     try {
-      final ListPagePayload payload = await _fetchPage(status: status, page: 1);
+      final ListPagePayload payload = await _fetchPage(
+        status: status,
+        jobId: jobId,
+        page: 1,
+      );
       _setStatus(
         status,
         payload.state.copyWith(
@@ -79,6 +105,7 @@ class CompanyApplicationListsController
           isRefreshing: false,
           isLoadingMore: false,
         ),
+        jobId: jobId,
       );
       return true;
     } catch (error) {
@@ -86,14 +113,16 @@ class CompanyApplicationListsController
         status,
         getState(
           status,
+          jobId: jobId,
         ).copyWith(isRefreshing: false, errorMessage: _normalizeError(error)),
+        jobId: jobId,
       );
       return false;
     }
   }
 
-  Future<bool> loadMore({required String status}) async {
-    final CompanyApplicationListState current = getState(status);
+  Future<bool> loadMore({required String status, int? jobId}) async {
+    final CompanyApplicationListState current = getState(status, jobId: jobId);
     if (current.isInitialLoading ||
         current.isRefreshing ||
         current.isLoadingMore ||
@@ -104,11 +133,13 @@ class CompanyApplicationListsController
     _setStatus(
       status,
       current.copyWith(isLoadingMore: true, errorMessage: null),
+      jobId: jobId,
     );
 
     try {
       final ListPagePayload payload = await _fetchPage(
         status: status,
+        jobId: jobId,
         page: current.nextPage,
       );
       _setStatus(
@@ -124,6 +155,7 @@ class CompanyApplicationListsController
           hasMore: payload.state.hasMore,
           errorMessage: null,
         ),
+        jobId: jobId,
       );
       return true;
     } catch (error) {
@@ -131,7 +163,9 @@ class CompanyApplicationListsController
         status,
         getState(
           status,
+          jobId: jobId,
         ).copyWith(isLoadingMore: false, errorMessage: _normalizeError(error)),
+        jobId: jobId,
       );
       return false;
     }
@@ -139,11 +173,15 @@ class CompanyApplicationListsController
 
   Future<ApplicationStatusUpdateResult> updateApplicationStatus({
     required String sourceStatus,
+    int? jobId,
     required int applicationId,
     required EmployerApplicationUpdateStatus nextStatus,
     String remark = '',
   }) async {
-    final CompanyApplicationListState current = getState(sourceStatus);
+    final CompanyApplicationListState current = getState(
+      sourceStatus,
+      jobId: jobId,
+    );
     if (current.processingActions.containsKey(applicationId)) {
       return ApplicationStatusUpdateResult(
         success: false,
@@ -160,6 +198,7 @@ class CompanyApplicationListsController
         },
         errorMessage: null,
       ),
+      jobId: jobId,
     );
 
     try {
@@ -175,13 +214,14 @@ class CompanyApplicationListsController
 
       _removeApplicationFromStatus(
         sourceStatus: sourceStatus,
+        jobId: jobId,
         applicationId: applicationId,
       );
 
-      await _refreshLoadedStatus(sourceStatus);
+      await _refreshLoadedStatus(sourceStatus, jobId: jobId);
       final String? targetStatus = nextStatus.targetListStatus?.value;
       if (targetStatus != null && targetStatus != sourceStatus) {
-        await _refreshLoadedStatus(targetStatus);
+        await _refreshLoadedStatus(targetStatus, jobId: jobId);
       }
 
       return ApplicationStatusUpdateResult(
@@ -191,7 +231,10 @@ class CompanyApplicationListsController
         ),
       );
     } catch (error) {
-      final CompanyApplicationListState latest = getState(sourceStatus);
+      final CompanyApplicationListState latest = getState(
+        sourceStatus,
+        jobId: jobId,
+      );
       final Map<int, EmployerApplicationUpdateStatus> processingActions =
           <int, EmployerApplicationUpdateStatus>{...latest.processingActions}
             ..remove(applicationId);
@@ -201,6 +244,7 @@ class CompanyApplicationListsController
           processingActions: processingActions,
           errorMessage: _normalizeError(error),
         ),
+        jobId: jobId,
       );
       return ApplicationStatusUpdateResult(
         success: false,
@@ -211,11 +255,17 @@ class CompanyApplicationListsController
 
   Future<ListPagePayload> _fetchPage({
     required String status,
+    int? jobId,
     required int page,
   }) async {
     final response = await ref
         .read(applicationServiceProvider)
-        .listJobApplications(page: page, pageSize: _pageSize, status: status);
+        .listJobApplications(
+          jobId: jobId,
+          page: page,
+          pageSize: _pageSize,
+          status: status,
+        );
     return ListPagePayload(
       CompanyApplicationListState(
         applications: response.list,
@@ -230,15 +280,27 @@ class CompanyApplicationListsController
     );
   }
 
-  void _setStatus(String status, CompanyApplicationListState nextState) {
-    state = <String, CompanyApplicationListState>{...state, status: nextState};
+  void _setStatus(
+    String status,
+    CompanyApplicationListState nextState, {
+    int? jobId,
+  }) {
+    final String key = buildCompanyApplicationListStateKey(
+      status: status,
+      jobId: jobId,
+    );
+    state = <String, CompanyApplicationListState>{...state, key: nextState};
   }
 
   void _removeApplicationFromStatus({
     required String sourceStatus,
+    int? jobId,
     required int applicationId,
   }) {
-    final CompanyApplicationListState current = getState(sourceStatus);
+    final CompanyApplicationListState current = getState(
+      sourceStatus,
+      jobId: jobId,
+    );
     final Map<int, EmployerApplicationUpdateStatus> processingActions =
         <int, EmployerApplicationUpdateStatus>{...current.processingActions}
           ..remove(applicationId);
@@ -250,15 +312,16 @@ class CompanyApplicationListsController
             .toList(growable: false),
         processingActions: processingActions,
       ),
+      jobId: jobId,
     );
   }
 
-  Future<void> _refreshLoadedStatus(String status) async {
-    final CompanyApplicationListState current = getState(status);
+  Future<void> _refreshLoadedStatus(String status, {int? jobId}) async {
+    final CompanyApplicationListState current = getState(status, jobId: jobId);
     if (!current.hasLoadedOnce) {
       return;
     }
-    await refresh(status: status);
+    await refresh(status: status, jobId: jobId);
   }
 
   String _normalizeError(Object error) {

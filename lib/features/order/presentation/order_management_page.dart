@@ -63,10 +63,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
     Future<void>.microtask(_loadOrders);
   }
 
-  void _showPlaceholderToast(String label) {
-    AppToast.show('订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}));
-  }
-
   Future<void> _loadOrders({
     _CountryFilter? country,
     _StatusFilter? status,
@@ -386,18 +382,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
             height: 24 / 17,
           ),
         ),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => _showPlaceholderToast('订单.搜索'.tr()),
-            icon: const AppSvgIcon(
-              assetPath: 'assets/images/company_application_search.svg',
-              fallback: Icons.search_rounded,
-              size: 20,
-              color: Color(0xE6000000),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       body: Column(
         children: <Widget>[

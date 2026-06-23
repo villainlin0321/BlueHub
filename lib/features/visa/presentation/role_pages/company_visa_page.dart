@@ -29,18 +29,15 @@ class CompanyVisaPage extends ConsumerStatefulWidget {
 class _CompanyVisaPageState extends ConsumerState<CompanyVisaPage> {
   @override
   Widget build(BuildContext context) {
-    final double topPadding = MediaQuery.paddingOf(context).top;
-
     return DefaultTabController(
       length: _CompanyJobTab.values.length,
-      child: ColoredBox(
-        color: const Color(0xFFF5F7FA),
-        child: Column(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: _CompanyVisaAppBar(
+          onPublishTap: () => context.push(RoutePaths.postJob),
+        ),
+        body: Column(
           children: <Widget>[
-            _CompanyVisaHeader(
-              topPadding: topPadding,
-              onPublishTap: () => context.push(RoutePaths.postJob),
-            ),
             const _CompanyVisaTabBar(),
             Expanded(
               child: TabBarView(
@@ -75,50 +72,49 @@ enum _CompanyJobTab {
   String get emptyText => isOffline ? tr('企业岗位.暂无已下线岗位') : tr('企业岗位.暂无招聘中的岗位');
 }
 
-class _CompanyVisaHeader extends StatelessWidget {
-  const _CompanyVisaHeader({
-    required this.topPadding,
-    required this.onPublishTap,
-  });
+class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _CompanyVisaAppBar({required this.onPublishTap});
 
-  final double topPadding;
   final VoidCallback onPublishTap;
 
   @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.fromLTRB(16, topPadding + 10, 16, 10),
-      child: Row(
-        children: <Widget>[
-          const Spacer(),
-          Text(
-            '企业岗位.岗位'.tr(),
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: onPublishTap,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
+    return AppBar(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      centerTitle: true,
+      title: Text(
+        '企业岗位.岗位'.tr(),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      actions: <Widget>[
+        GestureDetector(
+          onTap: onPublishTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+            child: Center(
               child: Text(
                 '企业岗位.发布'.tr(),
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 15,
-                  height: 21 / 15,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
