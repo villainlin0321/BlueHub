@@ -204,16 +204,26 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   String get _salaryMaxValue => _salaryMaxValueController.text.trim();
 
-  /// 当前页面展示服务端返回的简历完整度，创建模式默认 0。
+  void _handleCompletenessFieldChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+  }
+
+  /// 当前页面基于本地编辑状态实时计算简历完整度。
   int get _completionRate {
-    final int value = _resume?.completeness ?? 0;
-    if (value < 0) {
-      return 0;
-    }
-    if (value > 100) {
-      return 100;
-    }
-    return value;
+    final dynamic user = ref.read(authSessionProvider).user;
+    final String currentLocation = _buildBasicInfoViewData(user).region;
+    return computeResumeCompleteness(
+      targetPositions: _jobTags,
+      targetCountries: _countryTags,
+      currentLocation: currentLocation,
+      salaryMin: _parseSalaryMin(),
+      salaryMax: _parseSalaryMax(),
+      salaryCurrency: _selectedSalaryCurrency.apiValue,
+      hasLatestExperience: _experiences.isNotEmpty,
+    ).clamp(0, 100);
   }
 
   @override
@@ -238,10 +248,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       _draft.salaryCurrency,
       fallback: AppCurrency.eur,
     );
+    _salaryValueController.addListener(_handleCompletenessFieldChanged);
+    _salaryMaxValueController.addListener(_handleCompletenessFieldChanged);
   }
 
   @override
   void dispose() {
+    _salaryValueController.removeListener(_handleCompletenessFieldChanged);
+    _salaryMaxValueController.removeListener(_handleCompletenessFieldChanged);
     _salaryValueController.dispose();
     _salaryMaxValueController.dispose();
     super.dispose();
@@ -613,8 +627,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 3
-                  ),
+                  const SizedBox(height: 3),
                   Text(
                     '我的.完善简历提示'.tr(),
                     style: TextStyle(
@@ -1802,6 +1815,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   /// 组装保存简历所需的全量请求。
   SaveResumeBO _buildSaveRequest() {
+    final dynamic user = ref.read(authSessionProvider).user;
+    final String currentLocation = _buildBasicInfoViewData(user).region;
     return SaveResumeBO(
       jobIntention: JobIntentionBO(
         positions: _jobTags,
@@ -1876,7 +1891,8 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           .toList(growable: false),
       selfEvaluation: _selfEvaluation,
       isPublic: _draft.isPublic,
-      completeness: _resume?.completeness ?? 0,
+      completeness: 0,
+      currentLocation: currentLocation,
     );
   }
 

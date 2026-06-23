@@ -1030,7 +1030,8 @@ extension on ResumeVO {
           .toList(growable: false),
       selfEvaluation: selfEvaluation,
       isPublic: isPublic,
-      completeness: completeness,
+      completeness: 0,
+      currentLocation: basicInfo.currentLocation,
     );
   }
 }
