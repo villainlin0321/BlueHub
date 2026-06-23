@@ -10,7 +10,7 @@ class JobService {
 
   /// 分页查询岗位列表。
   ///
-  /// 支持按国家、关键字、薪资区间、是否支持签证以及排序方式筛选。
+  /// 支持按国家、关键字、薪资区间、薪资币种、是否支持签证以及排序方式筛选。
   Future<PageResult<JobListVO>> listJobs({
     int? page,
     int? pageSize,
@@ -18,6 +18,7 @@ class JobService {
     String? keyword,
     double? salaryMin,
     double? salaryMax,
+    String? currency,
     bool? hasVisaSupport,
     String? sort,
   }) async {
@@ -28,6 +29,7 @@ class JobService {
       if (keyword != null) 'keyword': keyword,
       if (salaryMin != null) 'salary_min': salaryMin,
       if (salaryMax != null) 'salary_max': salaryMax,
+      if (currency != null) 'currency': currency,
       if (hasVisaSupport != null) 'has_visa_support': hasVisaSupport,
       if (sort != null) 'sort': sort,
     };

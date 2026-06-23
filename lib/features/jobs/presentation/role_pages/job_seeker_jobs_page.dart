@@ -261,7 +261,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     final bool shouldRefresh =
         _selectedSalaryRangeKey != rangeKey ||
         _selectedCustomSalaryMin != selection.customMin ||
-        _selectedCustomSalaryMax != selection.customMax;
+        _selectedCustomSalaryMax != selection.customMax ||
+        _selectedSalaryCurrency != selection.salaryCurrency;
     setState(() {
       _selectedSalaryRangeKey = rangeKey;
       _selectedCustomSalaryMin = selection.customMin;
@@ -299,7 +300,8 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
         _selectedPositionKeyword != nextPositionKeyword ||
         _selectedSalaryRangeKey != nextSalaryRangeKey ||
         _selectedCustomSalaryMin != selection.salarySelection.customMin ||
-        _selectedCustomSalaryMax != selection.salarySelection.customMax;
+        _selectedCustomSalaryMax != selection.salarySelection.customMax ||
+        _selectedSalaryCurrency != selection.salaryCurrency;
     setState(() {
       _selectedCountryCode = nextCountryCode;
       _selectedPositionKeyword = nextPositionKeyword;
@@ -348,6 +350,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
             keyword: _buildKeywordQuery(),
             salaryMin: _effectiveSalaryMin,
             salaryMax: _effectiveSalaryMax,
+            currency: _selectedSalaryCurrency.apiValue,
             sort: _selectedSortKey,
           );
       if (!mounted) {
