@@ -72,5 +72,6 @@
         </intent>
         <package android:name="com.tencent.mm"/>
         <package android:name="com.eg.android.AlipayGphone"/>
+        <package android:name="hk.alipay.wallet" />
     </queries>
 </manifest>
