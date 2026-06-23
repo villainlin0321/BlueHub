@@ -1876,6 +1876,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           .toList(growable: false),
       selfEvaluation: _selfEvaluation,
       isPublic: _draft.isPublic,
+      completeness: _resume?.completeness ?? 0,
     );
   }
 

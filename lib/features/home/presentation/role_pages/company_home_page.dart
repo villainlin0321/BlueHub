@@ -135,8 +135,8 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     _ResumeCardItem item,
     EmployerApplicationUpdateStatus nextStatus,
   ) async {
-    final String? remark = await _showRemarkDialog(nextStatus.label);
-    if (remark == null) {
+    final String? remark = await _showRemarkDialog(nextStatus.labelKey.tr());
+    if (remark == null || !mounted) {
       return;
     }
 

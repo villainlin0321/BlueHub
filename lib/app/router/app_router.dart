@@ -283,11 +283,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceProviderMyInfo,
-        builder: (context, state) => const ServiceProviderMyInfoPage(),
+        builder: (context, state) => ServiceProviderMyInfoPage(
+          args:
+              state.extra as ServiceProviderMyInfoPageArgs? ??
+              const ServiceProviderMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.companyMyInfo,
-        builder: (context, state) => const CompanyMyInfoPage(),
+        builder: (context, state) => CompanyMyInfoPage(
+          args:
+              state.extra as CompanyMyInfoPageArgs? ??
+              const CompanyMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.settings,

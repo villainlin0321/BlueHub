@@ -646,6 +646,7 @@ class SaveResumeBO {
     required this.educations,
     required this.selfEvaluation,
     required this.isPublic,
+    required this.completeness,
   });
 
   final JobIntentionBO jobIntention;
@@ -655,6 +656,7 @@ class SaveResumeBO {
   final List<EducationBO> educations;
   final String selfEvaluation;
   final bool isPublic;
+  final int completeness;
 
   factory SaveResumeBO.fromJson(JsonMap json) {
     return SaveResumeBO(
@@ -681,6 +683,7 @@ class SaveResumeBO {
       ),
       selfEvaluation: readString(json, 'selfEvaluation'),
       isPublic: readBool(json, 'isPublic'),
+      completeness: readInt(json, 'completeness'),
     );
   }
 
@@ -701,6 +704,7 @@ class SaveResumeBO {
           .toList(growable: false),
       'selfEvaluation': selfEvaluation,
       'isPublic': isPublic,
+      'completeness': completeness,
     };
   }
 }

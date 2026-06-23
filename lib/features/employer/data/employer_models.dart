@@ -1,5 +1,65 @@
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
+class EmployerPublicVO {
+  const EmployerPublicVO({
+    required this.profileId,
+    required this.companyName,
+    required this.isVerified,
+    required this.industry,
+    required this.companySize,
+    required this.logoUrl,
+    required this.description,
+    required this.website,
+    required this.foundedYear,
+    required this.country,
+    required this.city,
+  });
+
+  final int profileId;
+  final String companyName;
+  final bool isVerified;
+  final String industry;
+  final String companySize;
+  final String logoUrl;
+  final String description;
+  final String website;
+  final int foundedYear;
+  final String country;
+  final String city;
+
+  factory EmployerPublicVO.fromJson(JsonMap json) {
+    return EmployerPublicVO(
+      profileId: readInt(json, 'profileId'),
+      companyName: readString(json, 'companyName'),
+      isVerified: readBool(json, 'isVerified'),
+      industry: readString(json, 'industry'),
+      companySize: readString(json, 'companySize'),
+      logoUrl: readString(json, 'logoUrl'),
+      description: readString(json, 'description'),
+      website: readString(json, 'website'),
+      foundedYear: readInt(json, 'foundedYear'),
+      country: readString(json, 'country'),
+      city: readString(json, 'city'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'profileId': profileId,
+      'companyName': companyName,
+      'isVerified': isVerified,
+      'industry': industry,
+      'companySize': companySize,
+      'logoUrl': logoUrl,
+      'description': description,
+      'website': website,
+      'foundedYear': foundedYear,
+      'country': country,
+      'city': city,
+    };
+  }
+}
+
 class EmployerProfileVO {
   const EmployerProfileVO({
     required this.profileId,

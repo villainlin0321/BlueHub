@@ -22,6 +22,15 @@ class EmployerService {
     return response;
   }
 
+  /// 获取指定雇主的公开资料，供求职者端查看。
+  Future<EmployerPublicVO> getPublicProfile({required int profileId}) async {
+    final response = await _apiClient.get<EmployerPublicVO>(
+      '/employer/$profileId',
+      decode: (data) => EmployerPublicVO.fromJson(asJsonMap(data)),
+    );
+    return response;
+  }
+
   /// 更新当前登录雇主的企业资料与联系人信息。
   Future<void> updateEmployerProfile({
     required UpdateEmployerBO request,

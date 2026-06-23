@@ -3425,6 +3425,15 @@
             }
           },
           {
+            "name": "currency",
+            "in": "query",
+            "description": "薪资货币，如 EUR / USD / CNY",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "has_visa_support",
             "in": "query",
             "description": "是否提供签证支持",
@@ -7235,6 +7244,80 @@
         }
       }
     },
+    "/employer/{profileId}": {
+      "get": {
+        "tags": [
+          "雇主模块"
+        ],
+        "summary": "获取雇主公开信息（求职者端）",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "getPublicProfile",
+        "parameters": [
+          {
+            "name": "profileId",
+            "in": "path",
+            "description": "企业档案 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultEmployerPublicVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/countries": {
       "get": {
         "tags": [
@@ -8998,6 +9081,11 @@
           "isPublic": {
             "type": "boolean",
             "description": "是否公开简历"
+          },
+          "completeness": {
+            "type": "integer",
+            "format": "int32",
+            "description": "简历完成度（0-100）"
           }
         }
       },
@@ -13672,6 +13760,90 @@
           "description": {
             "type": "string",
             "description": "套餐服务描述"
+          }
+        }
+      },
+      "AppResultEmployerPublicVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/EmployerPublicVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "EmployerPublicVO": {
+        "type": "object",
+        "description": "雇主公开信息（求职者端查看）",
+        "properties": {
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "企业档案 ID"
+          },
+          "companyName": {
+            "type": "string",
+            "description": "公司名称"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "description": "是否已通过平台认证"
+          },
+          "industry": {
+            "type": "string",
+            "description": "行业类型"
+          },
+          "companySize": {
+            "type": "string",
+            "description": "公司规模"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Logo URL"
+          },
+          "description": {
+            "type": "string",
+            "description": "公司简介"
+          },
+          "website": {
+            "type": "string",
+            "description": "官网地址"
+          },
+          "foundedYear": {
+            "type": "integer",
+            "format": "int32",
+            "description": "成立年份"
+          },
+          "country": {
+            "type": "string",
+            "description": "企业所在国（ISO 2 码）"
+          },
+          "city": {
+            "type": "string",
+            "description": "所在城市"
           }
         }
       },
