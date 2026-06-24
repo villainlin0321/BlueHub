@@ -9628,6 +9628,13 @@
           "isRequired": {
             "type": "boolean",
             "description": "是否必须提交"
+          },
+          "exampleFileUrls": {
+            "type": "array",
+            "description": "示例文件访问 URL 列表",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

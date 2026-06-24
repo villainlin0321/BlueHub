@@ -17,6 +17,8 @@ import '../../../shared/models/app_currency.dart';
 import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
@@ -253,6 +255,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                       materials: serviceMaterials,
                       downloadingFileUrls: _downloadingMaterialUrls,
                       onMaterialTap: _downloadAndOpenMaterial,
+                      onPreviewTap: () => _showSampleFilesDialog(serviceMaterials),
                     ),
                     ServiceDetailReviewTab(
                       review: reviewAsync?.asData?.value,
@@ -541,6 +544,90 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
   }
 
+  List<_ServiceSampleFileData> _buildSampleFiles(
+    List<ServiceMaterialData> materials,
+  ) {
+    final Set<String> uniqueUrls = <String>{};
+    final List<_ServiceSampleFileData> files = <_ServiceSampleFileData>[];
+    for (final ServiceMaterialData material in materials) {
+      for (final String rawUrl in material.exampleFileUrls) {
+        final String fileUrl = rawUrl.trim();
+        if (fileUrl.isEmpty || !uniqueUrls.add(fileUrl)) {
+          continue;
+        }
+        final Uri? uri = Uri.tryParse(fileUrl);
+        final String fileName =
+            uri != null && uri.pathSegments.isNotEmpty
+            ? Uri.decodeComponent(uri.pathSegments.last)
+            : material.title;
+        files.add(
+          _ServiceSampleFileData(
+            title: fileName.trim().isEmpty ? material.title : fileName,
+            subtitle: material.title.trim().isEmpty
+                ? '服务详情.所需材料'.tr()
+                : material.title,
+            fileUrl: fileUrl,
+          ),
+        );
+      }
+    }
+    return files;
+  }
+
+  Future<void> _showSampleFilesDialog(List<ServiceMaterialData> materials) async {
+    final List<_ServiceSampleFileData> sampleFiles = _buildSampleFiles(materials);
+    if (sampleFiles.isEmpty) {
+      _showMessage('服务详情.文件地址不存在'.tr());
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return SampleFileSelectionDialog(
+          title: '服务详情.查看样例'.tr(),
+          itemCount: sampleFiles.length,
+          itemBuilder: (BuildContext context, int index) {
+            final _ServiceSampleFileData file = sampleFiles[index];
+            final ServiceMaterialData material = ServiceMaterialData(
+              title: file.title,
+              subtitle: file.subtitle,
+              status: '服务详情.查看样例'.tr(),
+              required: false,
+              description: file.subtitle,
+              exampleFileUrls: <String>[file.fileUrl],
+            );
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == sampleFiles.length - 1 ? 0 : 12,
+              ),
+              child: _ServiceSampleFileCard(
+                material: material,
+                isDownloading: _downloadingMaterialUrls.contains(file.fileUrl),
+                onTap: () => _downloadAndOpenSampleFile(file),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadAndOpenSampleFile(_ServiceSampleFileData file) async {
+    final ServiceMaterialData material = ServiceMaterialData(
+      title: file.title,
+      subtitle: file.subtitle,
+      status: '服务详情.查看样例'.tr(),
+      required: false,
+      description: file.subtitle,
+      exampleFileUrls: <String>[file.fileUrl],
+    );
+    await _downloadAndOpenMaterial(material);
+  }
+
   Future<void> _downloadAndOpenMaterial(ServiceMaterialData material) async {
     final String fileUrl = material.fileUrl.trim();
     if (fileUrl.isEmpty) {
@@ -635,6 +722,41 @@ class _ServiceDetailLoadingPage extends StatelessWidget {
     return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _ServiceSampleFileData {
+  const _ServiceSampleFileData({
+    required this.title,
+    required this.subtitle,
+    required this.fileUrl,
+  });
+
+  final String title;
+  final String subtitle;
+  final String fileUrl;
+}
+
+class _ServiceSampleFileCard extends StatelessWidget {
+  const _ServiceSampleFileCard({
+    required this.material,
+    required this.isDownloading,
+    required this.onTap,
+  });
+
+  final ServiceMaterialData material;
+  final bool isDownloading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SampleFileSelectionItem(
+      title: material.title,
+      subtitle: material.subtitle,
+      fileUrl: material.fileUrl,
+      isDownloading: isDownloading,
+      onDownloadTap: onTap,
     );
   }
 }

@@ -703,7 +703,9 @@ class _OrderLoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 24,
+      ),
       children: const <Widget>[
         SizedBox(height: 96),
         Center(
@@ -750,143 +752,128 @@ class _OrderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              children: <Widget>[
-                Positioned.fill(
-                  child: SvgPicture.asset(
-                    'assets/images/my_orders_card_bg_blue.svg',
-                    fit: BoxFit.fill,
+            child: Container(
+              color: Colors.white.withValues(alpha: 0.96),
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        order.timeText,
+                        style: const TextStyle(
+                          color: Color(0xFF8C8C8C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          height: 16 / 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (order.tagLabel != null && order.tagStyle != null)
+                        _OrderTag(
+                          label: order.tagLabel!,
+                          style: order.tagStyle!,
+                        ),
+                    ],
                   ),
-                ),
-                Positioned.fill(
-                  child: Container(color: Colors.white.withValues(alpha: 0.96)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
-                  child: Column(
+                  const SizedBox(height: 14),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            order.timeText,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (order.tagLabel != null && order.tagStyle != null)
-                            _OrderTag(
-                              label: order.tagLabel!,
-                              style: order.tagStyle!,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              order.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF262626),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                height: 22 / 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            order.price,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 22 / 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _OrderMetaRow(
-                        label: '订单.服务商'.tr(),
-                        value: order.provider,
-                      ),
-                      const SizedBox(height: 4),
-                      _OrderMetaRow(
-                        label: '我的.套餐类型'.tr(),
-                        value: order.packageType,
-                      ),
-                      const SizedBox(height: 4),
-                      _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
-                      if (order.hasProgress) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE8EDF3)),
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              const Icon(
-                                Icons.schedule_rounded,
-                                size: 16,
-                                color: Color(0xFF096DD9),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                order.progressLabel!,
-                                style: const TextStyle(
-                                  color: Color(0xFF8C8C8C),
-                                  fontSize: 12,
-                                  height: 18 / 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  order.progressValue!,
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                    color: Color(0xFF262626),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    height: 18 / 12,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      Expanded(
+                        child: Text(
+                          order.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF262626),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 22 / 16,
                           ),
                         ),
-                      ],
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          for (
-                            var i = 0;
-                            i < actionButtons.length;
-                            i++
-                          ) ...<Widget>[
-                            if (i > 0) const SizedBox(width: 12),
-                            actionButtons[i],
-                          ],
-                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        order.price,
+                        style: const TextStyle(
+                          color: Color(0xFF262626),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 22 / 16,
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  _OrderMetaRow(label: '订单.服务商'.tr(), value: order.provider),
+                  const SizedBox(height: 4),
+                  _OrderMetaRow(
+                    label: '我的.套餐类型'.tr(),
+                    value: order.packageType,
+                  ),
+                  const SizedBox(height: 4),
+                  _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
+                  if (order.hasProgress) ...<Widget>[
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE8EDF3)),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.schedule_rounded,
+                            size: 16,
+                            color: Color(0xFF096DD9),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            order.progressLabel!,
+                            style: const TextStyle(
+                              color: Color(0xFF8C8C8C),
+                              fontSize: 12,
+                              height: 18 / 12,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              order.progressValue!,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                color: Color(0xFF262626),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 18 / 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      for (
+                        var i = 0;
+                        i < actionButtons.length;
+                        i++
+                      ) ...<Widget>[
+                        if (i > 0) const SizedBox(width: 12),
+                        actionButtons[i],
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

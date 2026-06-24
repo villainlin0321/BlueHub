@@ -61,6 +61,7 @@ class ServiceDetailPackageTab extends ConsumerWidget {
     required this.onPackageSelected,
     required this.materials,
     required this.onMaterialTap,
+    required this.onPreviewTap,
     this.downloadingFileUrls = const <String>{},
   });
 
@@ -69,6 +70,7 @@ class ServiceDetailPackageTab extends ConsumerWidget {
   final ValueChanged<int> onPackageSelected;
   final List<ServiceMaterialData> materials;
   final ValueChanged<ServiceMaterialData> onMaterialTap;
+  final VoidCallback onPreviewTap;
   final Set<String> downloadingFileUrls;
 
   @override
@@ -105,6 +107,7 @@ class ServiceDetailPackageTab extends ConsumerWidget {
           materials: materials,
           downloadingFileUrls: downloadingFileUrls,
           onMaterialTap: onMaterialTap,
+          onPreviewTap: onPreviewTap,
         ),
       ],
     );
@@ -242,14 +245,21 @@ class _MaterialsSection extends StatelessWidget {
     required this.materials,
     required this.downloadingFileUrls,
     required this.onMaterialTap,
+    required this.onPreviewTap,
   });
 
   final List<ServiceMaterialData> materials;
   final Set<String> downloadingFileUrls;
   final ValueChanged<ServiceMaterialData> onMaterialTap;
+  final VoidCallback onPreviewTap;
 
   @override
   Widget build(BuildContext context) {
+    final bool hasExampleFiles = materials.any(
+      (ServiceMaterialData material) => material.exampleFileUrls.any(
+        (String fileUrl) => fileUrl.trim().isNotEmpty,
+      ),
+    );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -271,7 +281,7 @@ class _MaterialsSection extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: hasExampleFiles ? onPreviewTap : null,
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF096DD9),
                   padding: EdgeInsets.zero,

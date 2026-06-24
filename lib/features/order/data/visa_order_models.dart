@@ -211,17 +211,20 @@ class RequiredMaterialVO {
     required this.name,
     required this.description,
     required this.isRequired,
+    required this.exampleFileUrls,
   });
 
   final String name;
   final String description;
   final bool isRequired;
+  final List<String> exampleFileUrls;
 
   factory RequiredMaterialVO.fromJson(JsonMap json) {
     return RequiredMaterialVO(
       name: readString(json, 'name'),
       description: readString(json, 'description'),
       isRequired: readBool(json, 'isRequired'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
@@ -230,6 +233,7 @@ class RequiredMaterialVO {
       'name': name,
       'description': description,
       'isRequired': isRequired,
+      'exampleFileUrls': exampleFileUrls,
     };
   }
 }
