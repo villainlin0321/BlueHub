@@ -30,6 +30,10 @@
               android:resource="@style/NormalTheme"
               />
         </activity>
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Ucrop.CropTheme" />
 
         <activity-alias
             android:name=".MainActivityDefault"

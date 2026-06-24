@@ -56,12 +56,16 @@ class EditVisaPackageFormDraft {
     required this.name,
     required this.estimatedDays,
     required this.currency,
+    required this.coverImageIds,
+    required this.coverImages,
     required this.tiers,
   });
 
   final String name;
   final String estimatedDays;
   final AppCurrency currency;
+  final List<int> coverImageIds;
+  final List<String> coverImages;
   final List<EditVisaPackageTierDraftInput> tiers;
 }
 
@@ -312,14 +316,21 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       );
     }
 
+    final List<int> coverImageIds = draft.coverImageIds
+        .take(1)
+        .toList(growable: false);
+    final List<String> coverImages = draft.coverImages
+        .take(1)
+        .toList(growable: false);
+
     return CreateVisaPackageBO(
       name: name,
       targetCountry: countryCode,
       visaType: visaTypeCode,
       estimatedDays: estimatedDays,
       currency: draft.currency.apiValue,
-      coverImageIds: const <int>[],
-      coverImages: const <String>[],
+      coverImageIds: coverImageIds,
+      coverImages: coverImages,
       tiers: tiers,
       isDraft: isDraft,
     );

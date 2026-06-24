@@ -333,6 +333,12 @@
     "请输入材料描述": "Enter material description (within 20 characters)",
     "添加自定义服务": "Add Custom Service",
     "上传示例文件": "Upload Sample File",
+    "上传封面": "Upload Cover",
+    "重新上传封面": "Re-upload Cover",
+    "封面图": "Cover Image",
+    "封面图提示": "Use a 1:1 square image. Re-uploading replaces the current cover.",
+    "裁剪封面": "Crop Cover",
+    "封面上传中": "Uploading cover",
     "示例文件": "Sample File",
     "编辑签证套餐": "Edit / Visa Package",
     "保存中": "Saving...",
@@ -361,8 +367,11 @@
     "请填写档位正确价格": "Please enter a valid price for tier {index}",
     "请至少选择一个包含服务": "Please select at least one included service for tier {index}",
     "请填写材料名称": "Please enter the name for material {materialIndex} in tier {tierIndex}",
+    "请等待封面上传完成": "Please wait until the cover upload is complete before submitting",
+    "请重新上传封面": "Please re-upload the cover before submitting",
     "请等待示例文件上传完成": "Please wait until the sample upload for tier {tierIndex}, material {materialIndex} is complete before submitting",
-    "示例文件上传失败": "Failed to upload sample file"
+    "示例文件上传失败": "Failed to upload sample file",
+    "封面上传失败": "Failed to upload visa package cover"
   },
   "企业岗位": {
     "招聘中": "Recruiting",

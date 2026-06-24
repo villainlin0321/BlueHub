@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
@@ -42,6 +43,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   late final TextEditingController _serviceNameController;
   late final TextEditingController _durationController;
   late final List<EditVisaPackageTierViewDraft> _tiers;
+  PickedUploadFile? _coverImage;
   bool _isLoadingPackageDetail = false;
   String? _packageDetailError;
 
@@ -150,6 +152,46 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     return Uri.decodeComponent(lastSegment);
   }
 
+  PickedUploadFile? _buildExistingCoverImage(VisaPackageEditVO detail) {
+    final int itemCount = math.max(
+      detail.coverImageIds.length,
+      detail.coverImages.length,
+    );
+    int? coverImageId;
+    String coverImageUrl = '';
+    for (int index = 0; index < itemCount; index++) {
+      final int? currentId = index < detail.coverImageIds.length
+          ? detail.coverImageIds[index]
+          : null;
+      final String currentUrl = index < detail.coverImages.length
+          ? detail.coverImages[index].trim()
+          : '';
+      if ((currentId ?? 0) <= 0 && currentUrl.isEmpty) {
+        continue;
+      }
+      coverImageId = currentId;
+      coverImageUrl = currentUrl;
+      break;
+    }
+    if (coverImageId == null && coverImageUrl.isEmpty) {
+      return null;
+    }
+    return PickedUploadFile(
+      id: 'visa_cover_${coverImageId ?? coverImageUrl.hashCode}',
+      name: coverImageUrl.isEmpty
+          ? '签证编辑.封面图'.tr()
+          : _displayNameFromUrl(coverImageUrl),
+      path: coverImageUrl,
+      sourceType: UploadSourceType.gallery,
+      state: UploadItemState.success,
+      isImage: true,
+      progress: 1,
+      uploadedFileId: coverImageId,
+      uploadedFileUrl: coverImageUrl.isEmpty ? null : coverImageUrl,
+      sizeLabel: null,
+    );
+  }
+
   EditVisaPackageTierViewDraft _createTierDraftFromModel(
     VisaPackageEditTierVO tier, {
     required bool deletable,
@@ -214,6 +256,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       _durationController.text = detail.estimatedDays > 0
           ? '${detail.estimatedDays}'
           : '';
+      final PickedUploadFile? coverImage = _buildExistingCoverImage(detail);
       final List<EditVisaPackageTierViewDraft> tiers = detail.tiers.isEmpty
           ? <EditVisaPackageTierViewDraft>[_createTierDraft()]
           : detail.tiers
@@ -234,6 +277,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       controller.setVisaTypeCode(detail.visaType);
       controller.setCurrency(AppCurrency.fromApiValue(detail.currency));
       setState(() {
+        _coverImage = coverImage;
         _isLoadingPackageDetail = false;
       });
     } catch (error) {
@@ -336,6 +380,145 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     ref.read(editVisaPackageControllerProvider.notifier).setCurrency(result);
   }
 
+  Future<void> _handleCoverUploadTap() async {
+    FocusScope.of(context).unfocus();
+    await _pickCoverFromGallery();
+  }
+
+  Future<void> _pickCoverFromGallery() async {
+    try {
+      final List<PickedUploadFile> pickedFiles =
+          await UploadPickerUtils.pickFromGallery();
+      if (pickedFiles.isEmpty) {
+        return;
+      }
+      final PickedUploadFile selectedFile = pickedFiles.first;
+      final CroppedFile? croppedFile = await _cropCoverImage(selectedFile.path);
+      if (!mounted || croppedFile == null) {
+        return;
+      }
+
+      final int croppedSize = UploadPickerUtils.readFileSize(croppedFile.path);
+      final PickedUploadFile uploadingCover = selectedFile.copyWith(
+        path: croppedFile.path,
+        name: UploadPickerUtils.basename(croppedFile.path),
+        state: UploadItemState.uploading,
+        progress: 0,
+        sizeLabel: croppedSize > 0
+            ? UploadPickerUtils.formatFileSize(croppedSize)
+            : null,
+        errorMessage: null,
+        uploadedFileId: null,
+        uploadedFileUrl: null,
+      );
+
+      setState(() {
+        _coverImage = uploadingCover;
+      });
+      await _uploadCoverImage(uploadingCover);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showToast('上传.打开相册失败'.tr());
+    }
+  }
+
+  Future<CroppedFile?> _cropCoverImage(String path) {
+    return ImageCropper().cropImage(
+      sourcePath: path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 90,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '签证编辑.裁剪封面'.tr(),
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: true,
+        ),
+        IOSUiSettings(
+          title: '签证编辑.裁剪封面'.tr(),
+          aspectRatioLockEnabled: true,
+          aspectRatioPickerButtonHidden: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _uploadCoverImage(PickedUploadFile file) async {
+    final fileService = ref.read(fileServiceProvider);
+    try {
+      final uploaded = await fileService.uploadFile(
+        path: file.path,
+        scene: FileScene.packageCover,
+        errorMessage: '签证编辑.封面上传失败'.tr(),
+        onSendProgress: (int sent, int total) {
+          if (!mounted || total <= 0 || _coverImage?.id != file.id) {
+            return;
+          }
+          final double progress = (sent / total).clamp(0, 1).toDouble();
+          _updateCoverImage(
+            (PickedUploadFile current) => current.copyWith(
+              state: UploadItemState.uploading,
+              progress: progress,
+              errorMessage: null,
+            ),
+          );
+        },
+      );
+      if (!mounted || _coverImage?.id != file.id) {
+        return;
+      }
+      _updateCoverImage(
+        (PickedUploadFile current) => current.copyWith(
+          state: UploadItemState.success,
+          progress: 1,
+          errorMessage: null,
+          uploadedFileId: uploaded.fileId,
+          uploadedFileUrl: uploaded.fileUrl,
+        ),
+      );
+    } catch (error) {
+      if (!mounted || _coverImage?.id != file.id) {
+        return;
+      }
+      _updateCoverImage(
+        (PickedUploadFile current) => current.copyWith(
+          state: UploadItemState.failure,
+          progress: 0,
+          errorMessage: _resolveUploadErrorMessage(
+            error,
+            fallback: '签证编辑.封面上传失败'.tr(),
+          ),
+          uploadedFileId: null,
+          uploadedFileUrl: null,
+        ),
+      );
+    }
+  }
+
+  void _updateCoverImage(
+    PickedUploadFile Function(PickedUploadFile current) update,
+  ) {
+    final PickedUploadFile? currentCover = _coverImage;
+    if (currentCover == null) {
+      return;
+    }
+    setState(() {
+      if (_coverImage != null) {
+        _coverImage = update(_coverImage!);
+      }
+    });
+  }
+
+  void _handleDeleteCover() {
+    setState(() {
+      _coverImage = null;
+    });
+  }
+
   List<SelectableSheetOption<String>> _buildVisaTypeOptions(
     List<TagItemVO> tags,
   ) {
@@ -430,6 +613,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       name: _serviceNameController.text,
       estimatedDays: _durationController.text,
       currency: state.selectedCurrency,
+      coverImageIds: _collectCoverImageIds(),
+      coverImages: _collectCoverImages(),
       tiers: _tiers
           .map((EditVisaPackageTierViewDraft tier) {
             return EditVisaPackageTierDraftInput(
@@ -456,6 +641,31 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
           })
           .toList(growable: false),
     );
+  }
+
+  List<int> _collectCoverImageIds() {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null || coverImage.state != UploadItemState.success) {
+      return const <int>[];
+    }
+    final int? uploadedFileId = coverImage.uploadedFileId;
+    if (uploadedFileId == null || uploadedFileId <= 0) {
+      return const <int>[];
+    }
+    return <int>[uploadedFileId];
+  }
+
+  List<String> _collectCoverImages() {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null || coverImage.state != UploadItemState.success) {
+      return const <String>[];
+    }
+    final String resolvedUrl = (coverImage.uploadedFileUrl ?? coverImage.path)
+        .trim();
+    if (resolvedUrl.isEmpty) {
+      return const <String>[];
+    }
+    return <String>[resolvedUrl];
   }
 
   List<int> _collectExampleFileIds(EditVisaPackageMaterialViewDraft material) {
@@ -500,12 +710,32 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     return true;
   }
 
+  bool _ensureCoverUploaded() {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null) {
+      return true;
+    }
+    switch (coverImage.state) {
+      case UploadItemState.success:
+        return true;
+      case UploadItemState.uploading:
+        _showToast('签证编辑.请等待封面上传完成'.tr());
+        return false;
+      case UploadItemState.failure:
+        _showToast('签证编辑.请重新上传封面'.tr());
+        return false;
+    }
+  }
+
   void _showToast(String message) {
     AppToast.show(message);
   }
 
   Future<void> _handleSaveDraft() async {
     FocusScope.of(context).unfocus();
+    if (!_ensureCoverUploaded()) {
+      return;
+    }
     if (!_ensureExampleFilesUploaded()) {
       return;
     }
@@ -516,6 +746,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
 
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
+    if (!_ensureCoverUploaded()) {
+      return;
+    }
     if (!_ensureExampleFilesUploaded()) {
       return;
     }
@@ -930,6 +1163,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       bottomPadding: mediaQuery.padding.bottom,
       serviceNameController: _serviceNameController,
       durationController: _durationController,
+      coverImage: _coverImage,
       selectedCountryLabel: state.selectedCountryCode == null
           ? null
           : resolveCountryLabel(state.selectedCountryCode!, countryLabelMap),
@@ -943,6 +1177,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       onBackTap: () => Navigator.of(context).maybePop(),
       onSaveDraftTap: _handleSaveDraft,
       onPublishTap: _handlePublish,
+      onCoverUploadTap: _handleCoverUploadTap,
+      onDeleteCoverTap: _handleDeleteCover,
       onCountryTap: _openCountrySheet,
       onVisaTypeTap: _openVisaTypeSheet,
       onCurrencyTap: _openCurrencySheet,

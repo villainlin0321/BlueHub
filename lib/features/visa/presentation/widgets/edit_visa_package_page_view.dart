@@ -19,6 +19,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.bottomPadding,
     required this.serviceNameController,
     required this.durationController,
+    required this.coverImage,
     required this.selectedCountryLabel,
     required this.selectedVisaTypeLabel,
     required this.selectedCurrencyLabel,
@@ -27,6 +28,8 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onBackTap,
     required this.onSaveDraftTap,
     required this.onPublishTap,
+    required this.onCoverUploadTap,
+    required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
     required this.onCurrencyTap,
@@ -48,6 +51,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final double bottomPadding;
   final TextEditingController serviceNameController;
   final TextEditingController durationController;
+  final PickedUploadFile? coverImage;
   final String? selectedCountryLabel;
   final String? selectedVisaTypeLabel;
   final String selectedCurrencyLabel;
@@ -56,6 +60,8 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onSaveDraftTap;
   final VoidCallback onPublishTap;
+  final VoidCallback onCoverUploadTap;
+  final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
   final VoidCallback onCurrencyTap;
@@ -106,8 +112,11 @@ class EditVisaPackagePageView extends StatelessWidget {
                             _BasicInfoSection(
                               serviceNameController: serviceNameController,
                               durationController: durationController,
+                              coverImage: coverImage,
                               selectedCountryLabel: selectedCountryLabel,
                               selectedVisaTypeLabel: selectedVisaTypeLabel,
+                              onCoverUploadTap: onCoverUploadTap,
+                              onDeleteCoverTap: onDeleteCoverTap,
                               onCountryTap: onCountryTap,
                               onVisaTypeTap: onVisaTypeTap,
                             ),
@@ -158,16 +167,22 @@ class _BasicInfoSection extends StatelessWidget {
   const _BasicInfoSection({
     required this.serviceNameController,
     required this.durationController,
+    required this.coverImage,
     required this.selectedCountryLabel,
     required this.selectedVisaTypeLabel,
+    required this.onCoverUploadTap,
+    required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
   });
 
   final TextEditingController serviceNameController;
   final TextEditingController durationController;
+  final PickedUploadFile? coverImage;
   final String? selectedCountryLabel;
   final String? selectedVisaTypeLabel;
+  final VoidCallback onCoverUploadTap;
+  final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
 
@@ -177,7 +192,17 @@ class _BasicInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          EditVisaPackageSectionTitle(title: '签证编辑.基础信息'.tr()),
+          EditVisaPackageSectionTitle(
+            title: '签证编辑.基础信息'.tr(),
+            actionLabel: '签证编辑.上传封面'.tr(),
+            onActionTap: onCoverUploadTap,
+          ),
+          const SizedBox(height: 16),
+          EditVisaPackageCoverPreview(
+            file: coverImage,
+            onUploadTap: onCoverUploadTap,
+            onDeleteTap: coverImage == null ? null : onDeleteCoverTap,
+          ),
           const SizedBox(height: 16),
           EditVisaPackageLabeledField(
             label: '签证编辑.套餐总名称'.tr(),
