@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
@@ -386,6 +385,8 @@ enum _OrderFilter {
 
 enum _OrderTagStyle { urgent, blue }
 
+enum _OrderProgressStyle { standard, rejected }
+
 enum _OrderActionType {
   contactMerchant,
   uploadMaterials,
@@ -413,6 +414,7 @@ class _OrderItem {
     this.tagStyle,
     this.progressLabel,
     this.progressValue,
+    this.progressStyle,
   });
 
   final int orderId;
@@ -430,14 +432,24 @@ class _OrderItem {
   final String orderNo;
   final String? progressLabel;
   final String? progressValue;
+  final _OrderProgressStyle? progressStyle;
   final List<_OrderAction> actions;
 
-  bool get hasProgress => progressLabel != null && progressValue != null;
+  bool get hasProgress {
+    if (progressStyle == _OrderProgressStyle.rejected) {
+      return (progressValue ?? '').trim().isNotEmpty;
+    }
+    return progressLabel != null && progressValue != null;
+  }
 
   factory _OrderItem.fromVisaOrder(VisaOrderVO order) {
     final _OrderFilter filter = _OrderFilterX.fromStatus(order.status);
     final ({String? label, _OrderTagStyle? style}) tag = _buildTag(order);
-    final ({String? label, String? value}) progress = _buildProgress(order);
+    final ({
+      String? label,
+      String? value,
+      _OrderProgressStyle? style,
+    }) progress = _buildProgress(order);
 
     return _OrderItem(
       orderId: order.orderId,
@@ -455,6 +467,7 @@ class _OrderItem {
       orderNo: order.orderNo,
       progressLabel: progress.label,
       progressValue: progress.value,
+      progressStyle: progress.style,
       actions: _buildActions(order),
     );
   }
@@ -467,13 +480,37 @@ class _OrderItem {
     if (label.isEmpty) {
       return (label: null, style: null);
     }
-    return (label: label, style: _OrderTagStyle.blue);
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    final bool useUrgentStyle =
+        normalizedStatus == 'pending_payment' ||
+        normalizedStatus == 'pending_upload' ||
+        normalizedStatus == 'rejected';
+    return (
+      label: label,
+      style: useUrgentStyle ? _OrderTagStyle.urgent : _OrderTagStyle.blue,
+    );
   }
 
-  static ({String? label, String? value}) _buildProgress(VisaOrderVO order) {
+  static ({
+    String? label,
+    String? value,
+    _OrderProgressStyle? style,
+  }) _buildProgress(VisaOrderVO order) {
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    if (normalizedStatus == 'rejected') {
+      final String rejectReason = (order.rejectReason ?? '').trim();
+      if (rejectReason.isEmpty) {
+        return (label: null, value: null, style: null);
+      }
+      return (
+        label: null,
+        value: rejectReason,
+        style: _OrderProgressStyle.rejected,
+      );
+    }
     final _OrderFilter filter = _OrderFilterX.fromStatus(order.status);
     if (filter != _OrderFilter.processing) {
-      return (label: null, value: null);
+      return (label: null, value: null, style: null);
     }
     final String stepLabel =
         order.steps
@@ -488,6 +525,7 @@ class _OrderItem {
     return (
       label: '我的.当前进度'.tr(),
       value: stepLabel.isEmpty ? '订单.处理中'.tr() : stepLabel,
+      style: _OrderProgressStyle.standard,
     );
   }
 
@@ -817,45 +855,10 @@ class _OrderCard extends StatelessWidget {
                   _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
                   if (order.hasProgress) ...<Widget>[
                     const SizedBox(height: 12),
-                    Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE8EDF3)),
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.schedule_rounded,
-                            size: 16,
-                            color: Color(0xFF096DD9),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            order.progressLabel!,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 12,
-                              height: 18 / 12,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              order.progressValue!,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Color(0xFF262626),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                height: 18 / 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    _OrderProgressCard(
+                      label: order.progressLabel,
+                      value: order.progressValue!,
+                      style: order.progressStyle ?? _OrderProgressStyle.standard,
                     ),
                   ],
                   const Spacer(),
@@ -952,6 +955,84 @@ class _OrderTag extends StatelessWidget {
           fontWeight: FontWeight.w500,
           height: 12 / 12,
         ),
+      ),
+    );
+  }
+}
+
+class _OrderProgressCard extends StatelessWidget {
+  const _OrderProgressCard({
+    required this.label,
+    required this.value,
+    required this.style,
+  });
+
+  final String? label;
+  final String value;
+  final _OrderProgressStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (style == _OrderProgressStyle.rejected) {
+      return Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEBEB),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFFFF4D4F),
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            height: 16 / 11,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE8EDF3)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.schedule_rounded,
+            size: 16,
+            color: Color(0xFF096DD9),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label ?? '',
+            style: const TextStyle(
+              color: Color(0xFF8C8C8C),
+              fontSize: 12,
+              height: 18 / 12,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                height: 18 / 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
