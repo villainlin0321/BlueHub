@@ -40,9 +40,6 @@ sed -i '' "s/^version: .*/version: ${next_version}/" "${PUBSPEC_FILE}"
 
 echo "Version updated: ${current_version} -> ${next_version}"
 
-git add pubspec.yaml
-git commit -m "${COMMIT_MESSAGE}"
-
 flutter build apk --release
 
 if [[ ! -f "${OUTPUT_APK}" ]]; then
@@ -52,5 +49,9 @@ fi
 
 renamed_apk="${OUTPUT_DIR}/${APP_NAME_PREFIX}-${next_version}.apk"
 mv "${OUTPUT_APK}" "${renamed_apk}"
+
+git add pubspec.yaml
+git commit -m "${COMMIT_MESSAGE}"
+git push
 
 echo "APK generated: ${renamed_apk}"
