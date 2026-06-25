@@ -13,32 +13,32 @@ enum EmployerApplicationFilterStatus {
 }
 
 enum EmployerApplicationUpdateStatus {
-  viewed('viewed', label: '标记已查看'),
+  viewed('viewed', labelKey: '应聘管理.标记已查看'),
   interview(
     'interview',
-    label: '邀约面试',
+    labelKey: '招聘.邀约面试',
     targetListStatus: EmployerApplicationFilterStatus.invited,
   ),
   rejected(
     'rejected',
-    label: '不合适',
+    labelKey: '招聘.不合适',
     targetListStatus: EmployerApplicationFilterStatus.rejected,
   ),
-  withdrawn('withdrawn', label: '已撤回'),
+  withdrawn('withdrawn', labelKey: '应聘管理.已撤回'),
   hired(
     'hired',
-    label: '已录用',
+    labelKey: '我的.已录用',
     targetListStatus: EmployerApplicationFilterStatus.hired,
   );
 
   const EmployerApplicationUpdateStatus(
     this.value, {
-    required this.label,
+    required this.labelKey,
     this.targetListStatus,
   });
 
   final String value;
-  final String label;
+  final String labelKey;
   final EmployerApplicationFilterStatus? targetListStatus;
 }
 
@@ -150,18 +150,18 @@ class CreateApplicationBO {
 
 class EmployerSimpleVO {
   const EmployerSimpleVO({
-    required this.employerId,
+    required this.profileId,
     required this.name,
     required this.logoUrl,
   });
 
-  final int employerId;
+  final int? profileId;
   final String name;
   final String logoUrl;
 
   factory EmployerSimpleVO.fromJson(JsonMap json) {
     return EmployerSimpleVO(
-      employerId: readInt(json, 'employerId'),
+      profileId: _readNullableInt(json['profileId']),
       name: readString(json, 'name'),
       logoUrl: readString(json, 'logoUrl'),
     );
@@ -169,7 +169,7 @@ class EmployerSimpleVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'employerId': employerId,
+      if (profileId != null) 'profileId': profileId,
       'name': name,
       'logoUrl': logoUrl,
     };
@@ -274,6 +274,19 @@ String? _readNullableString(dynamic value) {
   }
   if (value is num || value is bool) {
     return value.toString();
+  }
+  return null;
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
   }
   return null;
 }

@@ -7,19 +7,21 @@ import '../../visa/data/provider_models.dart';
 enum QualificationCertificationRole { serviceProvider, company }
 
 enum QualificationDocType {
-  businessLicense('business_license', '营业执照', FileScene.cert),
-  specialPermit('special_permit', '特许经验许可', FileScene.cert),
-  idCard('id_card', '身份证', FileScene.idCard);
+  businessLicense('business_license', '认证流程.营业执照', FileScene.cert),
+  specialPermit('special_permit', '认证流程.特许经验许可', FileScene.cert),
+  idCard('id_card', '认证流程.身份证', FileScene.idCard);
 
   const QualificationDocType(
     this.apiValue,
-    this.defaultDocName,
+    this.defaultDocNameKey,
     this.uploadScene,
   );
 
   final String apiValue;
-  final String defaultDocName;
+  final String defaultDocNameKey;
   final FileScene uploadScene;
+
+  String get localizedDefaultDocName => defaultDocNameKey.tr();
 }
 
 String qualificationCountryLabel(QualificationCertificationRole role) {

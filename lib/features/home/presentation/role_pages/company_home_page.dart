@@ -135,8 +135,8 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     _ResumeCardItem item,
     EmployerApplicationUpdateStatus nextStatus,
   ) async {
-    final String? remark = await _showRemarkDialog(nextStatus.label);
-    if (remark == null) {
+    final String? remark = await _showRemarkDialog(nextStatus.labelKey.tr());
+    if (remark == null || !mounted) {
       return;
     }
 
@@ -538,33 +538,37 @@ class _CompanyHeroTopRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        AppUserAvatar(
-          imageUrl: profile?.logoUrl ?? '',
-          size: 40,
-          backgroundColor: Colors.transparent,
-          placeholder: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE53935),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '通用.企业简称'.tr(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
+        GestureDetector(
+          onTap: () => context.push(RoutePaths.companyMyInfo),
+          behavior: HitTestBehavior.opaque,
+          child: AppUserAvatar(
+            imageUrl: profile?.logoUrl ?? '',
+            size: 40,
+            backgroundColor: Colors.transparent,
+            placeholder: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE53935),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '通用.企业简称'.tr(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
                   ),
                 ),
               ),

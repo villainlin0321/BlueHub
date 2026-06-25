@@ -113,19 +113,19 @@ class LoginPhoneView extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
                   _LoginButton(
-                    label: 'Test登录-求职者',
+                    label: '认证.测试登录求职者'.tr(),
                     enabled: !state.isSendingCode && !state.isSubmitting,
                     onPressed: onTestWorkerLogin,
                   ),
                   const SizedBox(height: 12),
                   _LoginButton(
-                    label: 'Test登录-服务商',
+                    label: '认证.测试登录服务商'.tr(),
                     enabled: !state.isSendingCode && !state.isSubmitting,
                     onPressed: onTestServiceProviderLogin,
                   ),
                   const SizedBox(height: 12),
                   _LoginButton(
-                    label: 'Test登录-雇主',
+                    label: '认证.测试登录雇主'.tr(),
                     enabled: !state.isSendingCode && !state.isSubmitting,
                     onPressed: onTestEmployerLogin,
                   ),

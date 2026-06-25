@@ -89,6 +89,12 @@ class RoutePaths {
   /// 服务详情举报页。
   static const serviceDetailReport = '/service-detail/report';
 
+  /// 我的投诉页。
+  static const myComplaints = '/me/complaints';
+
+  /// 投诉详情页。
+  static const complaintDetail = '/me/complaints/detail';
+
   /// 通用结果页。
   static const appResult = '/result';
 

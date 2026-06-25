@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/models/app_currency.dart';
+import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
@@ -177,6 +179,19 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     _customTagController.clear();
   }
 
+  Future<void> _openSalaryCurrencySheet() async {
+    final PostJobState state = ref.read(postJobControllerProvider);
+    final AppCurrency? result = await showAppCurrencyOptionsBottomSheet(
+          context: context,
+          initialValue: state.selectedSalaryCurrency,
+          title: '通用.选择货币'.tr(),
+        );
+    if (result == null) {
+      return;
+    }
+    ref.read(postJobControllerProvider.notifier).setSalaryCurrency(result);
+  }
+
   PostJobFormDraft _buildFormDraft() {
     return PostJobFormDraft(
       title: _packageNameController.text,
@@ -289,6 +304,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       salaryUnits: _salaryUnits,
       selectedJobType: state.selectedJobType,
       selectedSalaryUnit: state.selectedSalaryUnit,
+      selectedSalaryCurrencyLabel: state.selectedSalaryCurrency.labelKey.tr(),
       requirementTags: state.requirementTags,
       selectedRequirementTagCodes: state.selectedRequirementTagCodes,
       customTags: state.customTags,
@@ -302,6 +318,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
           controller.loadRequirementTags(force: true),
       onJobTypeChanged: controller.setJobType,
       onSalaryUnitChanged: controller.setSalaryUnit,
+      onSalaryCurrencyTap: _openSalaryCurrencySheet,
       onRequirementTagTap: controller.toggleRequirementTag,
       onRemoveCustomTag: controller.removeCustomTag,
       onCustomTagSubmitted: (_) => _submitCustomTag(),

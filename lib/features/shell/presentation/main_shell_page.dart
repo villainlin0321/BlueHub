@@ -3,12 +3,15 @@ import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_session_provider.dart';
+import '../../config/data/config_providers.dart';
 import '../../message/application/message_session/message_session_controller.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../application/shell_role_provider.dart';
@@ -25,6 +28,15 @@ class MainShellPage extends ConsumerStatefulWidget {
 }
 
 class _MainShellPageState extends ConsumerState<MainShellPage> {
+  bool _isExitDialogShowing = false;
+
+  void _refreshTagDictionaryForIndex(int index) {
+    if (index != 0) {
+      return;
+    }
+    unawaited(ref.read(tagDictionaryCacheControllerProvider).refreshAll());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +47,7 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
       unawaited(
         ref.read(messageSessionControllerProvider.notifier).startSession(),
       );
+      _refreshTagDictionaryForIndex(widget.navigationShell.currentIndex);
     });
   }
 
@@ -44,6 +57,29 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
       ref.read(messageSessionControllerProvider.notifier).stopSession(),
     );
     super.dispose();
+  }
+
+  Future<void> _handleExitApp() async {
+    if (_isExitDialogShowing) {
+      return;
+    }
+
+    _isExitDialogShowing = true;
+    final bool shouldExit = await showAppConfirmDialog(
+      context: context,
+      title: '通用.退出应用标题'.tr(),
+      message: '通用.退出应用内容'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.确定'.tr(),
+      barrierDismissible: false,
+    );
+    _isExitDialogShowing = false;
+
+    if (!mounted || !shouldExit) {
+      return;
+    }
+
+    await SystemNavigator.pop();
   }
 
   @override
@@ -60,29 +96,41 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
     });
     final ShellRole currentRole = widget.role ?? ref.watch(shellRoleProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: widget.navigationShell,
-      bottomNavigationBar: _BottomBar(
-        key: ValueKey(currentRole),
-        role: currentRole,
-        currentIndex: widget.navigationShell.currentIndex,
-        onTap: (index) {
-          AppLogger.instance.info(
-            'SHELL',
-            '底部 Tab 切换',
-            context: <String, Object?>{
-              'role': currentRole.name,
-              'fromIndex': widget.navigationShell.currentIndex,
-              'toIndex': index,
-            },
-          );
-          // 切换分支时保留各 Tab 的导航栈，符合 Figma 对应业务场景的保活体验。
-          widget.navigationShell.goBranch(
-            index,
-            initialLocation: index == widget.navigationShell.currentIndex,
-          );
-        },
+    return PopScope<void>(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, void result) {
+        if (didPop) {
+          return;
+        }
+        unawaited(_handleExitApp());
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: widget.navigationShell,
+        bottomNavigationBar: _BottomBar(
+          key: ValueKey(currentRole),
+          role: currentRole,
+          currentIndex: widget.navigationShell.currentIndex,
+          onTap: (index) {
+            AppLogger.instance.info(
+              'SHELL',
+              '底部 Tab 切换',
+              context: <String, Object?>{
+                'role': currentRole.name,
+                'fromIndex': widget.navigationShell.currentIndex,
+                'toIndex': index,
+              },
+            );
+            if (index == 0 && index != widget.navigationShell.currentIndex) {
+              _refreshTagDictionaryForIndex(index);
+            }
+            // 切换分支时保留各 Tab 的导航栈，符合 Figma 对应业务场景的保活体验。
+            widget.navigationShell.goBranch(
+              index,
+              initialLocation: index == widget.navigationShell.currentIndex,
+            );
+          },
+        ),
       ),
     );
   }

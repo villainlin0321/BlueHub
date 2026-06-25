@@ -8,9 +8,10 @@ import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_my_info_styles.dart';
 
 class CompanyMyInfoHeader extends StatelessWidget {
-  const CompanyMyInfoHeader({required this.onBackTap, super.key});
+  const CompanyMyInfoHeader({required this.onBackTap, this.title, super.key});
 
   final VoidCallback onBackTap;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,7 @@ class CompanyMyInfoHeader extends StatelessWidget {
               icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
             ),
           ),
-          Text('我的.我的信息'.tr(), style: CompanyMyInfoStyles.navTitle),
+          Text(title ?? '我的.我的信息'.tr(), style: CompanyMyInfoStyles.navTitle),
         ],
       ),
     );

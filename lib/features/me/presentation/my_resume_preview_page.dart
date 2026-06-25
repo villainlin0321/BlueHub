@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
@@ -102,7 +103,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
     if (_draft.salaryCurrency.trim().isEmpty) {
       return _draft.salary.trim();
     }
-    return '${_draft.salaryCurrency} ${_draft.salary.trim()}';
+    return '${AppCurrency.displayPrefixFor(_draft.salaryCurrency, fallback: AppCurrency.eur)} ${_draft.salary.trim()}';
   }
 
   bool get _shouldLoadByUserId => widget.args == null && widget.userId != null;

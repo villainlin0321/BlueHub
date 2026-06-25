@@ -62,7 +62,7 @@ class ServiceProviderMePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _HeaderSection(onSettingsTap: () => _handleSettingsTap(context)),
-          const SizedBox(height: 40),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
@@ -73,13 +73,6 @@ class ServiceProviderMePage extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  /// 展示暂未接入功能的占位提示。
-  void _showPlaceholderToast(BuildContext context, String labelKey) {
-    AppToast.show(
-      '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
     );
   }
 
@@ -101,7 +94,6 @@ class ServiceProviderMePage extends ConsumerWidget {
       context.push(RoutePaths.financeSettlement);
       return;
     }
-    _showPlaceholderToast(context, labelKey);
   }
 
   void _handleSettingsTap(BuildContext context) {

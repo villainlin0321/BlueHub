@@ -1,8 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../me/presentation/service_provider_my_info_page.dart';
 import '../../visa/data/provider_models.dart';
 
 class ServiceDetailMerchantTab extends StatelessWidget {
@@ -72,7 +75,7 @@ class _MerchantHeaderCard extends StatelessWidget {
       height: 14 / 11,
     );
 
-    return SizedBox(
+    final Widget content = SizedBox(
       height: 52,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,6 +153,23 @@ class _MerchantHeaderCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+    if (provider.providerId <= 0) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push(
+          RoutePaths.serviceProviderMyInfo,
+          extra: ServiceProviderMyInfoPageArgs.readonly(
+            providerId: provider.providerId,
+          ),
+        ),
+        child: content,
       ),
     );
   }

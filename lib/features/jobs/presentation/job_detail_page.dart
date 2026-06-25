@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/job_models.dart';
@@ -15,6 +16,7 @@ import '../../me/data/collection_providers.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../messages/data/message_models.dart';
 import '../../messages/data/message_providers.dart';
+import '../../me/presentation/company_my_info_page.dart';
 import 'job_apply_helper.dart';
 
 /// 职位详情页参数：当前至少透传岗位 ID，供“投递简历”调用真实接口。
@@ -146,6 +148,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isCollecting = false;
         _isCollectedOverride = !wasCollected;
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(context, wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
     } catch (error) {
@@ -507,7 +510,7 @@ class _EmployerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget content = Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       child: Row(
@@ -552,6 +555,20 @@ class _EmployerCard extends StatelessWidget {
             color: Color(0xFFBFBFBF),
           ),
         ],
+      ),
+    );
+    if (employer.employerId <= 0) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.push(
+          RoutePaths.companyMyInfo,
+          extra: CompanyMyInfoPageArgs.readonly(profileId: employer.employerId),
+        ),
+        child: content,
       ),
     );
   }

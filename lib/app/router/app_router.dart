@@ -11,6 +11,8 @@ import '../../features/auth/presentation/qualification_certification_step_three_
 import '../../features/auth/presentation/qualification_certification_step_two_page.dart';
 import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
+import '../../features/complaint/presentation/complaint_detail_page.dart';
+import '../../features/complaint/presentation/my_complaints_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/company_application_management_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
@@ -268,7 +270,27 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceDetailReport,
-        builder: (context, state) => const ServiceDetailReportPage(),
+        builder: (context, state) => ServiceDetailReportPage(
+          args:
+              state.extra as ServiceDetailReportPageArgs? ??
+              const ServiceDetailReportPageArgs(
+                targetType: '',
+                targetId: 0,
+                targetName: '',
+              ),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.myComplaints,
+        builder: (context, state) => const MyComplaintsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.complaintDetail,
+        builder: (context, state) => ComplaintDetailPage(
+          args:
+              state.extra as ComplaintDetailPageArgs? ??
+              const ComplaintDetailPageArgs(complaintId: 0),
+        ),
       ),
       GoRoute(
         path: RoutePaths.appResult,
@@ -284,11 +306,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceProviderMyInfo,
-        builder: (context, state) => const ServiceProviderMyInfoPage(),
+        builder: (context, state) => ServiceProviderMyInfoPage(
+          args:
+              state.extra as ServiceProviderMyInfoPageArgs? ??
+              const ServiceProviderMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.companyMyInfo,
-        builder: (context, state) => const CompanyMyInfoPage(),
+        builder: (context, state) => CompanyMyInfoPage(
+          args:
+              state.extra as CompanyMyInfoPageArgs? ??
+              const CompanyMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.settings,

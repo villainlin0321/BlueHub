@@ -88,6 +88,7 @@ class MaterialItemBO {
 
 class MaterialVO {
   const MaterialVO({
+    required this.materialId,
     required this.materialName,
     required this.fileUrl,
     required this.fileType,
@@ -95,6 +96,7 @@ class MaterialVO {
     required this.uploadedAt,
   });
 
+  final int materialId;
   final String materialName;
   final String fileUrl;
   final String fileType;
@@ -103,6 +105,7 @@ class MaterialVO {
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
+      materialId: readInt(json, 'materialId'),
       materialName: readString(json, 'materialName'),
       fileUrl: readString(json, 'fileUrl'),
       fileType: readString(json, 'fileType'),
@@ -113,6 +116,7 @@ class MaterialVO {
 
   JsonMap toJson() {
     return <String, dynamic>{
+      'materialId': materialId,
       'materialName': materialName,
       'fileUrl': fileUrl,
       'fileType': fileType,
@@ -207,17 +211,20 @@ class RequiredMaterialVO {
     required this.name,
     required this.description,
     required this.isRequired,
+    required this.exampleFileUrls,
   });
 
   final String name;
   final String description;
   final bool isRequired;
+  final List<String> exampleFileUrls;
 
   factory RequiredMaterialVO.fromJson(JsonMap json) {
     return RequiredMaterialVO(
       name: readString(json, 'name'),
       description: readString(json, 'description'),
       isRequired: readBool(json, 'isRequired'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
@@ -226,6 +233,7 @@ class RequiredMaterialVO {
       'name': name,
       'description': description,
       'isRequired': isRequired,
+      'exampleFileUrls': exampleFileUrls,
     };
   }
 }
@@ -312,13 +320,13 @@ class ApplicantInfoVO {
       nickname = '',
       avatarUrl = '',
       type = '',
-      profileId = 0;
+      profileId = null;
 
   final int userId;
   final String nickname;
   final String avatarUrl;
   final String type;
-  final int profileId;
+  final int? profileId;
 
   factory ApplicantInfoVO.fromJson(JsonMap json) {
     return ApplicantInfoVO(
@@ -326,7 +334,7 @@ class ApplicantInfoVO {
       nickname: readString(json, 'nickname'),
       avatarUrl: readString(json, 'avatarUrl'),
       type: readString(json, 'type'),
-      profileId: readInt(json, 'profileId'),
+      profileId: _readNullableInt(json['profileId']),
     );
   }
 
@@ -424,15 +432,15 @@ class VisaOrderVO {
   String get nickname => applicant.nickname;
   String get avatarUrl => applicant.avatarUrl;
   String get applicantType => applicant.type;
-  int get applicantProfileId => applicant.profileId;
+  int? get applicantProfileId => applicant.profileId;
 
   int get contactTargetUserId {
     final String normalizedRole = applicant.type.trim().toLowerCase();
     if (normalizedRole == 'worker') {
       return applicant.userId;
     }
-    if (applicant.profileId > 0) {
-      return applicant.profileId;
+    if ((applicant.profileId ?? 0) > 0) {
+      return applicant.profileId!;
     }
     return applicant.userId;
   }
@@ -482,7 +490,7 @@ class VisaOrderVO {
               nickname: readString(json, 'nickname'),
               avatarUrl: readString(json, 'avatarUrl'),
               type: _readNullableString(json['type']) ?? 'worker',
-              profileId: readInt(json, 'profileId'),
+              profileId: _readNullableInt(json['profileId']),
             )
           : ApplicantInfoVO.fromJson(applicantJson),
       rejectReason: _readNullableString(json['rejectReason']),
@@ -538,6 +546,19 @@ String? _readNullableString(dynamic value) {
   }
   if (value is num || value is bool) {
     return value.toString();
+  }
+  return null;
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
   }
   return null;
 }

@@ -117,25 +117,25 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
 
   List<_SystemNoticeItem> _buildInitialSystemItems() {
     return <_SystemNoticeItem>[
-      _SystemNoticeItem(
-        title: '消息.资质审核通过'.tr(),
-        time: '10-22 12:23:21',
-        content: '消息.资质审核通过内容'.tr(),
-        cardAssetPath: _noticeCardPrimaryAsset,
-        isUnread: true,
-      ),
-      _SystemNoticeItem(
-        title: '消息.资质审核未通过'.tr(),
-        time: '09-22 12:23:21',
-        content: '消息.资质审核未通过内容'.tr(),
-        cardAssetPath: _noticeCardSecondaryAsset,
-      ),
-      _SystemNoticeItem(
-        title: '消息.资质审核中'.tr(),
-        time: '09-18 12:23:21',
-        content: '消息.资质审核中内容'.tr(),
-        cardAssetPath: _noticeCardPendingAsset,
-      ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核通过'.tr(),
+      //   time: '10-22 12:23:21',
+      //   content: '消息.资质审核通过内容'.tr(),
+      //   cardAssetPath: _noticeCardPrimaryAsset,
+      //   isUnread: true,
+      // ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核未通过'.tr(),
+      //   time: '09-22 12:23:21',
+      //   content: '消息.资质审核未通过内容'.tr(),
+      //   cardAssetPath: _noticeCardSecondaryAsset,
+      // ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核中'.tr(),
+      //   time: '09-18 12:23:21',
+      //   content: '消息.资质审核中内容'.tr(),
+      //   cardAssetPath: _noticeCardPendingAsset,
+      // ),
     ];
   }
 

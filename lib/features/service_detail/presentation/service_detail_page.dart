@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 import '../../../shared/widgets/app_toast.dart';
 
@@ -10,10 +11,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
+import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
@@ -26,7 +36,9 @@ import '../../visa/data/visa_package_providers.dart';
 import 'service_detail_bottom_sheets.dart';
 import 'service_detail_merchant_tab.dart';
 import 'service_detail_package_tab.dart';
+import 'service_detail_report_page.dart';
 import 'service_detail_review_tab.dart';
+import 'service_detail_share_card.dart';
 
 class ServiceDetailPageArgs {
   const ServiceDetailPageArgs({
@@ -68,6 +80,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   bool _showCollapsedTitle = false;
   bool? _isCollectedOverride;
   final Set<String> _downloadingMaterialUrls = <String>{};
+  final ScreenshotController _shareScreenshotController =
+      ScreenshotController();
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +130,27 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
             backgroundColor: Colors.white,
             bottomNavigationBar: _BottomActionBar(
               consultIconAsset: _consultIconAsset,
+              onReportTap: () {
+                if (provider == null || provider.providerId <= 0) {
+                  AppToast.show('服务详情.暂无商家信息'.tr());
+                  return;
+                }
+                context.push(
+                  RoutePaths.serviceDetailReport,
+                  extra: ServiceDetailReportPageArgs(
+                    targetType: 'visa_provider',
+                    targetId: provider.providerId,
+                    targetName: provider.name,
+                    initialTitle: provider.name.trim().isEmpty
+                        ? ''
+                        : '投诉.默认标题'.tr(
+                            namedArgs: <String, String>{
+                              'name': provider.name.trim(),
+                            },
+                          ),
+                  ),
+                );
+              },
               onConsultTap: () => _handleConsultTap(provider),
               onApplyTap: () => _showApplyBottomSheet(
                 serviceTitle: package.name,
@@ -190,7 +225,11 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                             },
                             onFavoriteTap: _toggleCollection,
                             onShareTap: () {
-                              AppToast.show('服务详情.分享开发中'.tr());
+                              _shareServiceDetail(
+                                package: package,
+                                provider: provider,
+                                selectedPackage: selectedPackage,
+                              );
                             },
                           );
                         },
@@ -224,6 +263,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                       materials: serviceMaterials,
                       downloadingFileUrls: _downloadingMaterialUrls,
                       onMaterialTap: _downloadAndOpenMaterial,
+                      onPreviewTap: () =>
+                          _showSampleFilesDialog(serviceMaterials),
                     ),
                     ServiceDetailReviewTab(
                       review: reviewAsync?.asData?.value,
@@ -367,6 +408,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
         _isCollecting = false;
         _isCollectedOverride = !wasCollected;
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(collectionRefreshTickProvider.notifier).bump();
       _showMessage(wasCollected ? '服务详情.已取消收藏'.tr() : '服务详情.收藏成功'.tr());
     } catch (error) {
@@ -383,6 +425,202 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   /// 统一展示签证详情页的提示消息。
   void _showMessage(String message) {
     AppToast.show(message);
+  }
+
+  Future<void> _shareServiceDetail({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final String title = _shareTitle(package);
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+
+    try {
+      final File imageFile = await _captureShareImage(
+        package: package,
+        provider: provider,
+        selectedPackage: selectedPackage,
+      );
+      await SharePlus.instance.share(
+        ShareParams(
+          title: title,
+          subject: title,
+          files: <XFile>[XFile(imageFile.path)],
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (_) {
+      try {
+        await _shareServiceDetailText(
+          package: package,
+          provider: provider,
+          selectedPackage: selectedPackage,
+        );
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        _showMessage('服务详情.分享失败'.tr());
+      }
+    }
+  }
+
+  Future<File> _captureShareImage({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final List<ServicePackageData> servicePackages = package
+        .toServicePackages();
+    final List<ServiceMaterialData> serviceMaterials = package
+        .toServiceMaterials();
+    final int selectedPackageIndex = selectedPackage == null
+        ? _resolveSelectedPackageIndex(servicePackages.length)
+        : servicePackages.indexWhere(
+            (ServicePackageData item) => item.tierId == selectedPackage.tierId,
+          );
+    final Uint8List imageBytes = await _shareScreenshotController
+        .captureFromLongWidget(
+          InheritedTheme.captureAll(
+            context,
+            Material(
+              color: const Color(0xFFF5F7FA),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: EdgeInsets.zero,
+                  viewPadding: EdgeInsets.zero,
+                  viewInsets: EdgeInsets.zero,
+                ),
+                child: Directionality(
+                  textDirection: Directionality.of(context),
+                  child: _buildShareCard(
+                    package: package,
+                    provider: provider,
+                    packages: servicePackages,
+                    selectedPackageIndex: selectedPackageIndex < 0
+                        ? _resolveSelectedPackageIndex(servicePackages.length)
+                        : selectedPackageIndex,
+                    materials: serviceMaterials,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          context: context,
+          constraints: const BoxConstraints(
+            maxWidth: ServiceDetailShareCard.shareWidth,
+          ),
+          pixelRatio: MediaQuery.devicePixelRatioOf(context),
+          delay: const Duration(milliseconds: 300),
+        );
+    if (imageBytes.isEmpty) {
+      throw Exception('service_detail_share_image_empty');
+    }
+    final Directory tempDirectory = await getTemporaryDirectory();
+    final Directory shareDirectory = Directory(
+      '${tempDirectory.path}/service_detail_share',
+    );
+    if (!shareDirectory.existsSync()) {
+      await shareDirectory.create(recursive: true);
+    }
+    final File imageFile = File(
+      '${shareDirectory.path}/service_detail_share_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await imageFile.writeAsBytes(imageBytes, flush: true);
+    return imageFile;
+  }
+
+  Widget _buildShareCard({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required List<ServicePackageData> packages,
+    required int selectedPackageIndex,
+    required List<ServiceMaterialData> materials,
+  }) {
+    return ServiceDetailShareCard(
+      package: package,
+      provider: provider,
+      packages: packages,
+      selectedPackageIndex: selectedPackageIndex,
+      materials: materials,
+      verifiedBadgeAsset: _verifiedBadgeAsset,
+      serviceTagLabelMap: _buildServiceTagLabelMap(),
+    );
+  }
+
+  Map<String, String> _buildServiceTagLabelMap() {
+    final List<TagItemVO> serviceTags =
+        ref.read(tagDictionaryProvider(TagCategory.service)).asData?.value ??
+        const <TagItemVO>[];
+    final bool isChineseLocale = context.locale.languageCode
+        .toLowerCase()
+        .startsWith('zh');
+    return <String, String>{
+      for (final TagItemVO item in serviceTags)
+        item.tagCode.trim(): isChineseLocale
+            ? _resolveZhFirstTagLabel(item)
+            : _resolveEnFirstTagLabel(item),
+    };
+  }
+
+  String _resolveZhFirstTagLabel(TagItemVO item) {
+    final String zh = item.tagNameZh.trim();
+    if (zh.isNotEmpty) {
+      return zh;
+    }
+    final String en = item.tagNameEn.trim();
+    return en.isNotEmpty ? en : item.tagCode.trim();
+  }
+
+  String _resolveEnFirstTagLabel(TagItemVO item) {
+    final String en = item.tagNameEn.trim();
+    if (en.isNotEmpty) {
+      return en;
+    }
+    final String zh = item.tagNameZh.trim();
+    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  }
+
+  Future<void> _shareServiceDetailText({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final String title = _shareTitle(package);
+    final List<String> lines = <String>[
+      title,
+      if (provider != null && provider.name.trim().isNotEmpty)
+        '服务详情.分享商家'.tr(
+          namedArgs: <String, String>{'merchant': provider.name.trim()},
+        ),
+      if (selectedPackage != null && selectedPackage.title.trim().isNotEmpty)
+        '服务详情.分享套餐'.tr(
+          namedArgs: <String, String>{'package': selectedPackage.title.trim()},
+        ),
+      if (package.estimatedDays > 0)
+        '服务详情.预计办理天数'.tr(
+          namedArgs: <String, String>{'days': package.estimatedDays.toString()},
+        ),
+      if (provider != null && provider.brief.trim().isNotEmpty)
+        provider.brief.trim(),
+    ];
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        title: title,
+        subject: title,
+        text: lines.join('\n'),
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
+  String _shareTitle(VisaPackageVO package) {
+    return package.name.trim().isEmpty ? '服务详情.标题'.tr() : package.name.trim();
   }
 
   Future<Directory> _resolveDownloadDirectory() async {
@@ -457,27 +695,98 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       }
     }
 
-    final String type = material.fileType.trim().toLowerCase();
-    if (type.contains('png')) {
-      return '.png';
-    }
-    if (type.contains('jpeg') || type.contains('jpg')) {
-      return '.jpg';
-    }
-    if (type.contains('pdf')) {
-      return '.pdf';
-    }
-    if (type.contains('docx')) {
-      return '.docx';
-    }
-    if (type == 'doc' || type.contains('msword')) {
-      return '.doc';
-    }
     return '';
   }
 
   String _sanitizeFileName(String name) {
     return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+  }
+
+  List<_ServiceSampleFileData> _buildSampleFiles(
+    List<ServiceMaterialData> materials,
+  ) {
+    final Set<String> uniqueUrls = <String>{};
+    final List<_ServiceSampleFileData> files = <_ServiceSampleFileData>[];
+    for (final ServiceMaterialData material in materials) {
+      for (final String rawUrl in material.exampleFileUrls) {
+        final String fileUrl = rawUrl.trim();
+        if (fileUrl.isEmpty || !uniqueUrls.add(fileUrl)) {
+          continue;
+        }
+        final Uri? uri = Uri.tryParse(fileUrl);
+        final String fileName = uri != null && uri.pathSegments.isNotEmpty
+            ? Uri.decodeComponent(uri.pathSegments.last)
+            : material.title;
+        files.add(
+          _ServiceSampleFileData(
+            title: fileName.trim().isEmpty ? material.title : fileName,
+            subtitle: material.title.trim().isEmpty
+                ? '服务详情.所需材料'.tr()
+                : material.title,
+            fileUrl: fileUrl,
+          ),
+        );
+      }
+    }
+    return files;
+  }
+
+  Future<void> _showSampleFilesDialog(
+    List<ServiceMaterialData> materials,
+  ) async {
+    final List<_ServiceSampleFileData> sampleFiles = _buildSampleFiles(
+      materials,
+    );
+    if (sampleFiles.isEmpty) {
+      _showMessage('服务详情.文件地址不存在'.tr());
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return SampleFileSelectionDialog(
+          title: '服务详情.查看样例'.tr(),
+          itemCount: sampleFiles.length,
+          itemBuilder: (BuildContext context, int index) {
+            final _ServiceSampleFileData file = sampleFiles[index];
+            final ServiceMaterialData material = ServiceMaterialData(
+              title: file.title,
+              subtitle: file.subtitle,
+              status: '服务详情.查看样例'.tr(),
+              required: false,
+              description: file.subtitle,
+              exampleFileUrls: <String>[file.fileUrl],
+            );
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == sampleFiles.length - 1 ? 0 : 12,
+              ),
+              child: _ServiceSampleFileCard(
+                material: material,
+                isDownloading: _downloadingMaterialUrls.contains(file.fileUrl),
+                onTap: () => _downloadAndOpenSampleFile(file),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadAndOpenSampleFile(_ServiceSampleFileData file) async {
+    final ServiceMaterialData material = ServiceMaterialData(
+      title: file.title,
+      subtitle: file.subtitle,
+      status: '服务详情.查看样例'.tr(),
+      required: false,
+      description: file.subtitle,
+      exampleFileUrls: <String>[file.fileUrl],
+    );
+    await _downloadAndOpenMaterial(material);
   }
 
   Future<void> _downloadAndOpenMaterial(ServiceMaterialData material) async {
@@ -543,9 +852,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       final OpenResult openResult = await OpenFilex.open(savePath);
       if (openResult.type != ResultType.done) {
         final String message = openResult.message.trim();
-        _showMessage(
-          message.isEmpty ? '服务详情.文件打开失败'.tr() : message,
-        );
+        _showMessage(message.isEmpty ? '服务详情.文件打开失败'.tr() : message);
       }
     } on DioException {
       if (!mounted) {
@@ -576,6 +883,41 @@ class _ServiceDetailLoadingPage extends StatelessWidget {
     return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _ServiceSampleFileData {
+  const _ServiceSampleFileData({
+    required this.title,
+    required this.subtitle,
+    required this.fileUrl,
+  });
+
+  final String title;
+  final String subtitle;
+  final String fileUrl;
+}
+
+class _ServiceSampleFileCard extends StatelessWidget {
+  const _ServiceSampleFileCard({
+    required this.material,
+    required this.isDownloading,
+    required this.onTap,
+  });
+
+  final ServiceMaterialData material;
+  final bool isDownloading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SampleFileSelectionItem(
+      title: material.title,
+      subtitle: material.subtitle,
+      fileUrl: material.fileUrl,
+      isDownloading: isDownloading,
+      onDownloadTap: onTap,
     );
   }
 }
@@ -1040,11 +1382,13 @@ class _PinnedTopTabBarDelegate extends SliverPersistentHeaderDelegate {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.consultIconAsset,
+    required this.onReportTap,
     required this.onConsultTap,
     required this.onApplyTap,
   });
 
   final String consultIconAsset;
+  final VoidCallback onReportTap;
   final VoidCallback onConsultTap;
   final VoidCallback onApplyTap;
 
@@ -1058,7 +1402,10 @@ class _BottomActionBar extends StatelessWidget {
           case 1:
             return const SizedBox.shrink();
           case 2:
-            return _MerchantBottomActionBar(onConsultTap: onConsultTap);
+            return _MerchantBottomActionBar(
+              onReportTap: onReportTap,
+              onConsultTap: onConsultTap,
+            );
           case 0:
           default:
             return _PackageBottomActionBar(
@@ -1162,8 +1509,12 @@ class _PackageBottomActionBar extends StatelessWidget {
 }
 
 class _MerchantBottomActionBar extends StatelessWidget {
-  const _MerchantBottomActionBar({required this.onConsultTap});
+  const _MerchantBottomActionBar({
+    required this.onReportTap,
+    required this.onConsultTap,
+  });
 
+  final VoidCallback onReportTap;
   final VoidCallback onConsultTap;
 
   @override
@@ -1196,7 +1547,7 @@ class _MerchantBottomActionBar extends StatelessWidget {
             Expanded(
               flex: 169,
               child: OutlinedButton(
-                onPressed: () => context.push(RoutePaths.serviceDetailReport),
+                onPressed: onReportTap,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
                   side: const BorderSide(color: Color(0xFFD9D9D9)),
@@ -1326,6 +1677,8 @@ extension on VisaPackageVO {
             packageId: packageId,
             tierId: tier.tierId,
             title: tier.name.trim().isEmpty ? '服务详情.套餐档位'.tr() : tier.name,
+            amount: tier.price,
+            currency: currency,
             price: _formatPrice(tier.price, currency),
             description: tier.description.trim().isEmpty
                 ? '服务详情.暂无套餐说明'.tr()
@@ -1341,72 +1694,46 @@ extension on VisaPackageVO {
   List<ServiceMaterialData> toServiceMaterials() {
     return requiredMaterials
         .map(
-          (MaterialVO material) => ServiceMaterialData(
-            title: material.materialName.trim().isEmpty
+          (PackageMaterialVO material) => ServiceMaterialData(
+            title: material.name.trim().isEmpty
                 ? '服务详情.所需材料'.tr()
-                : material.materialName,
+                : material.name,
             subtitle: _buildMaterialSubtitle(material),
             status: _buildMaterialStatus(material),
             required: material.isRequired,
             description: material.description,
-            fileUrl: material.fileUrl,
-            fileType: material.fileType,
-            fileSize: material.fileSize,
-            uploadedAt: material.uploadedAt,
-            sortOrder: material.sortOrder,
+            exampleFileUrls: material.exampleFileUrls,
           ),
         )
         .toList(growable: false);
   }
 }
 
-/// 组装材料副标题，尽量从文件元信息拼出可读文案。
-String _buildMaterialSubtitle(MaterialVO material) {
+/// 组装材料副标题，优先展示材料说明，其次回退为示例文件数量。
+String _buildMaterialSubtitle(PackageMaterialVO material) {
   if (material.description.trim().isNotEmpty) {
     return material.description;
   }
-  final List<String> parts = <String>[
-    if (material.fileType.trim().isNotEmpty)
-      material.fileType.trim().toUpperCase(),
-    if (material.fileSize > 0) _formatFileSize(material.fileSize),
-    if (material.uploadedAt.trim().isNotEmpty)
-      _formatMaterialDate(material.uploadedAt),
-  ];
-  if (parts.isEmpty) {
-    return '服务详情.请按服务要求准备相关材料'.tr();
+  final int sampleCount = material.exampleFileUrls.length;
+  if (sampleCount > 0) {
+    return '服务详情.已提供示例文件'.tr(
+      namedArgs: <String, String>{'count': sampleCount.toString()},
+    );
   }
-  return parts.join(' · ');
+  return '服务详情.请按服务要求准备相关材料'.tr();
 }
 
-/// 组装材料状态文案，优先展示文件类型。
-String _buildMaterialStatus(MaterialVO material) {
+/// 组装材料状态文案，优先展示必填/选填。
+String _buildMaterialStatus(PackageMaterialVO material) {
   if (material.isRequired) {
     return '服务详情.必填'.tr();
   }
-  final String fileType = material.fileType.trim();
-  if (fileType.isNotEmpty) {
-    return fileType.toUpperCase();
-  }
-  return material.fileUrl.trim().isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
+  return material.exampleFileUrls.isEmpty ? '服务详情.材料'.tr() : '服务详情.查看样例'.tr();
 }
 
 /// 格式化详情页价格，统一复用币种前缀转换规则。
 String _formatPrice(double amount, String currency) {
-  final String prefix = _resolveCurrencyPrefix(currency);
-  final String value = amount % 1 == 0
-      ? amount.toInt().toString()
-      : amount.toStringAsFixed(1);
-  return '$prefix$value';
-}
-
-/// 统一处理常见币种前缀，缺省回退为人民币。
-String _resolveCurrencyPrefix(String rawCurrency) {
-  return switch (rawCurrency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => rawCurrency.trim().isEmpty ? '¥' : '${rawCurrency.trim()} ',
-  };
+  return AppCurrency.formatAmount(amount, currency);
 }
 
 /// 将国家代码转为详情页展示文案。
@@ -1432,29 +1759,4 @@ String _formatVisaTypeLabel(String visaType) {
     'study' => '服务详情.留学签'.tr(),
     _ => visaType.trim().isEmpty ? '服务详情.签证服务'.tr() : visaType.trim(),
   };
-}
-
-/// 格式化文件大小，优先展示为 KB/MB。
-String _formatFileSize(int bytes) {
-  if (bytes <= 0) {
-    return '服务详情.未知大小'.tr();
-  }
-  if (bytes >= 1024 * 1024) {
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
-  }
-  if (bytes >= 1024) {
-    return '${(bytes / 1024).toStringAsFixed(1)}KB';
-  }
-  return '${bytes}B';
-}
-
-/// 格式化材料时间，解析失败时回退原始值。
-String _formatMaterialDate(String raw) {
-  final DateTime? parsed = DateTime.tryParse(raw);
-  if (parsed == null) {
-    return raw;
-  }
-  final String month = parsed.month.toString().padLeft(2, '0');
-  final String day = parsed.day.toString().padLeft(2, '0');
-  return '${parsed.year}.$month.$day';
 }

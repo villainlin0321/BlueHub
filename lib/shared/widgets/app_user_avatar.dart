@@ -45,20 +45,18 @@ class AppUserAvatar extends StatelessWidget {
         color: backgroundColor,
         child: trimmedUrl.isEmpty
             ? fallback
-            : CachedNetworkImage(
-                imageUrl: trimmedUrl,
+            : Image(
+                image: CachedNetworkImageProvider(
+                  trimmedUrl,
+                  maxWidth: targetPixelSize,
+                  maxHeight: targetPixelSize,
+                ),
                 width: size,
                 height: size,
                 fit: fit,
-                memCacheWidth: targetPixelSize,
-                memCacheHeight: targetPixelSize,
-                maxWidthDiskCache: targetPixelSize,
-                maxHeightDiskCache: targetPixelSize,
                 filterQuality: FilterQuality.high,
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                placeholder: (_, __) => fallback,
-                errorWidget: (_, __, ___) => fallback,
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => fallback,
               ),
       ),
     );

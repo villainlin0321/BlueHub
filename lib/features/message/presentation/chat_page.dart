@@ -276,8 +276,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       context: context,
       title: '消息.麦克风权限标题'.tr(),
       message: '消息.麦克风权限说明'.tr(),
-      cancelLabel: '取消'.tr(),
-      confirmLabel: '去设置'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '消息.去设置'.tr(),
     );
     if (shouldOpenSettings) {
       await openAppSettings();

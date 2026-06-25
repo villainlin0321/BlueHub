@@ -1,15 +1,19 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
+import '../../message/application/chat/chat_page_args.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
+import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../order/presentation/order_review_page.dart';
+import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
 class MyOrdersPage extends ConsumerStatefulWidget {
@@ -27,10 +31,20 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     _OrderFilter.processing,
     _OrderFilter.completed,
   ];
+  static const int _pageSize = 20;
+
+  final EasyRefreshController _refreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
 
   _OrderFilter _selectedFilter = _OrderFilter.all;
   List<VisaOrderVO> _orders = const <VisaOrderVO>[];
+  int _currentPage = 1;
+  bool _hasMore = false;
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _isLoadingMore = false;
   String? _errorMessage;
 
   Future<void> _handleActionTap(_OrderItem order, _OrderAction action) async {
@@ -53,8 +67,23 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.contactMerchant:
-        AppToast.show(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
+        if (order.providerId <= 0) {
+          AppToast.show('订单.商家信息缺失'.tr());
+          return;
+        }
+        await context.push(
+          RoutePaths.chat,
+          extra: ChatPageArgs(
+            targetUserId: order.providerId,
+            targetUserRole: 'visa_provider',
+            nickname: order.provider.trim().isEmpty
+                ? '订单.服务商'.tr()
+                : order.provider,
+            avatarUrl: '',
+            relatedOrderId: order.orderId,
+            packageName: order.title,
+            orderStatus: order.tagLabel ?? '',
+          ),
         );
         return;
       case _OrderActionType.uploadMaterials:
@@ -66,9 +95,14 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.goPay:
-      case _OrderActionType.supplementMaterials:
-        AppToast.show(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': action.label.tr()}),
+        await OrderPaymentBottomSheet.show(
+          context: context,
+          amount: order.amount,
+          currency: order.currency,
+          orderId: order.orderId,
+          packageName: order.title,
+          parentContext: context,
+          onFlowCompleted: _loadOrders,
         );
         return;
     }
@@ -80,18 +114,26 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     Future<void>.microtask(_loadOrders);
   }
 
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadOrders() async {
     setState(() {
       _isLoading = true;
+      _isRefreshing = false;
+      _isLoadingMore = false;
       _errorMessage = null;
     });
 
     try {
-      final response = await ref
+      final PageResult<VisaOrderVO> response = await ref
           .read(visaOrderServiceProvider)
           .listMyOrders(
             page: 1,
-            pageSize: 20,
+            pageSize: _pageSize,
             status: _selectedFilter.apiValue,
           );
       if (!mounted) {
@@ -99,16 +141,111 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       }
       setState(() {
         _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
         _isLoading = false;
       });
+      _refreshController.resetFooter();
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
         _isLoading = false;
+        _hasMore = false;
         _errorMessage = _normalizeError(error);
       });
+    }
+  }
+
+  Future<void> _refreshOrders() async {
+    if (_isRefreshing) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      if (_orders.isEmpty) {
+        _errorMessage = null;
+      }
+    });
+
+    try {
+      final PageResult<VisaOrderVO> response = await ref
+          .read(visaOrderServiceProvider)
+          .listMyOrders(
+            page: 1,
+            pageSize: _pageSize,
+            status: _selectedFilter.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = response.list;
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isRefreshing = false;
+        _errorMessage = null;
+      });
+      _refreshController.finishRefresh();
+      _refreshController.resetFooter();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final String message = _normalizeError(error);
+      setState(() {
+        _isRefreshing = false;
+        if (_orders.isEmpty) {
+          _errorMessage = message;
+        }
+      });
+      _refreshController.finishRefresh(IndicatorResult.fail);
+      if (_orders.isNotEmpty) {
+        AppToast.show(message);
+      }
+    }
+  }
+
+  Future<void> _loadMoreOrders() async {
+    if (_isLoading || _isRefreshing || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final PageResult<VisaOrderVO> response = await ref
+          .read(visaOrderServiceProvider)
+          .listMyOrders(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: _selectedFilter.apiValue,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _orders = <VisaOrderVO>[..._orders, ...response.list];
+        _currentPage = response.pagination.page;
+        _hasMore = response.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+      _refreshController.finishLoad(
+        _hasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingMore = false;
+      });
+      _refreshController.finishLoad(IndicatorResult.fail);
+      AppToast.show(_normalizeError(error));
     }
   }
 
@@ -181,37 +318,54 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
   }
 
   Widget _buildOrderList(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return EasyRefresh(
+      controller: _refreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _refreshOrders,
+      onLoad: _hasMore && _orders.isNotEmpty ? _loadMoreOrders : null,
+      child: Builder(
+        builder: (BuildContext context) {
+          if (_isLoading) {
+            return const _OrderLoadingView();
+          }
 
-    if (_errorMessage != null) {
-      return _OrderStateView(
-        message: _errorMessage!,
-        buttonLabel: '通用.重试'.tr(),
-        onTap: _loadOrders,
-      );
-    }
+          if (_errorMessage != null && _orders.isEmpty) {
+            return _OrderStateView(
+              message: _errorMessage!,
+              buttonLabel: '通用.重试'.tr(),
+              onTap: _loadOrders,
+            );
+          }
 
-    if (_orders.isEmpty) {
-      return _OrderStateView(message: '我的.暂无订单数据'.tr());
-    }
+          if (_orders.isEmpty) {
+            return _OrderStateView(message: '我的.暂无订单数据'.tr());
+          }
 
-    final List<_OrderItem> visibleOrders = _orders
-        .map(_OrderItem.fromVisaOrder)
-        .toList(growable: false);
+          final List<_OrderItem> visibleOrders = _orders
+              .map(_OrderItem.fromVisaOrder)
+              .toList(growable: false);
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-      itemCount: visibleOrders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _OrderCard(
-          order: visibleOrders[index],
-          onActionTap: _handleActionTap,
-          onTap: () => _openOrderDetail(visibleOrders[index].orderId),
-        );
-      },
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12,
+              12,
+              MediaQuery.paddingOf(context).bottom + 24,
+            ),
+            itemCount: visibleOrders.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _OrderCard(
+                order: visibleOrders[index],
+                onActionTap: _handleActionTap,
+                onTap: () => _openOrderDetail(visibleOrders[index].orderId),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -231,12 +385,13 @@ enum _OrderFilter {
 
 enum _OrderTagStyle { urgent, blue }
 
+enum _OrderProgressStyle { standard, rejected }
+
 enum _OrderActionType {
   contactMerchant,
   uploadMaterials,
   goPay,
   viewProgress,
-  supplementMaterials,
   goReview,
   viewDetail,
 }
@@ -248,6 +403,8 @@ class _OrderItem {
     required this.filter,
     required this.timeText,
     required this.title,
+    required this.amount,
+    required this.currency,
     required this.price,
     required this.provider,
     required this.packageType,
@@ -257,6 +414,7 @@ class _OrderItem {
     this.tagStyle,
     this.progressLabel,
     this.progressValue,
+    this.progressStyle,
   });
 
   final int orderId;
@@ -266,20 +424,32 @@ class _OrderItem {
   final _OrderTagStyle? tagStyle;
   final String timeText;
   final String title;
+  final double amount;
+  final String? currency;
   final String price;
   final String provider;
   final String packageType;
   final String orderNo;
   final String? progressLabel;
   final String? progressValue;
+  final _OrderProgressStyle? progressStyle;
   final List<_OrderAction> actions;
 
-  bool get hasProgress => progressLabel != null && progressValue != null;
+  bool get hasProgress {
+    if (progressStyle == _OrderProgressStyle.rejected) {
+      return (progressValue ?? '').trim().isNotEmpty;
+    }
+    return progressLabel != null && progressValue != null;
+  }
 
   factory _OrderItem.fromVisaOrder(VisaOrderVO order) {
     final _OrderFilter filter = _OrderFilterX.fromStatus(order.status);
     final ({String? label, _OrderTagStyle? style}) tag = _buildTag(order);
-    final ({String? label, String? value}) progress = _buildProgress(order);
+    final ({
+      String? label,
+      String? value,
+      _OrderProgressStyle? style,
+    }) progress = _buildProgress(order);
 
     return _OrderItem(
       orderId: order.orderId,
@@ -289,12 +459,15 @@ class _OrderItem {
       tagStyle: tag.style,
       timeText: _formatTime(order.createdAt),
       title: order.packageName.isEmpty ? '订单.未命名订单'.tr() : order.packageName,
-      price: _formatAmount(order.amount),
+      amount: order.amount,
+      currency: order.currency,
+      price: _formatAmount(order.amount, order.currency),
       provider: order.providerName,
       packageType: order.tierName,
       orderNo: order.orderNo,
       progressLabel: progress.label,
       progressValue: progress.value,
+      progressStyle: progress.style,
       actions: _buildActions(order),
     );
   }
@@ -307,13 +480,37 @@ class _OrderItem {
     if (label.isEmpty) {
       return (label: null, style: null);
     }
-    return (label: label, style: _OrderTagStyle.blue);
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    final bool useUrgentStyle =
+        normalizedStatus == 'pending_payment' ||
+        normalizedStatus == 'pending_upload' ||
+        normalizedStatus == 'rejected';
+    return (
+      label: label,
+      style: useUrgentStyle ? _OrderTagStyle.urgent : _OrderTagStyle.blue,
+    );
   }
 
-  static ({String? label, String? value}) _buildProgress(VisaOrderVO order) {
+  static ({
+    String? label,
+    String? value,
+    _OrderProgressStyle? style,
+  }) _buildProgress(VisaOrderVO order) {
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    if (normalizedStatus == 'rejected') {
+      final String rejectReason = (order.rejectReason ?? '').trim();
+      if (rejectReason.isEmpty) {
+        return (label: null, value: null, style: null);
+      }
+      return (
+        label: null,
+        value: rejectReason,
+        style: _OrderProgressStyle.rejected,
+      );
+    }
     final _OrderFilter filter = _OrderFilterX.fromStatus(order.status);
     if (filter != _OrderFilter.processing) {
-      return (label: null, value: null);
+      return (label: null, value: null, style: null);
     }
     final String stepLabel =
         order.steps
@@ -328,6 +525,7 @@ class _OrderItem {
     return (
       label: '我的.当前进度'.tr(),
       value: stepLabel.isEmpty ? '订单.处理中'.tr() : stepLabel,
+      style: _OrderProgressStyle.standard,
     );
   }
 
@@ -362,11 +560,13 @@ class _OrderItem {
     }
   }
 
-  static String _formatAmount(double amount) {
-    final String value = amount == amount.roundToDouble()
-        ? amount.toInt().toString()
-        : amount.toStringAsFixed(2);
-    return '¥$value';
+  static String _formatAmount(double amount, String? currency) {
+    return AppCurrency.formatAmount(
+      amount,
+      currency,
+      fractionDigitsWhenNeeded: 2,
+      trimTrailingZeros: false,
+    );
   }
 
   static String _formatTime(String raw) {
@@ -491,19 +691,27 @@ class _OrderStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     if (buttonLabel == null && onTap == null) {
-      return Center(
-        child: AppEmptyState(
-          message: message,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-        ),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(24, 96, 24, bottomPadding + 24),
+        children: <Widget>[
+          Center(
+            child: AppEmptyState(
+              message: message,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+          ),
+        ],
       );
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(24, 120, 24, bottomPadding + 24),
+      children: <Widget>[
+        Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
@@ -521,7 +729,31 @@ class _OrderStateView extends StatelessWidget {
             ],
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _OrderLoadingView extends StatelessWidget {
+  const _OrderLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 24,
       ),
+      children: const <Widget>[
+        SizedBox(height: 96),
+        Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -558,143 +790,93 @@ class _OrderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              children: <Widget>[
-                Positioned.fill(
-                  child: SvgPicture.asset(
-                    'assets/images/my_orders_card_bg_blue.svg',
-                    fit: BoxFit.fill,
+            child: Container(
+              color: Colors.white.withValues(alpha: 0.96),
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        order.timeText,
+                        style: const TextStyle(
+                          color: Color(0xFF8C8C8C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          height: 16 / 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (order.tagLabel != null && order.tagStyle != null)
+                        _OrderTag(
+                          label: order.tagLabel!,
+                          style: order.tagStyle!,
+                        ),
+                    ],
                   ),
-                ),
-                Positioned.fill(
-                  child: Container(color: Colors.white.withValues(alpha: 0.96)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
-                  child: Column(
+                  const SizedBox(height: 14),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            order.timeText,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (order.tagLabel != null && order.tagStyle != null)
-                            _OrderTag(
-                              label: order.tagLabel!,
-                              style: order.tagStyle!,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              order.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF262626),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                height: 22 / 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            order.price,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 22 / 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _OrderMetaRow(
-                        label: '订单.服务商'.tr(),
-                        value: order.provider,
-                      ),
-                      const SizedBox(height: 4),
-                      _OrderMetaRow(
-                        label: '我的.套餐类型'.tr(),
-                        value: order.packageType,
-                      ),
-                      const SizedBox(height: 4),
-                      _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
-                      if (order.hasProgress) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE8EDF3)),
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              const Icon(
-                                Icons.schedule_rounded,
-                                size: 16,
-                                color: Color(0xFF096DD9),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                order.progressLabel!,
-                                style: const TextStyle(
-                                  color: Color(0xFF8C8C8C),
-                                  fontSize: 12,
-                                  height: 18 / 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  order.progressValue!,
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                    color: Color(0xFF262626),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    height: 18 / 12,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      Expanded(
+                        child: Text(
+                          order.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF262626),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 22 / 16,
                           ),
                         ),
-                      ],
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          for (
-                            var i = 0;
-                            i < actionButtons.length;
-                            i++
-                          ) ...<Widget>[
-                            if (i > 0) const SizedBox(width: 12),
-                            actionButtons[i],
-                          ],
-                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        order.price,
+                        style: const TextStyle(
+                          color: Color(0xFF262626),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 22 / 16,
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  _OrderMetaRow(label: '订单.服务商'.tr(), value: order.provider),
+                  const SizedBox(height: 4),
+                  _OrderMetaRow(
+                    label: '我的.套餐类型'.tr(),
+                    value: order.packageType,
+                  ),
+                  const SizedBox(height: 4),
+                  _OrderMetaRow(label: '我的.订单号'.tr(), value: order.orderNo),
+                  if (order.hasProgress) ...<Widget>[
+                    const SizedBox(height: 12),
+                    _OrderProgressCard(
+                      label: order.progressLabel,
+                      value: order.progressValue!,
+                      style: order.progressStyle ?? _OrderProgressStyle.standard,
+                    ),
+                  ],
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      for (
+                        var i = 0;
+                        i < actionButtons.length;
+                        i++
+                      ) ...<Widget>[
+                        if (i > 0) const SizedBox(width: 12),
+                        actionButtons[i],
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -773,6 +955,84 @@ class _OrderTag extends StatelessWidget {
           fontWeight: FontWeight.w500,
           height: 12 / 12,
         ),
+      ),
+    );
+  }
+}
+
+class _OrderProgressCard extends StatelessWidget {
+  const _OrderProgressCard({
+    required this.label,
+    required this.value,
+    required this.style,
+  });
+
+  final String? label;
+  final String value;
+  final _OrderProgressStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (style == _OrderProgressStyle.rejected) {
+      return Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEBEB),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFFFF4D4F),
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            height: 16 / 11,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE8EDF3)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.schedule_rounded,
+            size: 16,
+            color: Color(0xFF096DD9),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label ?? '',
+            style: const TextStyle(
+              color: Color(0xFF8C8C8C),
+              fontSize: 12,
+              height: 18 / 12,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Color(0xFF262626),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                height: 18 / 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

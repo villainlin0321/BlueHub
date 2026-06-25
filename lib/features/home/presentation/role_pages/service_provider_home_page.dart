@@ -18,6 +18,7 @@ import '../../../../features/order/presentation/order_detail_page.dart'
 import '../../../../features/visa/data/provider_models.dart'
     show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -301,10 +302,14 @@ class _ProviderInfoRow extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        AppUserAvatar(
-          imageUrl: providerProfile?.logoUrl ?? '',
-          size: 40,
-          placeholderAssetPath: 'assets/images/mon6azmx-ecnf5h2.png',
+        GestureDetector(
+          onTap: () => context.push(RoutePaths.serviceProviderMyInfo),
+          behavior: HitTestBehavior.opaque,
+          child: AppUserAvatar(
+            imageUrl: providerProfile?.logoUrl ?? '',
+            size: 40,
+            placeholderAssetPath: 'assets/images/mon6azmx-ecnf5h2.png',
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -595,17 +600,42 @@ class _OrdersSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          '订单.全部'.tr(),
-          style: TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            height: 20 / 14,
+        InkWell(
+          onTap: () => context.push(RoutePaths.orderManagement),
+          borderRadius: BorderRadius.circular(4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _OrdersSectionAllText(),
+                SizedBox(width: 2),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Color(0xFF8C8C8C),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 2),
-        const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF8C8C8C)),
       ],
+    );
+  }
+}
+
+class _OrdersSectionAllText extends StatelessWidget {
+  const _OrdersSectionAllText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '订单.全部'.tr(),
+      style: const TextStyle(
+        color: Color(0xFF8C8C8C),
+        fontSize: 14,
+        height: 20 / 14,
+      ),
     );
   }
 }
@@ -1010,7 +1040,7 @@ class _PendingOrderItem {
       statusText: _displayStatusText(order),
       updateText: _formatOrderUpdatedText(order.updatedAt),
       materialsText: _buildMaterialsText(order),
-      priceText: _formatOrderAmount(order.amount),
+      priceText: _formatOrderAmount(order.amount, order.currency),
     );
   }
 }
@@ -1095,23 +1125,11 @@ String _formatOrderUpdatedText(String raw) {
   );
 }
 
-String _formatOrderAmount(double amount) {
-  final bool hasFraction = amount % 1 != 0;
-  final String raw = hasFraction
-      ? amount.toStringAsFixed(2)
-      : amount.toStringAsFixed(0);
-  final List<String> parts = raw.split('.');
-  final String integerPart = parts.first;
-  final StringBuffer buffer = StringBuffer();
-  for (int index = 0; index < integerPart.length; index++) {
-    final int reverseIndex = integerPart.length - index;
-    buffer.write(integerPart[index]);
-    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-  if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
-    return '¥${buffer.toString()}.${parts[1]}';
-  }
-  return '¥${buffer.toString()}';
+String _formatOrderAmount(double amount, String? currency) {
+  return AppCurrency.formatAmount(
+    amount,
+    currency,
+    fractionDigitsWhenNeeded: 2,
+    trimTrailingZeros: false,
+  );
 }

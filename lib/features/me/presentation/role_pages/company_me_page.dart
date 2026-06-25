@@ -68,7 +68,7 @@ class CompanyMePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const _CompanyHeaderSection(),
-          const SizedBox(height: 40),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
@@ -78,12 +78,6 @@ class CompanyMePage extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  void _showPlaceholderToast(BuildContext context, String label) {
-    AppToast.show(
-      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
     );
   }
 
@@ -108,7 +102,6 @@ class CompanyMePage extends ConsumerWidget {
       context.go(RoutePaths.jobs);
       return;
     }
-    _showPlaceholderToast(context, label);
   }
 
   Future<void> _openQualificationCertification(
@@ -153,12 +146,12 @@ class _CompanyHeaderSection extends StatelessWidget {
     final double topPadding = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
-      height: 248,
+      height: 228,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
           Container(
-            height: 220,
+            height: 200,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(28),
@@ -195,7 +188,7 @@ class _CompanyHeaderSection extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       _HeaderActions(),
-                      SizedBox(height: 10),
+                      SizedBox(height: 15),
                       _CompanyProfileRow(),
                     ],
                   ),
@@ -332,7 +325,6 @@ class _CompanyInfo extends StatelessWidget {
             color: Colors.white,
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            height: 20 / 17,
           ),
         ),
         const SizedBox(height: 6),
@@ -343,7 +335,6 @@ class _CompanyInfo extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
-                height: 14 / 11,
               ),
             ),
             if (location.isNotEmpty) ...<Widget>[
@@ -355,7 +346,6 @@ class _CompanyInfo extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
-                  height: 14 / 11,
                 ),
               ),
             ],
@@ -415,7 +405,6 @@ class _CompanyBadge extends StatelessWidget {
           color: Color(0xFF784301),
           fontSize: 9,
           fontWeight: FontWeight.w600,
-          height: 10 / 9,
         ),
       ),
     );
@@ -490,17 +479,14 @@ class _StatItem extends StatelessWidget {
             color: Color(0xFF262626),
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            height: 20 / 18,
           ),
         ),
-        const SizedBox(height: 12),
         Text(
           label,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Color(0xFF595959),
             fontSize: 12,
-            height: 16 / 12,
           ),
         ),
       ],
@@ -570,7 +556,6 @@ class _MenuTile extends StatelessWidget {
                 style: const TextStyle(
                   color: Color(0xFF262626),
                   fontSize: 16,
-                  height: 22 / 16,
                 ),
               ),
             ),

@@ -92,6 +92,13 @@ class VisaOrderService {
     return _apiClient.postVoid('/visa-orders/$orderId/pay');
   }
 
+  /// 发起订单退款。
+  ///
+  /// 供服务商端在符合退款条件时触发退款流程。
+  Future<void> refundOrder({required int orderId}) async {
+    return _apiClient.postVoid('/visa-orders/$orderId/refund');
+  }
+
   /// 提交服务商侧订单处理结果或处理动作。
   Future<void> processOrder({
     required int orderId,

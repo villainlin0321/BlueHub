@@ -5,6 +5,7 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/logging/app_logger.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'post_job_state.dart';
@@ -76,8 +77,8 @@ class PostJobController extends Notifier<PostJobState> {
     '捷克': 'CZ',
     '匈牙利': 'HU',
   };
-  static final Map<String, String> _countryNameMap = _countryCodeMap.map(
-    (String key, String value) => MapEntry<String, String>(value, key),
+  static final Map<String, String> _countryLabelKeyMap = _countryCodeMap.map(
+    (String key, String value) => MapEntry<String, String>(value, '国家.$key'),
   );
 
   @override
@@ -149,12 +150,9 @@ class PostJobController extends Notifier<PostJobState> {
     );
 
     try {
-      final TagDictVO response = await ref
-          .read(configServiceProvider)
-          .getTags();
-      final List<TagItemVO> tags = List<TagItemVO>.from(
-        response.tags[TagCategory.requirement.value] ?? const <TagItemVO>[],
-      )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+      final List<TagItemVO> tags = await ref
+          .read(tagDictionaryCacheControllerProvider)
+          .getTagsForCategory(TagCategory.requirement);
       state = state.copyWith(
         requirementTags: tags,
         hasLoadedRequirementTags: true,
@@ -203,6 +201,10 @@ class PostJobController extends Notifier<PostJobState> {
 
   void setSalaryUnit(String value) {
     state = state.copyWith(selectedSalaryUnit: value);
+  }
+
+  void setSalaryCurrency(AppCurrency value) {
+    state = state.copyWith(selectedSalaryCurrency: value);
   }
 
   void toggleRequirementTag(String tagCode) {
@@ -341,6 +343,10 @@ class PostJobController extends Notifier<PostJobState> {
       selectedSalaryUnit: _salaryPeriods.contains(detail.salaryPeriod)
           ? detail.salaryPeriod
           : state.selectedSalaryUnit,
+      selectedSalaryCurrency: AppCurrency.fromApiValue(
+        detail.salaryCurrency,
+        fallback: AppCurrency.eur,
+      ),
       selectedRequirementTagCodes: selectedCodes,
       customTags: customTags,
     );
@@ -418,7 +424,7 @@ class PostJobController extends Notifier<PostJobState> {
           : 'any',
       salaryMin: salaryMin,
       salaryMax: salaryMax,
-      salaryCurrency: 'EUR',
+      salaryCurrency: state.selectedSalaryCurrency.apiValue,
       salaryPeriod: _salaryPeriods.contains(state.selectedSalaryUnit)
           ? state.selectedSalaryUnit
           : 'month',
@@ -455,7 +461,8 @@ class PostJobController extends Notifier<PostJobState> {
     if (detail.address.trim().isNotEmpty) {
       return detail.address.trim();
     }
-    final String country = _countryNameMap[detail.country] ?? detail.country;
+    final String countryKey = _countryLabelKeyMap[detail.country] ?? '';
+    final String country = countryKey.isEmpty ? detail.country : countryKey.tr();
     final List<String> parts = <String>[
       country.trim(),
       detail.city.trim(),

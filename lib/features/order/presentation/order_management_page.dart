@@ -11,6 +11,7 @@ import '../../../features/me/data/dictionary_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import 'order_detail_page.dart';
@@ -60,10 +61,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   void initState() {
     super.initState();
     Future<void>.microtask(_loadOrders);
-  }
-
-  void _showPlaceholderToast(String label) {
-    AppToast.show('订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}));
   }
 
   Future<void> _loadOrders({
@@ -385,18 +382,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
             height: 24 / 17,
           ),
         ),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => _showPlaceholderToast('订单.搜索'.tr()),
-            icon: const AppSvgIcon(
-              assetPath: 'assets/images/company_application_search.svg',
-              fallback: Icons.search_rounded,
-              size: 20,
-              color: Color(0xE6000000),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       body: Column(
         children: <Widget>[
@@ -804,7 +789,7 @@ class _OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _formatAmount(order.amount),
+                    _formatAmount(order.amount, order.currency),
                     style: const TextStyle(
                       color: Color(0xFFFE5815),
                       fontSize: 16,
@@ -885,25 +870,13 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
-  static String _formatAmount(double amount) {
-    final bool hasFraction = amount % 1 != 0;
-    final String raw = hasFraction
-        ? amount.toStringAsFixed(2)
-        : amount.toStringAsFixed(0);
-    final List<String> parts = raw.split('.');
-    final String integerPart = parts.first;
-    final StringBuffer buffer = StringBuffer();
-    for (int i = 0; i < integerPart.length; i++) {
-      final int reverseIndex = integerPart.length - i;
-      buffer.write(integerPart[i]);
-      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
-      return '¥${buffer.toString()}.${parts[1]}';
-    }
-    return '¥${buffer.toString()}';
+  static String _formatAmount(double amount, String? currency) {
+    return AppCurrency.formatAmount(
+      amount,
+      currency,
+      fractionDigitsWhenNeeded: 2,
+      trimTrailingZeros: false,
+    );
   }
 
   static String _formatUpdatedText(String raw) {

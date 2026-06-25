@@ -312,11 +312,15 @@ class _MyApplicationTabViewState extends ConsumerState<_MyApplicationTabView>
       header: const ClassicHeader(),
       footer: const ClassicFooter(),
       onRefresh: _onRefresh,
-      onLoad: listState.hasMore && listState.items.isNotEmpty ? _loadMore : null,
+      onLoad: listState.hasMore && listState.items.isNotEmpty
+          ? _loadMore
+          : null,
       child: listState.items.isEmpty
           ? _MyApplicationEmptyView(
               errorMessage: listState.errorMessage,
-              onRetry: listState.errorMessage == null ? null : _retryInitialLoad,
+              onRetry: listState.errorMessage == null
+                  ? null
+                  : _retryInitialLoad,
             )
           : _MyApplicationListView(tab: widget.tab, listState: listState),
     );
@@ -348,10 +352,15 @@ class _MyApplicationListView extends StatelessWidget {
           key: ValueKey<int>(item.applicationId),
           item: item,
           onActionTap: () {
+            final int? profileId = item.profileId;
+            if (profileId == null || profileId <= 0) {
+              AppToast.show('招聘.雇主信息缺失'.tr());
+              return;
+            }
             context.push(
               RoutePaths.chat,
               extra: ChatPageArgs(
-                targetUserId: item.employerId,
+                targetUserId: profileId,
                 targetUserRole: 'employer',
                 nickname: item.companyName.trim().isEmpty
                     ? item.title
@@ -396,10 +405,7 @@ class _MyApplicationEmptyView extends StatelessWidget {
               ),
               if (onRetry != null) ...<Widget>[
                 const SizedBox(height: 16),
-                OutlinedButton(
-                  onPressed: onRetry,
-                  child: Text('通用.重试'.tr()),
-                ),
+                OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
               ],
             ],
           ),

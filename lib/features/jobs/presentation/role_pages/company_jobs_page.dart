@@ -92,7 +92,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     }
 
     final String? remark = await _showRemarkDialog(
-      EmployerApplicationUpdateStatus.interview.label,
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
     );
     if (remark == null || !mounted) {
       return;

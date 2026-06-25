@@ -56,11 +56,13 @@ class PostJobFieldGroup extends StatelessWidget {
     super.key,
     required this.label,
     this.required = true,
+    this.trailing,
     required this.child,
   });
 
   final String label;
   final bool required;
+  final Widget? trailing;
   final Widget child;
 
   @override
@@ -69,20 +71,31 @@ class PostJobFieldGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text(label, style: PostJobPageStyles.fieldLabel),
-            if (required) ...<Widget>[
-              const SizedBox(width: 4),
-              const Text(
-                '*',
-                style: TextStyle(
-                  color: PostJobPageStyles.required,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(label, style: PostJobPageStyles.fieldLabel),
+                  if (required) ...<Widget>[
+                    const SizedBox(width: 4),
+                    const Text(
+                      '*',
+                      style: TextStyle(
+                        color: PostJobPageStyles.required,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 20 / 14,
+                      ),
+                    ),
+                  ],
+                ],
               ),
+            ),
+            if (trailing != null) ...<Widget>[
+              const SizedBox(width: 12),
+              trailing!,
             ],
           ],
         ),

@@ -30,6 +30,10 @@
               android:resource="@style/NormalTheme"
               />
         </activity>
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Ucrop.CropTheme" />
 
         <activity-alias
             android:name=".MainActivityDefault"
@@ -70,5 +74,8 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <package android:name="com.tencent.mm"/>
+        <package android:name="com.eg.android.AlipayGphone"/>
+        <package android:name="hk.alipay.wallet" />
     </queries>
 </manifest>
