@@ -83,6 +83,9 @@ dependency_overrides:
   tobias:
     path: third_party/tobias
 
+tobias:
+  url_scheme: com.europepass.europepass.alipay
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

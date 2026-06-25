@@ -30,7 +30,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(ALIPAY_URL_SCHEME)</string>
+				<string>com.europepass.europepass.alipay</string>
 			</array>
 		</dict>
 		<dict>
