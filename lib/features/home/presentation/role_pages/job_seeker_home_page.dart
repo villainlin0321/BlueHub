@@ -209,6 +209,19 @@ class _ShortcutRow extends StatelessWidget {
   }
 }
 
+String _homeGreetingKeyForHour(int hour) {
+  if (hour < 11) {
+    return '首页.早上好';
+  }
+  if (hour < 14) {
+    return '首页.中午好';
+  }
+  if (hour < 18) {
+    return '首页.下午好';
+  }
+  return '首页.晚上好';
+}
+
 class _HeaderProfileRow extends ConsumerWidget {
   const _HeaderProfileRow();
 
@@ -218,6 +231,7 @@ class _HeaderProfileRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       currentUser,
     );
+    final String greetingKey = _homeGreetingKeyForHour(DateTime.now().hour);
 
     return Row(
       children: <Widget>[
@@ -236,7 +250,7 @@ class _HeaderProfileRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                '首页.早上好'.tr(
+                greetingKey.tr(
                   namedArgs: <String, String>{'name': userViewData.nickname},
                 ),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(

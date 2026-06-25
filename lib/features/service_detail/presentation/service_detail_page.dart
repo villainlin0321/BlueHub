@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 import '../../../shared/widgets/app_toast.dart';
 
@@ -10,12 +11,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
@@ -33,6 +38,7 @@ import 'service_detail_merchant_tab.dart';
 import 'service_detail_package_tab.dart';
 import 'service_detail_report_page.dart';
 import 'service_detail_review_tab.dart';
+import 'service_detail_share_card.dart';
 
 class ServiceDetailPageArgs {
   const ServiceDetailPageArgs({
@@ -74,6 +80,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   bool _showCollapsedTitle = false;
   bool? _isCollectedOverride;
   final Set<String> _downloadingMaterialUrls = <String>{};
+  final ScreenshotController _shareScreenshotController =
+      ScreenshotController();
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +263,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                       materials: serviceMaterials,
                       downloadingFileUrls: _downloadingMaterialUrls,
                       onMaterialTap: _downloadAndOpenMaterial,
-                      onPreviewTap: () => _showSampleFilesDialog(serviceMaterials),
+                      onPreviewTap: () =>
+                          _showSampleFilesDialog(serviceMaterials),
                     ),
                     ServiceDetailReviewTab(
                       review: reviewAsync?.asData?.value,
@@ -423,9 +432,163 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     required ProviderVO? provider,
     required ServicePackageData? selectedPackage,
   }) async {
-    final String title = package.name.trim().isEmpty
-        ? '服务详情.标题'.tr()
-        : package.name.trim();
+    final String title = _shareTitle(package);
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+
+    try {
+      final File imageFile = await _captureShareImage(
+        package: package,
+        provider: provider,
+        selectedPackage: selectedPackage,
+      );
+      await SharePlus.instance.share(
+        ShareParams(
+          title: title,
+          subject: title,
+          files: <XFile>[XFile(imageFile.path)],
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (_) {
+      try {
+        await _shareServiceDetailText(
+          package: package,
+          provider: provider,
+          selectedPackage: selectedPackage,
+        );
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        _showMessage('服务详情.分享失败'.tr());
+      }
+    }
+  }
+
+  Future<File> _captureShareImage({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final List<ServicePackageData> servicePackages = package
+        .toServicePackages();
+    final List<ServiceMaterialData> serviceMaterials = package
+        .toServiceMaterials();
+    final int selectedPackageIndex = selectedPackage == null
+        ? _resolveSelectedPackageIndex(servicePackages.length)
+        : servicePackages.indexWhere(
+            (ServicePackageData item) => item.tierId == selectedPackage.tierId,
+          );
+    final Uint8List imageBytes = await _shareScreenshotController
+        .captureFromLongWidget(
+          InheritedTheme.captureAll(
+            context,
+            Material(
+              color: const Color(0xFFF5F7FA),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: EdgeInsets.zero,
+                  viewPadding: EdgeInsets.zero,
+                  viewInsets: EdgeInsets.zero,
+                ),
+                child: Directionality(
+                  textDirection: Directionality.of(context),
+                  child: _buildShareCard(
+                    package: package,
+                    provider: provider,
+                    packages: servicePackages,
+                    selectedPackageIndex: selectedPackageIndex < 0
+                        ? _resolveSelectedPackageIndex(servicePackages.length)
+                        : selectedPackageIndex,
+                    materials: serviceMaterials,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          context: context,
+          constraints: const BoxConstraints(
+            maxWidth: ServiceDetailShareCard.shareWidth,
+          ),
+          pixelRatio: MediaQuery.devicePixelRatioOf(context),
+          delay: const Duration(milliseconds: 300),
+        );
+    if (imageBytes.isEmpty) {
+      throw Exception('service_detail_share_image_empty');
+    }
+    final Directory tempDirectory = await getTemporaryDirectory();
+    final Directory shareDirectory = Directory(
+      '${tempDirectory.path}/service_detail_share',
+    );
+    if (!shareDirectory.existsSync()) {
+      await shareDirectory.create(recursive: true);
+    }
+    final File imageFile = File(
+      '${shareDirectory.path}/service_detail_share_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await imageFile.writeAsBytes(imageBytes, flush: true);
+    return imageFile;
+  }
+
+  Widget _buildShareCard({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required List<ServicePackageData> packages,
+    required int selectedPackageIndex,
+    required List<ServiceMaterialData> materials,
+  }) {
+    return ServiceDetailShareCard(
+      package: package,
+      provider: provider,
+      packages: packages,
+      selectedPackageIndex: selectedPackageIndex,
+      materials: materials,
+      verifiedBadgeAsset: _verifiedBadgeAsset,
+      serviceTagLabelMap: _buildServiceTagLabelMap(),
+    );
+  }
+
+  Map<String, String> _buildServiceTagLabelMap() {
+    final List<TagItemVO> serviceTags =
+        ref.read(tagDictionaryProvider(TagCategory.service)).asData?.value ??
+        const <TagItemVO>[];
+    final bool isChineseLocale = context.locale.languageCode
+        .toLowerCase()
+        .startsWith('zh');
+    return <String, String>{
+      for (final TagItemVO item in serviceTags)
+        item.tagCode.trim(): isChineseLocale
+            ? _resolveZhFirstTagLabel(item)
+            : _resolveEnFirstTagLabel(item),
+    };
+  }
+
+  String _resolveZhFirstTagLabel(TagItemVO item) {
+    final String zh = item.tagNameZh.trim();
+    if (zh.isNotEmpty) {
+      return zh;
+    }
+    final String en = item.tagNameEn.trim();
+    return en.isNotEmpty ? en : item.tagCode.trim();
+  }
+
+  String _resolveEnFirstTagLabel(TagItemVO item) {
+    final String en = item.tagNameEn.trim();
+    if (en.isNotEmpty) {
+      return en;
+    }
+    final String zh = item.tagNameZh.trim();
+    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  }
+
+  Future<void> _shareServiceDetailText({
+    required VisaPackageVO package,
+    required ProviderVO? provider,
+    required ServicePackageData? selectedPackage,
+  }) async {
+    final String title = _shareTitle(package);
     final List<String> lines = <String>[
       title,
       if (provider != null && provider.name.trim().isNotEmpty)
@@ -443,26 +606,21 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       if (provider != null && provider.brief.trim().isNotEmpty)
         provider.brief.trim(),
     ];
-
     final RenderBox? box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        title: title,
+        subject: title,
+        text: lines.join('\n'),
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
 
-    try {
-      await SharePlus.instance.share(
-        ShareParams(
-          title: title,
-          subject: title,
-          text: lines.join('\n'),
-          sharePositionOrigin: box == null
-              ? null
-              : box.localToGlobal(Offset.zero) & box.size,
-        ),
-      );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      _showMessage('服务详情.分享失败'.tr());
-    }
+  String _shareTitle(VisaPackageVO package) {
+    return package.name.trim().isEmpty ? '服务详情.标题'.tr() : package.name.trim();
   }
 
   Future<Directory> _resolveDownloadDirectory() async {
@@ -556,8 +714,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
           continue;
         }
         final Uri? uri = Uri.tryParse(fileUrl);
-        final String fileName =
-            uri != null && uri.pathSegments.isNotEmpty
+        final String fileName = uri != null && uri.pathSegments.isNotEmpty
             ? Uri.decodeComponent(uri.pathSegments.last)
             : material.title;
         files.add(
@@ -574,8 +731,12 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     return files;
   }
 
-  Future<void> _showSampleFilesDialog(List<ServiceMaterialData> materials) async {
-    final List<_ServiceSampleFileData> sampleFiles = _buildSampleFiles(materials);
+  Future<void> _showSampleFilesDialog(
+    List<ServiceMaterialData> materials,
+  ) async {
+    final List<_ServiceSampleFileData> sampleFiles = _buildSampleFiles(
+      materials,
+    );
     if (sampleFiles.isEmpty) {
       _showMessage('服务详情.文件地址不存在'.tr());
       return;

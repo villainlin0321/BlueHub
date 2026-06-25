@@ -61,6 +61,7 @@ dependencies:
   package_info_plus: ^9.0.1
   open_filex: ^4.7.0
   share_plus: ^12.0.1
+  screenshot: ^3.0.0
   tobias: ^5.3.4
   fluwx: ^5.7.5
 
