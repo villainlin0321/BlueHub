@@ -44,6 +44,9 @@ class RoutePaths {
   /// 设置页。
   static const settings = '/me/settings';
 
+  /// 关于我们页。
+  static const aboutApp = '/me/about-app';
+
   /// 黑名单页。
   static const blacklist = '/me/blacklist';
 

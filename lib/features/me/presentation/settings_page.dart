@@ -62,6 +62,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             title: '设置.黑名单'.tr(),
                             onTap: _handleBlacklistTap,
                           ),
+                          _SettingsActionRow(
+                            title: '设置.关于我们'.tr(),
+                            onTap: _handleAboutTap,
+                          ),
                         ],
                       ),
                       Expanded(child: SizedBox()),
@@ -157,6 +161,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 黑名单暂未接入真实业务，先保留占位提示避免点击无反馈。
   void _handleBlacklistTap() {
     context.push(RoutePaths.blacklist);
+  }
+
+  /// 打开关于我们页，便于用户查看应用版本和公司主体信息。
+  void _handleAboutTap() {
+    context.push(RoutePaths.aboutApp);
   }
 
   /// 注销能力尚未接入接口，先提示用户当前状态。
