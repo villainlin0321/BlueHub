@@ -1,6 +1,6 @@
 {
   "应用": {
-    "标题": "BlueHub"
+    "标题": "Europe Pass"
   },
   "通用": {
     "取消": "Cancel",
@@ -87,12 +87,23 @@
     "系统语言": "System Language",
     "我的信息": "My Info",
     "黑名单": "Blacklist",
+    "关于我们": "About Us",
     "退出登录": "Log out",
     "注销": "Delete Account",
     "注销未开放": "Account deletion is not available yet",
     "退出登录标题": "Log out",
     "退出登录内容": "Are you sure you want to log out of this account?",
     "退出登录失败": "Failed to log out. Please try again later."
+  },
+  "关于页": {
+    "标题": "About Us",
+    "版本": "Version",
+    "说明": "Europe Pass is a platform for European visa and recruitment services. This page presents the app information and the registered developer company.",
+    "公司信息": "Company Information",
+    "开发公司": "Developer",
+    "运营主体": "Operating Entity",
+    "统一社会信用代码": "Unified Social Credit Code",
+    "版权": "All rights reserved"
   },
   "导航": {
     "首页": "Home",

@@ -23,6 +23,7 @@ class App extends ConsumerWidget {
     return _AppIconInitialSync(
       child: MaterialApp.router(
         title: title,
+        debugShowCheckedModeBanner: false,
         locale: context.locale,
         supportedLocales: AppLocales.supported,
         localizationsDelegates: context.localizationDelegates,
