@@ -27,7 +27,7 @@ class AppConfig {
       case AppEnv.prod:
         return const AppConfig(
           env: AppEnv.prod,
-          baseUrl: 'https://api.XXX.com',
+          baseUrl: 'http://39.101.190.245:8090',
         );
     }
   }
