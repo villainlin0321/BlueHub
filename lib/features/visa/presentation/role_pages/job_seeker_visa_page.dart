@@ -25,33 +25,12 @@ class JobSeekerVisaPage extends ConsumerStatefulWidget {
 
 class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
   int _selectedTabIndex = 0;
-  late final TextEditingController _searchController = TextEditingController();
-  String? _submittedKeyword;
 
   VisaProviderListQuery get _query => VisaProviderListQuery(
     page: 1,
     pageSize: 50,
     tab: _resolveTabQuery(_selectedTabIndex),
-    keyword: _submittedKeyword,
   );
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _handleSearchSubmitted(String value) {
-    final String? keyword = value.trim().isEmpty ? null : value.trim();
-    if (_submittedKeyword == keyword) {
-      FocusScope.of(context).unfocus();
-      return;
-    }
-    setState(() {
-      _submittedKeyword = keyword;
-    });
-    FocusScope.of(context).unfocus();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +52,6 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
           children: <Widget>[
             _VisaHeroSection(
               selectedIndex: _selectedTabIndex,
-              controller: _searchController,
-              onSearchSubmitted: _handleSearchSubmitted,
               onTabTap: (int index) {
                 setState(() {
                   _selectedTabIndex = index;
@@ -266,16 +243,9 @@ String _formatVisaListPrice(double price) {
 }
 
 class _VisaHeroSection extends StatelessWidget {
-  const _VisaHeroSection({
-    required this.selectedIndex,
-    required this.controller,
-    required this.onSearchSubmitted,
-    required this.onTabTap,
-  });
+  const _VisaHeroSection({required this.selectedIndex, required this.onTabTap});
 
   final int selectedIndex;
-  final TextEditingController controller;
-  final ValueChanged<String> onSearchSubmitted;
   final ValueChanged<int> onTabTap;
 
   @override
@@ -300,10 +270,7 @@ class _VisaHeroSection extends StatelessWidget {
         const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: _VisaSearchBar(
-            controller: controller,
-            onSubmitted: onSearchSubmitted,
-          ),
+          child: const _VisaSearchBar(),
         ),
         const SizedBox(height: 14),
         _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
@@ -314,53 +281,46 @@ class _VisaHeroSection extends StatelessWidget {
 }
 
 class _VisaSearchBar extends StatelessWidget {
-  const _VisaSearchBar({required this.controller, required this.onSubmitted});
-
-  final TextEditingController controller;
-  final ValueChanged<String> onSubmitted;
+  const _VisaSearchBar();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push(RoutePaths.visaProviderSearch),
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: <Widget>[
-          SvgPicture.asset(
-            'assets/images/mon8on2b-h3091wk.svg',
-            width: 16,
-            height: 16,
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.search,
-              onSubmitted: onSubmitted,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
+          child: Row(
+            children: <Widget>[
+              SvgPicture.asset(
+                'assets/images/mon8on2b-h3091wk.svg',
+                width: 16,
+                height: 16,
               ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: '首页.搜索签证服务欧洲岗位'.tr(),
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBFBFBF),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '首页.搜索签证服务欧洲岗位'.tr(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFBFBFBF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

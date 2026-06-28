@@ -16,6 +16,7 @@ import '../../features/complaint/presentation/my_complaints_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/company_application_management_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
+import '../../features/jobs/presentation/job_search_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/jobs/presentation/post_job_page.dart';
 import '../../features/jobs/presentation/service_provider_talent_center_page.dart';
@@ -299,6 +300,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.extra as AppResultPageArgs? ??
               AppResultPageArgs.paymentSuccess(),
         ),
+      ),
+      GoRoute(
+        path: RoutePaths.jobSearch,
+        builder: (context, state) => const JobSearchPage(),
       ),
       GoRoute(
         path: RoutePaths.myInfo,

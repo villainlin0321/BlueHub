@@ -14,7 +14,6 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
-import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/app_currency_bottom_sheet.dart';
 import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../me/data/dictionary_providers.dart';
@@ -23,6 +22,7 @@ import '../../data/job_providers.dart';
 import '../job_apply_helper.dart';
 import '../job_detail_page.dart';
 import '../widgets/filter_bottom_sheet_chip.dart';
+import '../widgets/job_list_cards.dart';
 
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
 class JobSeekerJobsPage extends ConsumerWidget {
@@ -57,11 +57,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
           min: 1500,
           max: 2500,
         ),
-        _SalaryRangeOption(
-          key: '2500+',
-          labelKey: '招聘.薪资2500以上',
-          min: 2500,
-        ),
+        _SalaryRangeOption(key: '2500+', labelKey: '招聘.薪资2500以上', min: 2500),
       ];
   static const List<_SortOption> _sortOptions = <_SortOption>[
     _SortOption(key: 'latest', labelKey: '招聘.最新'),
@@ -72,14 +68,12 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
   final List<JobListVO> _jobs = <JobListVO>[];
   final Set<int> _submittingJobIds = <int>{};
   final Set<int> _appliedJobIds = <int>{};
-  late final TextEditingController _searchController = TextEditingController();
   int _currentPage = 0;
   bool _hasNext = true;
   bool _isInitialLoading = true;
   bool _isRefreshing = false;
   bool _isLoadingMore = false;
   String? _initialErrorMessage;
-  String? _submittedKeyword;
   String? _selectedCountryCode;
   String? _selectedPositionKeyword;
   String? _selectedSalaryRangeKey;
@@ -94,12 +88,6 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialJobs();
     });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -136,10 +124,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _JobsSearchBar(
-              controller: _searchController,
-              onSubmitted: _handleSearchSubmitted,
-            ),
+            child: const _JobsSearchBar(),
           ),
           const SizedBox(height: 13),
           Padding(
@@ -207,20 +192,6 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       return;
     }
     await _fetchJobs(reset: false, showFullscreenLoading: false);
-  }
-
-  /// 提交搜索关键字后刷新岗位列表。
-  void _handleSearchSubmitted(String value) {
-    final String? keyword = value.trim().isEmpty ? null : value.trim();
-    if (_submittedKeyword == keyword) {
-      FocusScope.of(context).unfocus();
-      return;
-    }
-    setState(() {
-      _submittedKeyword = keyword;
-    });
-    FocusScope.of(context).unfocus();
-    _fetchJobs(reset: true, showFullscreenLoading: _jobs.isEmpty);
   }
 
   /// 切换国家筛选后重新请求岗位列表。
@@ -405,15 +376,7 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 
   /// 组合搜索框关键字与职位筛选，统一复用岗位列表接口的 keyword 参数。
   String? _buildKeywordQuery() {
-    final Set<String> parts = <String>{
-      if ((_submittedKeyword ?? '').isNotEmpty) _submittedKeyword!,
-      if ((_selectedPositionKeyword ?? '').isNotEmpty)
-        _selectedPositionKeyword!,
-    };
-    if (parts.isEmpty) {
-      return null;
-    }
-    return parts.join(' ');
+    return _selectedPositionKeyword;
   }
 
   _SalaryRangeOption? get _selectedSalaryRange {
@@ -484,54 +447,47 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
 }
 
 class _JobsSearchBar extends StatelessWidget {
-  const _JobsSearchBar({required this.controller, required this.onSubmitted});
-
-  final TextEditingController controller;
-  final ValueChanged<String> onSubmitted;
+  const _JobsSearchBar();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push(RoutePaths.jobSearch),
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: <Widget>[
-          const AppSvgIcon(
-            assetPath: 'assets/images/mou2x9mw-2jfef5b.svg',
-            fallback: Icons.search_rounded,
-            size: 16,
-            color: Color(0xFFBFBFBF),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.search,
-              onSubmitted: onSubmitted,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
+          child: Row(
+            children: <Widget>[
+              const AppSvgIcon(
+                assetPath: 'assets/images/mou2x9mw-2jfef5b.svg',
+                fallback: Icons.search_rounded,
+                size: 16,
+                color: Color(0xFFBFBFBF),
               ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: '招聘.搜索岗位占位'.tr(),
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBFBFBF),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '招聘.搜索岗位占位'.tr(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFBFBFBF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 20 / 14,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -782,9 +738,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
           onConfirm: () {
             final String? selectedPreset = draftSalaryPresetKey;
             if (selectedPreset?.isNotEmpty == true) {
-              Navigator.of(
-                context,
-              ).pop(
+              Navigator.of(context).pop(
                 _SalaryFilterSelection(
                   presetKey: selectedPreset,
                   salaryCurrency: draftSalaryCurrency,
@@ -796,9 +750,9 @@ class _SalaryBottomSheetChip extends StatelessWidget {
             final String minText = minController.text.trim();
             final String maxText = maxController.text.trim();
             if (minText.isEmpty && maxText.isEmpty) {
-              Navigator.of(
-                context,
-              ).pop(_SalaryFilterSelection(salaryCurrency: draftSalaryCurrency));
+              Navigator.of(context).pop(
+                _SalaryFilterSelection(salaryCurrency: draftSalaryCurrency),
+              );
               return;
             }
             if (minText.isEmpty || maxText.isEmpty) {
@@ -813,9 +767,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
               return;
             }
 
-            Navigator.of(
-              context,
-            ).pop(
+            Navigator.of(context).pop(
               _SalaryFilterSelection(
                 customMin: min,
                 customMax: max,
@@ -1683,29 +1635,21 @@ class _JobsListSection extends StatelessWidget {
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
-          final JobListVO item = jobs[index];
-          return Padding(
-            padding: EdgeInsets.only(bottom: index == jobs.length - 1 ? 0 : 12),
-            child: JobPositionCard(
-              data: item.toCardData(),
-              onTap: () => context.push(
-                RoutePaths.jobDetail,
-                extra: JobDetailPageArgs(jobId: item.jobId),
-              ),
-              onApply: appliedJobIds.contains(item.jobId)
-                  ? null
-                  : () {
-                      onApply(item);
-                    },
-              isApplying: applyingJobIds.contains(item.jobId),
-              applyButtonText: appliedJobIds.contains(item.jobId)
-                  ? '招聘.已投递'.tr()
-                  : '招聘卡片.一键投递'.tr(),
-            ),
-          );
-        }, childCount: jobs.length),
+      sliver: SliverToBoxAdapter(
+        child: JobListCards(
+          jobs: jobs,
+          applyingJobIds: applyingJobIds,
+          appliedJobIds: appliedJobIds,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          onTap: (JobListVO item) {
+            context.push(
+              RoutePaths.jobDetail,
+              extra: JobDetailPageArgs(jobId: item.jobId),
+            );
+          },
+          onApply: onApply,
+        ),
       ),
     );
   }
@@ -1787,52 +1731,4 @@ class _JobsErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-extension on JobListVO {
-  /// 将接口返回的岗位列表项映射为职位卡片数据。
-  JobPositionCardData toCardData() {
-    final String urgentLabel = '招聘卡片.急招'.tr();
-    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
-    final List<String> tagLabels = tags
-        .map((TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
-        .toList(growable: false);
-    final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != urgentLabel),
-      if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
-        visaSupportLabel,
-    ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
-
-    return JobPositionCardData(
-      title: title,
-      salary: _formatSalary(),
-      requirementTags: requirementTags,
-      highlightTags: highlightTags,
-      company: employer.name,
-      location: _formatLocation(),
-      showApplyButton: true,
-    );
-  }
-
-  /// 组装职位卡片展示的薪资文案。
-  String _formatSalary() {
-    return AppCurrency.formatRange(
-      min: salaryMin,
-      max: salaryMax,
-      rawCurrency: salaryCurrency,
-      period: salaryPeriod,
-    );
-  }
-
-  /// 组装职位卡片展示的地点文案。
-  String _formatLocation() {
-    final List<String> parts = <String>[
-      country.trim(),
-      city.trim(),
-    ].where((String value) => value.isNotEmpty).toList(growable: false);
-    return parts.join('·');
-  }
-
 }
