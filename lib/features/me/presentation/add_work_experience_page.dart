@@ -20,6 +20,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   final TextEditingController _jobTitleController = TextEditingController();
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final FocusNode _contentFocusNode = FocusNode();
 
   AddWorkExperiencePageArgs get _resolvedArgs =>
       widget.args ?? const AddWorkExperiencePageArgs();
@@ -40,6 +41,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
       _selectedPeriod = initialValue.period;
     }
     _contentController.addListener(_handleContentChanged);
+    _contentFocusNode.addListener(_handleContentChanged);
   }
 
   @override
@@ -47,6 +49,9 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
     _companyController.dispose();
     _jobTitleController.dispose();
     _departmentController.dispose();
+    _contentFocusNode
+      ..removeListener(_handleContentChanged)
+      ..dispose();
     _contentController
       ..removeListener(_handleContentChanged)
       ..dispose();
@@ -140,42 +145,78 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
           ),
         ),
       ),
-      body: TapBlankToDismissKeyboard(
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 140),
-            child: Column(
-              children: <Widget>[
-                _UnderlinedInputField(
-                  label: '我的.公司名称'.tr(),
-                  controller: _companyController,
+      body: Stack(
+        children: <Widget>[
+          TapBlankToDismissKeyboard(
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 140),
+                child: Column(
+                  children: <Widget>[
+                    _UnderlinedInputField(
+                      label: '我的.公司名称'.tr(),
+                      controller: _companyController,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedSelectorField(
+                      label: '我的.在职时间'.tr(),
+                      value: _selectedPeriod?.displayText,
+                      onTap: _openEmploymentPeriodSheet,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedInputField(
+                      label: '我的.职位名称'.tr(),
+                      controller: _jobTitleController,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedInputField(
+                      label: '我的.所在部门'.tr(),
+                      controller: _departmentController,
+                    ),
+                    const SizedBox(height: 16),
+                    _WorkContentField(
+                      controller: _contentController,
+                      focusNode: _contentFocusNode,
+                      currentLength: _contentController.text.characters.length,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _UnderlinedSelectorField(
-                  label: '我的.在职时间'.tr(),
-                  value: _selectedPeriod?.displayText,
-                  onTap: _openEmploymentPeriodSheet,
-                ),
-                const SizedBox(height: 16),
-                _UnderlinedInputField(
-                  label: '我的.职位名称'.tr(),
-                  controller: _jobTitleController,
-                ),
-                const SizedBox(height: 16),
-                _UnderlinedInputField(
-                  label: '我的.所在部门'.tr(),
-                  controller: _departmentController,
-                ),
-                const SizedBox(height: 16),
-                _WorkContentField(
-                  controller: _contentController,
-                  currentLength: _contentController.text.characters.length,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (_contentFocusNode.hasFocus && bottomInset > 0)
+            Positioned(
+              right: 16,
+              bottom: 8,
+              child: SafeArea(
+                top: false,
+                child: TextButton(
+                  onPressed: _contentFocusNode.unfocus,
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: const Color(0xFF096DD9),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    '完成',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -874,10 +915,12 @@ class _UnderlinedSelectorField extends StatelessWidget {
 class _WorkContentField extends StatelessWidget {
   const _WorkContentField({
     required this.controller,
+    required this.focusNode,
     required this.currentLength,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final int currentLength;
 
   @override
@@ -899,6 +942,7 @@ class _WorkContentField extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               maxLength: 500,
               maxLines: null,
               minLines: 9,

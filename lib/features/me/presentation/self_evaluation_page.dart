@@ -56,10 +56,17 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
     _focusNode.requestFocus();
   }
 
+  void _dismissKeyboard() {
+    if (_focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final int currentLength = _controller.text.characters.length;
+    final bool isKeyboardVisible = bottomInset > 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -107,7 +114,6 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                         color: Color(0xFF171A1D),
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
-                        height: 24 / 16,
                       ),
                       decoration: InputDecoration(
                         hintText: '通用.请输入'.tr(),
@@ -115,7 +121,6 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                           color: Color(0xFFBFBFBF),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          height: 24 / 16,
                         ),
                         border: InputBorder.none,
                         counterText: '',
@@ -131,10 +136,32 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                         color: Color(0xFF8C8C8C),
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        height: 20 / 14,
                       ),
                     ),
                   ),
+                  if (isKeyboardVisible) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _dismissKeyboard,
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor: const Color(0xFF096DD9),
+                        ),
+                        child: const Text(
+                          '完成',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
               ),
             ),

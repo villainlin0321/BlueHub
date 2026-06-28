@@ -54,7 +54,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: _buildAppBar(context),
       body: _buildBody(),
-      bottomNavigationBar: _buildBottomAction(context),
+      bottomNavigationBar: _isManaging ? null : _buildBottomAction(context),
     );
   }
 
@@ -366,8 +366,8 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                           children: <Widget>[
                             Icon(
                               resume.isDefault
-                                  ? Icons.radio_button_checked_rounded
-                                  : Icons.radio_button_off_rounded,
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
                               size: 20,
                               color: resume.isDefault
                                   ? const Color(0xFF096DD9)
