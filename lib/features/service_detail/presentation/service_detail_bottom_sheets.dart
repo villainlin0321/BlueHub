@@ -87,20 +87,39 @@ class _ApplyBottomSheetContentState
     extends ConsumerState<_ApplyBottomSheetContent> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final FocusNode _nameFocusNode;
+  late final FocusNode _phoneFocusNode;
   bool _isSubmitting = false;
+  bool _isAnyInputFocused = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
+    _nameFocusNode = FocusNode()..addListener(_handleInputFocusChanged);
+    _phoneFocusNode = FocusNode()..addListener(_handleInputFocusChanged);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _nameFocusNode
+      ..removeListener(_handleInputFocusChanged)
+      ..dispose();
+    _phoneFocusNode
+      ..removeListener(_handleInputFocusChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleInputFocusChanged() {
+    final isAnyInputFocused = _nameFocusNode.hasFocus || _phoneFocusNode.hasFocus;
+    if (_isAnyInputFocused == isAnyInputFocused || !mounted) {
+      return;
+    }
+    setState(() => _isAnyInputFocused = isAnyInputFocused);
   }
 
   @override
@@ -195,6 +214,8 @@ class _ApplyBottomSheetContentState
                           child: _ApplyApplicantSection(
                             nameController: _nameController,
                             phoneController: _phoneController,
+                            nameFocusNode: _nameFocusNode,
+                            phoneFocusNode: _phoneFocusNode,
                           ),
                         ),
                       ],
@@ -202,37 +223,38 @@ class _ApplyBottomSheetContentState
                   ),
                 ),
               ),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
-                  ),
-                ),
-                child: FilledButton(
-                  onPressed: _isSubmitting ? null : _handleGoPay,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    backgroundColor: const Color(0xFF096DD9),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: Text(
-                    _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 22 / 16,
-                      fontWeight: FontWeight.w500,
+              if (!_isAnyInputFocused)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
                     ),
                   ),
+                  child: FilledButton(
+                    onPressed: _isSubmitting ? null : _handleGoPay,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(44),
+                      backgroundColor: const Color(0xFF096DD9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                    ),
+                    child: Text(
+                      _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: 16,
+                        height: 22 / 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -399,10 +421,14 @@ class _ApplyApplicantSection extends StatelessWidget {
   const _ApplyApplicantSection({
     required this.nameController,
     required this.phoneController,
+    required this.nameFocusNode,
+    required this.phoneFocusNode,
   });
 
   final TextEditingController nameController;
   final TextEditingController phoneController;
+  final FocusNode nameFocusNode;
+  final FocusNode phoneFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -426,6 +452,7 @@ class _ApplyApplicantSection extends StatelessWidget {
         _ApplyLabeledInput(
           label: '服务详情.姓名'.tr(),
           controller: nameController,
+          focusNode: nameFocusNode,
           textColor: const Color(0xFF262626),
           hintText: '通用.请输入'.tr(),
         ),
@@ -433,6 +460,7 @@ class _ApplyApplicantSection extends StatelessWidget {
         _ApplyLabeledInput(
           label: '认证.手机号'.tr(),
           controller: phoneController,
+          focusNode: phoneFocusNode,
           hintText: '通用.请输入'.tr(),
           keyboardType: TextInputType.phone,
         ),
@@ -445,6 +473,7 @@ class _ApplyLabeledInput extends StatelessWidget {
   const _ApplyLabeledInput({
     required this.label,
     required this.controller,
+    required this.focusNode,
     required this.hintText,
     this.keyboardType,
     this.textColor = const Color(0xFF262626),
@@ -452,6 +481,7 @@ class _ApplyLabeledInput extends StatelessWidget {
 
   final String label;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final String hintText;
   final TextInputType? keyboardType;
   final Color textColor;
@@ -494,6 +524,7 @@ class _ApplyLabeledInput extends StatelessWidget {
           Positioned.fill(
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               keyboardType: keyboardType,
               cursorColor: const Color(0xFF096DD9),
               style: theme.textTheme.bodyMedium?.copyWith(
