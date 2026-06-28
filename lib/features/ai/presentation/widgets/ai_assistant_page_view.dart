@@ -254,7 +254,7 @@ class _AssistantMessageItem extends StatelessWidget {
                 else
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.sizeOf(context).width * 0.7,
+                      maxWidth: MediaQuery.sizeOf(context).width,
                     ),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -269,8 +269,8 @@ class _AssistantMessageItem extends StatelessWidget {
                         message.text,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textPrimary,
-                          height: 1.4,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -428,18 +428,23 @@ class _UserMessageItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.brand,
-                borderRadius: BorderRadius.circular(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.75,
               ),
-              child: Text(
-                message.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.brand,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  message.text,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ),

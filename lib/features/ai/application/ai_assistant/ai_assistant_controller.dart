@@ -374,22 +374,6 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         text: 'AI.欢迎语'.tr(),
         footer: null,
       ),
-      AiAssistantMessageVM(
-        role: AiAssistantChatRole.user,
-        text: 'AI.用户示例提问'.tr(),
-        footer: null,
-      ),
-      AiAssistantMessageVM(
-        role: AiAssistantChatRole.assistant,
-        text: 'AI.匹配追问'.tr(),
-        footer: 'AI.由西格玛AI提供'.tr(),
-      ),
-      AiAssistantMessageVM(
-        role: AiAssistantChatRole.assistant,
-        text: 'AI.推荐岗位提示'.tr(),
-        footer: 'AI.由西格玛AI提供'.tr(),
-        isEmbeddedJobLoading: true,
-      ),
     ];
   }
 
