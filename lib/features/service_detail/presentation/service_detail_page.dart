@@ -69,6 +69,8 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
   static const String _favoriteAsset =
       'assets/images/service_detail_favorite.svg';
+  static const String _favoriteFillAsset =
+      'assets/images/service_detail_favorite_fill.svg';
   static const String _shareAsset = 'assets/images/service_detail_share.svg';
   static const String _verifiedBadgeAsset =
       'assets/images/service_detail_verified_badge.png';
@@ -214,6 +216,7 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                                 : package.coverImages.first,
                             backAsset: _backAsset,
                             favoriteAsset: _favoriteAsset,
+                            favoriteFillAsset: _favoriteFillAsset,
                             shareAsset: _shareAsset,
                             collapsed: collapsed,
                             progress: progress,
@@ -246,8 +249,11 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                     ),
                     SliverPersistentHeader(
                       pinned: true,
-                      delegate: const _PinnedTopTabBarDelegate(
-                        child: _ServiceDetailTabBar(),
+                      delegate: _PinnedTopTabBarDelegate(
+                        child: _ServiceDetailTabBar(
+                          reviewCount:
+                              reviewAsync?.asData?.value.summary.totalCount,
+                        ),
                       ),
                     ),
                   ];
@@ -958,6 +964,7 @@ class _SliverHeroAppBar extends StatelessWidget {
     required this.imageUrl,
     required this.backAsset,
     required this.favoriteAsset,
+    required this.favoriteFillAsset,
     required this.shareAsset,
     required this.collapsed,
     required this.progress,
@@ -970,6 +977,7 @@ class _SliverHeroAppBar extends StatelessWidget {
   final String imageUrl;
   final String backAsset;
   final String favoriteAsset;
+  final String favoriteFillAsset;
   final String shareAsset;
   final bool collapsed;
   final double progress;
@@ -1041,7 +1049,7 @@ class _SliverHeroAppBar extends StatelessWidget {
                   ),
                   const Spacer(),
                   _TopCircleAction(
-                    assetPath: favoriteAsset,
+                    assetPath: isFavorited ? favoriteFillAsset : favoriteAsset,
                     fallback: isFavorited
                         ? Icons.star_rounded
                         : Icons.star_border_rounded,
@@ -1207,7 +1215,9 @@ class _SummaryPanel extends StatelessWidget {
 }
 
 class _ServiceDetailTabBar extends StatelessWidget {
-  const _ServiceDetailTabBar();
+  const _ServiceDetailTabBar({this.reviewCount});
+
+  final int? reviewCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1236,6 +1246,7 @@ class _ServiceDetailTabBar extends StatelessWidget {
           ),
           _ServiceDetailTab(
             label: '服务详情.评价'.tr(),
+            reviewCount: reviewCount,
             horizontalPadding: const EdgeInsets.only(left: 16, right: 16),
           ),
           _ServiceDetailTab(label: '服务详情.商家'.tr()),
@@ -1248,11 +1259,13 @@ class _ServiceDetailTabBar extends StatelessWidget {
 class _ServiceDetailTab extends StatelessWidget {
   const _ServiceDetailTab({
     required this.label,
+    this.reviewCount,
     this.selectedWeight = FontWeight.w500,
     this.horizontalPadding = EdgeInsets.zero,
   });
 
   final String label;
+  final int? reviewCount;
   final FontWeight selectedWeight;
   final EdgeInsets horizontalPadding;
 
@@ -1275,17 +1288,73 @@ class _ServiceDetailTab extends StatelessWidget {
               height: 1.2,
               fontWeight: selected ? selectedWeight : FontWeight.w400,
             );
+        final bool showReviewCount = tabIndex == 1 && reviewCount != null;
+        final String reviewCountText = showReviewCount
+            ? _formatReviewTabCount(reviewCount!)
+            : '';
+        final double labelWidth = _measureTextWidth(
+          context: context,
+          text: label,
+          style: labelStyle,
+        );
 
         return Tab(
           height: 48,
-          child: Padding(
-            padding: horizontalPadding,
-            child: Text(label, style: labelStyle),
+          child: Container(
+            width: showReviewCount ? 72 : 60,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 60,
+              height: 24,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text(label, style: labelStyle),
+                  ),
+                  if (showReviewCount)
+                    Positioned(
+                      left: 30 + (labelWidth / 2),
+                      top: 1,
+                      child: Text(
+                        reviewCountText,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF8C8C8C),
+                          fontSize: 10,
+                          height: 1.2,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
+}
+
+double _measureTextWidth({
+  required BuildContext context,
+  required String text,
+  required TextStyle? style,
+}) {
+  final TextPainter textPainter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    maxLines: 1,
+  )..layout();
+  return textPainter.width;
+}
+
+String _formatReviewTabCount(int count) {
+  if (count > 999) {
+    return '999+';
+  }
+  return count.toString();
 }
 
 class _FixedWidthUnderlineIndicator extends Decoration {

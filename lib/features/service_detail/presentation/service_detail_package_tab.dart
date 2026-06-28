@@ -261,7 +261,7 @@ class _MaterialsSection extends StatelessWidget {
       ),
     );
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -413,7 +413,7 @@ class _PackageTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFA3AFD4)),
@@ -422,6 +422,7 @@ class _PackageTag extends StatelessWidget {
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: const Color(0xFF546D96),
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
       ),
