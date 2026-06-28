@@ -391,28 +391,31 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        resume.isPublic ? '我的.可见'.tr() : '我的.隐藏'.tr(),
-                        style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 20 / 14,
+                      if (resume.isDefault) ...<Widget>[
+                        Text(
+                          resume.isPublic ? '我的.可见'.tr() : '我的.隐藏'.tr(),
+                          style: const TextStyle(
+                            color: Color(0xFF8C8C8C),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            height: 20 / 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: resume.isPublic,
-                        onChanged: isSavingVisibility
-                            ? null
-                            : (bool value) =>
-                                  _updateResumeVisibility(resume, value),
-                        activeThumbColor: Colors.white,
-                        activeTrackColor: const Color(0xFF096DD9),
-                        inactiveThumbColor: Colors.white,
-                        inactiveTrackColor: const Color(0xFFD9D9D9),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
+                        const SizedBox(width: 8),
+                        Switch(
+                          value: resume.isPublic,
+                          onChanged: isSavingVisibility
+                              ? null
+                              : (bool value) =>
+                                    _updateResumeVisibility(resume, value),
+                          activeThumbColor: Colors.white,
+                          activeTrackColor: const Color(0xFF096DD9),
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: const Color(0xFFD9D9D9),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
                     ],
                   ),
           ),
@@ -693,7 +696,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
     ResumeListItemVO resume,
     bool value,
   ) async {
-    if (_savingVisibilityResumeId != null) {
+    if (_savingVisibilityResumeId != null || !resume.isDefault) {
       return;
     }
 

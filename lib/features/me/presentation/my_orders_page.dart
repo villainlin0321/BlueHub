@@ -474,11 +474,13 @@ class _OrderItem {
     if (order.isUrgent) {
       return (label: '订单.紧急'.tr(), style: _OrderTagStyle.urgent);
     }
-    final String label = order.statusLabel.trim();
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    final String label = normalizedStatus == 'rejected'
+        ? '订单.已驳回'.tr()
+        : order.statusLabel.trim();
     if (label.isEmpty) {
       return (label: null, style: null);
     }
-    final String normalizedStatus = order.status.trim().toLowerCase();
     final bool useUrgentStyle =
         normalizedStatus == 'pending_payment' ||
         normalizedStatus == 'pending_upload' ||
