@@ -936,20 +936,18 @@ class _OrderTag extends StatelessWidget {
         : const Color(0xFF096DD9);
 
     return Container(
-      height: 20,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(3),
       ),
       alignment: Alignment.center,
       child: Text(
         label,
         style: TextStyle(
           color: foregroundColor,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w500,
-          height: 12 / 12,
         ),
       ),
     );
