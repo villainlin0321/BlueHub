@@ -73,6 +73,12 @@ class VisaOrderService {
       '/visa-orders/$orderId',
       decode: (data) => VisaOrderVO.fromJson(asJsonMap(data)),
     );
+    if (response.currentStep == 1) {
+      return VisaOrderVO.fromJson(<String, dynamic>{
+        ...response.toJson(),
+        'currentStep': 2,
+      });
+    }
     return response;
   }
 

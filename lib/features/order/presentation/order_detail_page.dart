@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:io';
-import '../../../shared/widgets/app_toast.dart';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -16,21 +16,25 @@ import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
-import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/app_dialog.dart';
-import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
-import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/app_empty_state.dart';
-import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/sample_file_selection_dialog.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../application/payment/payment_flow_coordinator.dart';
+import '../data/payment_providers.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
+import 'order_payment_widgets.dart';
 
 class OrderDetailPageArgs {
   const OrderDetailPageArgs({required this.orderId});
@@ -58,26 +62,13 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 
   final OrderDetailPageArgs args;
 
-  static final List<_MaterialRequirement> _fallbackRequirements =
-      <_MaterialRequirement>[
-        _MaterialRequirement(
-          id: 'passport',
-          title: '订单.护照原件及复印件'.tr(),
-          required: true,
-        ),
-        _MaterialRequirement(
-          id: 'chef_certificate',
-          title: '订单.厨师资格证公证件'.tr(),
-          required: true,
-        ),
-        _MaterialRequirement(id: 'german_certificate', title: '订单.德语语言证明'.tr()),
-      ];
-
   @override
   ConsumerState<OrderDetailPage> createState() => _OrderDetailPageState();
 }
 
 class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
+  static const Duration _paymentValidDuration = Duration(minutes: 30);
+  static const Duration _paymentTickDuration = Duration(seconds: 1);
   static const int _uploadMaterialsStepNumber = 3;
   static const int _materialReviewStepNumber = 4;
   static const int _embassySubmittedStepNumber = 5;
@@ -86,7 +77,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       <String, List<PickedUploadFile>>{};
   final List<PickedUploadFile> _visaDocumentUploads = <PickedUploadFile>[];
   final Set<String> _downloadingMaterialUrls = <String>{};
+  Timer? _paymentCountdownTimer;
   VisaOrderVO? _orderDetail;
+  Duration _paymentRemaining = Duration.zero;
+  AppPaymentMethod _selectedPaymentMethod = AppPaymentMethod.alipay;
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _isProcessingOrder = false;
@@ -98,9 +92,16 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     Future<void>.microtask(_loadOrderDetail);
   }
 
+  @override
+  void dispose() {
+    _stopPaymentCountdown();
+    super.dispose();
+  }
+
   Future<void> _loadOrderDetail() async {
     final int orderId = widget.args.orderId;
     if (orderId <= 0) {
+      _stopPaymentCountdown();
       setState(() {
         _isLoading = false;
         _errorMessage = '订单.缺少订单参数'.tr();
@@ -126,10 +127,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       });
       _syncRequirements(detail.requiredMaterials);
       _syncVisaDocuments(detail.visaDocuments);
+      _syncPendingPaymentState(detail);
     } catch (error) {
       if (!mounted) {
         return;
       }
+      _stopPaymentCountdown();
       setState(() {
         _isLoading = false;
         _errorMessage = _resolveErrorMessage(
@@ -148,7 +151,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             .where((item) => item.name.trim().isNotEmpty)
             .toList(growable: false);
     if (materials.isEmpty) {
-      return OrderDetailPage._fallbackRequirements;
+      return const <_MaterialRequirement>[];
     }
     return List<_MaterialRequirement>.generate(materials.length, (int index) {
       final RequiredMaterialVO item = materials[index];
@@ -194,6 +197,64 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ..clear()
         ..addAll(uploads);
     });
+  }
+
+  void _syncPendingPaymentState(VisaOrderVO detail) {
+    if (!_isPendingPaymentStage(detail)) {
+      _stopPaymentCountdown();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _paymentRemaining = Duration.zero;
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    final DateTime? createdAt = DateTime.tryParse(detail.createdAt);
+    final DateTime expireAt = (createdAt ?? DateTime.now()).add(
+      _paymentValidDuration,
+    );
+    _startPaymentCountdown(expireAt);
+  }
+
+  void _startPaymentCountdown(DateTime expireAt) {
+    _stopPaymentCountdown();
+    final Duration initialRemaining = _calculatePaymentRemaining(expireAt);
+    if (!mounted) {
+      _paymentRemaining = initialRemaining;
+      return;
+    }
+    setState(() {
+      _paymentRemaining = initialRemaining;
+    });
+    if (initialRemaining == Duration.zero) {
+      return;
+    }
+    _paymentCountdownTimer = Timer.periodic(_paymentTickDuration, (_) {
+      final Duration nextRemaining = _calculatePaymentRemaining(expireAt);
+      if (!mounted) {
+        _stopPaymentCountdown();
+        return;
+      }
+      setState(() {
+        _paymentRemaining = nextRemaining;
+      });
+      if (nextRemaining == Duration.zero) {
+        _stopPaymentCountdown();
+      }
+    });
+  }
+
+  void _stopPaymentCountdown() {
+    _paymentCountdownTimer?.cancel();
+    _paymentCountdownTimer = null;
+  }
+
+  Duration _calculatePaymentRemaining(DateTime expireAt) {
+    final Duration remaining = expireAt.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   PickedUploadFile _buildPickedUploadFileFromVisaDocument(VisaDocVO document) {
@@ -272,30 +333,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   List<ProgressStep> _buildProgressSteps(VisaOrderVO? detail) {
     final List<StepVO> steps = detail?.steps ?? const <StepVO>[];
     if (steps.isEmpty) {
-      return <ProgressStep>[
-        ProgressStep(label: '订单.提交订单'.tr(), state: ProgressStepState.completed),
-        ProgressStep(label: '订单.支付费用'.tr(), state: ProgressStepState.completed),
-        ProgressStep(
-          label: '订单.上传材料'.tr(),
-          state: ProgressStepState.current,
-          number: 3,
-        ),
-        ProgressStep(
-          label: '订单.材料审核'.tr(),
-          state: ProgressStepState.pending,
-          number: 4,
-        ),
-        ProgressStep(
-          label: '订单.使馆递交'.tr(),
-          state: ProgressStepState.pending,
-          number: 5,
-        ),
-        ProgressStep(
-          label: '订单.签证出签'.tr(),
-          state: ProgressStepState.pending,
-          number: 6,
-        ),
-      ];
+      return const <ProgressStep>[];
     }
     return steps
         .map((StepVO step) {
@@ -372,6 +410,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         status.contains('upload');
   }
 
+  bool _isPendingPaymentStage(VisaOrderVO? detail) {
+    return (detail?.status.trim().toLowerCase() ?? '') == 'pending_payment';
+  }
+
   bool _isMaterialReviewStage(VisaOrderVO? detail) {
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
@@ -416,6 +458,67 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   void _noopAction() {}
+
+  Future<void> _handlePayNow() async {
+    if (_isSubmitting) {
+      return;
+    }
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单.订单详情尚未加载完成'.tr());
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      if (_selectedPaymentMethod == AppPaymentMethod.wechat) {
+        await ref
+            .read(visaOrderServiceProvider)
+            .payOrder(orderId: detail.orderId);
+        if (!mounted) {
+          return;
+        }
+        await _handlePaymentSuccess();
+        return;
+      }
+      final PaymentFlowResult result = await ref
+          .read(paymentFlowCoordinatorProvider)
+          .startPayment(
+            orderId: detail.orderId,
+            method: _selectedPaymentMethod,
+          );
+      if (!mounted) {
+        return;
+      }
+      switch (result.status) {
+        case PaymentFlowStatus.success:
+          await _handlePaymentSuccess();
+          return;
+        case PaymentFlowStatus.cancel:
+        case PaymentFlowStatus.failed:
+        case PaymentFlowStatus.pending:
+          setState(() => _isSubmitting = false);
+          _showMessage(result.message);
+          return;
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isSubmitting = false);
+      _showMessage(resolveOrderPaymentErrorMessage(error));
+    }
+  }
+
+  Future<void> _handlePaymentSuccess() async {
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
+    ref.read(orderRefreshTickProvider.notifier).bump();
+    if (!mounted) {
+      return;
+    }
+    await _loadOrderDetail();
+  }
 
   Future<void> _openUploadSheet(_MaterialRequirement requirement) async {
     await showModalBottomSheet<void>(
@@ -1104,7 +1207,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return 'application/octet-stream';
   }
 
-  Future<void> _handleRequirementPreview(_MaterialRequirement requirement) async {
+  Future<void> _handleRequirementPreview(
+    _MaterialRequirement requirement,
+  ) async {
     final List<MaterialVO> exampleMaterials = _buildRequirementExampleMaterials(
       requirement,
     );
@@ -1385,6 +1490,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       detail?.requiredMaterials,
     );
     final bool isUploadMaterialsStage = _isUploadMaterialsStage(detail);
+    final bool isPendingPaymentStage = _isPendingPaymentStage(detail);
     final bool isMaterialReviewStage = _isMaterialReviewStage(detail);
     final bool isEmbassySubmittedStage = _isEmbassySubmittedStage(detail);
     final bool isVisaIssuedStage = _isVisaIssuedStage(detail);
@@ -1444,6 +1550,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         detail: detail,
         requirements: requirements,
         isServiceProvider: isServiceProvider,
+        isPendingPaymentStage: isPendingPaymentStage,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
         isEmbassySubmittedStage: isEmbassySubmittedStage,
@@ -1454,6 +1561,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       bottomNavigationBar: _buildBottomNavigationBar(
         detail: detail,
         isServiceProvider: isServiceProvider,
+        isPendingPaymentStage: isPendingPaymentStage,
         isUploadMaterialsStage: isUploadMaterialsStage,
         isMaterialReviewStage: isMaterialReviewStage,
         isEmbassySubmittedStage: isEmbassySubmittedStage,
@@ -1464,12 +1572,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Widget _buildBottomNavigationBar({
     required VisaOrderVO? detail,
     required bool isServiceProvider,
+    required bool isPendingPaymentStage,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
     required bool isEmbassySubmittedStage,
   }) {
     if (detail == null) {
       return const SizedBox.shrink();
+    }
+    if (isPendingPaymentStage && !isServiceProvider) {
+      return _BottomSubmitBar(
+        label: _isSubmitting ? '服务详情.支付中'.tr() : '服务详情.立即支付'.tr(),
+        enabled: !_isLoading && _errorMessage == null && !_isSubmitting,
+        onPressed: _handlePayNow,
+      );
     }
     if (_isRejectedStatus(detail)) {
       return const _RejectedStatusBar();
@@ -1522,6 +1638,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required VisaOrderVO? detail,
     required List<_MaterialRequirement> requirements,
     required bool isServiceProvider,
+    required bool isPendingPaymentStage,
     required bool isUploadMaterialsStage,
     required bool isMaterialReviewStage,
     required bool isEmbassySubmittedStage,
@@ -1553,14 +1670,39 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             requirements: requirements,
             materials: detail.materials,
           );
+    final List<ProgressStep> progressSteps = _buildProgressSteps(detail);
+    final bool showApplicantMaterialCard =
+        shouldShowApplicantMaterialCard && requirements.isNotEmpty;
+    final bool showPendingPaymentSection =
+        !isServiceProvider && isPendingPaymentStage;
     return ListView(
       padding: EdgeInsets.zero,
       children: <Widget>[
-        _OrderProgressStepper(steps: _buildProgressSteps(detail)),
+        if (progressSteps.isNotEmpty)
+          _OrderProgressStepper(steps: progressSteps),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
           child: _OrderInfoCard(order: detail),
         ),
+        if (showPendingPaymentSection)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+            child: OrderPaymentAmountCard(
+              amount: detail.amount,
+              currency: detail.currency,
+              remaining: _paymentRemaining,
+            ),
+          ),
+        if (showPendingPaymentSection)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: OrderPaymentMethodCard(
+              selectedMethod: _selectedPaymentMethod,
+              onSelected: (AppPaymentMethod method) {
+                setState(() => _selectedPaymentMethod = method);
+              },
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
           child: isServiceProvider
@@ -1571,7 +1713,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                         onDownloadTap: _downloadMaterial,
                       )
                     : const SizedBox.shrink()
-              : shouldShowApplicantMaterialCard
+              : showApplicantMaterialCard
               ? _MaterialUploadCard(
                   requirements: requirements,
                   uploadsByRequirement: displayedUploadsByRequirement,
@@ -1899,7 +2041,6 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
     );
   }
 }
-
 
 class _MaterialUploadItem extends StatelessWidget {
   const _MaterialUploadItem({

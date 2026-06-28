@@ -11,7 +11,6 @@ import '../../message/application/chat/chat_page_args.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
-import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../order/presentation/order_review_page.dart';
 import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -95,15 +94,10 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         }
         return;
       case _OrderActionType.goPay:
-        await OrderPaymentBottomSheet.show(
-          context: context,
-          amount: order.amount,
-          currency: order.currency,
-          orderId: order.orderId,
-          packageName: order.title,
-          parentContext: context,
-          onFlowCompleted: _loadOrders,
-        );
+        final bool? updated = await _openOrderDetail(order.orderId);
+        if (updated == true && mounted) {
+          await _loadOrders();
+        }
         return;
     }
   }
@@ -266,6 +260,13 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(orderRefreshTickProvider, (int? previous, int next) {
+      if (previous == next || !mounted) {
+        return;
+      }
+      Future<void>.microtask(_loadOrders);
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -445,11 +446,8 @@ class _OrderItem {
   factory _OrderItem.fromVisaOrder(VisaOrderVO order) {
     final _OrderFilter filter = _OrderFilterX.fromStatus(order.status);
     final ({String? label, _OrderTagStyle? style}) tag = _buildTag(order);
-    final ({
-      String? label,
-      String? value,
-      _OrderProgressStyle? style,
-    }) progress = _buildProgress(order);
+    final ({String? label, String? value, _OrderProgressStyle? style})
+    progress = _buildProgress(order);
 
     return _OrderItem(
       orderId: order.orderId,
@@ -491,11 +489,8 @@ class _OrderItem {
     );
   }
 
-  static ({
-    String? label,
-    String? value,
-    _OrderProgressStyle? style,
-  }) _buildProgress(VisaOrderVO order) {
+  static ({String? label, String? value, _OrderProgressStyle? style})
+  _buildProgress(VisaOrderVO order) {
     final String normalizedStatus = order.status.trim().toLowerCase();
     if (normalizedStatus == 'rejected') {
       final String rejectReason = (order.rejectReason ?? '').trim();
@@ -858,7 +853,8 @@ class _OrderCard extends StatelessWidget {
                     _OrderProgressCard(
                       label: order.progressLabel,
                       value: order.progressValue!,
-                      style: order.progressStyle ?? _OrderProgressStyle.standard,
+                      style:
+                          order.progressStyle ?? _OrderProgressStyle.standard,
                     ),
                   ],
                   const Spacer(),
