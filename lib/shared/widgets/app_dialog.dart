@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -40,12 +42,26 @@ Future<T?> showAppDialog<T>({
           Animation<double> animation,
           Animation<double> secondaryAnimation,
         ) {
+          final double bottomInset = MediaQuery.viewInsetsOf(
+            dialogContext,
+          ).bottom;
           return themes.wrap(
-            SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Builder(builder: builder),
+            AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.fromLTRB(20, 20, 20, min(80, bottomInset)),
+              child: SafeArea(
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Center(child: Builder(builder: builder)),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
