@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 Future<JobDetailVO?> showInviteJobPickerSheet(BuildContext context) {
   return showModalBottomSheet<JobDetailVO>(
     context: context,
@@ -125,7 +126,7 @@ class _InviteJobPickerSheetState extends ConsumerState<_InviteJobPickerSheet> {
       return Center(
         child: Text(
           '招聘.暂无发布岗位'.tr(),
-          style: const TextStyle(color: Color(0xFF8C8C8C)),
+          style: TestStyle.pingFangRegular(color: Color(0xFF8C8C8C)),
         ),
       );
     }

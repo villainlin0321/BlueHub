@@ -161,9 +161,7 @@ class LoginPhoneView extends StatelessWidget {
                                 TextSpan(
                                   text:
                                       '${'认证.用户服务协议'.tr()}${'认证.用户隐私政策'.tr()}',
-                                  style: const TextStyle(
-                                    color: AppColors.brand,
-                                  ),
+                                  style: TestStyle.pingFangRegular(color: AppColors.brand),
                                 ),
                               ],
                             ),

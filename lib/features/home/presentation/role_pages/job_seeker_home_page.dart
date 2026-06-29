@@ -732,10 +732,7 @@ class _VisaMiniCard extends StatelessWidget {
                     alignment: Alignment.topRight,
                     child: RichText(
                       text: TextSpan(
-                        style: const TextStyle(
-                          color: Color(0xFFFE5815),
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TestStyle.medium(color: Color(0xFFFE5815)),
                         children: <InlineSpan>[
                           TextSpan(
                             text: data.pricePrefix,

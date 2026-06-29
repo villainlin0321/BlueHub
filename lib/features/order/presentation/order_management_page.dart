@@ -702,10 +702,7 @@ class _OrderCard extends StatelessWidget {
                           TextSpan(text: '订单.订单号'.tr()),
                           TextSpan(
                             text: order.orderNo,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontFamily: TestStyle.sfUiTextFamily,
-                            ),
+                            style: TestStyle.regular(color: Color(0xFF8C8C8C)),
                           ),
                         ],
                       ),

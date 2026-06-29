@@ -7,6 +7,7 @@ const Set<String> _supportedKeys = <String>{
   'fontSize',
   'color',
   'fontWeight',
+  'fontFamily',
   'letterSpacing',
   'decoration',
   'fontStyle',
@@ -27,21 +28,14 @@ void main(List<String> args) {
   final bool reportOnly = !apply || args.contains('--report');
   final String scope = _readOption(args, '--scope') ?? 'lib';
   final Directory root = Directory.current;
-  final Directory scopeDir = Directory(_normalizeScope(root, scope));
+  final String scopePath = _normalizeScope(root, scope);
+  final List<File> files = _resolveScopeFiles(scopePath);
 
-  if (!scopeDir.existsSync()) {
-    stderr.writeln('Scope not found: ${scopeDir.path}');
+  if (files.isEmpty) {
+    stderr.writeln('Scope not found or empty: $scopePath');
     exitCode = 2;
     return;
   }
-
-  final List<File> files =
-      scopeDir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((File file) => file.path.endsWith('.dart'))
-          .toList()
-        ..sort((File a, File b) => a.path.compareTo(b.path));
 
   final List<FileReport> reports = <FileReport>[];
   int scannedCount = 0;
@@ -88,8 +82,29 @@ void main(List<String> args) {
 
   stdout.writeln(
     'Done. files=${reports.length}, scanned=$scannedCount, replaced=$replacedCount, '
-    'mode=${apply ? 'apply' : 'report'}, scope=${scopeDir.path}',
+    'mode=${apply ? 'apply' : 'report'}, scope=$scopePath',
   );
+}
+
+List<File> _resolveScopeFiles(String scopePath) {
+  final File file = File(scopePath);
+  if (file.existsSync()) {
+    return file.path.endsWith('.dart') ? <File>[file] : <File>[];
+  }
+
+  final Directory directory = Directory(scopePath);
+  if (!directory.existsSync()) {
+    return <File>[];
+  }
+
+  final List<File> files =
+      directory
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((File candidate) => candidate.path.endsWith('.dart'))
+          .toList()
+        ..sort((File a, File b) => a.path.compareTo(b.path));
+  return files;
 }
 
 String _normalizeScope(Directory root, String scope) {
@@ -264,10 +279,7 @@ StyleAnalysis _analyzeOccurrence(String content, _StyleOccurrence occurrence) {
   final String body = snippet.substring(bodyStart + 1, snippet.length - 1);
   final Map<String, String> properties = _parseProperties(body);
 
-  if (properties.isEmpty || properties.containsKey('fontFamily')) {
-    return StyleAnalysis(properties: properties);
-  }
-  if (!properties.containsKey('fontSize')) {
+  if (properties.isEmpty) {
     return StyleAnalysis(properties: properties);
   }
   if (properties.keys.any((String key) => !_supportedKeys.contains(key))) {
@@ -284,7 +296,11 @@ StyleAnalysis _analyzeOccurrence(String content, _StyleOccurrence occurrence) {
     return StyleAnalysis(properties: properties);
   }
 
-  final List<String> args = <String>['fontSize: ${properties['fontSize']}'];
+  final List<String> args = <String>[];
+  final String? fontSize = properties['fontSize'];
+  if (fontSize != null) {
+    args.add('fontSize: $fontSize');
+  }
   const List<String> orderedKeys = <String>[
     'color',
     'letterSpacing',
@@ -430,9 +446,17 @@ int _indexOfTopLevelColon(String value) {
 }
 
 String? _selectFactory(Map<String, String> properties, String context) {
+  final String? fontFamily = _normalizeFontFamily(properties['fontFamily']);
   final String? fontWeight = properties['fontWeight'];
   final bool hasChineseContext = _chinesePattern.hasMatch(context);
   final bool hasNumericContext = _numberContextPattern.hasMatch(context);
+  final String? explicitFamilyFactory = _selectFactoryByFamily(
+    fontFamily: fontFamily,
+    fontWeight: fontWeight,
+  );
+  if (explicitFamilyFactory != null) {
+    return explicitFamilyFactory;
+  }
 
   if (fontWeight == null) {
     return hasChineseContext ? 'pingFangRegular' : 'regular';
@@ -462,6 +486,84 @@ String? _selectFactory(Map<String, String> properties, String context) {
     return hasChineseContext ? 'pingFangMedium' : 'medium';
   }
   return hasChineseContext ? 'pingFangRegular' : 'regular';
+}
+
+String? _normalizeFontFamily(String? fontFamily) {
+  if (fontFamily == null) {
+    return null;
+  }
+
+  final String normalized = fontFamily
+      .replaceAll("'", '')
+      .replaceAll('"', '')
+      .trim();
+  switch (normalized) {
+    case 'SF UI Text':
+    case 'SFUIText':
+    case 'TestStyle.sfUiTextFamily':
+      return TestStyleFamily.sfUiText;
+    case 'PingFang':
+    case 'TestStyle.pingFangFamily':
+      return TestStyleFamily.pingFang;
+    case 'MiSansLatinVF':
+    case 'TestStyle.miSansLatinFamily':
+      return TestStyleFamily.miSansLatin;
+    case 'AlibabaPuHuiTi':
+    case 'TestStyle.alibabaPuHuiTiFamily':
+      return TestStyleFamily.alibabaPuHuiTi;
+  }
+  return null;
+}
+
+String? _selectFactoryByFamily({
+  required String? fontFamily,
+  required String? fontWeight,
+}) {
+  if (fontFamily == null) {
+    return null;
+  }
+
+  final int weight = _resolveWeight(fontWeight);
+  switch (fontFamily) {
+    case TestStyleFamily.sfUiText:
+      if (weight >= 700) {
+        return 'bold';
+      }
+      if (weight >= 600) {
+        return 'semibold';
+      }
+      if (weight >= 500) {
+        return 'medium';
+      }
+      return 'regular';
+    case TestStyleFamily.pingFang:
+      if (weight >= 600) {
+        return 'pingFangSemibold';
+      }
+      if (weight >= 500) {
+        return 'pingFangMedium';
+      }
+      return 'pingFangRegular';
+    case TestStyleFamily.miSansLatin:
+      return weight >= 700 ? 'numberBold' : 'numberRegular';
+    case TestStyleFamily.alibabaPuHuiTi:
+      return 'bannerBold';
+  }
+  return null;
+}
+
+int _resolveWeight(String? fontWeight) {
+  if (fontWeight == null) {
+    return 400;
+  }
+
+  final Match? match = _weightPattern.firstMatch(fontWeight);
+  if (match == null) {
+    return 400;
+  }
+
+  final String token = match.group(1)!;
+  return token == 'bold' ? 700 : int.parse(token.substring(1));
 }
 
 String _contextWindow(String content, int start, int end) {
@@ -553,4 +655,13 @@ class _StyleOccurrence {
   final int fullStart;
   final int start;
   final int end;
+}
+
+class TestStyleFamily {
+  const TestStyleFamily._();
+
+  static const String sfUiText = 'sf_ui_text';
+  static const String pingFang = 'ping_fang';
+  static const String miSansLatin = 'mi_sans_latin';
+  static const String alibabaPuHuiTi = 'alibaba_puhuiti';
 }

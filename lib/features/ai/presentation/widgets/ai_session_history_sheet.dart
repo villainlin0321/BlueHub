@@ -234,7 +234,7 @@ class _AiSessionHistorySheetState
       return Center(
         child: Text(
           'AI.暂无历史记录'.tr(),
-          style: const TextStyle(color: Color(0xFF8C8C8C)),
+          style: TestStyle.pingFangRegular(color: Color(0xFF8C8C8C)),
         ),
       );
     }

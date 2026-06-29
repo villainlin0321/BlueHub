@@ -10,7 +10,7 @@ class TestStyle {
   static const String alibabaPuHuiTiFamily = 'AlibabaPuHuiTi';
 
   static TextStyle regular({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -32,7 +32,7 @@ class TestStyle {
   }
 
   static TextStyle medium({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -54,7 +54,7 @@ class TestStyle {
   }
 
   static TextStyle semibold({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -76,7 +76,7 @@ class TestStyle {
   }
 
   static TextStyle bold({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -98,7 +98,7 @@ class TestStyle {
   }
 
   static TextStyle pingFangRegular({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -120,7 +120,7 @@ class TestStyle {
   }
 
   static TextStyle pingFangMedium({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -142,7 +142,7 @@ class TestStyle {
   }
 
   static TextStyle pingFangSemibold({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -164,7 +164,7 @@ class TestStyle {
   }
 
   static TextStyle numberRegular({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -186,7 +186,7 @@ class TestStyle {
   }
 
   static TextStyle numberBold({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -208,7 +208,7 @@ class TestStyle {
   }
 
   static TextStyle bannerBold({
-    required double fontSize,
+    double? fontSize,
     Color? color,
     double? letterSpacing,
     TextDecoration? decoration,
@@ -231,7 +231,7 @@ class TestStyle {
 
   static TextStyle _style({
     required String fontFamily,
-    required double fontSize,
+    double? fontSize,
     required FontWeight fontWeight,
     Color? color,
     double? letterSpacing,
