@@ -36,6 +36,7 @@ import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import 'order_payment_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class OrderDetailPageArgs {
   const OrderDetailPageArgs({required this.orderId});
 
@@ -1777,12 +1778,7 @@ class _OrderInfoCard extends StatelessWidget {
             order.packageName.trim().isEmpty
                 ? '订单.未命名订单'.tr()
                 : order.packageName,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 20 / 14,
-              color: Color(0xFF262626),
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 12),
           _OrderInfoRow(label: '订单.服务商'.tr(), value: order.providerName),
@@ -3094,12 +3090,7 @@ class _ProviderBottomActionBar extends StatelessWidget {
                       ),
                       child: Text(
                         '订单.驳回重传'.tr(),
-                        style: TextStyle(
-                          color: Color(0xFFD9363E),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFD9363E)),
                       ),
                     ),
                   ),
@@ -3120,12 +3111,7 @@ class _ProviderBottomActionBar extends StatelessWidget {
                       ),
                       child: Text(
                         '订单.审核通过'.tr(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ),

@@ -13,6 +13,8 @@ import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 const double _kResumeCardFooterHeight = 32;
 
 /// 我的简历页。
@@ -123,10 +125,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       ),
       title: Text(
         '我的.我的简历标题'.tr(),
-        style: const TextStyle(
-          color: Color(0xE6000000),
+        style: TestStyle.pingFangSemibold(
           fontSize: 17,
-          fontWeight: FontWeight.w600,
+          color: Color(0xE6000000),
         ),
       ),
       actions: <Widget>[
@@ -143,10 +144,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
               ),
               child: Text(
                 _isManaging ? '我的.完成'.tr() : '我的.管理'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
+                style: TestStyle.pingFangRegular(
                   fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF262626),
                 ),
               ),
             ),
@@ -169,11 +169,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         children: <Widget>[
           Text(
             '我的.选择默认展示简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF262626),
             ),
           ),
           const SizedBox(height: 12),
@@ -191,11 +189,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         if (index == 0) {
           return Text(
             _isManaging ? '我的.管理我的简历'.tr() : '我的.选择默认展示简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF262626),
             ),
           );
         }
@@ -279,10 +275,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                     child: Center(
                       child: Text(
                         item.avatarFallbackText,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TestStyle.semibold(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -313,22 +308,18 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                   item.jobTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
+                  style: TestStyle.regular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 16 / 14,
+                    color: Color(0xFF262626),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 item.duration,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
+                style: TestStyle.regular(
                   fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 16 / 12,
+                  color: Color(0xFF8C8C8C),
                 ),
               ),
             ],
@@ -336,12 +327,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
           const SizedBox(height: 8),
           Text(
             item.summary,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
@@ -380,11 +366,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                                   : (resume.isDefault
                                         ? '我的.已设默认'.tr()
                                         : '我的.设为默认'.tr()),
-                              style: const TextStyle(
-                                color: Color(0xFF8C8C8C),
+                              style: TestStyle.pingFangRegular(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                height: 20 / 14,
+                                color: Color(0xFF8C8C8C),
                               ),
                             ),
                           ],
@@ -394,11 +378,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                       if (resume.isDefault) ...<Widget>[
                         Text(
                           resume.isPublic ? '我的.可见'.tr() : '我的.隐藏'.tr(),
-                          style: const TextStyle(
-                            color: Color(0xFF8C8C8C),
+                          style: TestStyle.pingFangRegular(
                             fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 20 / 14,
+                            color: Color(0xFF8C8C8C),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -454,11 +436,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                   isSettingDefault
                       ? '我的.设置中'.tr()
                       : (resume.isDefault ? '我的.已设默认'.tr() : '我的.设为默认'.tr()),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
               ],
@@ -481,11 +461,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                 const SizedBox(width: 4),
                 Text(
                   isDeleting ? '我的.删除中'.tr() : '我的.删除简历'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFFD9363E),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
+                    color: Color(0xFFD9363E),
                   ),
                 ),
               ],
@@ -503,12 +481,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       children: <Widget>[
         Text(
           item.name,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            height: 20 / 15,
-          ),
+          style: TestStyle.medium(fontSize: 15, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 4),
         Wrap(
@@ -531,26 +504,19 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   Widget _buildMetaText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF595959),
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        height: 16 / 12,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF595959)),
     );
   }
 
   /// 构建基础信息之间的分隔符。
   Widget _buildSeparator() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 6),
       child: Text(
         '|',
-        style: TextStyle(
-          color: Color(0xFFBFBFBF),
+        style: TestStyle.pingFangRegular(
           fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 16 / 12,
+          color: Color(0xFFBFBFBF),
         ),
       ),
     );
@@ -577,11 +543,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
             ),
             child: Text(
               _isCreatingResume ? '我的.创建中'.tr() : '我的.创建简历'.tr(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 16),
             ),
           ),
         ),
@@ -607,11 +569,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
           const SizedBox(height: 12),
           Text(
             '我的.暂无简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF8C8C8C),
             ),
           ),
         ],
@@ -866,11 +826,7 @@ class _ResumeErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(

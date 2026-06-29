@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'resume_time_picker_bottom_sheet.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class SelectableSheetOption<T> {
   const SelectableSheetOption({required this.value, required this.label});
 
@@ -88,12 +89,7 @@ class _SelectableOptionsBottomSheetState<T>
                       child: Center(
                         child: Text(
                           widget.title,
-                          style: const TextStyle(
-                            color: Color(0xFF171A1D),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 17,
-                          ),
+                          style: TestStyle.regular(fontSize: 17, color: Color(0xFF171A1D)),
                         ),
                       ),
                     ),
@@ -113,12 +109,7 @@ class _SelectableOptionsBottomSheetState<T>
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
                           '通用.确定'.tr(),
-                          style: TextStyle(
-                            color: Color(0xFF096DD9),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 16,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF096DD9)),
                         ),
                       ),
                     ),
@@ -208,12 +199,7 @@ class _SelectableOptionTile extends StatelessWidget {
             const SizedBox(width: 11),
             Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
             ),
           ],
         ),

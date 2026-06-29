@@ -16,6 +16,7 @@ import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
 import '../country_options_bottom_sheet.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
@@ -321,21 +322,14 @@ class _CompanyInfo extends StatelessWidget {
           companyName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.semibold(fontSize: 17, color: Colors.white),
         ),
         const SizedBox(height: 6),
         Row(
           children: <Widget>[
             Text(
               industry,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-              ),
+              style: TestStyle.regular(fontSize: 11, color: Colors.white),
             ),
             if (location.isNotEmpty) ...<Widget>[
               const SizedBox(width: 8),
@@ -343,10 +337,7 @@ class _CompanyInfo extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 location,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                ),
+                style: TestStyle.regular(fontSize: 11, color: Colors.white),
               ),
             ],
           ],
@@ -401,11 +392,7 @@ class _CompanyBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '通用.企业简称'.tr(),
-        style: TextStyle(
-          color: Color(0xFF784301),
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
       ),
     );
   }
@@ -475,19 +462,12 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
         ),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -553,10 +533,7 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(

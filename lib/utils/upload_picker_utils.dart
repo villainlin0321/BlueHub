@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'permission_utils.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 enum UploadSourceType { camera, gallery, file }
 
 enum UploadItemState { uploading, success, failure }
@@ -299,12 +300,7 @@ class _UploadImageSourceBottomSheet extends StatelessWidget {
                     child: Center(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          color: Color(0xFF171A1D),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w400,
-                          height: 25 / 17,
-                        ),
+                        style: TestStyle.regular(fontSize: 17, color: Color(0xFF171A1D)),
                       ),
                     ),
                   ),
@@ -347,12 +343,7 @@ class _BottomSheetActionItem extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF171A1D),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            height: 22 / 16,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
         ),
       ),
     );

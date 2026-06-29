@@ -13,6 +13,7 @@ import 'job_apply_helper.dart';
 import 'job_detail_page.dart';
 import 'widgets/job_search_page_view.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class JobSearchPage extends ConsumerStatefulWidget {
   const JobSearchPage({super.key});
 
@@ -200,12 +201,7 @@ class _JobSearchPageState extends ConsumerState<JobSearchPage> {
               ),
               child: Text(
                 '通用.搜索'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF096DD9),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  height: 21 / 15,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF096DD9)),
               ),
             ),
           ),
@@ -268,22 +264,12 @@ class _SearchAppBarField extends StatelessWidget {
               autofocus: true,
               textInputAction: TextInputAction.search,
               cursorColor: const Color(0xFF096DD9),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 hintText: '招聘.搜索岗位占位'.tr(),
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBFBFBF),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                hintStyle: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
               ),
               onSubmitted: onSubmitted,
             ),

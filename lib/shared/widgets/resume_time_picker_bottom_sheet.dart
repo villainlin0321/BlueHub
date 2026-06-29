@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 enum ResumeTimePickerType { period, singleMonth }
 
 Future<T?> showResumeBottomSheet<T>({
@@ -264,11 +266,9 @@ class _ResumeTimePickerBottomSheetState
                       child: Center(
                         child: Text(
                           widget.title,
-                          style: const TextStyle(
-                            color: Color(0xFF171A1D),
+                          style: TestStyle.regular(
                             fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 17,
+                            color: Color(0xFF171A1D),
                           ),
                         ),
                       ),
@@ -280,11 +280,9 @@ class _ResumeTimePickerBottomSheetState
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
                           '通用.确定'.tr(),
-                          style: TextStyle(
-                            color: Color(0xFF096DD9),
+                          style: TestStyle.pingFangRegular(
                             fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 16,
+                            color: Color(0xFF096DD9),
                           ),
                         ),
                       ),
@@ -421,17 +419,12 @@ class _ResumeTimePickerBottomSheetState
             },
           ),
         ),
-        const SizedBox(
+        SizedBox(
           width: 16,
           child: Center(
             child: Text(
               '-',
-              style: TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 17,
-                fontWeight: FontWeight.w400,
-                height: 22 / 17,
-              ),
+              style: TestStyle.regular(fontSize: 17, color: Color(0xFF8C8C8C)),
             ),
           ),
         ),
@@ -515,25 +508,19 @@ class _PickerWheel<T> extends StatelessWidget {
           final int distance = (index - selectedIndex).abs();
           final TextStyle textStyle;
           if (distance == 0) {
-            textStyle = const TextStyle(
-              color: Color(0xFF171A1D),
+            textStyle = TestStyle.medium(
               fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 22 / 17,
+              color: Color(0xFF171A1D),
             );
           } else if (distance == 1) {
-            textStyle = const TextStyle(
-              color: Color(0x99171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 17,
-              fontWeight: FontWeight.w400,
-              height: 22 / 17,
+              color: Color(0x99171A1D),
             );
           } else {
-            textStyle = const TextStyle(
-              color: Color(0x66171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
+              color: Color(0x66171A1D),
             );
           }
           return Center(

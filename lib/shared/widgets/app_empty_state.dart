@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 全局通用空态，统一插画与文案排版，外层容器由页面自行决定。
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
@@ -41,12 +42,7 @@ class AppEmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
           style:
               textStyle ??
-              const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-                fontWeight: FontWeight.w400,
-              ),
+              TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
         ),
       ],
     );

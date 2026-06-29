@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 const double _kAppDialogMaxWidth = 276;
 const double _kAppDialogRadius = 8;
 const double _kAppDialogActionRadius = 6;
@@ -215,23 +216,14 @@ class AppDialog extends StatelessWidget {
               Text(
                 title,
                 textAlign: titleTextAlign,
-                style: const TextStyle(
-                  color: _kAppDialogTitleColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.medium(fontSize: 16, color: _kAppDialogTitleColor),
               ),
               if (message != null) ...<Widget>[
                 const SizedBox(height: 8),
                 Text(
                   message!,
                   textAlign: messageTextAlign,
-                  style: const TextStyle(
-                    color: _kAppDialogMessageColor,
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: _kAppDialogMessageColor),
                 ),
               ],
               if (content != null) ...<Widget>[
@@ -299,12 +291,7 @@ class _AppDialogActionButton extends StatelessWidget {
           child: Center(
             child: Text(
               action.label,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: textColor),
             ),
           ),
         ),

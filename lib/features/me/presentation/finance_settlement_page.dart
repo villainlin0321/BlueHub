@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceSettlementPage extends ConsumerStatefulWidget {
   const FinanceSettlementPage({super.key});
 
@@ -219,11 +220,7 @@ class _FinanceSettlementPageState extends ConsumerState<FinanceSettlementPage> {
         ),
         title: Text(
           '财务.财务结算'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: _buildBody(),
@@ -323,22 +320,13 @@ class _FinanceBalanceCard extends StatelessWidget {
                       opacity: 0.8,
                       child: Text(
                         '财务.可提现余额元'.tr(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          height: 16 / 12,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 12, color: Colors.white),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       availableAmount,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        height: 31 / 22,
-                      ),
+                      style: TestStyle.semibold(fontSize: 22, color: Colors.white),
                     ),
                   ],
                 ),
@@ -357,11 +345,7 @@ class _FinanceBalanceCard extends StatelessWidget {
                 ),
                 child: Text(
                   '财务.提现'.tr(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14),
                 ),
               ),
             ],
@@ -405,22 +389,13 @@ class _BalanceValueBlock extends StatelessWidget {
           opacity: 0.8,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              height: 16 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Colors.white),
           ),
         ),
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            height: 20 / 14,
-          ),
+          style: TestStyle.semibold(fontSize: 14, color: Colors.white),
         ),
       ],
     );
@@ -480,11 +455,7 @@ class _FinanceMenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(
@@ -521,12 +492,7 @@ class _TransactionCard extends StatelessWidget {
         children: <Widget>[
           Text(
             '财务.最近交易'.tr(),
-            style: TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 24 / 16,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 8),
           if (items.isEmpty)
@@ -579,11 +545,7 @@ class _TransactionTile extends StatelessWidget {
                   _buildTransactionTitle(item),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -594,11 +556,7 @@ class _TransactionTile extends StatelessWidget {
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    height: 16 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                 ),
               ],
             ),
@@ -609,23 +567,14 @@ class _TransactionTile extends StatelessWidget {
             children: <Widget>[
               Text(
                 _formatAmount(item.netAmount, item.currency),
-                style: TextStyle(
-                  color: isRefund
+                style: TestStyle.medium(fontSize: 14, color: isRefund
                       ? const Color(0xFFFF4D4F)
-                      : const Color(0xFFFE5815),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 14,
-                ),
+                      : const Color(0xFFFE5815)),
               ),
               const SizedBox(height: 4),
               Text(
                 _formatCompactDateTime(item.settledAt),
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 12,
-                  height: 16 / 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
               ),
             ],
           ),
@@ -652,11 +601,7 @@ class _FinanceStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -707,12 +652,7 @@ class _FinanceSheetScaffold extends StatelessWidget {
                       Align(
                         child: Text(
                           title,
-                          style: const TextStyle(
-                            color: Color(0xFF262626),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            height: 24 / 16,
-                          ),
+                          style: TestStyle.semibold(fontSize: 16, color: Color(0xFF262626)),
                         ),
                       ),
                       Positioned(
@@ -881,11 +821,7 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
             contentPadding: EdgeInsets.zero,
             title: Text(
               '财务.设为默认提现卡'.tr(),
-              style: TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
             ),
             onChanged: (bool value) {
               setState(() => _isDefault = value);
@@ -896,11 +832,7 @@ class _AddBankCardSheetState extends State<_AddBankCardSheet> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(
-                  color: Color(0xFFFF4D4F),
-                  fontSize: 12,
-                  height: 18 / 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: Color(0xFFFF4D4F)),
               ),
             ),
         ],
@@ -1039,12 +971,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                         ),
                       },
                     ),
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1087,11 +1014,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       _errorMessage!,
-                      style: const TextStyle(
-                        color: Color(0xFFFF4D4F),
-                        fontSize: 12,
-                        height: 18 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: Color(0xFFFF4D4F)),
                     ),
                   ),
               ],

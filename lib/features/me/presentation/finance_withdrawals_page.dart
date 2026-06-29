@@ -8,6 +8,7 @@ import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 import 'finance_page_shared.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceWithdrawalsPage extends ConsumerStatefulWidget {
   const FinanceWithdrawalsPage({super.key});
 
@@ -117,11 +118,7 @@ class _FinanceWithdrawalsPageState
         centerTitle: true,
         title: Text(
           '财务.提现记录'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: _buildBody(),
@@ -189,11 +186,7 @@ class _LoadMoreFooter extends StatelessWidget {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
       ),
     );

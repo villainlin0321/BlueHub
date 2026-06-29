@@ -26,6 +26,8 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -250,22 +252,13 @@ class _HeroStatItem extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 24 / 18,
-          ),
+          style: TestStyle.semibold(fontSize: 18, color: Colors.white),
         ),
         const SizedBox(height: 4),
         Text(
           labelKey.tr(namedArgs: labelNamedArgs),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            height: 16 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Colors.white),
         ),
       ],
     );
@@ -323,11 +316,9 @@ class _ProviderInfoRow extends ConsumerWidget {
                       displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TestStyle.semibold(
                         fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        height: 24 / 17,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -341,10 +332,9 @@ class _ProviderInfoRow extends ConsumerWidget {
               if (providerSummary.isNotEmpty)
                 Text(
                   providerSummary,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                  style: TestStyle.regular(
                     fontSize: 11,
-                    height: 14 / 11,
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
             ],
@@ -388,23 +378,19 @@ class _CertificationBadge extends StatelessWidget {
             top: 2,
             child: Row(
               children: <Widget>[
-                const Text(
+                Text(
                   'V',
-                  style: TextStyle(
-                    color: Color(0xFF784301),
+                  style: TestStyle.pingFangSemibold(
                     fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 10 / 10,
+                    color: Color(0xFF784301),
                   ),
                 ),
                 SizedBox(width: 1),
                 Text(
                   '我的.认证'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFF784301),
+                  style: TestStyle.pingFangSemibold(
                     fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    height: 10 / 9,
+                    color: Color(0xFF784301),
                   ),
                 ),
               ],
@@ -470,10 +456,9 @@ class _QuickActionButton extends StatelessWidget {
               Text(
                 item.labelKey.tr(),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF171A1D),
+                style: TestStyle.regular(
                   fontSize: 12,
-                  height: 18 / 12,
+                  color: Color(0xFF171A1D),
                 ),
               ),
             ],
@@ -520,10 +505,9 @@ class _AiAssistantBanner extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           '招聘.AI业务助手'.tr(),
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangRegular(
                             fontSize: 15,
-                            height: 22 / 15,
+                            color: Colors.white,
                           ),
                         ),
                         SizedBox(height: 2),
@@ -531,10 +515,9 @@ class _AiAssistantBanner extends StatelessWidget {
                           '首页.德国工签人才提示'.tr(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangRegular(
                             fontSize: 12,
-                            height: 16 / 12,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -553,10 +536,9 @@ class _AiAssistantBanner extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           '招聘.查看'.tr(),
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangMedium(
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 2),
@@ -592,11 +574,9 @@ class _OrdersSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             '我的.待处理订单'.tr(),
-            style: TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangMedium(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
+              color: Color(0xFF262626),
             ),
           ),
         ),
@@ -631,11 +611,7 @@ class _OrdersSectionAllText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       '订单.全部'.tr(),
-      style: const TextStyle(
-        color: Color(0xFF8C8C8C),
-        fontSize: 14,
-        height: 20 / 14,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
     );
   }
 }
@@ -672,11 +648,9 @@ class _PendingOrderCard extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         item.customerName,
-                        style: const TextStyle(
-                          color: Color(0xFF262626),
+                        style: TestStyle.medium(
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 24 / 16,
+                          color: Color(0xFF262626),
                         ),
                       ),
                       _OutlineTag(label: item.serviceTag),
@@ -692,10 +666,9 @@ class _PendingOrderCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.updateText,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.regular(
                     fontSize: 12,
-                    height: 16 / 12,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -704,10 +677,9 @@ class _PendingOrderCard extends StatelessWidget {
                     item.materialsText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
+                    style: TestStyle.regular(
                       fontSize: 12,
-                      height: 16 / 12,
+                      color: Color(0xFF8C8C8C),
                     ),
                   ),
                 ),
@@ -718,11 +690,9 @@ class _PendingOrderCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.priceText,
-                  style: const TextStyle(
-                    color: Color(0xFFFE5815),
+                  style: TestStyle.pingFangMedium(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 16,
+                    color: Color(0xFFFE5815),
                   ),
                 ),
                 const Spacer(),
@@ -858,11 +828,7 @@ class _PendingOrdersStateView extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
           ),
           if (buttonLabel != null && onTap != null) ...<Widget>[
             const SizedBox(height: 12),
@@ -895,11 +861,7 @@ class _OutlineTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 10,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF546D96)),
       ),
     );
   }
@@ -920,11 +882,7 @@ class _StatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFFF4D4F),
-          fontSize: 11,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: Color(0xFFFF4D4F)),
       ),
     );
   }
@@ -953,10 +911,9 @@ class _GhostActionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.regular(
               fontSize: 12,
-              height: 12 / 12,
+              color: Color(0xFF262626),
               letterSpacing: 0.2,
             ),
           ),
@@ -989,10 +946,9 @@ class _PrimaryActionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TestStyle.regular(
               fontSize: 12,
-              height: 12 / 12,
+              color: Colors.white,
               letterSpacing: 0.2,
             ),
           ),

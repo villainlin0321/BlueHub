@@ -17,6 +17,7 @@ import 'company_my_info_styles.dart';
 import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _companyMyInfoProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
@@ -479,11 +480,7 @@ class _CompanyMyInfoErrorView extends StatelessWidget {
           children: <Widget>[
             Text(
               message,
-              style: TextStyle(
-                color: CompanyMyInfoStyles.secondaryText,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: CompanyMyInfoStyles.secondaryText),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('我的.重试'.tr())),

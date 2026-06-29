@@ -16,6 +16,8 @@ import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class QualificationCertificationPage extends ConsumerStatefulWidget {
   const QualificationCertificationPage({super.key, required this.args});
 
@@ -321,11 +323,9 @@ class _QualificationCertificationPageState
         ),
         title: Text(
           '认证流程.资质认证'.tr(),
-          style: const TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -340,10 +340,9 @@ class _QualificationCertificationPageState
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   '认证流程.实名认证提示'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
               ),
@@ -422,11 +421,9 @@ class _QualificationCertificationPageState
               ),
               child: Text(
                 '认证流程.下一步'.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TestStyle.pingFangMedium(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -698,23 +695,13 @@ class _SectionLabel extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 20 / 14,
-          ),
+          style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
         ),
         if (required) ...<Widget>[
           const SizedBox(width: 4),
-          const Text(
+          Text(
             '*',
-            style: TextStyle(
-              color: Color(0xFFFF4D4F),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFFFF4D4F)),
           ),
         ],
       ],
@@ -755,17 +742,12 @@ class _QualificationTextField extends StatelessWidget {
               controller: controller,
               keyboardType: keyboardType,
               textAlignVertical: TextAlignVertical.center,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBFBFBF),
+                hintStyle: TestStyle.regular(
                   fontSize: 14,
-                  height: 20 / 14,
+                  color: Color(0xFFBFBFBF),
                 ),
                 border: InputBorder.none,
                 isCollapsed: true,
@@ -823,13 +805,11 @@ class _QualificationSelectorField extends StatelessWidget {
                 Expanded(
                   child: Text(
                     hasValue ? value! : hintText,
-                    style: TextStyle(
+                    style: TestStyle.regular(
+                      fontSize: 14,
                       color: hasValue
                           ? const Color(0xFF262626)
                           : const Color(0xFFBFBFBF),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
                     ),
                   ),
                 ),
@@ -904,11 +884,7 @@ class _UploadCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626)),
           ),
         ],
       ),

@@ -21,6 +21,7 @@ import '../../me/data/user_models.dart';
 import '../../me/data/user_providers.dart';
 import 'current_user_view_data.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 我的信息页：展示当前登录用户的基础资料，并支持基础信息编辑。
 class MyInfoPage extends ConsumerStatefulWidget {
   const MyInfoPage({super.key});
@@ -432,12 +433,7 @@ class _MyInfoHeader extends StatelessWidget {
           ),
           Text(
             '我的.我的信息'.tr(),
-            style: TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
           ),
         ],
       ),
@@ -471,11 +467,7 @@ class _InfoAvatarRow extends StatelessWidget {
           children: <Widget>[
             Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
             const Spacer(),
             _MyInfoAvatar(
@@ -524,20 +516,12 @@ class _InfoValueRow extends StatelessWidget {
           children: <Widget>[
             Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
             const Spacer(),
             Text(
               value,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
             ),
             trailing,
           ],
@@ -628,12 +612,7 @@ class _ImageSourceBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '我的.选择头像'.tr(),
-              style: TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
             ),
             const SizedBox(height: 12),
             _BottomSheetActionTile(label: '我的.拍照'.tr(), onTap: onCameraTap),
@@ -664,11 +643,7 @@ class _BottomSheetActionTile extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
           ),
         ),
       ),
@@ -728,11 +703,7 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
         children: <Widget>[
           Text(
             '我的.请输入新的手机号'.tr(),
-            style: TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -755,11 +726,7 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
             onSubmitted: (_) => _handleConfirm(),
             decoration: InputDecoration(
               hintText: '通用.请输入手机号'.tr(),
-              hintStyle: const TextStyle(
-                color: Color(0xFFBFBFBF),
-                fontSize: 15,
-                height: 22 / 15,
-              ),
+              hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFFBFBFBF)),
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
               errorText: _errorText,

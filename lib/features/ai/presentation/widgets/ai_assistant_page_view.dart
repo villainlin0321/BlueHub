@@ -13,6 +13,7 @@ import '../../../../shared/widgets/tag_chip.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../application/ai_assistant/ai_assistant_state.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AiAssistantPageView extends StatelessWidget {
   const AiAssistantPageView({
     super.key,
@@ -711,17 +712,9 @@ class _Composer extends StatelessWidget {
                                 border: InputBorder.none,
                               ).copyWith(
                                 hintText: '消息.发消息'.tr(),
-                                hintStyle: const TextStyle(
-                                  color: AiAssistantPageView._subtleTextColor,
-                                  fontSize: 15,
-                                  height: 22 / 15,
-                                ),
+                                hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: AiAssistantPageView._subtleTextColor),
                               ),
-                          style: const TextStyle(
-                            color: AiAssistantPageView._titleColor,
-                            fontSize: 15,
-                            height: 22 / 15,
-                          ),
+                          style: TestStyle.regular(fontSize: 15, color: AiAssistantPageView._titleColor),
                         ),
                 ),
                 const SizedBox(width: 12),
@@ -813,12 +806,7 @@ class _VoiceRecordButton extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            color: foregroundColor,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            height: 22 / 15,
-          ),
+          style: TestStyle.medium(fontSize: 15, color: foregroundColor),
         ),
       ),
     );

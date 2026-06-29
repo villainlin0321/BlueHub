@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 发布岗位页样式常量，尽量对齐 Figma 导出值。
 class PostJobPageStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);
@@ -28,66 +29,21 @@ class PostJobPageStyles {
     BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
   ];
 
-  static const TextStyle navTitle = TextStyle(
-    color: Color(0xE6000000),
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-    height: 24 / 17,
-  );
+  static final TextStyle navTitle = TestStyle.medium(fontSize: 17, color: Color(0xE6000000));
 
-  static const TextStyle navAction = TextStyle(
-    color: titleText,
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    height: 21 / 15,
-  );
+  static final TextStyle navAction = TestStyle.regular(fontSize: 15, color: titleText);
 
-  static const TextStyle sectionTitle = TextStyle(
-    color: titleText,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 24 / 16,
-  );
+  static final TextStyle sectionTitle = TestStyle.medium(fontSize: 16, color: titleText);
 
-  static const TextStyle fieldLabel = TextStyle(
-    color: titleText,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 20 / 14,
-  );
+  static final TextStyle fieldLabel = TestStyle.regular(fontSize: 14, color: titleText);
 
-  static const TextStyle optionText = TextStyle(
-    color: bodyText,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 20 / 14,
-  );
+  static final TextStyle optionText = TestStyle.regular(fontSize: 14, color: bodyText);
 
-  static const TextStyle placeholder = TextStyle(
-    color: placeholderText,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 20 / 14,
-  );
+  static final TextStyle placeholder = TestStyle.regular(fontSize: 14, color: placeholderText);
 
-  static const TextStyle optional = TextStyle(
-    color: secondaryText,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 20 / 14,
-  );
+  static final TextStyle optional = TestStyle.regular(fontSize: 14, color: secondaryText);
 
-  static const TextStyle buttonText = TextStyle(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 22 / 16,
-  );
+  static final TextStyle buttonText = TestStyle.medium(fontSize: 16, color: Colors.white);
 
-  static const TextStyle counter = TextStyle(
-    color: placeholderText,
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    height: 18 / 12,
-  );
+  static final TextStyle counter = TestStyle.regular(fontSize: 12, color: placeholderText);
 }

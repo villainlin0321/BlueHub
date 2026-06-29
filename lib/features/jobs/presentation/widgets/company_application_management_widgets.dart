@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_application_management_styles.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class CompanyApplicationCardData {
   const CompanyApplicationCardData({
     required this.positionTitle,
@@ -62,12 +63,7 @@ class CompanyApplicationTopBar extends StatelessWidget {
               child: Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  height: 24 / 17,
-                ),
+                style: TestStyle.semibold(fontSize: 17, color: Colors.black),
               ),
             ),
             _TopBarIconButton(
@@ -107,16 +103,8 @@ class CompanyApplicationTabBar extends StatelessWidget {
             .toList(growable: false),
         labelColor: CompanyApplicationManagementStyles.primary,
         unselectedLabelColor: CompanyApplicationManagementStyles.textPrimary,
-        labelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          height: 22 / 14,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 22 / 14,
-        ),
+        labelStyle: TestStyle.medium(fontSize: 14),
+        unselectedLabelStyle: TestStyle.regular(fontSize: 14),
         indicatorSize: TabBarIndicatorSize.label,
         indicatorColor: CompanyApplicationManagementStyles.primary,
         indicatorWeight: 2,
@@ -158,11 +146,7 @@ class CompanyApplicationJobFilterBar extends StatelessWidget {
               children: <Widget>[
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Color(0xFF171A1D),
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF171A1D)),
                 ),
                 const SizedBox(width: 4),
                 SvgPicture.asset(
@@ -271,11 +255,7 @@ class _CardTopRow extends StatelessWidget {
               children: <InlineSpan>[
                 TextSpan(
                   text: '招聘.投递岗位'.tr(namedArgs: {'title': data.positionTitle}),
-                  style: const TextStyle(
-                    color: CompanyApplicationManagementStyles.textPrimary,
-                    fontSize: 14,
-                    height: 16 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: CompanyApplicationManagementStyles.textPrimary),
                 ),
               ],
             ),
@@ -290,23 +270,14 @@ class _CardTopRow extends StatelessWidget {
           children: <Widget>[
             Text(
               data.matchText,
-              style: const TextStyle(
-                color: CompanyApplicationManagementStyles.primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 21 / 16,
-              ),
+              style: TestStyle.medium(fontSize: 16, color: CompanyApplicationManagementStyles.primary),
             ),
             const SizedBox(width: 2),
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
                 '招聘.匹配度'.tr(),
-                style: const TextStyle(
-                  color: CompanyApplicationManagementStyles.primary,
-                  fontSize: 10,
-                  height: 14 / 10,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 10, color: CompanyApplicationManagementStyles.primary),
               ),
             ),
           ],
@@ -344,12 +315,7 @@ class _CandidateInfoSection extends StatelessWidget {
                       data.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: CompanyApplicationManagementStyles.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 24 / 16,
-                      ),
+                      style: TestStyle.medium(fontSize: 16, color: CompanyApplicationManagementStyles.textPrimary),
                     ),
                   ),
                   if (data.ageGender.isNotEmpty) ...<Widget>[
@@ -359,12 +325,7 @@ class _CandidateInfoSection extends StatelessWidget {
                         data.ageGender,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color:
-                              CompanyApplicationManagementStyles.textSecondary,
-                          fontSize: 12,
-                          height: 18 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: CompanyApplicationManagementStyles.textSecondary),
                       ),
                     ),
                   ],
@@ -423,10 +384,7 @@ class _CardFooter extends StatelessWidget {
           data.submittedText,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: CompanyApplicationManagementStyles.textSecondary,
-            fontSize: 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: CompanyApplicationManagementStyles.textSecondary),
         ),
         const SizedBox(width: 8),
         actions,
@@ -456,11 +414,7 @@ class CompanyApplicationTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: CompanyApplicationManagementStyles.tagText,
-          fontSize: 11,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: CompanyApplicationManagementStyles.tagText),
       ),
     );
   }
@@ -524,13 +478,7 @@ class CompanyApplicationActionButton extends StatelessWidget {
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 12 / 12,
-                  letterSpacing: 0.2,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: foregroundColor, letterSpacing: 0.2),
               ),
             ),
           ),

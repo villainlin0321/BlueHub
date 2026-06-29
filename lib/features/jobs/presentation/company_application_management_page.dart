@@ -16,6 +16,7 @@ import 'company_application_management_styles.dart';
 import 'widgets/company_application_job_filter_bottom_sheet.dart';
 import 'widgets/company_application_management_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
   const CompanyApplicationManagementPage({super.key});
 
@@ -79,12 +80,7 @@ class _CompanyApplicationManagementPageState
           ),
           title: Text(
             '我的.应聘管理'.tr(),
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 17, color: Colors.black),
           ),
         ),
         body: Column(

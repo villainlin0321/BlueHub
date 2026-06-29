@@ -15,6 +15,7 @@ import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/provider_models.dart';
 import '../../data/provider_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 求职者签证页。
 class JobSeekerVisaPage extends ConsumerStatefulWidget {
   const JobSeekerVisaPage({super.key});
@@ -45,31 +46,33 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
     return JobSeekerPageBackground(
       fit: BoxFit.fitWidth,
       alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: bottomPadding + 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _VisaHeroSection(
-              selectedIndex: _selectedTabIndex,
-              onTabTap: (int index) {
-                setState(() {
-                  _selectedTabIndex = index;
-                });
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: _VisaProviderListSection(
-                providersAsync: providersAsync,
-                collectedVisaPackageIdsAsync: collectedVisaPackageIdsAsync,
-                onRetry: () {
-                  ref.invalidate(visaProviderListProvider(_query));
-                },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _VisaHeroSection(
+            selectedIndex: _selectedTabIndex,
+            onTabTap: (int index) {
+              setState(() {
+                _selectedTabIndex = index;
+              });
+            },
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomPadding + 20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _VisaProviderListSection(
+                  providersAsync: providersAsync,
+                  collectedVisaPackageIdsAsync: collectedVisaPackageIdsAsync,
+                  onRetry: () {
+                    ref.invalidate(visaProviderListProvider(_query));
+                  },
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -184,11 +187,7 @@ class _VisaProviderErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -259,12 +258,7 @@ class _VisaHeroSection extends StatelessWidget {
           padding: EdgeInsets.only(top: topPadding + 13, bottom: 10, left: 20),
           child: Text(
             '签证页.服务商与签证套餐'.tr(),
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black),
           ),
         ),
         const SizedBox(height: 10),
@@ -310,12 +304,7 @@ class _VisaSearchBar extends StatelessWidget {
                   '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
                 ),
               ),
             ],
@@ -365,14 +354,9 @@ class _VisaTabRow extends StatelessWidget {
               ),
               child: Text(
                 _tabs[index],
-                style: TextStyle(
-                  color: selected
+                style: TestStyle.medium(fontSize: 12, color: selected
                       ? const Color(0xFF096DD9)
-                      : const Color(0xFF171A1D),
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
-                  height: 18 / 12,
-                ),
+                      : const Color(0xFF171A1D)),
               ),
             ),
           );

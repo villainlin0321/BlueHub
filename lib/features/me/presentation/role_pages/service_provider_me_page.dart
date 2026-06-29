@@ -18,6 +18,7 @@ import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -277,11 +278,7 @@ class _ProviderProfileRow extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     providerSummary,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      height: 14 / 11,
-                    ),
+                    style: TestStyle.regular(fontSize: 11, color: Colors.white),
                   ),
                 ],
               ],
@@ -322,11 +319,7 @@ class _ProviderNameRow extends ConsumerWidget {
             displayName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TestStyle.semibold(fontSize: 17, color: Colors.white),
           ),
         ),
         if (isVerified) ...<Widget>[
@@ -360,12 +353,7 @@ class _ProviderNameRow extends ConsumerWidget {
                   top: 2,
                   child: Text(
                     '我的.认证'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF784301),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      height: 10 / 9,
-                    ),
+                    style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
                   ),
                 ),
               ],
@@ -421,22 +409,13 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 20 / 18,
-          ),
+          style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 12),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 12,
-            height: 16 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -540,11 +519,7 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(

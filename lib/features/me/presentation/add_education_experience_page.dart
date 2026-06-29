@@ -12,6 +12,7 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AddEducationExperiencePage extends ConsumerStatefulWidget {
   const AddEducationExperiencePage({super.key, this.args});
 
@@ -209,12 +210,7 @@ class _AddEducationExperiencePageState
         ),
         title: Text(
           '我的.教育经历'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: TapBlankToDismissKeyboard(
@@ -278,11 +274,7 @@ class _AddEducationExperiencePageState
                       ),
                       child: Text(
                         '我的.删除'.tr(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16),
                       ),
                     ),
                   ),
@@ -305,11 +297,7 @@ class _AddEducationExperiencePageState
                     ),
                     child: Text(
                       '我的.保存'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),
@@ -378,12 +366,7 @@ class _EducationInputField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -395,20 +378,10 @@ class _EducationInputField extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
-                  color: Color(0xFF171A1D),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF171A1D)),
                 decoration: InputDecoration(
                   hintText: '通用.请输入'.tr(),
-                  hintStyle: TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 22 / 16,
-                  ),
+                  hintStyle: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFBFBFBF)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.only(top: 15, bottom: 15),
                 ),
@@ -441,12 +414,7 @@ class _EducationSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -465,14 +433,9 @@ class _EducationSelectorField extends StatelessWidget {
                       Expanded(
                         child: Text(
                           value ?? '通用.请选择'.tr(),
-                          style: TextStyle(
-                            color: value == null
+                          style: TestStyle.pingFangRegular(fontSize: 16, color: value == null
                                 ? const Color(0xFFBFBFBF)
-                                : const Color(0xFF171A1D),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
+                                : const Color(0xFF171A1D)),
                         ),
                       ),
                       const Icon(

@@ -1,0 +1,556 @@
+import 'dart:io';
+
+const String _testStyleImport =
+    "import 'package:bluehub_app/shared/ui/test_style.dart';";
+
+const Set<String> _supportedKeys = <String>{
+  'fontSize',
+  'color',
+  'fontWeight',
+  'letterSpacing',
+  'decoration',
+  'fontStyle',
+  'overflow',
+  'backgroundColor',
+  'height',
+};
+
+final RegExp _weightPattern = RegExp(r'FontWeight\.(w\d{3}|bold)');
+final RegExp _chinesePattern = RegExp(r'[\u4e00-\u9fff]');
+final RegExp _numberContextPattern = RegExp(
+  r'price|amount|total|count|score|rating|¥|\$|￥|\d',
+  caseSensitive: false,
+);
+
+void main(List<String> args) {
+  final bool apply = args.contains('--apply');
+  final bool reportOnly = !apply || args.contains('--report');
+  final String scope = _readOption(args, '--scope') ?? 'lib';
+  final Directory root = Directory.current;
+  final Directory scopeDir = Directory(_normalizeScope(root, scope));
+
+  if (!scopeDir.existsSync()) {
+    stderr.writeln('Scope not found: ${scopeDir.path}');
+    exitCode = 2;
+    return;
+  }
+
+  final List<File> files =
+      scopeDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((File file) => file.path.endsWith('.dart'))
+          .toList()
+        ..sort((File a, File b) => a.path.compareTo(b.path));
+
+  final List<FileReport> reports = <FileReport>[];
+  int scannedCount = 0;
+  int replacedCount = 0;
+
+  for (final File file in files) {
+    final String original = file.readAsStringSync();
+    final ScanResult result = _scanFile(file.path, original);
+    if (result.records.isEmpty) {
+      continue;
+    }
+    scannedCount += result.records.length;
+
+    if (apply &&
+        result.updatedContent != null &&
+        result.updatedContent != original) {
+      file.writeAsStringSync(result.updatedContent!);
+      replacedCount += result.replacedCount;
+    }
+
+    reports.add(
+      FileReport(
+        path: file.path,
+        records: result.records,
+        replacedCount: result.replacedCount,
+      ),
+    );
+  }
+
+  if (reportOnly) {
+    for (final FileReport report in reports) {
+      stdout.writeln(report.summaryLine);
+      for (final StyleRecord record in report.records) {
+        stdout.writeln(
+          '  - line ${record.line}: '
+          'height=${record.hasHeight ? 'yes' : 'no'}, '
+          'fontFamily=${record.hasFontFamily ? 'yes' : 'no'}, '
+          'factory=${record.suggestedFactory ?? '-'}, '
+          'status=${record.status}',
+        );
+      }
+    }
+  }
+
+  stdout.writeln(
+    'Done. files=${reports.length}, scanned=$scannedCount, replaced=$replacedCount, '
+    'mode=${apply ? 'apply' : 'report'}, scope=${scopeDir.path}',
+  );
+}
+
+String _normalizeScope(Directory root, String scope) {
+  if (scope.startsWith('/')) {
+    return scope;
+  }
+  return '${root.path}${Platform.pathSeparator}$scope';
+}
+
+String? _readOption(List<String> args, String key) {
+  for (final String arg in args) {
+    if (arg.startsWith('$key=')) {
+      return arg.substring(key.length + 1);
+    }
+  }
+  return null;
+}
+
+ScanResult _scanFile(String path, String content) {
+  final List<_StyleOccurrence> occurrences = _findOccurrences(content);
+  if (occurrences.isEmpty) {
+    return const ScanResult(records: <StyleRecord>[], replacedCount: 0);
+  }
+
+  final StringBuffer updated = StringBuffer();
+  final List<StyleRecord> records = <StyleRecord>[];
+  int cursor = 0;
+  int replacedCount = 0;
+
+  for (final _StyleOccurrence occurrence in occurrences) {
+    final StyleAnalysis analysis = _analyzeOccurrence(content, occurrence);
+    records.add(
+      StyleRecord(
+        line: _lineNumberAt(content, occurrence.start),
+        hasHeight: analysis.properties.containsKey('height'),
+        hasFontFamily: analysis.properties.containsKey('fontFamily'),
+        suggestedFactory: analysis.factory,
+        status: analysis.replacement == null ? 'skipped' : 'replaceable',
+      ),
+    );
+
+    updated.write(content.substring(cursor, occurrence.fullStart));
+    if (analysis.replacement != null) {
+      updated.write(analysis.replacement);
+      replacedCount++;
+    } else {
+      updated.write(content.substring(occurrence.fullStart, occurrence.end));
+    }
+    cursor = occurrence.end;
+  }
+  updated.write(content.substring(cursor));
+
+  String? updatedContent;
+  if (replacedCount > 0) {
+    updatedContent = _ensureImport(
+      _rewriteConstTextStyleDeclarations(updated.toString()),
+    );
+  }
+
+  return ScanResult(
+    records: records,
+    replacedCount: replacedCount,
+    updatedContent: updatedContent,
+  );
+}
+
+String _ensureImport(String content) {
+  if (content.contains(_testStyleImport)) {
+    return content;
+  }
+
+  final RegExp importPattern = RegExp(
+    r'''^import\s+['"].+['"];\s*$''',
+    multiLine: true,
+  );
+  final Iterable<RegExpMatch> matches = importPattern.allMatches(content);
+  if (matches.isNotEmpty) {
+    final RegExpMatch lastMatch = matches.last;
+    return content.replaceRange(
+      lastMatch.end,
+      lastMatch.end,
+      '\n$_testStyleImport',
+    );
+  }
+
+  return '$_testStyleImport\n\n$content';
+}
+
+String _rewriteConstTextStyleDeclarations(String content) {
+  final RegExp declarationPattern = RegExp(
+    r'((?:static\s+)?)const(\s+TextStyle\s+\w+\s*=\s*TestStyle\.)',
+  );
+  return content.replaceAllMapped(declarationPattern, (Match match) {
+    final String staticPrefix = match.group(1) ?? '';
+    final String remainder = match.group(2) ?? '';
+    return '${staticPrefix}final$remainder';
+  });
+}
+
+List<_StyleOccurrence> _findOccurrences(String content) {
+  final List<_StyleOccurrence> occurrences = <_StyleOccurrence>[];
+  int index = 0;
+  while (index < content.length) {
+    final int textStyleIndex = content.indexOf('TextStyle(', index);
+    if (textStyleIndex == -1) {
+      break;
+    }
+
+    int fullStart = textStyleIndex;
+    final String before = content.substring(0, textStyleIndex).trimRight();
+    if (before.endsWith('const')) {
+      fullStart = before.length - 'const'.length;
+    }
+
+    final int end = _findMatchingParen(
+      content,
+      textStyleIndex + 'TextStyle'.length,
+    );
+    if (end == -1) {
+      index = textStyleIndex + 'TextStyle('.length;
+      continue;
+    }
+
+    occurrences.add(
+      _StyleOccurrence(
+        fullStart: fullStart,
+        start: textStyleIndex,
+        end: end + 1,
+      ),
+    );
+    index = end + 1;
+  }
+  return occurrences;
+}
+
+int _findMatchingParen(String content, int openParenIndex) {
+  int depth = 0;
+  bool inSingleQuote = false;
+  bool inDoubleQuote = false;
+
+  for (int i = openParenIndex; i < content.length; i++) {
+    final String char = content[i];
+    final String prev = i > 0 ? content[i - 1] : '';
+
+    if (char == "'" && !inDoubleQuote && prev != r'\') {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+    if (char == '"' && !inSingleQuote && prev != r'\') {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+    if (inSingleQuote || inDoubleQuote) {
+      continue;
+    }
+
+    if (char == '(') {
+      depth++;
+    } else if (char == ')') {
+      depth--;
+      if (depth == 0) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+StyleAnalysis _analyzeOccurrence(String content, _StyleOccurrence occurrence) {
+  final String snippet = content.substring(occurrence.start, occurrence.end);
+  final int bodyStart = snippet.indexOf('(');
+  final String body = snippet.substring(bodyStart + 1, snippet.length - 1);
+  final Map<String, String> properties = _parseProperties(body);
+
+  if (properties.isEmpty || properties.containsKey('fontFamily')) {
+    return StyleAnalysis(properties: properties);
+  }
+  if (!properties.containsKey('fontSize')) {
+    return StyleAnalysis(properties: properties);
+  }
+  if (properties.keys.any((String key) => !_supportedKeys.contains(key))) {
+    return StyleAnalysis(properties: properties);
+  }
+
+  final String context = _contextWindow(
+    content,
+    occurrence.fullStart,
+    occurrence.end,
+  );
+  final String? factory = _selectFactory(properties, context);
+  if (factory == null) {
+    return StyleAnalysis(properties: properties);
+  }
+
+  final List<String> args = <String>['fontSize: ${properties['fontSize']}'];
+  const List<String> orderedKeys = <String>[
+    'color',
+    'letterSpacing',
+    'decoration',
+    'fontStyle',
+    'overflow',
+    'backgroundColor',
+  ];
+  for (final String key in orderedKeys) {
+    final String? value = properties[key];
+    if (value != null) {
+      args.add('$key: $value');
+    }
+  }
+
+  return StyleAnalysis(
+    properties: properties,
+    factory: factory,
+    replacement: 'TestStyle.$factory(${args.join(', ')})',
+  );
+}
+
+Map<String, String> _parseProperties(String body) {
+  final Map<String, String> properties = <String, String>{};
+  final List<String> segments = _splitTopLevel(body);
+  for (final String segment in segments) {
+    final int colonIndex = _indexOfTopLevelColon(segment);
+    if (colonIndex == -1) {
+      continue;
+    }
+    final String key = segment.substring(0, colonIndex).trim();
+    final String value = segment.substring(colonIndex + 1).trim();
+    if (key.isEmpty || value.isEmpty) {
+      continue;
+    }
+    properties[key] = value;
+  }
+  return properties;
+}
+
+List<String> _splitTopLevel(String value) {
+  final List<String> result = <String>[];
+  final StringBuffer current = StringBuffer();
+  int parenDepth = 0;
+  int bracketDepth = 0;
+  int braceDepth = 0;
+  bool inSingleQuote = false;
+  bool inDoubleQuote = false;
+
+  for (int i = 0; i < value.length; i++) {
+    final String char = value[i];
+    final String prev = i > 0 ? value[i - 1] : '';
+
+    if (char == "'" && !inDoubleQuote && prev != r'\') {
+      inSingleQuote = !inSingleQuote;
+      current.write(char);
+      continue;
+    }
+    if (char == '"' && !inSingleQuote && prev != r'\') {
+      inDoubleQuote = !inDoubleQuote;
+      current.write(char);
+      continue;
+    }
+    if (!inSingleQuote && !inDoubleQuote) {
+      if (char == '(') {
+        parenDepth++;
+      } else if (char == ')') {
+        parenDepth--;
+      } else if (char == '[') {
+        bracketDepth++;
+      } else if (char == ']') {
+        bracketDepth--;
+      } else if (char == '{') {
+        braceDepth++;
+      } else if (char == '}') {
+        braceDepth--;
+      } else if (char == ',' &&
+          parenDepth == 0 &&
+          bracketDepth == 0 &&
+          braceDepth == 0) {
+        final String item = current.toString().trim();
+        if (item.isNotEmpty) {
+          result.add(item);
+        }
+        current.clear();
+        continue;
+      }
+    }
+
+    current.write(char);
+  }
+
+  final String tail = current.toString().trim();
+  if (tail.isNotEmpty) {
+    result.add(tail);
+  }
+  return result;
+}
+
+int _indexOfTopLevelColon(String value) {
+  int parenDepth = 0;
+  int bracketDepth = 0;
+  int braceDepth = 0;
+  bool inSingleQuote = false;
+  bool inDoubleQuote = false;
+
+  for (int i = 0; i < value.length; i++) {
+    final String char = value[i];
+    final String prev = i > 0 ? value[i - 1] : '';
+
+    if (char == "'" && !inDoubleQuote && prev != r'\') {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+    if (char == '"' && !inSingleQuote && prev != r'\') {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+    if (inSingleQuote || inDoubleQuote) {
+      continue;
+    }
+
+    if (char == '(') {
+      parenDepth++;
+    } else if (char == ')') {
+      parenDepth--;
+    } else if (char == '[') {
+      bracketDepth++;
+    } else if (char == ']') {
+      bracketDepth--;
+    } else if (char == '{') {
+      braceDepth++;
+    } else if (char == '}') {
+      braceDepth--;
+    } else if (char == ':' &&
+        parenDepth == 0 &&
+        bracketDepth == 0 &&
+        braceDepth == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+String? _selectFactory(Map<String, String> properties, String context) {
+  final String? fontWeight = properties['fontWeight'];
+  final bool hasChineseContext = _chinesePattern.hasMatch(context);
+  final bool hasNumericContext = _numberContextPattern.hasMatch(context);
+
+  if (fontWeight == null) {
+    return hasChineseContext ? 'pingFangRegular' : 'regular';
+  }
+
+  final Match? match = _weightPattern.firstMatch(fontWeight);
+  if (match == null) {
+    return null;
+  }
+
+  final String token = match.group(1)!;
+  final int weight = token == 'bold' ? 700 : int.parse(token.substring(1));
+
+  if (weight >= 700 && hasNumericContext) {
+    return 'numberBold';
+  }
+  if (weight >= 700 && hasChineseContext) {
+    return 'bannerBold';
+  }
+  if (weight >= 700) {
+    return 'bold';
+  }
+  if (weight >= 600) {
+    return hasChineseContext ? 'pingFangSemibold' : 'semibold';
+  }
+  if (weight >= 500) {
+    return hasChineseContext ? 'pingFangMedium' : 'medium';
+  }
+  return hasChineseContext ? 'pingFangRegular' : 'regular';
+}
+
+String _contextWindow(String content, int start, int end) {
+  final int windowStart = start - 160 < 0 ? 0 : start - 160;
+  final int windowEnd = end + 160 > content.length ? content.length : end + 160;
+  return content.substring(windowStart, windowEnd);
+}
+
+int _lineNumberAt(String content, int index) {
+  int line = 1;
+  for (int i = 0; i < index; i++) {
+    if (content.codeUnitAt(i) == 10) {
+      line++;
+    }
+  }
+  return line;
+}
+
+class ScanResult {
+  const ScanResult({
+    required this.records,
+    required this.replacedCount,
+    this.updatedContent,
+  });
+
+  final List<StyleRecord> records;
+  final int replacedCount;
+  final String? updatedContent;
+}
+
+class FileReport {
+  const FileReport({
+    required this.path,
+    required this.records,
+    required this.replacedCount,
+  });
+
+  final String path;
+  final List<StyleRecord> records;
+  final int replacedCount;
+
+  String get summaryLine {
+    final int heightCount = records
+        .where((StyleRecord record) => record.hasHeight)
+        .length;
+    final int familyCount = records
+        .where((StyleRecord record) => record.hasFontFamily)
+        .length;
+    return '$path | count=${records.length}, height=$heightCount, '
+        'fontFamily=$familyCount, replaced=$replacedCount';
+  }
+}
+
+class StyleRecord {
+  const StyleRecord({
+    required this.line,
+    required this.hasHeight,
+    required this.hasFontFamily,
+    required this.suggestedFactory,
+    required this.status,
+  });
+
+  final int line;
+  final bool hasHeight;
+  final bool hasFontFamily;
+  final String? suggestedFactory;
+  final String status;
+}
+
+class StyleAnalysis {
+  const StyleAnalysis({
+    required this.properties,
+    this.factory,
+    this.replacement,
+  });
+
+  final Map<String, String> properties;
+  final String? factory;
+  final String? replacement;
+}
+
+class _StyleOccurrence {
+  const _StyleOccurrence({
+    required this.fullStart,
+    required this.start,
+    required this.end,
+  });
+
+  final int fullStart;
+  final int start;
+  final int end;
+}

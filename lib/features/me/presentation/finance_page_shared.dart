@@ -6,6 +6,7 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceStateView extends StatelessWidget {
   const FinanceStateView({
     super.key,
@@ -27,11 +28,7 @@ class FinanceStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -73,12 +70,7 @@ class FinanceStatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF096DD9),
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          height: 12 / 11,
-        ),
+        style: TestStyle.medium(fontSize: 11, color: Color(0xFF096DD9)),
       ),
     );
   }
@@ -115,11 +107,7 @@ class FinanceTransactionTile extends StatelessWidget {
                   buildFinanceTransactionTitle(item),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -130,11 +118,7 @@ class FinanceTransactionTile extends StatelessWidget {
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    height: 16 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                 ),
               ],
             ),
@@ -145,23 +129,14 @@ class FinanceTransactionTile extends StatelessWidget {
             children: <Widget>[
               Text(
                 formatFinanceAmount(item.netAmount, item.currency),
-                style: TextStyle(
-                  color: isRefund
+                style: TestStyle.medium(fontSize: 14, color: isRefund
                       ? const Color(0xFFFF4D4F)
-                      : const Color(0xFFFE5815),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 14,
-                ),
+                      : const Color(0xFFFE5815)),
               ),
               const SizedBox(height: 4),
               Text(
                 formatFinanceCompactDateTime(item.settledAt),
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 12,
-                  height: 16 / 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
               ),
             ],
           ),
@@ -188,12 +163,7 @@ class FinanceWithdrawalTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${item.bankName} ${item.cardNoMask}'.trim(),
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -205,12 +175,7 @@ class FinanceWithdrawalTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             formatFinanceAmount(item.amount, item.currency),
-            style: const TextStyle(
-              color: Color(0xFFFE5815),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              height: 24 / 16,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 16, color: Color(0xFFFE5815)),
           ),
           const SizedBox(height: 6),
           Text(
@@ -219,11 +184,7 @@ class FinanceWithdrawalTile extends StatelessWidget {
                 'time': formatFinanceDetailDateTime(item.appliedAt),
               },
             ),
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           if (item.processedAt.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 2),
@@ -233,22 +194,14 @@ class FinanceWithdrawalTile extends StatelessWidget {
                   'time': formatFinanceDetailDateTime(item.processedAt),
                 },
               ),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                height: 18 / 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
             ),
           ],
           if (item.remark.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 2),
             Text(
               '财务.备注'.tr(namedArgs: <String, String>{'remark': item.remark}),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                height: 18 / 12,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
             ),
           ],
         ],
@@ -275,12 +228,7 @@ class FinanceBankCardTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${item.bankName} ${item.cardNoMask}'.trim(),
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFF262626)),
                 ),
               ),
               if (item.isDefault) FinanceStatusBadge(label: '财务.默认卡'.tr()),
@@ -289,11 +237,7 @@ class FinanceBankCardTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '财务.持卡人'.tr(namedArgs: <String, String>{'name': item.cardHolder}),
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 2),
           Text(
@@ -302,11 +246,7 @@ class FinanceBankCardTile extends StatelessWidget {
                 'time': formatFinanceDetailDateTime(item.createdAt),
               },
             ),
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           if (onDelete != null) ...<Widget>[
             const SizedBox(height: 10),
@@ -325,12 +265,7 @@ class FinanceBankCardTile extends StatelessWidget {
                 ),
                 child: Text(
                   '财务.删除'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFFFF4D4F),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    height: 18 / 13,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 13, color: Color(0xFFFF4D4F)),
                 ),
               ),
             ),
@@ -430,12 +365,7 @@ class _FinanceAddBankCardSheetState extends State<FinanceAddBankCardSheet> {
                     child: Text(
                       '财务.新增银行卡'.tr(),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        height: 24 / 16,
-                      ),
+                      style: TestStyle.pingFangSemibold(fontSize: 16, color: Color(0xFF262626)),
                     ),
                   ),
                   GestureDetector(
@@ -469,11 +399,7 @@ class _FinanceAddBankCardSheetState extends State<FinanceAddBankCardSheet> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   '财务.设为默认提现卡'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
                 ),
                 onChanged: (bool value) {
                   setState(() => _isDefault = value);
@@ -484,11 +410,7 @@ class _FinanceAddBankCardSheetState extends State<FinanceAddBankCardSheet> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(
-                      color: Color(0xFFFF4D4F),
-                      fontSize: 12,
-                      height: 18 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFFFF4D4F)),
                   ),
                 ),
               const SizedBox(height: 12),

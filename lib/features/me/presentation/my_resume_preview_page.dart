@@ -13,6 +13,7 @@ import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 简历预览页，仅展示编辑页传入的真实数据快照。
 class MyResumePreviewPage extends ConsumerStatefulWidget {
   const MyResumePreviewPage({
@@ -366,11 +367,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         ),
         title: Text(
           pageTitle,
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TestStyle.medium(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: _shouldLoadByUserId && _isLoading && _remoteArgs == null
@@ -408,11 +405,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
             Text(
               _errorMessage ?? '我的.简历加载失败'.tr(),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             FilledButton(
@@ -444,12 +437,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 children: <Widget>[
                   Text(
                     name,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      height: 28 / 20,
-                    ),
+                    style: TestStyle.medium(fontSize: 20, color: Color(0xFF262626)),
                   ),
                   const SizedBox(height: 4),
                   if (_companyName.isEmpty && _roleName.isEmpty)
@@ -463,12 +451,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                               _companyName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF595959),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                height: 20 / 14,
-                              ),
+                              style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
                             ),
                           ),
                         if (_companyName.isNotEmpty && _roleName.isNotEmpty)
@@ -479,12 +462,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                               _roleName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF595959),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                height: 20 / 14,
-                              ),
+                              style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
                             ),
                           ),
                       ],
@@ -521,12 +499,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 Expanded(
                   child: Text(
                     _countryText,
-                    style: const TextStyle(
-                      color: Color(0xFF595959),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      height: 16 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
                   ),
                 ),
               ],
@@ -540,23 +513,13 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                     _primaryJobTitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 16,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   _salaryText,
-                  style: const TextStyle(
-                    color: Color(0xFFFE5815),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 16,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFFFE5815)),
                 ),
               ],
             ),
@@ -692,12 +655,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
             else
               Text(
                 _draft.summary,
-                style: const TextStyle(
-                  color: Color(0xFF595959),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 24 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
               ),
           ],
         ),
@@ -718,24 +676,14 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 experience.company.isEmpty
                     ? '我的.未填写公司名称'.tr()
                     : experience.company,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             if (experience.period.isNotEmpty) ...<Widget>[
               const SizedBox(width: 12),
               Text(
                 experience.period,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  height: 18 / 13,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
               ),
             ],
           ],
@@ -743,22 +691,12 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         const SizedBox(height: 10),
         Text(
           experience.role.isEmpty ? '我的.未填写职位'.tr() : experience.role,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 20 / 14,
-          ),
+          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
         ),
         const SizedBox(height: 10),
         Text(
           experience.summary.isEmpty ? '我的.未填写工作内容'.tr() : experience.summary,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 24 / 14,
-          ),
+          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -775,12 +713,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
             Expanded(
               child: Text(
                 certificate.title,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             if (certificate.period.isNotEmpty) ...<Widget>[
@@ -789,12 +722,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   certificate.period,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 13,
-                  ),
+                  style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
                 ),
               ),
             ],
@@ -803,12 +731,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         const SizedBox(height: 8),
         Text(
           certificate.issuer.isEmpty ? '我的.未填写发证机构'.tr() : certificate.issuer,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 20 / 14,
-          ),
+          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
         ),
         const SizedBox(height: 12),
         _buildCertificateImages(certificate),
@@ -849,12 +772,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                         education.school.isEmpty
                             ? '我的.未填写学校'.tr()
                             : education.school,
-                        style: const TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                       ),
                     ),
                     if (education.period.isNotEmpty) ...<Widget>[
@@ -863,12 +781,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           education.period,
-                          style: const TextStyle(
-                            color: Color(0xFF8C8C8C),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            height: 18 / 13,
-                          ),
+                          style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
                         ),
                       ),
                     ],
@@ -877,12 +790,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
                 const SizedBox(height: 6),
                 Text(
                   education.major.isEmpty ? '我的.未填写专业学历'.tr() : education.major,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
                 ),
               ],
             ),
@@ -949,11 +857,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
       ),
       child: Text(
         '我的.暂无图片'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -970,12 +874,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 20 / 14,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
       ),
     );
   }
@@ -993,12 +892,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
         ),
       ],
     );
@@ -1008,12 +902,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   Widget _buildEmptyText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF8C8C8C),
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 20 / 14,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
     );
   }
 

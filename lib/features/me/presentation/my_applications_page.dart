@@ -15,6 +15,7 @@ import '../application/my_applications/my_application_lists_controller.dart';
 import '../data/my_applications_models.dart';
 import 'widgets/my_application_card.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyApplicationsPage extends ConsumerStatefulWidget {
   const MyApplicationsPage({super.key});
 
@@ -114,11 +115,7 @@ class _MyApplicationsPageState extends ConsumerState<MyApplicationsPage>
         ),
         title: Text(
           '我的.我的应聘'.tr(),
-          style: TextStyle(
-            color: Color(0xE6262626),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6262626)),
         ),
       ),
       body: Column(
@@ -138,16 +135,8 @@ class _MyApplicationsPageState extends ConsumerState<MyApplicationsPage>
                   .toList(growable: false),
               labelColor: const Color(0xFF096DD9),
               unselectedLabelColor: const Color(0xFF262626),
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 22 / 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 22 / 14,
-              ),
+              labelStyle: TestStyle.medium(fontSize: 14),
+              unselectedLabelStyle: TestStyle.regular(fontSize: 14),
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 2,
               indicatorColor: const Color(0xFF096DD9),

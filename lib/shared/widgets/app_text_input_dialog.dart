@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_dialog.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 const String _kAppTextInputDialogClearIconAsset =
     'assets/images/ai_history_rename_clear.svg';
 
@@ -84,12 +85,7 @@ class _AppTextInputDialogState extends State<_AppTextInputDialog> {
             children: <Widget>[
               Text(
                 widget.title,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
               ),
               const SizedBox(height: 16),
               _AppTextInputField(
@@ -158,22 +154,12 @@ class _AppTextInputField extends StatelessWidget {
                   autofocus: true,
                   textInputAction: TextInputAction.done,
                   onSubmitted: onSubmitted,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
                   decoration: InputDecoration(
                     isCollapsed: true,
                     border: InputBorder.none,
                     hintText: hintText,
-                    hintStyle: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                    hintStyle: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
                   ),
                 ),
               ),
@@ -236,12 +222,7 @@ class _AppTextInputButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: TextStyle(
-                color: isPrimary ? Colors.white : const Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: isPrimary ? Colors.white : const Color(0xFF262626)),
             ),
           ),
         ),

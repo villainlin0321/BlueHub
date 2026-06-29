@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class JobPositionCardData {
   const JobPositionCardData({
     required this.title,
@@ -72,23 +73,13 @@ class JobPositionCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 16,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   data.salary,
-                  style: const TextStyle(
-                    color: Color(0xFFFE5815),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 14,
-                  ),
+                  style: TestStyle.medium(fontSize: 14, color: Color(0xFFFE5815)),
                 ),
               ],
             ),
@@ -144,12 +135,7 @@ class JobPositionCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     data.statusText!,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      height: 16 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                   ),
                 ] else if (data.showApplyButton) ...<Widget>[
                   const SizedBox(width: 12),
@@ -168,12 +154,7 @@ class JobPositionCard extends StatelessWidget {
                       ),
                       child: Text(
                         resolvedApplyButtonText,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          height: 12 / 12,
-                        ),
+                        style: TestStyle.medium(fontSize: 12, color: Colors.white),
                       ),
                     ),
                   ),
@@ -255,12 +236,7 @@ class _CompanyInfo extends StatelessWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 16 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
           ),
         ),
       ],
@@ -286,12 +262,7 @@ class _LocationInfo extends StatelessWidget {
             location,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 16 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
           ),
         ),
       ],
@@ -422,12 +393,7 @@ class _JobPositionTagStyle {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: textColor),
       ),
     );
   }

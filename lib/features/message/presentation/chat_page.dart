@@ -31,6 +31,7 @@ import '../application/chat/chat_page_args.dart';
 import '../application/chat/chat_page_controller.dart';
 import '../application/chat/chat_page_state.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key, required this.args});
 
@@ -587,11 +588,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
                           '消息.签证申请沟通提示'.tr(),
-                          style: const TextStyle(
-                            color: _subtleTextColor,
-                            fontSize: 11,
-                            height: 18 / 11,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 11, color: _subtleTextColor),
                         ),
                       ),
                     Expanded(
@@ -713,12 +710,7 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
               '${args.nickname}（${_resolveRoleLabel(args.targetUserRole)}）',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 20 / 14,
-              ),
+              style: TestStyle.medium(fontSize: 14, color: Colors.black),
             ),
             const SizedBox(height: 2),
             Row(
@@ -737,13 +729,9 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 4),
                 Text(
                   args.isOnline ? '消息.在线'.tr() : '消息.离线'.tr(),
-                  style: TextStyle(
-                    color: args.isOnline
+                  style: TestStyle.pingFangRegular(fontSize: 10, color: args.isOnline
                         ? _ChatPageState._onlineGreen
-                        : const Color(0xFFBFBFBF),
-                    fontSize: 10,
-                    height: 14 / 10,
-                  ),
+                        : const Color(0xFFBFBFBF)),
                 ),
               ],
             ),
@@ -825,11 +813,7 @@ class _ChatMoreMenuItem extends StatelessWidget {
           SizedBox(width: 10),
           Text(
             '消息.拉黑'.tr(),
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.black),
           ),
         ],
       ),
@@ -876,12 +860,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       packageName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _ChatPageState._titleColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.pingFangMedium(fontSize: 14, color: _ChatPageState._titleColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -890,11 +869,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _ChatPageState._subtleTextColor,
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: _ChatPageState._subtleTextColor),
                     ),
                   ],
                 ),
@@ -930,11 +905,7 @@ class _ChatLoadError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _ChatPageState._subtleTextColor,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: _ChatPageState._subtleTextColor),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('消息.重新加载'.tr())),
@@ -1058,11 +1029,7 @@ class _ChatMessageRow extends StatelessWidget {
       placeholder: Center(
         child: Text(
           _buildAvatarFallbackText(fallbackName),
-          style: TextStyle(
-            color: isMine ? const Color(0xFF171A1D) : Colors.white,
-            fontSize: 14,
-            height: 20 / 14,
-          ),
+          style: TestStyle.regular(fontSize: 14, color: isMine ? const Color(0xFF171A1D) : Colors.white),
         ),
       ),
     );
@@ -1145,10 +1112,7 @@ class _ChatBubble extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       child: Text(
                         '消息.图片加载失败'.tr(),
-                        style: const TextStyle(
-                          color: attachmentForegroundColor,
-                          fontSize: 14,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                       ),
                     )
                   : _isRemoteFileUrl(imagePath)
@@ -1161,10 +1125,7 @@ class _ChatBubble extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         child: Text(
                           '消息.图片加载失败'.tr(),
-                          style: const TextStyle(
-                            color: attachmentForegroundColor,
-                            fontSize: 14,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                         ),
                       ),
                     )
@@ -1177,10 +1138,7 @@ class _ChatBubble extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         child: Text(
                           '消息.图片加载失败'.tr(),
-                          style: const TextStyle(
-                            color: attachmentForegroundColor,
-                            fontSize: 14,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                         ),
                       ),
                     ),
@@ -1214,11 +1172,7 @@ class _ChatBubble extends StatelessWidget {
                   message.fileName.isEmpty ? '消息.文件消息'.tr() : message.fileName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: attachmentForegroundColor,
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                 ),
               ),
             ],
@@ -1258,12 +1212,7 @@ class _ChatBubble extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 _formatAudioDuration(message.duration),
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.medium(fontSize: 14, color: foregroundColor),
               ),
             ],
           ),
@@ -1279,7 +1228,7 @@ class _ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Text(
         message.isRetracted ? '消息.消息已撤回'.tr() : message.content,
-        style: TextStyle(color: foregroundColor, fontSize: 15, height: 22 / 15),
+        style: TestStyle.pingFangRegular(fontSize: 15, color: foregroundColor),
       ),
     );
   }
@@ -1315,11 +1264,7 @@ class _ChatSystemMessage extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _ChatPageState._subtleTextColor,
-            fontSize: 11,
-            height: 18 / 11,
-          ),
+          style: TestStyle.regular(fontSize: 11, color: _ChatPageState._subtleTextColor),
         ),
       ),
     );
@@ -1412,18 +1357,10 @@ class _ChatComposer extends StatelessWidget {
                         decoration: InputDecoration(
                           isCollapsed: true,
                           hintText: '消息.发消息'.tr(),
-                          hintStyle: const TextStyle(
-                            color: _ChatPageState._subtleTextColor,
-                            fontSize: 15,
-                            height: 22 / 15,
-                          ),
+                          hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: _ChatPageState._subtleTextColor),
                           border: InputBorder.none,
                         ),
-                        style: const TextStyle(
-                          color: _ChatPageState._titleColor,
-                          fontSize: 15,
-                          height: 22 / 15,
-                        ),
+                        style: TestStyle.regular(fontSize: 15, color: _ChatPageState._titleColor),
                       ),
               ),
               const SizedBox(width: 12),
@@ -1545,12 +1482,7 @@ class _VoiceRecordButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: foregroundColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              height: 22 / 15,
-            ),
+            style: TestStyle.medium(fontSize: 15, color: foregroundColor),
           ),
         ),
       ),

@@ -6,6 +6,8 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class AddWorkExperiencePage extends StatefulWidget {
   const AddWorkExperiencePage({super.key, this.args});
 
@@ -137,11 +139,9 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
         ),
         title: Text(
           '我的.工作经历'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -206,12 +206,9 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '完成',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TestStyle.pingFangMedium(fontSize: 14),
                   ),
                 ),
               ),
@@ -245,11 +242,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                       ),
                       child: Text(
                         '我的.删除'.tr(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16),
                       ),
                     ),
                   ),
@@ -272,11 +265,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                     ),
                     child: Text(
                       '我的.保存'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),
@@ -541,11 +530,9 @@ class _EmploymentPeriodBottomSheetState
                   ),
                   Text(
                     '我的.时间段'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF171A1D),
+                    style: TestStyle.pingFangRegular(
                       fontSize: 17,
-                      fontWeight: FontWeight.w400,
-                      height: 25 / 17,
+                      color: Color(0xFF171A1D),
                     ),
                   ),
                   Positioned(
@@ -557,11 +544,9 @@ class _EmploymentPeriodBottomSheetState
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
                           '通用.确定'.tr(),
-                          style: TextStyle(
-                            color: Color(0xFF096DD9),
+                          style: TestStyle.pingFangRegular(
                             fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 16,
+                            color: Color(0xFF096DD9),
                           ),
                         ),
                       ),
@@ -631,16 +616,14 @@ class _EmploymentPeriodBottomSheetState
                             },
                           ),
                         ),
-                        const SizedBox(
+                        SizedBox(
                           width: 16,
                           child: Center(
                             child: Text(
                               '-',
-                              style: TextStyle(
-                                color: Color(0xFF8C8C8C),
+                              style: TestStyle.regular(
                                 fontSize: 17,
-                                fontWeight: FontWeight.w400,
-                                height: 22 / 17,
+                                color: Color(0xFF8C8C8C),
                               ),
                             ),
                           ),
@@ -747,25 +730,19 @@ class _PickerWheel<T> extends StatelessWidget {
           final int distance = (index - selectedIndex).abs();
           final TextStyle textStyle;
           if (distance == 0) {
-            textStyle = const TextStyle(
-              color: Color(0xFF171A1D),
+            textStyle = TestStyle.medium(
               fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 22 / 17,
+              color: Color(0xFF171A1D),
             );
           } else if (distance == 1) {
-            textStyle = const TextStyle(
-              color: Color(0x99171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 17,
-              fontWeight: FontWeight.w400,
-              height: 22 / 17,
+              color: Color(0x99171A1D),
             );
           } else {
-            textStyle = const TextStyle(
-              color: Color(0x66171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
+              color: Color(0x66171A1D),
             );
           }
           return Center(
@@ -798,12 +775,7 @@ class _UnderlinedInputField extends StatelessWidget {
           const SizedBox(height: 0),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -815,19 +787,15 @@ class _UnderlinedInputField extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
-                  color: Color(0xFF171A1D),
+                style: TestStyle.pingFangRegular(
                   fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
+                  color: Color(0xFF171A1D),
                 ),
                 decoration: InputDecoration(
                   hintText: '通用.请输入'.tr(),
-                  hintStyle: TextStyle(
-                    color: Color(0xFFBFBFBF),
+                  hintStyle: TestStyle.pingFangRegular(
                     fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 22 / 16,
+                    color: Color(0xFFBFBFBF),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.only(top: 15, bottom: 15),
@@ -861,12 +829,7 @@ class _UnderlinedSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -885,13 +848,11 @@ class _UnderlinedSelectorField extends StatelessWidget {
                       Expanded(
                         child: Text(
                           value ?? '通用.请选择'.tr(),
-                          style: TextStyle(
+                          style: TestStyle.pingFangRegular(
+                            fontSize: 16,
                             color: value == null
                                 ? const Color(0xFFBFBFBF)
                                 : const Color(0xFF171A1D),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
                           ),
                         ),
                       ),
@@ -932,11 +893,9 @@ class _WorkContentField extends StatelessWidget {
         children: <Widget>[
           Text(
             '我的.工作内容'.tr(),
-            style: TextStyle(
-              color: Color(0xFF595959),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF595959),
             ),
           ),
           Expanded(
@@ -946,19 +905,15 @@ class _WorkContentField extends StatelessWidget {
               maxLength: 500,
               maxLines: null,
               minLines: 9,
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
+              style: TestStyle.pingFangRegular(
                 fontSize: 16,
-                fontWeight: FontWeight.w400,
-                height: 24 / 16,
+                color: Color(0xFF171A1D),
               ),
               decoration: InputDecoration(
                 hintText: '通用.请输入'.tr(),
-                hintStyle: TextStyle(
-                  color: Color(0xFFBFBFBF),
+                hintStyle: TestStyle.pingFangRegular(
                   fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 24 / 16,
+                  color: Color(0xFFBFBFBF),
                 ),
                 border: InputBorder.none,
                 counterText: '',
@@ -970,12 +925,7 @@ class _WorkContentField extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               '$currentLength/500',
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],

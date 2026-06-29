@@ -24,6 +24,7 @@ import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 求职者首页：独立页面文件，后续该角色的业务逻辑统一放在这里处理。
 class JobSeekerHomePage extends ConsumerWidget {
   const JobSeekerHomePage({super.key});
@@ -69,63 +70,74 @@ class JobSeekerHomePage extends ConsumerWidget {
       homeLatestJobsProvider,
     );
 
-    return ListView(
-      physics: ClampingScrollPhysics(),
-      padding: EdgeInsets.only(bottom: bottomPadding + 20),
+    return Column(
       children: <Widget>[
-        _HomeTopHeader(
-          onShortcutTap: (_ShortcutItem item) =>
-              _handleShortcutTap(context, item),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => context.go(RoutePaths.ai),
-              borderRadius: BorderRadius.circular(12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/mon5bjog-qq5tufd.png',
-                  height: 80,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+        const _HomeTopHeader(),
+        Expanded(
+          child: ListView(
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.only(bottom: bottomPadding + 20),
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 20, 15, 0),
+                child: _ShortcutRow(
+                  items: JobSeekerHomePage._shortcutItems,
+                  onItemTap: (_ShortcutItem item) =>
+                      _handleShortcutTap(context, item),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.go(RoutePaths.ai),
+                    borderRadius: BorderRadius.circular(12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/mon5bjog-qq5tufd.png',
+                        height: 80,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: _HomeSectionHeader(
+                  title: '首页.热门签证套餐'.tr(),
+                  onTap: () => _handleVisaMoreTap(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _HomeVisaPackagesSection(
+                packagesAsync: hotVisaPackagesAsync,
+                onRetry: () {
+                  ref.invalidate(homeHotVisaPackagesProvider);
+                },
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: _HomeSectionHeader(
+                  title: '首页.最新欧洲岗位'.tr(),
+                  onTap: () => _handleJobsMoreTap(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _HomeLatestJobsSection(
+                jobsAsync: latestJobsAsync,
+                onRetry: () {
+                  ref.invalidate(homeLatestJobsProvider);
+                },
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: _HomeSectionHeader(
-            title: '首页.热门签证套餐'.tr(),
-            onTap: () => _handleVisaMoreTap(context),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _HomeVisaPackagesSection(
-          packagesAsync: hotVisaPackagesAsync,
-          onRetry: () {
-            ref.invalidate(homeHotVisaPackagesProvider);
-          },
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: _HomeSectionHeader(
-            title: '首页.最新欧洲岗位'.tr(),
-            onTap: () => _handleJobsMoreTap(context),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _HomeLatestJobsSection(
-          jobsAsync: latestJobsAsync,
-          onRetry: () {
-            ref.invalidate(homeLatestJobsProvider);
-          },
         ),
       ],
     );
@@ -161,9 +173,7 @@ class JobSeekerHomePage extends ConsumerWidget {
 }
 
 class _HomeTopHeader extends StatelessWidget {
-  const _HomeTopHeader({required this.onShortcutTap});
-
-  final ValueChanged<_ShortcutItem> onShortcutTap;
+  const _HomeTopHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -178,11 +188,6 @@ class _HomeTopHeader extends StatelessWidget {
             const _HeaderProfileRow(),
             const SizedBox(height: 12),
             const _HomeSearchBar(),
-            const SizedBox(height: 20),
-            _ShortcutRow(
-              items: JobSeekerHomePage._shortcutItems,
-              onItemTap: onShortcutTap,
-            ),
           ],
         ),
       ),
@@ -734,17 +739,11 @@ class _VisaMiniCard extends StatelessWidget {
                         children: <InlineSpan>[
                           TextSpan(
                             text: data.pricePrefix,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 24 / 14,
-                            ),
+                            style: TestStyle.regular(fontSize: 14),
                           ),
                           TextSpan(
                             text: data.priceValue,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              height: 24 / 18,
-                            ),
+                            style: TestStyle.regular(fontSize: 18),
                           ),
                         ],
                       ),

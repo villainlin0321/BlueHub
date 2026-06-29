@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../shared/widgets/app_svg_icon.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FilterBottomSheetOption {
   const FilterBottomSheetOption({required this.value, required this.label});
 
@@ -93,14 +94,7 @@ class FilterBottomSheetChip extends StatelessWidget {
                     selectedOption.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 12,
-                      fontWeight: highlighted
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                      height: 18 / 12,
-                    ),
+                    style: TestStyle.medium(fontSize: 12, color: textColor),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -167,12 +161,7 @@ class _FilterOptionsBottomSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             title,
-                            style: const TextStyle(
-                              color: Color(0xFF171A1D),
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                              height: 25 / 17,
-                            ),
+                            style: TestStyle.medium(fontSize: 17, color: Color(0xFF171A1D)),
                           ),
                           Positioned(
                             right: 12,
@@ -275,12 +264,7 @@ class _FilterOptionTile extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 14,
-            fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
-            height: 18 / 14,
-          ),
+          style: TestStyle.medium(fontSize: 14, color: textColor),
         ),
       ),
     );
@@ -379,12 +363,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             title,
-                            style: const TextStyle(
-                              color: Color(0xFF171A1D),
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                              height: 25 / 17,
-                            ),
+                            style: TestStyle.medium(fontSize: 17, color: Color(0xFF171A1D)),
                           ),
                           Positioned(
                             right: 12,
@@ -428,12 +407,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
                               ),
                               child: Text(
                                 resetText,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                  height: 22 / 16,
-                                ),
+                                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
                               ),
                             ),
                           ),
@@ -452,12 +426,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
                               ),
                               child: Text(
                                 confirmText,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                  height: 22 / 16,
-                                ),
+                                style: TestStyle.regular(fontSize: 16, color: Colors.white),
                               ),
                             ),
                           ),

@@ -16,6 +16,7 @@ import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../application/shell_role_provider.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 主框架页：承载底部 5 个 Tab（go_router 的 StatefulShellRoute）。
 class MainShellPage extends ConsumerStatefulWidget {
   const MainShellPage({super.key, required this.navigationShell, this.role});
@@ -267,11 +268,7 @@ class _BottomBar extends StatelessWidget {
                       Text(
                         item.labelKey.tr(),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          height: 1.2,
-                          fontWeight: FontWeight.w500,
-                        ).copyWith(color: textColor),
+                        style: TestStyle.medium(fontSize: 10).copyWith(color: textColor),
                       ),
                     ],
                   ),

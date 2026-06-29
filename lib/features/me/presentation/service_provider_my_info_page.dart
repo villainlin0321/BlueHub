@@ -20,6 +20,7 @@ import '../data/dictionary_providers.dart';
 import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _serviceProviderMyInfoProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -412,11 +413,7 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               '我的.注意重新提交审核'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                height: 18 / 12,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],
@@ -453,12 +450,7 @@ class _Header extends StatelessWidget {
           ),
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            style: TestStyle.medium(fontSize: 17, color: Color(0xFF262626)),
           ),
         ],
       ),
@@ -493,12 +485,7 @@ class _InfoSection extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Text(
               '我的.基础信息'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           _AvatarRow(
@@ -548,11 +535,7 @@ class _AvatarRow extends StatelessWidget {
           Expanded(
             child: Text(
               '我的.头像'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           if (resolvedLocalAvatarPath.isNotEmpty)
@@ -607,11 +590,7 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               item.label,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           const SizedBox(width: 12),
@@ -619,11 +598,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               item.value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],
@@ -650,21 +625,12 @@ class _QualificationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '我的.材料资质'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 16),
           Text(
             '我的.身份证'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 8),
           Row(
@@ -738,11 +704,7 @@ class _DocumentBlock extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
           ),
         ),
         const SizedBox(height: 8),
@@ -820,11 +782,7 @@ class _ServiceProviderMyInfoErrorView extends StatelessWidget {
           children: <Widget>[
             Text(
               message,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -866,11 +824,7 @@ class _BottomActionBar extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
-            ),
+            textStyle: TestStyle.pingFangMedium(fontSize: 16),
           ),
           child: Text('我的.修改信息'.tr()),
         ),
@@ -983,21 +937,12 @@ class _ReadonlyTextSection extends StatelessWidget {
         children: <Widget>[
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
-            ),
+            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 8),
           Text(
             content,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              height: 22 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
         ],
       ),

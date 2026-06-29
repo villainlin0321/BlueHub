@@ -8,6 +8,7 @@ import '../data/finance_providers.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import 'finance_page_shared.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceBankCardsPage extends ConsumerStatefulWidget {
   const FinanceBankCardsPage({super.key});
 
@@ -132,11 +133,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
         centerTitle: true,
         title: Text(
           '财务.银行卡管理'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -162,12 +159,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
               ),
               child: Text(
                 '财务.新增银行卡'.tr(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangMedium(fontSize: 16, color: Colors.white),
               ),
             ),
           ),

@@ -10,6 +10,8 @@ import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({
     required this.tierId,
@@ -403,8 +405,7 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                                 horizontal: 12,
                                 vertical: 6,
                               ),
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text('签证编辑.重新上传封面'.tr()),
                           ),
@@ -625,13 +626,11 @@ class EditVisaPackageLabeledField extends StatelessWidget {
                   children: <InlineSpan>[
                     TextSpan(text: label),
                     if (required)
-                      const TextSpan(
+                      TextSpan(
                         text: '  *',
-                        style: TextStyle(
-                          color: EditVisaPackageStyles.required,
+                        style: TestStyle.semibold(
                           fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          height: 20 / 10,
+                          color: EditVisaPackageStyles.required,
                         ),
                       ),
                   ],
@@ -951,12 +950,7 @@ class EditVisaPackageServiceChip extends StatelessWidget {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 14,
-                    ),
+                    style: TestStyle.regular(fontSize: 14, color: textColor),
                   ),
                 ),
               ),

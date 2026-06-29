@@ -14,6 +14,7 @@ import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 设置页：承接企业端“我的”页右上角设置入口，并提供基础账号操作。
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -84,11 +85,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       const SizedBox(height: 4),
                       Text(
                         '— $_versionLabel —',
-                        style: const TextStyle(
-                          color: Color(0xFFBFBFBF),
-                          fontSize: 12,
-                          height: 20 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                       ),
                     ],
                   ),
@@ -258,12 +255,7 @@ class _SettingsHeader extends StatelessWidget {
       ),
       title: Text(
         '设置.标题'.tr(),
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 17,
-          fontWeight: FontWeight.w500,
-          height: 24 / 17,
-        ),
+        style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
       ),
     );
   }
@@ -303,11 +295,7 @@ class _LanguageRow extends StatelessWidget {
           Expanded(
             child: Text(
               '设置.系统语言'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           AuthLanguageSwitch(
@@ -338,11 +326,7 @@ class _SettingsActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
@@ -374,11 +358,7 @@ class _BottomTextButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 16,
-            height: 22 / 16,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
         ),
       ),
     );
@@ -402,11 +382,7 @@ class _BottomLinkButton extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 16,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
           ),
         ),
       ),

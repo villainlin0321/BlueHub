@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/complaint_models.dart';
 import '../data/complaint_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ComplaintDetailPageArgs {
   const ComplaintDetailPageArgs({required this.complaintId});
 
@@ -106,22 +107,14 @@ class _ComplaintDetailBody extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               detail.title.trim().isEmpty ? '-' : detail.title.trim(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 15, color: Color(0xFF262626)),
             ),
             const SizedBox(height: 16),
             _BlockTitle(title: '投诉.内容'.tr()),
             const SizedBox(height: 8),
             Text(
               detail.content.trim().isEmpty ? '-' : detail.content.trim(),
-              style: const TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                height: 1.6,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
             ),
           ],
         ),
@@ -133,7 +126,7 @@ class _ComplaintDetailBody extends StatelessWidget {
             if (detail.attachmentUrls.isEmpty)
               Text(
                 '投诉.暂无附件'.tr(),
-                style: TextStyle(color: Color(0xFF8C8C8C), fontSize: 13),
+                style: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
               )
             else
               ...detail.attachmentUrls.map(
@@ -197,11 +190,7 @@ class _BlockTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        color: Color(0xFF262626),
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
+      style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
     );
   }
 }
@@ -223,17 +212,13 @@ class _InfoRow extends StatelessWidget {
             width: 72,
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF8C8C8C), fontSize: 13),
+              style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
             ),
           ),
           Expanded(
             child: Text(
               value.trim().isEmpty ? '-' : value.trim(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TestStyle.medium(fontSize: 13, color: Color(0xFF262626)),
             ),
           ),
         ],
@@ -281,11 +266,7 @@ class _AttachmentItem extends StatelessWidget {
                   _displayName(url),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  style: TestStyle.regular(fontSize: 13, color: Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -368,7 +349,7 @@ class _ComplaintErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),

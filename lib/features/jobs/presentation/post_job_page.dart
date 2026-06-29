@@ -15,6 +15,7 @@ import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 enum PostJobPageMode { create, edit }
 
 class PostJobPageArgs {
@@ -272,11 +273,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
                 Text(
                   _editLoadError!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(

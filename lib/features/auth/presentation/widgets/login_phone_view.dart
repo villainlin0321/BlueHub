@@ -5,6 +5,7 @@ import '../../../../shared/ui/app_colors.dart';
 import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class LoginRegionOption {
   const LoginRegionOption({required this.label, required this.code});
 
@@ -311,12 +312,9 @@ class _PhoneInputRow extends StatelessWidget {
                   hintText: '认证.请输入手机号'.tr(),
                   isDense: true,
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 16,
-                  ),
+                  hintStyle: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFBFBFBF)),
                 ),
-                style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
                 onChanged: onChanged,
               ),
             ),
@@ -354,9 +352,9 @@ class _TextInputRow extends StatelessWidget {
             hintText: hintText,
             isDense: true,
             border: InputBorder.none,
-            hintStyle: const TextStyle(color: Color(0xFFBFBFBF), fontSize: 16),
+            hintStyle: TestStyle.regular(fontSize: 16, color: Color(0xFFBFBFBF)),
           ),
-          style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
           onChanged: onChanged,
         ),
         const SizedBox(height: 12),
@@ -396,12 +394,9 @@ class _CodeInputRow extends StatelessWidget {
                   hintText: hintText,
                   isDense: true,
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 16,
-                  ),
+                  hintStyle: TestStyle.regular(fontSize: 16, color: Color(0xFFBFBFBF)),
                 ),
-                style: const TextStyle(color: Color(0xFF262626), fontSize: 16),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
                 onChanged: onChanged,
               ),
             ),

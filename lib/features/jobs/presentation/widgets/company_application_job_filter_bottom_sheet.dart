@@ -9,6 +9,7 @@ import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'filter_bottom_sheet_chip.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class CompanyApplicationJobFilterResult {
   const CompanyApplicationJobFilterResult({
     required this.jobId,
@@ -200,11 +201,7 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
               Text(
                 errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 14,
-                  height: 22 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
               ),
               const SizedBox(height: 12),
               TextButton(
@@ -279,12 +276,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   job.title.trim().isEmpty ? '招聘.未命名岗位'.tr() : job.title,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 16,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                 ),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
@@ -305,12 +297,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       _formatSalary(job),
-                      style: const TextStyle(
-                        color: Color(0xFFFE5815),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 24 / 14,
-                      ),
+                      style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFFFE5815)),
                     ),
                     const Spacer(),
                     Text(
@@ -319,11 +306,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                           'count': job.viewCount.toString(),
                         },
                       ),
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        height: 18 / 12,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
                     ),
                     const SizedBox(width: 16),
                     Text(
@@ -332,11 +315,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                           'count': job.applyCount.toString(),
                         },
                       ),
-                      style: const TextStyle(
-                        color: Color(0xFF096DD9),
-                        fontSize: 12,
-                        height: 18 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: Color(0xFF096DD9)),
                     ),
                   ],
                 ),
@@ -346,11 +325,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                     '企业岗位.发布时间'.tr(
                       namedArgs: <String, String>{'time': job.publishedAt},
                     ),
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 12,
-                      height: 18 / 12,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
                   ),
                 ],
               ],
@@ -431,11 +406,7 @@ class _CompanyApplicationJobFilterTag extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 10,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF546D96)),
       ),
     );
   }

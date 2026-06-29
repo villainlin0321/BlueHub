@@ -11,6 +11,7 @@ import '../data/complaint_models.dart';
 import '../data/complaint_providers.dart';
 import 'complaint_detail_page.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyComplaintsPage extends ConsumerWidget {
   const MyComplaintsPage({super.key});
 
@@ -129,11 +130,7 @@ class _ComplaintListTile extends StatelessWidget {
                           : item.title.trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TestStyle.semibold(fontSize: 15, color: Color(0xFF262626)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -145,32 +142,21 @@ class _ComplaintListTile extends StatelessWidget {
                 item.targetName.trim().isEmpty ? '-' : item.targetName.trim(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF595959),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TestStyle.medium(fontSize: 13, color: Color(0xFF595959)),
               ),
               const SizedBox(height: 6),
               Text(
                 item.content.trim(),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
+                style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
               ),
               const SizedBox(height: 10),
               Row(
                 children: <Widget>[
                   Text(
                     _formatDate(item.createdAt),
-                    style: const TextStyle(
-                      color: Color(0xFFBFBFBF),
-                      fontSize: 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                   ),
                   const Spacer(),
                   const Icon(
@@ -203,11 +189,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF1677FF),
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TestStyle.medium(fontSize: 11, color: Color(0xFF1677FF)),
       ),
     );
   }
@@ -228,7 +210,7 @@ class _EmptyState extends StatelessWidget {
           children: <Widget>[
             Text(
               '投诉.暂无投诉记录'.tr(),
-              style: TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -259,7 +241,7 @@ class _ErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF8C8C8C), fontSize: 14),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),

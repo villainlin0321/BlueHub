@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailReportPageArgs {
   const ServiceDetailReportPageArgs({
     required this.targetType,
@@ -201,11 +202,7 @@ class _ServiceDetailReportPageState
                       widget.args.targetName.trim().isEmpty
                           ? '投诉.未命名对象'.tr()
                           : widget.args.targetName.trim(),
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: TestStyle.pingFangMedium(fontSize: 13, color: Color(0xFF262626)),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -234,11 +231,7 @@ class _ServiceDetailReportPageState
                         hintText: '投诉.请输入投诉标题'.tr(),
                         border: InputBorder.none,
                       ),
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF262626)),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -275,32 +268,19 @@ class _ServiceDetailReportPageState
                             ],
                             decoration: InputDecoration(
                               hintText: '通用.请输入'.tr(),
-                              hintStyle: const TextStyle(
-                                color: Color(0xFF8C8C8C),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                              ),
+                              hintStyle: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
                               border: InputBorder.none,
                               isCollapsed: true,
                               counterText: '',
                             ),
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: TestStyle.regular(fontSize: 13, color: Color(0xFF262626)),
                           ),
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
                           child: Text(
                             '${_contentController.text.characters.length}/$_maxContentLength',
-                            style: const TextStyle(
-                              color: Color(0xFFBFBFBF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
+                            style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                           ),
                         ),
                       ],
@@ -387,12 +367,7 @@ class _ReportSubmitBar extends StatelessWidget {
               ),
               child: Text(
                 isSubmitting ? '通用.提交中'.tr() : '通用.提交'.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangMedium(fontSize: 16, color: Colors.white),
               ),
             ),
           ),

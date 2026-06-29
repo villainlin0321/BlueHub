@@ -18,6 +18,8 @@ import 'order_detail_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class OrderManagementPage extends ConsumerStatefulWidget {
   const OrderManagementPage({super.key});
 
@@ -292,10 +294,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
+                      style: TestStyle.semibold(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF262626),
                       ),
                     ),
                   ),
@@ -312,14 +313,11 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                           ),
                           title: Text(
                             labelBuilder(option).tr(),
-                            style: TextStyle(
+                            style: TestStyle.semibold(
+                              fontSize: 14,
                               color: selected
                                   ? const Color(0xFF096DD9)
                                   : const Color(0xFF262626),
-                              fontSize: 14,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
                             ),
                           ),
                           trailing: selected
@@ -375,11 +373,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
         ),
         title: Text(
           '订单.订单管理'.tr(),
-          style: const TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -563,15 +559,11 @@ class _OrderTabs extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         tab.label.tr(),
-                        style: TextStyle(
+                        style: TestStyle.medium(
+                          fontSize: 14,
                           color: selected
                               ? const Color(0xFF096DD9)
                               : const Color(0xFF262626),
-                          fontSize: 14,
-                          fontWeight: selected
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          height: 22 / 14,
                         ),
                       ),
                       const SizedBox(height: 9),
@@ -650,12 +642,7 @@ class _FilterButton extends StatelessWidget {
           children: <Widget>[
             Text(
               label.tr(),
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF171A1D)),
             ),
             const SizedBox(width: 2),
             SvgPicture.asset(
@@ -717,18 +704,16 @@ class _OrderCard extends StatelessWidget {
                             text: order.orderNo,
                             style: const TextStyle(
                               color: Color(0xFF8C8C8C),
-                              fontFamily: 'SF UI Text',
+                              fontFamily: TestStyle.sfUiTextFamily,
                             ),
                           ),
                         ],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
+                      style: TestStyle.regular(
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
+                        color: Color(0xFF8C8C8C),
                       ),
                     ),
                   ),
@@ -758,11 +743,9 @@ class _OrderCard extends StatelessWidget {
                                 _customerNameFor(order),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
+                                style: TestStyle.medium(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  height: 24 / 16,
+                                  color: Color(0xFF262626),
                                 ),
                               ),
                             ),
@@ -777,11 +760,9 @@ class _OrderCard extends StatelessWidget {
                           _serviceNameFor(order),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF8C8C8C),
+                          style: TestStyle.regular(
                             fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 18 / 12,
+                            color: Color(0xFF8C8C8C),
                           ),
                         ),
                       ],
@@ -790,11 +771,9 @@ class _OrderCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     _formatAmount(order.amount, order.currency),
-                    style: const TextStyle(
-                      color: Color(0xFFFE5815),
+                    style: TestStyle.medium(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 16,
+                      color: Color(0xFFFE5815),
                     ),
                   ),
                 ],
@@ -805,11 +784,9 @@ class _OrderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       _formatUpdatedText(order.updatedAt),
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
+                      style: TestStyle.pingFangRegular(
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
+                        color: Color(0xFF8C8C8C),
                       ),
                     ),
                   ),
@@ -963,12 +940,7 @@ class _StatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: textColor),
       ),
     );
   }
@@ -988,11 +960,9 @@ class _UrgentTag extends StatelessWidget {
       ),
       child: Text(
         '订单.紧急'.tr(),
-        style: const TextStyle(
-          color: Color(0xFFFF0B03),
+        style: TestStyle.pingFangRegular(
           fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
+          color: Color(0xFFFF0B03),
         ),
       ),
     );
@@ -1036,12 +1006,7 @@ class _ActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 12 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: textColor),
         ),
       ),
     );
@@ -1096,11 +1061,7 @@ class _OrderManagementErrorState extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+          style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
         ),
         const SizedBox(height: 16),
         TextButton(

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 关于我们页：用于展示应用名称、版本信息以及公司主体信息，便于留存合规截图。
 class AboutAppPage extends StatefulWidget {
   const AboutAppPage({super.key});
@@ -98,11 +99,7 @@ class _AboutAppPageState extends State<AboutAppPage> {
                   alignment: Alignment.center,
                   child: Text(
                     '应用.标题'.tr().characters.take(2).toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TestStyle.numberBold(fontSize: 24, color: Colors.white),
                   ),
                 );
               },
@@ -111,29 +108,18 @@ class _AboutAppPageState extends State<AboutAppPage> {
           const SizedBox(height: 16),
           Text(
             '应用.标题'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TestStyle.numberBold(fontSize: 24, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 8),
           Text(
             '${'关于页.版本'.tr()} $_versionLabel',
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 12),
           Text(
             '关于页.说明'.tr(),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              height: 1.6,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
           ),
         ],
       ),
@@ -153,11 +139,7 @@ class _AboutAppPageState extends State<AboutAppPage> {
         children: <Widget>[
           Text(
             '关于页.公司信息'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 16, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 16),
           _AboutInfoRow(label: '关于页.开发公司'.tr(), value: _companyName),
@@ -178,19 +160,13 @@ class _AboutAppPageState extends State<AboutAppPage> {
         Text(
           '$year ${'关于页.版权'.tr()}',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-          ),
+          style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
         const SizedBox(height: 4),
         Text(
           _companyName,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
       ],
     );
@@ -213,22 +189,13 @@ class _AboutInfoRow extends StatelessWidget {
           width: 112,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 14,
-              height: 1.6,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 1.6,
-            ),
+            style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
           ),
         ),
       ],

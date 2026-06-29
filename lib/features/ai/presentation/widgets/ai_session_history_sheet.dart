@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_text_input_dialog.dart';
 import '../../data/ai_models.dart';
 import '../../data/ai_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 const String _kAiHistoryEditIconAsset = 'assets/images/ai_history_edit.svg';
 const String _kAiHistoryDeleteIconAsset = 'assets/images/ai_history_delete.svg';
 Future<void> showAiSessionHistorySheet(
@@ -188,12 +189,7 @@ class _AiSessionHistorySheetState
                   children: <Widget>[
                     Text(
                       'AI.历史记录'.tr(),
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        height: 25 / 17,
-                      ),
+                      style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF171A1D)),
                     ),
                     Positioned(
                       right: 0,
@@ -317,24 +313,14 @@ class _AiSessionHistoryItem extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF262626),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
+                          style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           updatedAt,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFBFBFBF),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 14 / 12,
-                          ),
+                          style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                         ),
                       ],
                     ),

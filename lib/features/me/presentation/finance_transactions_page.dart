@@ -8,6 +8,7 @@ import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 import 'finance_page_shared.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceTransactionsPage extends ConsumerStatefulWidget {
   const FinanceTransactionsPage({super.key});
 
@@ -120,11 +121,7 @@ class _FinanceTransactionsPageState
         centerTitle: true,
         title: Text(
           '财务.账单明细'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: _buildBody(),
@@ -195,11 +192,7 @@ class _LoadMoreFooter extends StatelessWidget {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
       ),
     );

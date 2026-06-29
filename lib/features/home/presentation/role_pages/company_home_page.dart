@@ -21,6 +21,8 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
@@ -563,11 +565,9 @@ class _CompanyHeroTopRow extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     '通用.企业简称'.tr(),
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: TestStyle.numberBold(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -587,11 +587,9 @@ class _CompanyHeroTopRow extends StatelessWidget {
                       companyName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TestStyle.semibold(
                         fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        height: 20 / 17,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -606,20 +604,15 @@ class _CompanyHeroTopRow extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     industry,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      height: 14 / 11,
-                    ),
+                    style: TestStyle.regular(fontSize: 11, color: Colors.white),
                   ),
                   if (location.isNotEmpty) ...<Widget>[
                     const SizedBox(width: 6),
                     Text(
                       location,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TestStyle.regular(
                         fontSize: 11,
-                        height: 14 / 11,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -666,14 +659,9 @@ class _EnterpriseBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         '企',
-        style: TextStyle(
-          color: Color(0xFF6F4200),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          height: 1,
-        ),
+        style: TestStyle.numberBold(fontSize: 9, color: Color(0xFF6F4200)),
       ),
     );
   }
@@ -721,22 +709,16 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
                 children: <Widget>[
                   Text(
                     item.value,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TestStyle.semibold(
                       fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      height: 24 / 18,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     item.labelKey.tr(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      height: 16 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Colors.white),
                   ),
                 ],
               ),
@@ -812,11 +794,7 @@ class _QuickActionButton extends StatelessWidget {
             Text(
               item.labelKey.tr(),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
-                fontSize: 12,
-                height: 18 / 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: Color(0xFF171A1D)),
             ),
           ],
         ),
@@ -861,10 +839,9 @@ class _AiAssistantBanner extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           '招聘.AI业务助手'.tr(),
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangRegular(
                             fontSize: 15,
-                            height: 22 / 15,
+                            color: Colors.white,
                           ),
                         ),
                         SizedBox(height: 2),
@@ -872,10 +849,9 @@ class _AiAssistantBanner extends StatelessWidget {
                           '招聘.AI推荐文案'.tr(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangRegular(
                             fontSize: 12,
-                            height: 16 / 12,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -893,10 +869,9 @@ class _AiAssistantBanner extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           '招聘.查看'.tr(),
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: TestStyle.pingFangMedium(
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 2),
@@ -932,11 +907,9 @@ class _ResumeSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             '首页.最新收到简历'.tr(),
-            style: TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangMedium(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
+              color: Color(0xFF262626),
             ),
           ),
         ),
@@ -950,10 +923,9 @@ class _ResumeSectionHeader extends StatelessWidget {
               children: <Widget>[
                 Text(
                   '订单.全部'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
                 SizedBox(width: 2),
@@ -986,11 +958,7 @@ class _ResumeStateCard extends StatelessWidget {
         children: <Widget>[
           Text(
             message,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 13,
-              height: 20 / 13,
-            ),
+            style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
           ),
           if (buttonLabel != null && onTap != null) ...<Widget>[
             const SizedBox(height: 12),
@@ -1044,20 +1012,17 @@ class _ResumeCard extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             item.name,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
+                            style: TestStyle.medium(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
+                              color: Color(0xFF262626),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             item.ageGender,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
+                            style: TestStyle.regular(
                               fontSize: 12,
-                              height: 18 / 12,
+                              color: Color(0xFF8C8C8C),
                             ),
                           ),
                         ],
@@ -1065,10 +1030,9 @@ class _ResumeCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         item.appliedJob,
-                        style: const TextStyle(
-                          color: Color(0xFF595959),
+                        style: TestStyle.regular(
                           fontSize: 12,
-                          height: 16 / 12,
+                          color: Color(0xFF595959),
                         ),
                       ),
                     ],
@@ -1080,18 +1044,16 @@ class _ResumeCard extends StatelessWidget {
                     children: <InlineSpan>[
                       TextSpan(
                         text: item.matchPercent,
-                        style: const TextStyle(
-                          color: Color(0xFF096DD9),
+                        style: TestStyle.pingFangRegular(
                           fontSize: 16,
-                          height: 21 / 16,
+                          color: Color(0xFF096DD9),
                         ),
                       ),
                       TextSpan(
                         text: ' ${'招聘.匹配度'.tr()}',
-                        style: TextStyle(
-                          color: Color(0xFF096DD9),
+                        style: TestStyle.pingFangRegular(
                           fontSize: 10,
-                          height: 14 / 10,
+                          color: Color(0xFF096DD9),
                         ),
                       ),
                     ],
@@ -1112,10 +1074,9 @@ class _ResumeCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.deliveryTime,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 12,
-                    height: 16 / 12,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
                 const Spacer(),
@@ -1159,11 +1120,7 @@ class _SkillTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 11,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: Color(0xFF546D96)),
       ),
     );
   }

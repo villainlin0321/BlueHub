@@ -5,6 +5,7 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../data/job_models.dart';
 import 'job_list_cards.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class JobSearchPageView extends StatelessWidget {
   const JobSearchPageView({
     super.key,
@@ -78,12 +79,7 @@ class _JobSearchErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),

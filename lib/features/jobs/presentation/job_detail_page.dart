@@ -19,6 +19,7 @@ import '../../messages/data/message_providers.dart';
 import '../../me/presentation/company_my_info_page.dart';
 import 'job_apply_helper.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 职位详情页参数：当前至少透传岗位 ID，供“投递简历”调用真实接口。
 class JobDetailPageArgs {
   const JobDetailPageArgs({required this.jobId});
@@ -780,11 +781,7 @@ class _JobDetailErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(

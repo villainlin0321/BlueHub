@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../post_job_page_styles.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class PostJobSectionCard extends StatelessWidget {
   const PostJobSectionCard({
     super.key,
@@ -80,13 +82,11 @@ class PostJobFieldGroup extends StatelessWidget {
                   Text(label, style: PostJobPageStyles.fieldLabel),
                   if (required) ...<Widget>[
                     const SizedBox(width: 4),
-                    const Text(
+                    Text(
                       '*',
-                      style: TextStyle(
-                        color: PostJobPageStyles.required,
+                      style: TestStyle.regular(
                         fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
+                        color: PostJobPageStyles.required,
                       ),
                     ),
                   ],
@@ -261,12 +261,7 @@ class PostJobSelectableChip extends StatelessWidget {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 14,
-                    ),
+                    style: TestStyle.regular(fontSize: 14, color: textColor),
                   ),
                 ),
               ),

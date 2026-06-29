@@ -15,6 +15,7 @@ import '../../order/presentation/order_review_page.dart';
 import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyOrdersPage extends ConsumerStatefulWidget {
   const MyOrdersPage({super.key});
 
@@ -292,11 +293,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         ),
         title: Text(
           '我的.我的订单'.tr(),
-          style: TextStyle(
-            color: Color(0xE6262626),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6262626)),
         ),
       ),
       body: Column(
@@ -650,16 +647,9 @@ class _OrderStatusTabs extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     filter.label.tr(),
-                    style: TextStyle(
-                      color: isSelected
+                    style: TestStyle.medium(fontSize: 14, color: isSelected
                           ? const Color(0xFF096DD9)
-                          : const Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: isSelected
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                      height: 22 / 14,
-                    ),
+                          : const Color(0xFF262626)),
                   ),
                   const SizedBox(height: 9),
                   Container(
@@ -714,11 +704,7 @@ class _OrderStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             if (buttonLabel != null && onTap != null) ...<Widget>[
               const SizedBox(height: 12),
@@ -797,12 +783,7 @@ class _OrderCard extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         order.timeText,
-                        style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          height: 16 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                       ),
                       const Spacer(),
                       if (order.tagLabel != null && order.tagStyle != null)
@@ -821,23 +802,13 @@ class _OrderCard extends StatelessWidget {
                           order.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF262626),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            height: 22 / 16,
-                          ),
+                          style: TestStyle.semibold(fontSize: 16, color: Color(0xFF262626)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         order.price,
-                        style: const TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                       ),
                     ],
                   ),
@@ -896,12 +867,7 @@ class _OrderMetaRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
         Flexible(
           child: Text(
@@ -909,12 +875,7 @@ class _OrderMetaRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
         ),
       ],
@@ -946,11 +907,7 @@ class _OrderTag extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         label,
-        style: TextStyle(
-          color: foregroundColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TestStyle.medium(fontSize: 11, color: foregroundColor),
       ),
     );
   }
@@ -981,12 +938,7 @@ class _OrderProgressCard extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Text(
           value,
-          style: const TextStyle(
-            color: Color(0xFFFF4D4F),
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            height: 16 / 11,
-          ),
+          style: TestStyle.regular(fontSize: 11, color: Color(0xFFFF4D4F)),
         ),
       );
     }
@@ -1009,23 +961,14 @@ class _OrderProgressCard extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label ?? '',
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                height: 18 / 12,
-              ),
+              style: TestStyle.medium(fontSize: 12, color: Color(0xFF262626)),
             ),
           ),
         ],
@@ -1073,12 +1016,7 @@ class _OrderActionButton extends StatelessWidget {
           ),
           child: Text(
             action.label.tr(),
-            style: TextStyle(
-              color: foregroundColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 12 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: foregroundColor),
           ),
         ),
       ),

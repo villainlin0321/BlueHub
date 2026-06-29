@@ -13,6 +13,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class OrderReviewPageArgs {
   const OrderReviewPageArgs({
     required this.orderId,
@@ -204,32 +205,19 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                             textAlignVertical: TextAlignVertical.top,
                             decoration: InputDecoration(
                               hintText: '评价.写评论'.tr(),
-                              hintStyle: TextStyle(
-                                color: Color(0xFF8C8C8C),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                              ),
+                              hintStyle: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
                               border: InputBorder.none,
                               counterText: '',
                               isCollapsed: true,
                             ),
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: TestStyle.regular(fontSize: 13, color: Color(0xFF262626)),
                           ),
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
                           child: Text(
                             '${_commentController.text.characters.length}/500',
-                            style: const TextStyle(
-                              color: Color(0xFFBFBFBF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
+                            style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                           ),
                         ),
                       ],

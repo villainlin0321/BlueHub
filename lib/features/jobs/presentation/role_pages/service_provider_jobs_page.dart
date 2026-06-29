@@ -12,6 +12,7 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
 class ServiceProviderJobsPage extends ConsumerStatefulWidget {
   const ServiceProviderJobsPage({super.key});
@@ -424,12 +425,7 @@ class _PageHeader extends StatelessWidget {
           Expanded(
             child: Text(
               '套餐管理.标题'.tr(),
-              style: TextStyle(
-                color: Color(0xE6000000),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
             ),
           ),
           InkWell(
@@ -439,12 +435,7 @@ class _PageHeader extends StatelessWidget {
               padding: EdgeInsets.only(top: 2),
               child: Text(
                 '套餐管理.发布'.tr(),
-                style: TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -483,16 +474,9 @@ class _PageTabBar extends StatelessWidget {
                     Text(
                       tabs[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: selected
+                      style: TestStyle.medium(fontSize: 14, color: selected
                             ? const Color(0xFF096DD9)
-                            : const Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight: selected
-                            ? FontWeight.w500
-                            : FontWeight.w400,
-                        height: 22 / 14,
-                      ),
+                            : const Color(0xFF262626)),
                     ),
                     if (selected) ...<Widget>[
                       const SizedBox(height: 9),
@@ -551,12 +535,7 @@ class _PackageCard extends StatelessWidget {
                             data.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
-                            ),
+                            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                           ),
                         ),
                       ],
@@ -578,12 +557,7 @@ class _PackageCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     data.metaText,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                   ),
                 ],
               ),
@@ -642,32 +616,17 @@ class _PackagePriceRow extends StatelessWidget {
         children: <Widget>[
           Text(
             item.name,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 20 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626)),
           ),
           const SizedBox(width: 12),
           Text(
             item.price,
-            style: const TextStyle(
-              color: Color(0xFFFE5815),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              height: 20 / 13,
-            ),
+            style: TestStyle.medium(fontSize: 13, color: Color(0xFFFE5815)),
           ),
           const Spacer(),
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 20 / 12,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
               children: <InlineSpan>[
                 TextSpan(
                   text: '套餐管理.已售'.tr(
@@ -700,12 +659,7 @@ class _TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF546D96)),
       ),
     );
   }
@@ -725,12 +679,7 @@ class _EmptyTierState extends StatelessWidget {
       ),
       child: Text(
         '套餐管理.暂无套餐档位'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 20 / 12,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -770,13 +719,7 @@ class _DeleteButton extends StatelessWidget {
       ),
       child: Text(
         '企业岗位.删除'.tr(),
-        style: TextStyle(
-          color: Color(0xFFD9363E),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 12 / 12,
-          letterSpacing: 0.2,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFFD9363E), letterSpacing: 0.2),
       ),
     );
   }
@@ -810,13 +753,7 @@ class _GhostButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 12 / 12,
-                  letterSpacing: 0.2,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626), letterSpacing: 0.2),
               ),
       ),
     );
@@ -844,13 +781,7 @@ class _PrimaryButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 12 / 12,
-            letterSpacing: 0.2,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
         ),
       ),
     );
@@ -1005,23 +936,13 @@ class _PackageLoadError extends StatelessWidget {
         Text(
           '套餐管理.套餐列表加载失败'.tr(),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 24 / 16,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 8),
         Text(
           errorText,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 20 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
         const SizedBox(height: 16),
         Center(

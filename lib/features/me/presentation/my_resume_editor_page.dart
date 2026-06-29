@@ -31,6 +31,7 @@ import 'country_options_bottom_sheet.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 编辑页的进入模式。
 enum ResumeEditorMode { create, edit }
 
@@ -519,11 +520,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       ),
       title: Text(
         '我的.我的简历'.tr(),
-        style: TextStyle(
-          color: Color(0xE6000000),
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
       ),
       actions: <Widget>[
         Padding(
@@ -533,12 +530,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               onTap: _openPreview,
               child: Text(
                 '我的.预览'.tr(),
-                style: TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -589,22 +581,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     children: <Widget>[
                       Text(
                         '我的.简历完整度'.tr(),
-                        style: TextStyle(
-                          color: Color(0xFF262626),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '$_completionRate%',
-                        style: const TextStyle(
-                          color: Color(0xFF096DD9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.medium(fontSize: 16, color: Color(0xFF096DD9)),
                       ),
                     ],
                   ),
@@ -630,12 +612,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   const SizedBox(height: 3),
                   Text(
                     '我的.完善简历提示'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 10,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 10, color: Color(0xFF8C8C8C)),
                   ),
                 ],
               ),
@@ -684,12 +661,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   basicInfoViewData.name.isEmpty
                       ? '我的.未填写姓名'.tr()
                       : basicInfoViewData.name,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                 ),
                 const SizedBox(height: 10),
                 if (metaWidgets.isEmpty)
@@ -804,11 +776,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
             trailing: FieldTrailingSelector(
               label: currencyLabel,
               onTap: _openSalaryCurrencySheet,
-              textStyle: const TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              textStyle: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
             ),
           ),
           const SizedBox(height: 12),
@@ -823,12 +791,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               const SizedBox(width: 12),
               Text(
                 '我的.至'.tr(),
-                style: TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  height: 18 / 13,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -859,12 +822,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Color(0xFF171A1D),
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          height: 18 / 16,
-        ),
+        style: TestStyle.medium(fontSize: 16, color: Color(0xFF171A1D)),
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
         ],
@@ -872,12 +830,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           isCollapsed: true,
           border: InputBorder.none,
           hintText: hintText,
-          hintStyle: const TextStyle(
-            color: Color(0xFFBFBFBF),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            height: 18 / 16,
-          ),
+          hintStyle: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFBFBFBF)),
         ),
       ),
     );
@@ -998,22 +951,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   children: <Widget>[
                     Text(
                       certificate.title,
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       certificate.authority,
-                      style: const TextStyle(
-                        color: Color(0xFF595959),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
                     ),
                   ],
                 ),
@@ -1023,12 +966,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 children: <Widget>[
                   Text(
                     certificate.issuedAt,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 13,
-                    ),
+                    style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
                   ),
                   const SizedBox(width: 4),
                   const Icon(
@@ -1096,10 +1034,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                       color: const Color(0xFFF5F7FA),
                       child: Text(
                         '我的.加载失败'.tr(),
-                        style: TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 12,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
                       ),
                     );
                   },
@@ -1120,11 +1055,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       ),
       child: Text(
         '我的.暂无图片'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -1183,22 +1114,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                 children: <Widget>[
                   Text(
                     item.school,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 22 / 16,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     item.subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF595959),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
                   ),
                 ],
               ),
@@ -1211,12 +1132,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               children: <Widget>[
                 Text(
                   item.period,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 13,
-                  ),
+                  style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
                 ),
                 const SizedBox(width: 4),
                 const Icon(
@@ -1252,12 +1168,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               _selfEvaluation,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 22 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
             ),
         ],
       ),
@@ -1283,12 +1194,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.medium(fontSize: 17, color: Color(0xFF262626)),
         ),
         if (showRedDot) ...<Widget>[
           const SizedBox(width: 4),
@@ -1313,12 +1219,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       children: <Widget>[
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 22 / 14,
-          ),
+          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
         ),
         const Spacer(),
         trailing,
@@ -1330,12 +1231,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   Widget _buildMetaText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF595959),
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 16 / 14,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
     );
   }
 
@@ -1343,12 +1239,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
   Widget _buildEmptySectionText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF8C8C8C),
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 20 / 14,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
     );
   }
 
@@ -1363,12 +1254,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 18 / 14,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -1400,11 +1286,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       alignment: Alignment.center,
       child: Text(
         fallbackText,
-        style: const TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.semibold(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -1538,12 +1420,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           ],
           Text(
             label,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 18 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: textColor),
           ),
           if (iconPath != _ResumeEditorAssets.tagAdd) ...<Widget>[
             const SizedBox(width: 8),
@@ -1617,12 +1494,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
               Expanded(
                 child: Text(
                   item.company,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
-                  ),
+                  style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1632,12 +1504,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                   children: <Widget>[
                     Text(
                       item.period,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        height: 18 / 13,
-                      ),
+                      style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
                     ),
                     const SizedBox(width: 4),
                     const Icon(
@@ -1653,24 +1520,14 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
           const SizedBox(height: 4),
           Text(
             item.roleLabel,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           const SizedBox(height: 12),
           Text(
             item.summary,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
           ),
         ],
       ),
@@ -1702,11 +1559,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     ),
                     child: Text(
                       '我的.保存'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),
@@ -1727,11 +1580,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
                     ),
                     child: Text(
                       '我的.提交并预览'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),

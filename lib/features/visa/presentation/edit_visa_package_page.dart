@@ -29,6 +29,7 @@ import '../data/visa_package_providers.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class EditVisaPackagePage extends ConsumerStatefulWidget {
   const EditVisaPackagePage({super.key, this.packageId});
 
@@ -1131,21 +1132,13 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
               children: <Widget>[
                 Text(
                   '服务详情.套餐详情加载失败'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _packageDetailError!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(

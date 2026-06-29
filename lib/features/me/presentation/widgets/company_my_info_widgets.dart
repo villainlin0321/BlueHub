@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_my_info_styles.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class CompanyMyInfoHeader extends StatelessWidget {
   const CompanyMyInfoHeader({required this.onBackTap, this.title, super.key});
 
@@ -184,11 +185,7 @@ class CompanyQualificationPreview extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4),
             child: Text(
               title,
-              style: const TextStyle(
-                color: CompanyMyInfoStyles.primaryText,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: CompanyMyInfoStyles.primaryText),
             ),
           ),
           const SizedBox(height: 8),
@@ -315,12 +312,7 @@ class CompanyImageSourceBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '我的.选择头像'.tr(),
-              style: TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
             ),
             const SizedBox(height: 12),
             _CompanyBottomSheetActionTile(
@@ -399,11 +391,7 @@ class _CompanyBottomSheetActionTile extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
           ),
         ),
       ),

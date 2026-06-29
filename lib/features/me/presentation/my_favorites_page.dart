@@ -17,6 +17,7 @@ import '../../service_detail/presentation/service_detail_page.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 
@@ -540,11 +541,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         ),
         title: Text(
           '我的.我的收藏'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
         actions: <Widget>[
           Padding(
@@ -559,11 +556,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               ),
               child: Text(
                 _isManaging ? '我的.退出管理'.tr() : '我的.管理'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -585,16 +578,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               controller: _tabController,
               labelColor: const Color(0xFF096DD9),
               unselectedLabelColor: const Color(0xFF262626),
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 22 / 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 22 / 14,
-              ),
+              labelStyle: TestStyle.medium(fontSize: 14),
+              unselectedLabelStyle: TestStyle.regular(fontSize: 14),
               indicatorSize: TabBarIndicatorSize.label,
               indicatorColor: const Color(0xFF096DD9),
               indicatorWeight: 2,
@@ -831,11 +816,7 @@ class _SelectableWrapper extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -950,11 +931,7 @@ class _FavoriteServicesEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏签证服务'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -981,11 +958,7 @@ class _FavoriteServicesErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -1005,11 +978,7 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏岗位'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -1039,11 +1008,7 @@ class _FavoriteJobsErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -1094,11 +1059,7 @@ class _FavoritesManageBar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '我的.全选'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
                   ),
                 ],
               ),
@@ -1118,11 +1079,7 @@ class _FavoritesManageBar extends StatelessWidget {
                 ),
                 child: Text(
                   '我的.删除'.tr(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),

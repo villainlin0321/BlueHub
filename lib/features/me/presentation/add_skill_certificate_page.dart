@@ -12,6 +12,7 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AddSkillCertificatePage extends ConsumerStatefulWidget {
   const AddSkillCertificatePage({super.key, this.args});
 
@@ -186,12 +187,7 @@ class _AddSkillCertificatePageState
         ),
         title: Text(
           '我的.技能证书'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: SafeArea(
@@ -213,12 +209,7 @@ class _AddSkillCertificatePageState
             const SizedBox(height: 16),
             Text(
               '我的.证书图片'.tr(),
-              style: TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
             ),
             const SizedBox(height: 12),
             UploadImageGrid(
@@ -273,11 +264,7 @@ class _AddSkillCertificatePageState
                           ),
                           child: Text(
                             '我的.删除'.tr(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                              height: 22 / 16,
-                            ),
+                            style: TestStyle.pingFangRegular(fontSize: 16),
                           ),
                         ),
                       ),
@@ -300,11 +287,7 @@ class _AddSkillCertificatePageState
                         ),
                         child: Text(
                           '我的.保存'.tr(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 16),
                         ),
                       ),
                     ),
@@ -369,12 +352,7 @@ class _CertificateSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           Expanded(
             child: InkWell(
@@ -391,14 +369,9 @@ class _CertificateSelectorField extends StatelessWidget {
                     Expanded(
                       child: Text(
                         value ?? '通用.请选择'.tr(),
-                        style: TextStyle(
-                          color: value == null
+                        style: TestStyle.pingFangRegular(fontSize: 16, color: value == null
                               ? const Color(0xFFBFBFBF)
-                              : const Color(0xFF171A1D),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                              : const Color(0xFF171A1D)),
                       ),
                     ),
                     const Icon(

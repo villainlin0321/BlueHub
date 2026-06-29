@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
   const CompanyVisaPage({super.key});
@@ -91,11 +92,7 @@ class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget 
       centerTitle: true,
       title: Text(
         '企业岗位.岗位'.tr(),
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 17,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black),
       ),
       actions: <Widget>[
         GestureDetector(
@@ -106,10 +103,7 @@ class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget 
             child: Center(
               child: Text(
                 '企业岗位.发布'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 15,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -132,16 +126,8 @@ class _CompanyVisaTabBar extends StatelessWidget {
             .toList(growable: false),
         labelColor: const Color(0xFF096DD9),
         unselectedLabelColor: const Color(0xFF262626),
-        labelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          height: 22 / 14,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 22 / 14,
-        ),
+        labelStyle: TestStyle.medium(fontSize: 14),
+        unselectedLabelStyle: TestStyle.regular(fontSize: 14),
         indicatorSize: TabBarIndicatorSize.label,
         indicatorColor: const Color(0xFF096DD9),
         indicatorWeight: 2,
@@ -579,12 +565,7 @@ class _JobManageCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: const TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 16,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                   ),
                 ),
                 const _MoreActionIcon(),
@@ -609,12 +590,7 @@ class _JobManageCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   _formatSalary(job),
-                  style: const TextStyle(
-                    color: Color(0xFFFE5815),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 24 / 14,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFFFE5815)),
                 ),
                 const Spacer(),
                 Text(
@@ -623,11 +599,7 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.viewCount.toString(),
                     },
                   ),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    height: 18 / 12,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
                 ),
                 const SizedBox(width: 16),
                 Text(
@@ -636,11 +608,7 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.applyCount.toString(),
                     },
                   ),
-                  style: const TextStyle(
-                    color: Color(0xFF096DD9),
-                    fontSize: 12,
-                    height: 18 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF096DD9)),
                 ),
               ],
             ),
@@ -650,11 +618,7 @@ class _JobManageCard extends StatelessWidget {
                 '企业岗位.发布时间'.tr(
                   namedArgs: <String, String>{'time': job.publishedAt},
                 ),
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
-                  fontSize: 12,
-                  height: 18 / 12,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
               ),
             ],
             const SizedBox(height: 16),
@@ -752,11 +716,7 @@ class _JobTag extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 10,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF546D96)),
       ),
     );
   }
@@ -867,12 +827,7 @@ class _BorderActionChip extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 12,
-                    height: 12 / 12,
-                    letterSpacing: 0.2,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: textColor, letterSpacing: 0.2),
                 ),
         ),
       ),
@@ -903,12 +858,7 @@ class _PrimaryActionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              height: 12 / 12,
-              letterSpacing: 0.2,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
           ),
         ),
       ),

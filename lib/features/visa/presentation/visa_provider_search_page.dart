@@ -15,6 +15,7 @@ import '../data/provider_models.dart';
 import '../data/provider_providers.dart';
 import 'widgets/visa_provider_search_page_view.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class VisaProviderSearchPage extends ConsumerStatefulWidget {
   const VisaProviderSearchPage({super.key});
 
@@ -161,12 +162,7 @@ class _VisaProviderSearchPageState
               ),
               child: Text(
                 '通用.搜索'.tr(),
-                style: TextStyle(
-                  color: Color(0xFF096DD9),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  height: 21 / 15,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF096DD9)),
               ),
             ),
           ),
@@ -231,22 +227,12 @@ class _SearchAppBarField extends StatelessWidget {
               autofocus: true,
               textInputAction: TextInputAction.search,
               cursorColor: const Color(0xFF096DD9),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 hintText: '首页.搜索签证服务欧洲岗位'.tr(),
-                hintStyle: TextStyle(
-                  color: Color(0xFFBFBFBF),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                hintStyle: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
               ),
               onSubmitted: onSubmitted,
             ),
