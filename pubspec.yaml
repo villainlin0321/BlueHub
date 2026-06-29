@@ -104,6 +104,34 @@ flutter:
     - assets/translations/
     - ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
 
+  fonts:
+    - family: PingFang
+      fonts:
+        - asset: assets/font/ping_fang/PingFang.ttc
+          weight: 400
+    - family: SFUIText
+      fonts:
+        - asset: assets/font/sf_ui_text/SFUIText-Light.otf
+          weight: 300
+        - asset: assets/font/sf_ui_text/SFUIText-Regular.otf
+          weight: 400
+        - asset: assets/font/sf_ui_text/SFUIText-Medium.otf
+          weight: 500
+        - asset: assets/font/sf_ui_text/SFUIText-Semibold.otf
+          weight: 600
+        - asset: assets/font/sf_ui_text/SFUIText-Bold.otf
+          weight: 700
+    - family: MiSansLatinVF
+      fonts:
+        - asset: assets/font/mi_sans_latin/MiSansLatinVF.ttf
+          weight: 700
+    - family: AlibabaPuHuiTi
+      fonts:
+        - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Medium.otf
+          weight: 500
+        - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Bold.otf
+          weight: 700
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
