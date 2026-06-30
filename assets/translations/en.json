@@ -91,7 +91,9 @@
     "关于我们": "About Us",
     "退出登录": "Log out",
     "注销": "Delete Account",
-    "注销未开放": "Account deletion is not available yet",
+    "注销标题": "Delete Account",
+    "注销内容": "Are you sure you want to delete this account? You will no longer be able to sign in with it afterward.",
+    "注销失败": "Failed to delete the account. Please try again later.",
     "退出登录标题": "Log out",
     "退出登录内容": "Are you sure you want to log out of this account?",
     "退出登录失败": "Failed to log out. Please try again later."
