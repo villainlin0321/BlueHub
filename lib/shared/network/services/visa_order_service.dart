@@ -110,10 +110,36 @@ class VisaOrderService {
     required int orderId,
     required ProcessOrderBO request,
   }) async {
+    final String normalizedAction = request.action.trim().toLowerCase();
+    final ProcessOrderBO normalizedRequest =
+        normalizedAction == 'reject' &&
+            (request.remark ?? '').trim().isEmpty &&
+            (request.materialRejections?.isNotEmpty ?? false)
+        ? ProcessOrderBO(
+            action: request.action,
+            remark: request.materialRejections!.first.reason.trim(),
+            materialRejections: request.materialRejections,
+            nextStatus: request.nextStatus,
+          )
+        : request;
     return _apiClient.putVoid(
       '/visa-orders/$orderId/process',
-      data: request.toJson(),
+      data: normalizedRequest.toJson(),
     );
+  }
+
+  /// 查询订单驳回历史，返回按时间倒序的驳回记录列表。
+  Future<List<OrderRejectRecordVO>> listRejectHistory({
+    required int orderId,
+  }) async {
+    final response = await _apiClient.get<List<OrderRejectRecordVO>>(
+      '/visa-orders/$orderId/reject-history',
+      decode: (data) => decodeModelList<OrderRejectRecordVO>(
+        data,
+        OrderRejectRecordVO.fromJson,
+      ),
+    );
+    return response;
   }
 
   /// 上传签证办理过程中产生的签证文件或出签材料。

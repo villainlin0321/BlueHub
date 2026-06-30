@@ -342,6 +342,13 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(orderRefreshTickProvider, (int? previous, int next) {
+      if (previous == next || !mounted) {
+        return;
+      }
+      Future<void>.microtask(_loadOrders);
+    });
+
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(

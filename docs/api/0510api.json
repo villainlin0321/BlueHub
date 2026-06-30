@@ -5785,6 +5785,80 @@
         }
       }
     },
+    "/visa-orders/{orderId}/reject-history": {
+      "get": {
+        "tags": [
+          "签证订单模块"
+        ],
+        "summary": "查询订单驳回历史",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listRejectHistory",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "订单 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultListOrderRejectRecordVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/visa-orders/provider": {
       "get": {
         "tags": [
@@ -8862,6 +8936,26 @@
           "status"
         ]
       },
+      "OrderMaterialRejectionBO": {
+        "type": "object",
+        "description": "单项材料驳回明细",
+        "properties": {
+          "materialId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "材料记录 ID"
+          },
+          "reason": {
+            "type": "string",
+            "description": "该材料的驳回原因",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "materialId",
+          "reason"
+        ]
+      },
       "ProcessOrderBO": {
         "type": "object",
         "description": "处理签证订单请求（服务商端）",
@@ -8874,7 +8968,14 @@
           },
           "remark": {
             "type": "string",
-            "description": "备注（驳回时必填，说明驳回原因）"
+            "description": "整体备注/驳回说明（驳回时建议填写，作为整体原因）"
+          },
+          "materialRejections": {
+            "type": "array",
+            "description": "单项材料驳回明细（驳回时填写，将驳回原因关联到具体材料）",
+            "items": {
+              "$ref": "#/components/schemas/OrderMaterialRejectionBO"
+            }
           },
           "nextStatus": {
             "type": "string",
@@ -9575,6 +9676,60 @@
             "type": "string",
             "format": "date-time",
             "description": "上传时间"
+          },
+          "rejectReason": {
+            "type": "string",
+            "description": "该材料的驳回原因，为空表示无问题"
+          }
+        }
+      },
+      "OrderRejectItemVO": {
+        "type": "object",
+        "description": "订单驳回单项材料明细",
+        "properties": {
+          "materialId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "材料记录 ID（快照）"
+          },
+          "materialName": {
+            "type": "string",
+            "description": "材料名称（快照）"
+          },
+          "fileUrl": {
+            "type": "string",
+            "description": "材料文件访问 URL"
+          },
+          "reason": {
+            "type": "string",
+            "description": "该材料的驳回原因"
+          }
+        }
+      },
+      "OrderRejectRecordVO": {
+        "type": "object",
+        "description": "订单驳回记录",
+        "properties": {
+          "rejectId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "驳回记录 ID"
+          },
+          "remark": {
+            "type": "string",
+            "description": "整体驳回备注"
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "驳回时间"
+          },
+          "items": {
+            "type": "array",
+            "description": "单项材料驳回明细",
+            "items": {
+              "$ref": "#/components/schemas/OrderRejectItemVO"
+            }
           }
         }
       },
@@ -9763,6 +9918,10 @@
           "rejectReason": {
             "type": "string",
             "description": "拒绝原因"
+          },
+          "latestReject": {
+            "$ref": "#/components/schemas/OrderRejectRecordVO",
+            "description": "最近一次驳回记录（含单项材料明细），无则为 null"
           },
           "isUrgent": {
             "type": "boolean",
@@ -11852,6 +12011,41 @@
           "pagination": {
             "$ref": "#/components/schemas/Pagination",
             "description": "分页信息"
+          }
+        }
+      },
+      "AppResultListOrderRejectRecordVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "array",
+            "description": "响应数据",
+            "items": {
+              "$ref": "#/components/schemas/OrderRejectRecordVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
           }
         }
       },

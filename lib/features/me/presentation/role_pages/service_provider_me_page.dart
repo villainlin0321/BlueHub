@@ -411,7 +411,7 @@ class _StatItem extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 5),
         Text(
           label,
           textAlign: TextAlign.center,

@@ -94,6 +94,7 @@ class MaterialVO {
     required this.fileType,
     required this.fileSize,
     required this.uploadedAt,
+    required this.rejectReason,
   });
 
   final int materialId;
@@ -102,6 +103,7 @@ class MaterialVO {
   final String fileType;
   final int fileSize;
   final String uploadedAt;
+  final String? rejectReason;
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
@@ -111,6 +113,7 @@ class MaterialVO {
       fileType: readString(json, 'fileType'),
       fileSize: readInt(json, 'fileSize'),
       uploadedAt: readString(json, 'uploadedAt'),
+      rejectReason: _readNullableString(json['rejectReason']),
     );
   }
 
@@ -122,6 +125,96 @@ class MaterialVO {
       'fileType': fileType,
       'fileSize': fileSize,
       'uploadedAt': uploadedAt,
+      'rejectReason': rejectReason,
+    };
+  }
+}
+
+class OrderMaterialRejectionBO {
+  const OrderMaterialRejectionBO({
+    required this.materialId,
+    required this.reason,
+  });
+
+  final int materialId;
+  final String reason;
+
+  factory OrderMaterialRejectionBO.fromJson(JsonMap json) {
+    return OrderMaterialRejectionBO(
+      materialId: readInt(json, 'materialId'),
+      reason: readString(json, 'reason'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{'materialId': materialId, 'reason': reason};
+  }
+}
+
+class OrderRejectItemVO {
+  const OrderRejectItemVO({
+    required this.materialId,
+    required this.materialName,
+    required this.fileUrl,
+    required this.reason,
+  });
+
+  final int materialId;
+  final String materialName;
+  final String fileUrl;
+  final String reason;
+
+  factory OrderRejectItemVO.fromJson(JsonMap json) {
+    return OrderRejectItemVO(
+      materialId: readInt(json, 'materialId'),
+      materialName: readString(json, 'materialName'),
+      fileUrl: readString(json, 'fileUrl'),
+      reason: readString(json, 'reason'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'materialId': materialId,
+      'materialName': materialName,
+      'fileUrl': fileUrl,
+      'reason': reason,
+    };
+  }
+}
+
+class OrderRejectRecordVO {
+  const OrderRejectRecordVO({
+    required this.rejectId,
+    required this.remark,
+    required this.rejectedAt,
+    required this.items,
+  });
+
+  final int rejectId;
+  final String? remark;
+  final String rejectedAt;
+  final List<OrderRejectItemVO> items;
+
+  factory OrderRejectRecordVO.fromJson(JsonMap json) {
+    return OrderRejectRecordVO(
+      rejectId: readInt(json, 'rejectId'),
+      remark: _readNullableString(json['remark']),
+      rejectedAt: readString(json, 'rejectedAt'),
+      items: readModelList<OrderRejectItemVO>(
+        json,
+        'items',
+        OrderRejectItemVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'rejectId': rejectId,
+      'remark': remark,
+      'rejectedAt': rejectedAt,
+      'items': items.map((item) => item.toJson()).toList(growable: false),
     };
   }
 }
@@ -161,28 +254,43 @@ class PackageInfoVO {
 class ProcessOrderBO {
   const ProcessOrderBO({
     required this.action,
-    required this.remark,
-    required this.nextStatus,
+    this.remark,
+    this.materialRejections,
+    this.nextStatus,
   });
 
   final String action;
-  final String remark;
-  final String nextStatus;
+  final String? remark;
+  final List<OrderMaterialRejectionBO>? materialRejections;
+  final String? nextStatus;
 
   factory ProcessOrderBO.fromJson(JsonMap json) {
     return ProcessOrderBO(
       action: readString(json, 'action'),
-      remark: readString(json, 'remark'),
-      nextStatus: readString(json, 'nextStatus'),
+      remark: _readNullableString(json['remark']),
+      materialRejections: _readNullableModelList<OrderMaterialRejectionBO>(
+        json['materialRejections'],
+        OrderMaterialRejectionBO.fromJson,
+      ),
+      nextStatus: _readNullableString(json['nextStatus']),
     );
   }
 
   JsonMap toJson() {
-    return <String, dynamic>{
-      'action': action,
-      'remark': remark,
-      'nextStatus': nextStatus,
-    };
+    final JsonMap result = <String, dynamic>{'action': action};
+    if ((remark ?? '').trim().isNotEmpty) {
+      result['remark'] = remark!.trim();
+    }
+    final List<OrderMaterialRejectionBO>? rejections = materialRejections;
+    if (rejections != null && rejections.isNotEmpty) {
+      result['materialRejections'] = rejections
+          .map((item) => item.toJson())
+          .toList(growable: false);
+    }
+    if ((nextStatus ?? '').trim().isNotEmpty) {
+      result['nextStatus'] = nextStatus!.trim();
+    }
+    return result;
   }
 }
 
@@ -397,6 +505,7 @@ class VisaOrderVO {
     required this.visaDocuments,
     required this.applicant,
     required this.rejectReason,
+    required this.latestReject,
     required this.isUrgent,
     required this.createdAt,
     required this.updatedAt,
@@ -422,6 +531,7 @@ class VisaOrderVO {
   final List<VisaDocVO> visaDocuments;
   final ApplicantInfoVO applicant;
   final String? rejectReason;
+  final OrderRejectRecordVO? latestReject;
   final bool isUrgent;
   final String country;
   final String createdAt;
@@ -494,6 +604,10 @@ class VisaOrderVO {
             )
           : ApplicantInfoVO.fromJson(applicantJson),
       rejectReason: _readNullableString(json['rejectReason']),
+      latestReject: _readNullableModel<OrderRejectRecordVO>(
+        json['latestReject'],
+        OrderRejectRecordVO.fromJson,
+      ),
       isUrgent: readBool(json, 'isUrgent'),
       country: _readNullableString(json['country']) ?? '',
       createdAt: readString(json, 'createdAt'),
@@ -528,6 +642,7 @@ class VisaOrderVO {
           .toList(growable: false),
       'applicant': applicant.toJson(),
       'rejectReason': rejectReason,
+      'latestReject': latestReject?.toJson(),
       'isUrgent': isUrgent,
       'country': country,
       'createdAt': createdAt,
@@ -561,4 +676,25 @@ int? _readNullableInt(dynamic value) {
     return int.tryParse(value) ?? double.tryParse(value)?.toInt();
   }
   return null;
+}
+
+T? _readNullableModel<T>(dynamic raw, T Function(JsonMap json) fromJson) {
+  if (raw == null) {
+    return null;
+  }
+  final JsonMap map = asJsonMap(raw);
+  if (map.isEmpty) {
+    return null;
+  }
+  return fromJson(map);
+}
+
+List<T>? _readNullableModelList<T>(
+  dynamic raw,
+  T Function(JsonMap json) fromJson,
+) {
+  if (raw == null) {
+    return null;
+  }
+  return decodeModelList<T>(raw, fromJson);
 }
