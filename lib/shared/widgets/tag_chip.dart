@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../ui/app_colors.dart';
 import '../ui/app_spacing.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 标签 Chip（用于岗位/签证的标签展示）。
 class TagChip extends StatelessWidget {
   const TagChip({
@@ -26,10 +27,7 @@ class TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: textColor ?? AppColors.textSecondary,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TestStyle.medium(fontSize: 11, color: textColor ?? AppColors.textSecondary),
       ),
     );
   }

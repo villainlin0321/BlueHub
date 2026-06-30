@@ -17,11 +17,32 @@ const Set<String> _supportedKeys = <String>{
 };
 
 final RegExp _weightPattern = RegExp(r'FontWeight\.(w\d{3}|bold)');
+final RegExp _themeCopyWithPattern = RegExp(
+  r'Theme\.of\(context\)\.textTheme\.([A-Za-z0-9_]+)\?*\.copyWith\(',
+);
 final RegExp _chinesePattern = RegExp(r'[\u4e00-\u9fff]');
 final RegExp _numberContextPattern = RegExp(
   r'price|amount|total|count|score|rating|¥|\$|￥|\d',
   caseSensitive: false,
 );
+
+const Map<String, _ThemeTextSpec> _themeTextSpecs = <String, _ThemeTextSpec>{
+  'bodySmall': _ThemeTextSpec(fontSize: 12, fontWeight: 400),
+  'bodyMedium': _ThemeTextSpec(fontSize: 14, fontWeight: 400),
+  'bodyLarge': _ThemeTextSpec(fontSize: 16, fontWeight: 400),
+  'labelSmall': _ThemeTextSpec(fontSize: 11, fontWeight: 500),
+  'labelMedium': _ThemeTextSpec(fontSize: 12, fontWeight: 500),
+  'labelLarge': _ThemeTextSpec(fontSize: 14, fontWeight: 500),
+  'titleSmall': _ThemeTextSpec(fontSize: 14, fontWeight: 500),
+  'titleMedium': _ThemeTextSpec(fontSize: 16, fontWeight: 500),
+  'titleLarge': _ThemeTextSpec(fontSize: 22, fontWeight: 400),
+  'headlineSmall': _ThemeTextSpec(fontSize: 24, fontWeight: 400),
+  'headlineMedium': _ThemeTextSpec(fontSize: 28, fontWeight: 400),
+  'headlineLarge': _ThemeTextSpec(fontSize: 32, fontWeight: 400),
+  'displaySmall': _ThemeTextSpec(fontSize: 36, fontWeight: 400),
+  'displayMedium': _ThemeTextSpec(fontSize: 45, fontWeight: 400),
+  'displayLarge': _ThemeTextSpec(fontSize: 57, fontWeight: 400),
+};
 
 void main(List<String> args) {
   final bool apply = args.contains('--apply');
@@ -71,6 +92,7 @@ void main(List<String> args) {
       for (final StyleRecord record in report.records) {
         stdout.writeln(
           '  - line ${record.line}: '
+          'source=${record.sourceType}, '
           'height=${record.hasHeight ? 'yes' : 'no'}, '
           'fontFamily=${record.hasFontFamily ? 'yes' : 'no'}, '
           'factory=${record.suggestedFactory ?? '-'}, '
@@ -124,9 +146,48 @@ String? _readOption(List<String> args, String key) {
 }
 
 ScanResult _scanFile(String path, String content) {
-  final List<_StyleOccurrence> occurrences = _findOccurrences(content);
-  if (occurrences.isEmpty) {
+  final _IntermediateScanResult themeResult = _scanThemeCopyWiths(content);
+  final String contentAfterTheme = themeResult.updatedContent ?? content;
+
+  final _IntermediateScanResult textStyleResult = _scanTextStyles(
+    contentAfterTheme,
+  );
+  final List<StyleRecord> records = <StyleRecord>[
+    ...themeResult.records,
+    ...textStyleResult.records,
+  ];
+  final int replacedCount =
+      themeResult.replacedCount + textStyleResult.replacedCount;
+
+  if (records.isEmpty) {
     return const ScanResult(records: <StyleRecord>[], replacedCount: 0);
+  }
+
+  String? updatedContent;
+  if (replacedCount > 0) {
+    updatedContent = _ensureImport(
+      _rewriteConstTextStyleDeclarations(
+        textStyleResult.updatedContent ?? contentAfterTheme,
+      ),
+    );
+  }
+
+  return ScanResult(
+    records: records,
+    replacedCount: replacedCount,
+    updatedContent: updatedContent,
+  );
+}
+
+_IntermediateScanResult _scanThemeCopyWiths(String content) {
+  final List<_ThemeStyleOccurrence> occurrences = _findThemeOccurrences(
+    content,
+  );
+  if (occurrences.isEmpty) {
+    return const _IntermediateScanResult(
+      records: <StyleRecord>[],
+      replacedCount: 0,
+    );
   }
 
   final StringBuffer updated = StringBuffer();
@@ -134,14 +195,15 @@ ScanResult _scanFile(String path, String content) {
   int cursor = 0;
   int replacedCount = 0;
 
-  for (final _StyleOccurrence occurrence in occurrences) {
-    final StyleAnalysis analysis = _analyzeOccurrence(content, occurrence);
+  for (final _ThemeStyleOccurrence occurrence in occurrences) {
+    final StyleAnalysis analysis = _analyzeThemeOccurrence(content, occurrence);
     records.add(
       StyleRecord(
-        line: _lineNumberAt(content, occurrence.start),
+        line: _lineNumberAt(content, occurrence.fullStart),
         hasHeight: analysis.properties.containsKey('height'),
         hasFontFamily: analysis.properties.containsKey('fontFamily'),
         suggestedFactory: analysis.factory,
+        sourceType: 'theme.copyWith',
         status: analysis.replacement == null ? 'skipped' : 'replaceable',
       ),
     );
@@ -157,87 +219,56 @@ ScanResult _scanFile(String path, String content) {
   }
   updated.write(content.substring(cursor));
 
-  String? updatedContent;
-  if (replacedCount > 0) {
-    updatedContent = _ensureImport(
-      _rewriteConstTextStyleDeclarations(updated.toString()),
-    );
-  }
-
-  return ScanResult(
+  return _IntermediateScanResult(
     records: records,
     replacedCount: replacedCount,
-    updatedContent: updatedContent,
+    updatedContent: replacedCount > 0 ? updated.toString() : null,
   );
 }
 
-String _ensureImport(String content) {
-  if (content.contains(_testStyleImport)) {
-    return content;
-  }
-
-  final RegExp importPattern = RegExp(
-    r'''^import\s+['"].+['"];\s*$''',
-    multiLine: true,
-  );
-  final Iterable<RegExpMatch> matches = importPattern.allMatches(content);
-  if (matches.isNotEmpty) {
-    final RegExpMatch lastMatch = matches.last;
-    return content.replaceRange(
-      lastMatch.end,
-      lastMatch.end,
-      '\n$_testStyleImport',
+_IntermediateScanResult _scanTextStyles(String content) {
+  final List<_StyleOccurrence> occurrences = _findOccurrences(content);
+  if (occurrences.isEmpty) {
+    return const _IntermediateScanResult(
+      records: <StyleRecord>[],
+      replacedCount: 0,
     );
   }
 
-  return '$_testStyleImport\n\n$content';
-}
+  final StringBuffer updated = StringBuffer();
+  final List<StyleRecord> records = <StyleRecord>[];
+  int cursor = 0;
+  int replacedCount = 0;
 
-String _rewriteConstTextStyleDeclarations(String content) {
-  final RegExp declarationPattern = RegExp(
-    r'((?:static\s+)?)const(\s+TextStyle\s+\w+\s*=\s*TestStyle\.)',
-  );
-  return content.replaceAllMapped(declarationPattern, (Match match) {
-    final String staticPrefix = match.group(1) ?? '';
-    final String remainder = match.group(2) ?? '';
-    return '${staticPrefix}final$remainder';
-  });
-}
-
-List<_StyleOccurrence> _findOccurrences(String content) {
-  final List<_StyleOccurrence> occurrences = <_StyleOccurrence>[];
-  int index = 0;
-  while (index < content.length) {
-    final int textStyleIndex = content.indexOf('TextStyle(', index);
-    if (textStyleIndex == -1) {
-      break;
-    }
-
-    int fullStart = textStyleIndex;
-    final String before = content.substring(0, textStyleIndex).trimRight();
-    if (before.endsWith('const')) {
-      fullStart = before.length - 'const'.length;
-    }
-
-    final int end = _findMatchingParen(
-      content,
-      textStyleIndex + 'TextStyle'.length,
-    );
-    if (end == -1) {
-      index = textStyleIndex + 'TextStyle('.length;
-      continue;
-    }
-
-    occurrences.add(
-      _StyleOccurrence(
-        fullStart: fullStart,
-        start: textStyleIndex,
-        end: end + 1,
+  for (final _StyleOccurrence occurrence in occurrences) {
+    final StyleAnalysis analysis = _analyzeOccurrence(content, occurrence);
+    records.add(
+      StyleRecord(
+        line: _lineNumberAt(content, occurrence.start),
+        hasHeight: analysis.properties.containsKey('height'),
+        hasFontFamily: analysis.properties.containsKey('fontFamily'),
+        suggestedFactory: analysis.factory,
+        sourceType: 'TextStyle',
+        status: analysis.replacement == null ? 'skipped' : 'replaceable',
       ),
     );
-    index = end + 1;
+
+    updated.write(content.substring(cursor, occurrence.fullStart));
+    if (analysis.replacement != null) {
+      updated.write(analysis.replacement);
+      replacedCount++;
+    } else {
+      updated.write(content.substring(occurrence.fullStart, occurrence.end));
+    }
+    cursor = occurrence.end;
   }
-  return occurrences;
+  updated.write(content.substring(cursor));
+
+  return _IntermediateScanResult(
+    records: records,
+    replacedCount: replacedCount,
+    updatedContent: replacedCount > 0 ? updated.toString() : null,
+  );
 }
 
 int _findMatchingParen(String content, int openParenIndex) {
@@ -271,6 +302,67 @@ int _findMatchingParen(String content, int openParenIndex) {
     }
   }
   return -1;
+}
+
+StyleAnalysis _analyzeThemeOccurrence(
+  String content,
+  _ThemeStyleOccurrence occurrence,
+) {
+  final String snippet = content.substring(
+    occurrence.copyWithStart,
+    occurrence.end,
+  );
+  final int bodyStart = snippet.indexOf('(');
+  final String body = snippet.substring(bodyStart + 1, snippet.length - 1);
+  final Map<String, String> properties = _parseProperties(body);
+  if (properties.keys.any((String key) => !_supportedKeys.contains(key))) {
+    return StyleAnalysis(properties: properties);
+  }
+
+  final _ThemeTextSpec? themeSpec = _themeTextSpecs[occurrence.themeSlot];
+  if (themeSpec == null) {
+    return StyleAnalysis(properties: properties);
+  }
+
+  final Map<String, String> effectiveProperties = <String, String>{
+    ...properties,
+    'fontSize': properties['fontSize'] ?? themeSpec.fontSizeLabel,
+    'fontWeight': properties['fontWeight'] ?? themeSpec.fontWeightLabel,
+  };
+
+  final String context = _contextWindow(
+    content,
+    occurrence.fullStart,
+    occurrence.end,
+  );
+  final String? factory = _selectFactory(effectiveProperties, context);
+  if (factory == null) {
+    return StyleAnalysis(properties: properties);
+  }
+
+  final List<String> args = <String>[
+    'fontSize: ${effectiveProperties['fontSize']}',
+  ];
+  const List<String> orderedKeys = <String>[
+    'color',
+    'letterSpacing',
+    'decoration',
+    'fontStyle',
+    'overflow',
+    'backgroundColor',
+  ];
+  for (final String key in orderedKeys) {
+    final String? value = properties[key];
+    if (value != null) {
+      args.add('$key: $value');
+    }
+  }
+
+  return StyleAnalysis(
+    properties: properties,
+    factory: factory,
+    replacement: 'TestStyle.$factory(${args.join(', ')})',
+  );
 }
 
 StyleAnalysis _analyzeOccurrence(String content, _StyleOccurrence occurrence) {
@@ -321,6 +413,95 @@ StyleAnalysis _analyzeOccurrence(String content, _StyleOccurrence occurrence) {
     factory: factory,
     replacement: 'TestStyle.$factory(${args.join(', ')})',
   );
+}
+
+String _ensureImport(String content) {
+  if (content.contains(_testStyleImport)) {
+    return content;
+  }
+
+  final RegExp importPattern = RegExp(
+    r'''^import\s+['"].+['"];\s*$''',
+    multiLine: true,
+  );
+  final Iterable<RegExpMatch> matches = importPattern.allMatches(content);
+  if (matches.isNotEmpty) {
+    final RegExpMatch lastMatch = matches.last;
+    return content.replaceRange(
+      lastMatch.end,
+      lastMatch.end,
+      '\n$_testStyleImport',
+    );
+  }
+
+  return '$_testStyleImport\n\n$content';
+}
+
+String _rewriteConstTextStyleDeclarations(String content) {
+  final RegExp declarationPattern = RegExp(
+    r'((?:static\s+)?)const(\s+TextStyle\s+\w+\s*=\s*TestStyle\.)',
+  );
+  return content.replaceAllMapped(declarationPattern, (Match match) {
+    final String staticPrefix = match.group(1) ?? '';
+    final String remainder = match.group(2) ?? '';
+    return '${staticPrefix}final$remainder';
+  });
+}
+
+List<_ThemeStyleOccurrence> _findThemeOccurrences(String content) {
+  final List<_ThemeStyleOccurrence> occurrences = <_ThemeStyleOccurrence>[];
+  for (final RegExpMatch match in _themeCopyWithPattern.allMatches(content)) {
+    final int openParenIndex = match.end - 1;
+    final int end = _findMatchingParen(content, openParenIndex);
+    if (end == -1) {
+      continue;
+    }
+    occurrences.add(
+      _ThemeStyleOccurrence(
+        fullStart: match.start,
+        copyWithStart: openParenIndex - 'copyWith'.length,
+        end: end + 1,
+        themeSlot: match.group(1)!,
+      ),
+    );
+  }
+  return occurrences;
+}
+
+List<_StyleOccurrence> _findOccurrences(String content) {
+  final List<_StyleOccurrence> occurrences = <_StyleOccurrence>[];
+  int index = 0;
+  while (index < content.length) {
+    final int textStyleIndex = content.indexOf('TextStyle(', index);
+    if (textStyleIndex == -1) {
+      break;
+    }
+
+    int fullStart = textStyleIndex;
+    final String before = content.substring(0, textStyleIndex).trimRight();
+    if (before.endsWith('const')) {
+      fullStart = before.length - 'const'.length;
+    }
+
+    final int end = _findMatchingParen(
+      content,
+      textStyleIndex + 'TextStyle'.length,
+    );
+    if (end == -1) {
+      index = textStyleIndex + 'TextStyle('.length;
+      continue;
+    }
+
+    occurrences.add(
+      _StyleOccurrence(
+        fullStart: fullStart,
+        start: textStyleIndex,
+        end: end + 1,
+      ),
+    );
+    index = end + 1;
+  }
+  return occurrences;
 }
 
 Map<String, String> _parseProperties(String body) {
@@ -594,6 +775,18 @@ class ScanResult {
   final String? updatedContent;
 }
 
+class _IntermediateScanResult {
+  const _IntermediateScanResult({
+    required this.records,
+    required this.replacedCount,
+    this.updatedContent,
+  });
+
+  final List<StyleRecord> records;
+  final int replacedCount;
+  final String? updatedContent;
+}
+
 class FileReport {
   const FileReport({
     required this.path,
@@ -623,6 +816,7 @@ class StyleRecord {
     required this.hasHeight,
     required this.hasFontFamily,
     required this.suggestedFactory,
+    required this.sourceType,
     required this.status,
   });
 
@@ -630,6 +824,7 @@ class StyleRecord {
   final bool hasHeight;
   final bool hasFontFamily;
   final String? suggestedFactory;
+  final String sourceType;
   final String status;
 }
 
@@ -655,6 +850,34 @@ class _StyleOccurrence {
   final int fullStart;
   final int start;
   final int end;
+}
+
+class _ThemeStyleOccurrence {
+  const _ThemeStyleOccurrence({
+    required this.fullStart,
+    required this.copyWithStart,
+    required this.end,
+    required this.themeSlot,
+  });
+
+  final int fullStart;
+  final int copyWithStart;
+  final int end;
+  final String themeSlot;
+}
+
+class _ThemeTextSpec {
+  const _ThemeTextSpec({required this.fontSize, required this.fontWeight});
+
+  final double fontSize;
+  final int fontWeight;
+
+  String get fontSizeLabel {
+    final int maybeInt = fontSize.toInt();
+    return fontSize == maybeInt ? maybeInt.toString() : fontSize.toString();
+  }
+
+  String get fontWeightLabel => 'FontWeight.w$fontWeight';
 }
 
 class TestStyleFamily {

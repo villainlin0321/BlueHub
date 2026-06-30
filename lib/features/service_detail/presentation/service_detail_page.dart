@@ -40,6 +40,7 @@ import 'service_detail_report_page.dart';
 import 'service_detail_review_tab.dart';
 import 'service_detail_share_card.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailPageArgs {
   const ServiceDetailPageArgs({
     required this.packageId,
@@ -1141,10 +1142,7 @@ class _SummaryPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   serviceTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 22, color: const Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1164,10 +1162,7 @@ class _SummaryPanel extends StatelessWidget {
                     ),
                     TextSpan(
                       text: '服务详情.起'.tr(),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TestStyle.pingFangSemibold(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -1203,10 +1198,7 @@ class _SummaryPanel extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             summaryDescription,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF595959),
-              height: 1.5,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
           ),
         ],
       ),
@@ -1319,12 +1311,7 @@ class _ServiceDetailTab extends StatelessWidget {
                       top: 1,
                       child: Text(
                         reviewCountText,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontSize: 10,
-                          height: 1.2,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        style: TestStyle.regular(fontSize: 10, color: const Color(0xFF8C8C8C)),
                       ),
                     ),
                 ],
@@ -1538,12 +1525,7 @@ class _PackageBottomActionBar extends StatelessWidget {
                       child: Text(
                         '服务详情.咨询'.tr(),
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 10,
-                          height: 1.6,
-                        ),
+                        style: TestStyle.pingFangMedium(fontSize: 10, color: const Color(0xFF8C8C8C)),
                       ),
                     ),
                   ],
@@ -1563,10 +1545,7 @@ class _PackageBottomActionBar extends StatelessWidget {
                 ),
                 child: Text(
                   '服务详情.立即申请'.tr(),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -1708,10 +1687,7 @@ class _SummaryTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF386EF8),
-          fontWeight: FontWeight.w700,
-        ),
+        style: TestStyle.numberBold(fontSize: 11, color: const Color(0xFF386EF8)),
       ),
     );
   }

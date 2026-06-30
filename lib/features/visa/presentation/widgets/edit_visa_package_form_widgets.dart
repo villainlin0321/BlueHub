@@ -311,21 +311,12 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '签证编辑.上传封面'.tr(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF171A1D),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
+                style: TestStyle.pingFangMedium(fontSize: 14, color: const Color(0xFF171A1D)),
               ),
               const SizedBox(height: 4),
               Text(
                 '签证编辑.封面图提示'.tr(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                  height: 18 / 12,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF8C8C8C)),
               ),
             ],
           ),
@@ -448,11 +439,7 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                     file!.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF171A1D),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
+                    style: TestStyle.medium(fontSize: 14, color: const Color(0xFF171A1D)),
                   ),
                 ),
                 const SizedBox(width: 12),

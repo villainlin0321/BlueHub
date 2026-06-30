@@ -1541,11 +1541,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         title: Text(
           '订单.订单详情'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xE6000000),
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
         ),
         actions: isServiceProvider
             ? const <Widget>[]
@@ -1554,11 +1550,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   onPressed: _handleConsultTap,
                   child: Text(
                     '订单.联系商家'.tr(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF262626),
-                      fontWeight: FontWeight.w400,
-                      fontSize: 14,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF262626)),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -1838,24 +1830,14 @@ class _OrderInfoRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF8C8C8C),
-            fontWeight: FontWeight.w400,
-            fontSize: 12,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontWeight: FontWeight.w400,
-              fontSize: 12,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
           ),
         ),
       ],
@@ -1945,12 +1927,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
         children: <Widget>[
           Text(
             '订单.添加出证材料'.tr(),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF171A1D),
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              height: 22 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
           ),
           const SizedBox(height: 12),
           _MaterialUploadContent(
@@ -1993,12 +1970,7 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '订单.客户上传材料'.tr(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               Text(
@@ -2007,12 +1979,7 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                     'count': materials.length.toString(),
                   },
                 ),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
               ),
             ],
           ),
@@ -2091,12 +2058,7 @@ class _MaterialUploadItem extends StatelessWidget {
                   Flexible(
                     child: Text(
                       requirement.title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF171A1D),
-                        fontWeight: FontWeight.w400,
-                        fontSize: 14,
-                        height: 22 / 14,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF171A1D)),
                     ),
                   ),
                   if (requirement.required) ...<Widget>[
@@ -2114,11 +2076,7 @@ class _MaterialUploadItem extends StatelessWidget {
               onTap: onPreviewTap,
               child: Text(
                 '服务详情.查看样例'.tr(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF096DD9),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 13,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF096DD9)),
               ),
             ),
           ],
@@ -2211,11 +2169,7 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF333333),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
                     ),
                     const SizedBox(height: 9),
                     ClipRRect(
@@ -2250,22 +2204,13 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF333333),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
                     ),
                     if (file.sizeLabel != null) ...<Widget>[
                       const SizedBox(height: 2),
                       Text(
                         file.sizeLabel!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          height: 18 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                       ),
                     ],
                   ],
@@ -2292,24 +2237,14 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFFF3141),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFFF3141)),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFFF3141),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                        height: 14 / 11,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 11, color: const Color(0xFFFF3141)),
                     ),
                   ],
                 ),
@@ -2424,12 +2359,7 @@ class _UploadPlaceholder extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '订单.上传文件'.tr(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF171A1D),
-                    fontWeight: FontWeight.w400,
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
                 ),
               ],
             ),
@@ -2456,12 +2386,7 @@ class _ReadonlyUploadPlaceholder extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF8C8C8C),
-          fontWeight: FontWeight.w400,
-          fontSize: 14,
-          height: 20 / 14,
-        ),
+        style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -2883,12 +2808,7 @@ class _RejectReasonActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: foregroundColor,
-            fontSize: 16,
-            height: 22 / 16,
-            fontWeight: FontWeight.w400,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: foregroundColor),
         ),
       ),
     );
@@ -3031,12 +2951,7 @@ class _UploadTypeAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF595959),
-                fontWeight: FontWeight.w400,
-                fontSize: 13,
-                height: 18 / 13,
-              ),
+              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
             ),
           ],
         ),
@@ -3067,10 +2982,7 @@ class _OrderDetailStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF595959),
-                fontSize: 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
             ),
             const SizedBox(height: 16),
             PrimaryButton(label: buttonLabel, onPressed: onTap, enabled: true),
@@ -3154,12 +3066,7 @@ class _RejectedStatusBar extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               '订单.已驳回'.tr(),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF8C8C8C),
-                fontSize: 16,
-                height: 22 / 16,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 16, color: const Color(0xFF8C8C8C)),
             ),
           ),
         ),

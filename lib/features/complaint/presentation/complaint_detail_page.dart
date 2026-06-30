@@ -54,11 +54,7 @@ class ComplaintDetailPage extends ConsumerWidget {
         ),
         title: Text(
           '投诉.详情标题'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xE6000000),
-            fontWeight: FontWeight.w500,
-            fontSize: 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE6000000)),
         ),
       ),
       body: detailAsync.when(

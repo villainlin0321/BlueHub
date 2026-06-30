@@ -301,11 +301,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         title: Text(
           '招聘.招聘详情'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xE6000000),
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
         ),
         actions: <Widget>[
           Opacity(
@@ -420,23 +416,13 @@ class _JobHeaderSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   detail.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 22,
-                    height: 30 / 22,
-                  ),
+                  style: TestStyle.semibold(fontSize: 22, color: const Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 detail.salaryText,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFFE5815),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  height: 24 / 16,
-                ),
+                style: TestStyle.medium(fontSize: 16, color: const Color(0xFFFE5815)),
               ),
             ],
           ),
@@ -459,12 +445,7 @@ class _JobHeaderSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 detail.locationText,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF595959),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                  height: 16 / 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
               ),
             ],
           ),
@@ -489,12 +470,7 @@ class _BorderTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF546D96),
-          fontWeight: FontWeight.w400,
-          fontSize: 10,
-          height: 1,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: const Color(0xFF546D96)),
       ),
     );
   }
@@ -529,22 +505,12 @@ class _EmployerCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   employer.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 16,
-                    height: 24 / 16,
-                  ),
+                  style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   employer.subtitleText,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF8C8C8C),
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12,
-                    height: 16 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                 ),
               ],
             ),
@@ -598,12 +564,7 @@ class _JobDescriptionSection extends StatelessWidget {
           ],
           Text(
             '招聘.职位详情'.tr(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFF262626),
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              height: 26 / 18,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 18, color: const Color(0xFF262626)),
           ),
           const SizedBox(height: 12),
           _DescriptionBlock(
@@ -633,22 +594,12 @@ class _DescriptionBlock extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF262626),
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            height: 26 / 14,
-          ),
+          style: TestStyle.medium(fontSize: 14, color: const Color(0xFF262626)),
         ),
         for (final String item in items)
           Text(
             item,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF595959),
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              height: 26 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
           ),
       ],
     );
@@ -671,32 +622,18 @@ class _LocationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '招聘.工作地点'.tr(),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: const Color(0xFF262626),
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
-              height: 24 / 16,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
           ),
           const SizedBox(height: 6),
           Text(
             detail.addressText,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
           ),
           if (detail.coordinateText != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
               detail.coordinateText!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFFBFBFBF),
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: const Color(0xFFBFBFBF)),
             ),
           ],
           const SizedBox(height: 12),
@@ -814,18 +751,8 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: const Color(0xFF171A1D),
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      height: 22 / 16,
-    );
-    final primaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: Colors.white,
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      height: 22 / 16,
-    );
+    final secondaryStyle = TestStyle.regular(fontSize: 16, color: const Color(0xFF171A1D));
+    final primaryStyle = TestStyle.regular(fontSize: 16, color: Colors.white);
 
     return SafeArea(
       top: false,

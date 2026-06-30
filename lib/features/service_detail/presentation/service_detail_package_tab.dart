@@ -10,6 +10,7 @@ import '../../../shared/localization/app_locales.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServicePackageData {
   const ServicePackageData({
     required this.packageId,
@@ -180,19 +181,13 @@ class _PackageOptionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       data.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF262626),
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFF262626)),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     data.price,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFFFE5815),
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFFFE5815)),
                   ),
                 ],
               ),
@@ -215,10 +210,7 @@ class _PackageOptionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       data.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF595959),
-                        height: 1.45,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -274,10 +266,7 @@ class _MaterialsSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   '服务详情.所需材料'.tr(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               TextButton(
@@ -361,24 +350,14 @@ class _MaterialCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       material.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.medium(fontSize: 14, color: const Color(0xFF262626)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       material.subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -420,11 +399,7 @@ class _PackageTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF546D96),
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.semibold(fontSize: 10, color: const Color(0xFF546D96)),
       ),
     );
   }
@@ -451,12 +426,7 @@ class _MaterialStatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 1,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: color),
       ),
     );
   }

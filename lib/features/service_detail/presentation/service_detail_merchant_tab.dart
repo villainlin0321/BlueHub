@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_user_avatar.dart';
 import '../../me/presentation/service_provider_my_info_page.dart';
 import '../../visa/data/provider_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailMerchantTab extends StatelessWidget {
   const ServiceDetailMerchantTab({
     super.key,
@@ -62,18 +63,8 @@ class _MerchantHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 17,
-      fontWeight: FontWeight.w600,
-      height: 24 / 17,
-    );
-    final metaStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 11,
-      fontWeight: FontWeight.w400,
-      height: 14 / 11,
-    );
+    final titleStyle = TestStyle.semibold(fontSize: 17, color: const Color(0xFF262626));
+    final metaStyle = TestStyle.regular(fontSize: 11, color: const Color(0xFF8C8C8C));
 
     final Widget content = SizedBox(
       height: 52,
@@ -182,26 +173,10 @@ class _MerchantInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
-    );
-    final contentStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF595959),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
-    final infoLabelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
-    final infoValueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
+    final titleStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
+    final contentStyle = TestStyle.regular(fontSize: 13, color: const Color(0xFF595959));
+    final infoLabelStyle = TestStyle.regular(fontSize: 13, color: const Color(0xFF262626));
+    final infoValueStyle = TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF8C8C8C));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

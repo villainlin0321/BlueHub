@@ -76,11 +76,7 @@ class LoginPhoneView extends StatelessWidget {
                   const SizedBox(height: 50),
                   Text(
                     '认证.注册登录'.tr(),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: const Color(0xFF262626),
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TestStyle.pingFangSemibold(fontSize: 26, color: const Color(0xFF262626)),
                   ),
                   const SizedBox(height: 41),
                   _LoginModeTabs(
@@ -245,11 +241,7 @@ class _ModeTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: selected ? AppColors.brand : const Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
-          ),
+          style: TestStyle.medium(fontSize: 14, color: selected ? AppColors.brand : const Color(0xFF8C8C8C)),
         ),
       ),
     );
@@ -285,11 +277,7 @@ class _PhoneInputRow extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       regionCode,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF262626),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.regular(fontSize: 16, color: const Color(0xFF262626)),
                     ),
                     const SizedBox(width: 6),
                     const Icon(
@@ -403,13 +391,9 @@ class _CodeInputRow extends StatelessWidget {
               onTap: isSending ? null : onGetCode,
               child: Text(
                 isSending ? '认证.发送中'.tr() : '认证.获取验证码'.tr(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isSending
+                style: TestStyle.pingFangRegular(fontSize: 14, color: isSending
                       ? AppColors.brand.withValues(alpha: 0.45)
-                      : AppColors.brand,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
+                      : AppColors.brand),
               ),
             ),
           ],
@@ -451,11 +435,7 @@ class _LoginButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Colors.white),
         ),
       ),
     );
@@ -551,10 +531,7 @@ class RegionPickerSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '认证.选择地区'.tr(),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF262626),
-                fontWeight: FontWeight.w600,
-              ),
+              style: TestStyle.pingFangSemibold(fontSize: 16, color: const Color(0xFF262626)),
             ),
             const SizedBox(height: 8),
             ...options.map((option) {

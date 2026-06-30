@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../visa/data/provider_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailReviewTab extends StatefulWidget {
   const ServiceDetailReviewTab({
     super.key,
@@ -94,18 +95,8 @@ class _ReviewSummaryScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scoreTextStyle = Theme.of(context).textTheme.displaySmall?.copyWith(
-      color: const Color(0xFFFE5815),
-      fontSize: 34,
-      fontWeight: FontWeight.w400,
-      height: 1.08,
-    );
-    final labelTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: const Color(0xFFFE5815),
-      fontSize: 12,
-      fontWeight: FontWeight.w400,
-      height: 1.42,
-    );
+    final scoreTextStyle = TestStyle.regular(fontSize: 34, color: const Color(0xFFFE5815));
+    final labelTextStyle = TestStyle.regular(fontSize: 12, color: const Color(0xFFFE5815));
 
     return SizedBox(
       width: 128,
@@ -160,18 +151,8 @@ class _ReviewSortSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedTextStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
-      height: 1.43,
-    );
-    final normalTextStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      height: 1.43,
-    );
+    final selectedTextStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
+    final normalTextStyle = TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C));
 
     return SizedBox(
       width: 90,
@@ -262,18 +243,8 @@ class _ReviewHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nameStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
-      height: 1.43,
-    );
-    final timeStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      height: 1.21,
-    );
+    final nameStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
+    final timeStyle = TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C));
 
     return SizedBox(
       height: 34,
@@ -335,11 +306,7 @@ class _ReviewAvatar extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF096DD9),
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
+        style: TestStyle.numberBold(fontSize: 11, color: const Color(0xFF096DD9)),
       ),
     );
   }
@@ -382,18 +349,8 @@ class _ExpandableReviewText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 15,
-      fontWeight: FontWeight.w400,
-      height: 1.6,
-    );
-    final expandStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF096DD9),
-      fontSize: 15,
-      fontWeight: FontWeight.w400,
-      height: 1.6,
-    );
+    final textStyle = TestStyle.regular(fontSize: 15, color: const Color(0xFF262626));
+    final expandStyle = TestStyle.regular(fontSize: 15, color: const Color(0xFF096DD9));
 
     return LayoutBuilder(
       builder: (context, constraints) {

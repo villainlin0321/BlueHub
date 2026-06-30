@@ -258,11 +258,7 @@ class _HeaderProfileRow extends ConsumerWidget {
                 greetingKey.tr(
                   namedArgs: <String, String>{'name': userViewData.nickname},
                 ),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
+                style: TestStyle.medium(fontSize: 15, color: const Color(0xFF262626)),
               ),
               const SizedBox(height: 4),
               Row(
@@ -276,10 +272,7 @@ class _HeaderProfileRow extends ConsumerWidget {
                   const SizedBox(width: 2),
                   Text(
                     '国家.德国'.tr(),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF595959),
-                      fontSize: 12,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF595959)),
                   ),
                 ],
               ),
@@ -323,10 +316,7 @@ class _HomeSearchBar extends StatelessWidget {
                   '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFBFBFBF),
-                    fontSize: 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFBFBFBF)),
                 ),
               ),
             ],
@@ -378,10 +368,7 @@ class _ShortcutButton extends StatelessWidget {
               Text(
                 item.labelKey.tr(),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF171A1D),
-                  fontSize: 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF171A1D)),
               ),
             ],
           ),
@@ -429,19 +416,12 @@ class _HomeSectionHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               Text(
                 '首页.更多'.tr(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontSize: 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
               ),
               const SizedBox(width: 2),
               const Icon(
@@ -609,10 +589,7 @@ class _HomeSectionEmptyState extends StatelessWidget {
         child: AppEmptyState(
           message: message,
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF8C8C8C),
-            fontSize: 14,
-          ),
+          textStyle: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
         ),
       ),
     );
@@ -644,11 +621,7 @@ class _HomeSectionErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 14),
           OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -750,21 +723,14 @@ class _VisaMiniCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     data.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF8C8C8C),
-                      fontSize: 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                   ),
                   const Spacer(),
                   Row(
@@ -777,19 +743,12 @@ class _VisaMiniCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         data.rating,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFE5815),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TestStyle.medium(fontSize: 12, color: const Color(0xFFFE5815)),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         data.casesText,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontSize: 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                       ),
                       const Spacer(),
                       Image.asset(data.actionAssetPath, width: 20, height: 20),
@@ -814,10 +773,7 @@ class _VisaMiniCard extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
                         data.country,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: Colors.white),
                       ),
                     ),
                   ),

@@ -13,6 +13,7 @@ import '../../application/edit_visa_package/edit_visa_package_state.dart';
 import '../edit_visa_package_styles.dart';
 import 'edit_visa_package_form_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class EditVisaPackagePageView extends StatelessWidget {
   const EditVisaPackagePageView({
     super.key,
@@ -628,11 +629,7 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF333333),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
                     ),
                     const SizedBox(height: 9),
                     ClipRRect(
@@ -667,22 +664,13 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF333333),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
                     ),
                     if (file.sizeLabel != null) ...<Widget>[
                       const SizedBox(height: 2),
                       Text(
                         file.sizeLabel!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          height: 18 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                       ),
                     ],
                   ],
@@ -707,23 +695,14 @@ class _UploadFileCard extends StatelessWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFD4380D),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFD4380D)),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFD4380D),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 18 / 12,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFFD4380D)),
                     ),
                   ],
                 ),
@@ -834,12 +813,7 @@ class _UploadPlaceholder extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF171A1D),
-                    fontWeight: FontWeight.w400,
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: const Color(0xFF171A1D)),
                 ),
               ],
             ),

@@ -14,6 +14,7 @@ import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class SelectRolePage extends ConsumerStatefulWidget {
   const SelectRolePage({super.key});
 
@@ -88,10 +89,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
         ),
         title: Text(
           '认证.选择角色标题'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
         ),
         actions: <Widget>[
           Padding(
@@ -119,10 +117,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
                     children: <Widget>[
                       Text(
                         '认证.选择角色说明'.tr(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.6,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 14, color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 28),
                       for (final role in _roles) ...<Widget>[
@@ -219,18 +214,12 @@ class _RoleCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       role.title.tr(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       role.description.tr(),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),

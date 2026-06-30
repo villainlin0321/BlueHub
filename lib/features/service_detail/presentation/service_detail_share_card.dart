@@ -11,6 +11,7 @@ import '../../visa/data/provider_models.dart'
 import '../../visa/data/visa_package_models.dart';
 import 'service_detail_package_tab.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailShareCard extends StatelessWidget {
   const ServiceDetailShareCard({
     super.key,
@@ -203,10 +204,7 @@ class _ShareSummarySection extends StatelessWidget {
               Expanded(
                 child: Text(
                   serviceTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 22, color: const Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -226,10 +224,7 @@ class _ShareSummarySection extends StatelessWidget {
                     ),
                     TextSpan(
                       text: '服务详情.起'.tr(),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TestStyle.pingFangSemibold(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -265,10 +260,7 @@ class _ShareSummarySection extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             summaryDescription,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF595959),
-              height: 1.5,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
           ),
         ],
       ),
@@ -361,19 +353,13 @@ class _SharePackageOptionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   data.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 10),
               Text(
                 data.price,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFFE5815),
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFFFE5815)),
               ),
             ],
           ),
@@ -396,10 +382,7 @@ class _SharePackageOptionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   data.description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF595959),
-                    height: 1.45,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -447,20 +430,14 @@ class _ShareMaterialsSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   '服务详情.所需材料'.tr(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               Text(
                 '服务详情.查看样例'.tr(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: hasExampleFiles
+                style: TestStyle.pingFangMedium(fontSize: 14, color: hasExampleFiles
                       ? const Color(0xFF096DD9)
-                      : const Color(0xFFBFBFBF),
-                  fontWeight: FontWeight.w500,
-                ),
+                      : const Color(0xFFBFBFBF)),
               ),
             ],
           ),
@@ -517,24 +494,14 @@ class _ShareMaterialCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   material.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.medium(fontSize: 14, color: const Color(0xFF262626)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   material.subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 16 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                 ),
               ],
             ),
@@ -565,10 +532,7 @@ class _SummaryTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: const Color(0xFF096DD9),
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.semibold(fontSize: 12, color: const Color(0xFF096DD9)),
       ),
     );
   }
@@ -589,10 +553,7 @@ class _SharePackageTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF546D96),
-          fontWeight: FontWeight.w600,
-        ),
+        style: TestStyle.semibold(fontSize: 11, color: const Color(0xFF546D96)),
       ),
     );
   }
@@ -621,12 +582,7 @@ class _ShareMaterialStatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 1,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: color),
       ),
     );
   }
@@ -648,10 +604,7 @@ class _ShareEmptyCard extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF8C8C8C),
-          height: 1.5,
-        ),
+        style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -666,10 +619,7 @@ class _ShareEmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       message,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: const Color(0xFF8C8C8C),
-        height: 1.5,
-      ),
+      style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
     );
   }
 }

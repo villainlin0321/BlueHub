@@ -136,12 +136,7 @@ class _Header extends StatelessWidget {
           SizedBox(width: 6),
           Text(
             '我的.我的'.tr(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xE5000000),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE5000000)),
           ),
           const Spacer(),
           const MessageCenterIconButton(color: Colors.black),

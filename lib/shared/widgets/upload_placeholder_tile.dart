@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class UploadPlaceholderTile extends StatelessWidget {
   const UploadPlaceholderTile({
     super.key,
@@ -48,11 +49,7 @@ class UploadPlaceholderTile extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               resolvedLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF595959),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
             ),
           ],
         ),

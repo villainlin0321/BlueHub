@@ -65,10 +65,7 @@ class AiAssistantPageView extends StatelessWidget {
         centerTitle: false,
         title: Text(
           'AI.AI助手'.tr(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TestStyle.numberBold(fontSize: 22, color: AppColors.textPrimary),
         ),
         actions: <Widget>[
           TextButton(onPressed: onOpenHistory, child: Text('AI.历史记录'.tr())),
@@ -268,11 +265,7 @@ class _AssistantMessageItem extends StatelessWidget {
                       ),
                       child: Text(
                         message.text,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        style: TestStyle.regular(fontSize: 14, color: AppColors.textPrimary),
                       ),
                     ),
                   ),
@@ -283,10 +276,7 @@ class _AssistantMessageItem extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       message.footer!,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textTertiary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TestStyle.semibold(fontSize: 11, color: AppColors.textTertiary),
                     ),
                   ),
                 ],
@@ -441,11 +431,7 @@ class _UserMessageItem extends StatelessWidget {
                 ),
                 child: Text(
                   message.text,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -507,18 +493,12 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
                   ),
                 ),
                 Text(
                   job.formatAiSalary(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TestStyle.numberBold(fontSize: 16, color: AppColors.warning),
                 ),
               ],
             ),
@@ -554,10 +534,7 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.employer.name,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TestStyle.numberBold(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ),
                 SizedBox(
@@ -597,10 +574,7 @@ class _EmbeddedJobCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   locationParts.join('·'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TestStyle.semibold(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
             ),

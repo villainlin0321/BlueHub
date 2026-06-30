@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class SampleFileSelectionDialog extends StatelessWidget {
   const SampleFileSelectionDialog({
     super.key,
@@ -39,12 +40,7 @@ class SampleFileSelectionDialog extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF262626),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                height: 22 / 16,
-              ),
+              style: TestStyle.semibold(fontSize: 16, color: const Color(0xFF262626)),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -118,24 +114,14 @@ class SampleFileSelectionItem extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF333333),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF999999),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    height: 14 / 11,
-                  ),
+                  style: TestStyle.regular(fontSize: 11, color: const Color(0xFF999999)),
                 ),
               ],
             ),

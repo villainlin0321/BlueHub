@@ -180,12 +180,7 @@ class _ServiceDetailReportPageState
                 children: <Widget>[
                   Text(
                     '服务详情.举报内容'.tr(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.black),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -208,12 +203,7 @@ class _ServiceDetailReportPageState
                   const SizedBox(height: 16),
                   Text(
                     '投诉.标题'.tr(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.black),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -237,12 +227,7 @@ class _ServiceDetailReportPageState
                   const SizedBox(height: 16),
                   Text(
                     '投诉.内容'.tr(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.black),
                   ),
                   const SizedBox(height: 12),
                   Container(

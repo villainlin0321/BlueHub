@@ -1594,12 +1594,7 @@ class _ChatAttachmentAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF595959),
-                fontWeight: FontWeight.w400,
-                fontSize: 13,
-                height: 18 / 13,
-              ),
+              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
             ),
           ],
         ),
