@@ -9,6 +9,7 @@ class LoginFormState {
     this.email = '',
     this.code = '',
     this.isSendingCode = false,
+    this.resendCountdownSeconds = 0,
     this.isSubmitting = false,
     this.feedbackMessage,
     this.feedbackIsError = false,
@@ -22,6 +23,7 @@ class LoginFormState {
   final String email;
   final String code;
   final bool isSendingCode;
+  final int resendCountdownSeconds;
   final bool isSubmitting;
   final String? feedbackMessage;
   final bool feedbackIsError;
@@ -30,7 +32,10 @@ class LoginFormState {
   String get currentAccount => isPhoneLogin ? phone.trim() : email.trim();
 
   bool get canSendCode =>
-      currentAccount.isNotEmpty && !isSendingCode && !isSubmitting;
+      currentAccount.isNotEmpty &&
+      !isSendingCode &&
+      resendCountdownSeconds == 0 &&
+      !isSubmitting;
 
   bool get canLogin =>
       agreed &&
@@ -46,6 +51,7 @@ class LoginFormState {
     String? email,
     String? code,
     bool? isSendingCode,
+    int? resendCountdownSeconds,
     bool? isSubmitting,
     Object? feedbackMessage = _feedbackSentinel,
     bool? feedbackIsError,
@@ -59,6 +65,8 @@ class LoginFormState {
       email: email ?? this.email,
       code: code ?? this.code,
       isSendingCode: isSendingCode ?? this.isSendingCode,
+      resendCountdownSeconds:
+          resendCountdownSeconds ?? this.resendCountdownSeconds,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       feedbackMessage: identical(feedbackMessage, _feedbackSentinel)
           ? this.feedbackMessage

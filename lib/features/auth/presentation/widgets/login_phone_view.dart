@@ -105,6 +105,7 @@ class LoginPhoneView extends StatelessWidget {
                         : '认证.请输入邮箱验证码'.tr(),
                     controller: codeController,
                     isSending: state.isSendingCode,
+                    countdownSeconds: state.resendCountdownSeconds,
                     onChanged: onCodeChanged,
                     onGetCode: onSendCode,
                   ),
@@ -355,6 +356,7 @@ class _CodeInputRow extends StatelessWidget {
     required this.hintText,
     required this.controller,
     required this.isSending,
+    required this.countdownSeconds,
     required this.onGetCode,
     this.onChanged,
   });
@@ -362,12 +364,36 @@ class _CodeInputRow extends StatelessWidget {
   final String hintText;
   final TextEditingController controller;
   final bool isSending;
+  final int countdownSeconds;
   final VoidCallback onGetCode;
   final ValueChanged<String>? onChanged;
 
   @override
   /// 构建验证码输入行，并在右侧承载发送验证码按钮。
   Widget build(BuildContext context) {
+    final isCountdownActive = countdownSeconds > 0;
+    final isActionDisabled = isSending || isCountdownActive;
+    final actionWidget = isSending
+        ? const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
+            ),
+          )
+        : Text(
+            isCountdownActive
+                ? '认证.秒后重发'.tr(namedArgs: {'seconds': '$countdownSeconds'})
+                : '认证.获取验证码'.tr(),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: isActionDisabled
+                  ? const Color(0xFFBFBFBF)
+                  : AppColors.brand,
+            ),
+          );
+
     return Column(
       children: <Widget>[
         Row(
@@ -388,13 +414,9 @@ class _CodeInputRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: isSending ? null : onGetCode,
-              child: Text(
-                isSending ? '认证.发送中'.tr() : '认证.获取验证码'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: isSending
-                      ? AppColors.brand.withValues(alpha: 0.45)
-                      : AppColors.brand),
-              ),
+              behavior: HitTestBehavior.opaque,
+              onTap: isActionDisabled ? null : onGetCode,
+              child: actionWidget,
             ),
           ],
         ),
