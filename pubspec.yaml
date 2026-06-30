@@ -111,8 +111,6 @@ flutter:
           weight: 400
     - family: SFUIText
       fonts:
-        - asset: assets/font/sf_ui_text/SFUIText-Light.otf
-          weight: 300
         - asset: assets/font/sf_ui_text/SFUIText-Regular.otf
           weight: 400
         - asset: assets/font/sf_ui_text/SFUIText-Medium.otf
@@ -127,8 +125,6 @@ flutter:
           weight: 700
     - family: AlibabaPuHuiTi
       fonts:
-        - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Medium.otf
-          weight: 500
         - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Bold.otf
           weight: 700
 
