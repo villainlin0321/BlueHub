@@ -120,6 +120,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final VisaOrderVO detail = await ref
           .read(visaOrderServiceProvider)
           .getOrderDetail(orderId: orderId);
+      final bool useRejectedUploadFlow = _shouldUseRejectedUploadFlow(detail);
       if (!mounted) {
         return;
       }
@@ -127,7 +128,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         _orderDetail = detail;
         _isLoading = false;
       });
-      _syncRequirements(detail.requiredMaterials);
+      _syncRequirements(
+        detail.requiredMaterials,
+        materials: useRejectedUploadFlow ? detail.materials : null,
+      );
       _syncVisaDocuments(detail.visaDocuments);
       _syncPendingPaymentState(detail);
     } catch (error) {
@@ -166,7 +170,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }, growable: false);
   }
 
-  void _syncRequirements(List<RequiredMaterialVO>? requiredMaterials) {
+  void _syncRequirements(
+    List<RequiredMaterialVO>? requiredMaterials, {
+    List<MaterialVO>? materials,
+  }) {
     if (!mounted) {
       return;
     }
@@ -175,11 +182,16 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
     setState(() {
       final Map<String, List<PickedUploadFile>> next =
-          <String, List<PickedUploadFile>>{};
-      for (final _MaterialRequirement requirement in requirements) {
-        next[requirement.id] =
-            _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[];
-      }
+          materials == null
+          ? <String, List<PickedUploadFile>>{
+              for (final _MaterialRequirement requirement in requirements)
+                requirement.id:
+                    _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[],
+            }
+          : _buildEditableUploadsByRequirement(
+              requirements: requirements,
+              materials: materials,
+            );
       _uploadsByRequirement
         ..clear()
         ..addAll(next);
@@ -272,8 +284,73 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       state: UploadItemState.success,
       isImage: UploadPickerUtils.isImagePath(normalizedPath),
       uploadedFileUrl: document.fileUrl,
+      fileSizeBytes: null,
       progress: 1,
     );
+  }
+
+  PickedUploadFile _buildPickedUploadFileFromMaterial(MaterialVO material) {
+    final String normalizedPath = _normalizedPathFromUrl(material.fileUrl);
+    final String rejectReason = (material.rejectReason ?? '').trim();
+    return PickedUploadFile(
+      id: 'material_${material.materialId}_${material.fileUrl.hashCode}_${material.uploadedAt}',
+      name: _materialDisplayName(material),
+      path: normalizedPath.isEmpty ? material.fileUrl : normalizedPath,
+      sourceType: UploadSourceType.file,
+      state: rejectReason.isEmpty
+          ? UploadItemState.success
+          : UploadItemState.failure,
+      isImage: material.fileType.trim().toLowerCase().startsWith('image/'),
+      sizeLabel: material.fileSize > 0
+          ? UploadPickerUtils.formatFileSize(material.fileSize)
+          : null,
+      errorMessage: rejectReason.isEmpty ? null : rejectReason,
+      progress: 1,
+      // 详情接口未返回原始 fileId，驳回重传场景先复用材料记录 ID 保持回显文件可提交。
+      uploadedFileId: material.materialId > 0 ? material.materialId : null,
+      uploadedFileUrl: material.fileUrl,
+      fileSizeBytes: material.fileSize > 0 ? material.fileSize : null,
+    );
+  }
+
+  Map<String, List<PickedUploadFile>> _buildEditableUploadsByRequirement({
+    required List<_MaterialRequirement> requirements,
+    required List<MaterialVO> materials,
+  }) {
+    final Map<String, List<PickedUploadFile>> uploadsByRequirement =
+        <String, List<PickedUploadFile>>{
+          for (final _MaterialRequirement requirement in requirements)
+            requirement.id: <PickedUploadFile>[
+              ...(_uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[]),
+            ],
+        };
+    final Map<String, _MaterialRequirement> requirementByTitle =
+        <String, _MaterialRequirement>{
+          for (final _MaterialRequirement requirement in requirements)
+            requirement.title.trim(): requirement,
+        };
+    final Set<String> existingKeys = <String>{
+      for (final List<PickedUploadFile> files in uploadsByRequirement.values)
+        for (final PickedUploadFile file in files)
+          '${(file.uploadedFileUrl ?? '').trim()}|${file.name.trim()}',
+    };
+
+    for (final MaterialVO material in materials) {
+      final _MaterialRequirement? requirement =
+          requirementByTitle[material.materialName.trim()];
+      if (requirement == null) {
+        continue;
+      }
+      final PickedUploadFile file = _buildPickedUploadFileFromMaterial(material);
+      final String dedupeKey =
+          '${(file.uploadedFileUrl ?? '').trim()}|${file.name.trim()}';
+      if (!existingKeys.add(dedupeKey)) {
+        continue;
+      }
+      uploadsByRequirement[requirement.id]!.add(file);
+    }
+
+    return uploadsByRequirement;
   }
 
   Map<String, List<PickedUploadFile>> _buildReadonlyUploadsByRequirement({
@@ -341,9 +418,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (steps.isEmpty) {
       return const <ProgressStep>[];
     }
+    final int currentStep = _displayCurrentStep(detail);
     return steps
         .map((StepVO step) {
-          final int currentStep = detail?.currentStep ?? 0;
           final ProgressStepState state;
           if (step.step < currentStep) {
             state = ProgressStepState.completed;
@@ -360,6 +437,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           return ProgressStep(label: label, state: state, number: step.step);
         })
         .toList(growable: false);
+  }
+
+  int _displayCurrentStep(VisaOrderVO? detail) {
+    if (_shouldUseRejectedUploadFlow(detail)) {
+      return _uploadMaterialsStepNumber;
+    }
+    return detail?.currentStep ?? 0;
   }
 
   void _showMessage(String message) {
@@ -401,7 +485,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return '';
     }
     for (final StepVO step in detail.steps) {
-      if (step.step == detail.currentStep) {
+      if (step.step == _displayCurrentStep(detail)) {
         return step.label.trim();
       }
     }
@@ -409,6 +493,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   bool _isUploadMaterialsStage(VisaOrderVO? detail) {
+    if (_shouldUseRejectedUploadFlow(detail)) {
+      return true;
+    }
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _uploadMaterialsStepNumber ||
@@ -421,6 +508,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   bool _isMaterialReviewStage(VisaOrderVO? detail) {
+    if (_shouldUseRejectedUploadFlow(detail)) {
+      return false;
+    }
     final String currentStepLabel = _currentStepLabel(detail);
     final String status = detail?.status.trim().toLowerCase() ?? '';
     return (detail?.currentStep ?? 0) == _materialReviewStepNumber ||
@@ -431,6 +521,15 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   bool _isRejectedStatus(VisaOrderVO? detail) {
     return (detail?.status.trim().toLowerCase() ?? '') == 'rejected';
   }
+
+  bool _shouldUseRejectedUploadFlow(VisaOrderVO? detail) {
+    return !_isServiceProviderRole &&
+        _isRejectedStatus(detail) &&
+        (detail?.currentStep ?? 0) == _materialReviewStepNumber;
+  }
+
+  bool get _isServiceProviderRole =>
+      ref.read(shellRoleProvider) == ShellRole.serviceProvider;
 
   bool _isEmbassySubmittedStage(VisaOrderVO? detail) {
     final String currentStepLabel = _currentStepLabel(detail);
@@ -966,7 +1065,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               uploadedFileUrl.isEmpty) {
             throw ApiException.unknown('订单.存在未上传完成的材料文件'.tr());
           }
-          final int fileSize = UploadPickerUtils.readFileSize(file.path);
+          final int fileSize =
+              file.fileSizeBytes ?? UploadPickerUtils.readFileSize(file.path);
           requestMaterials.add(
             MaterialItemBO(
               materialName: requirement.title,
@@ -1387,10 +1487,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return false;
   }
 
-  Future<void> _downloadMaterial(MaterialVO material) async {
-    await _downloadMaterialFile(material);
-  }
-
   Future<bool> _downloadAndOpenMaterial(
     MaterialVO material, {
     bool showPageLoading = false,
@@ -1597,7 +1693,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         onPressed: _handlePayNow,
       );
     }
-    if (_isRejectedStatus(detail)) {
+    if (_isRejectedStatus(detail) && !_shouldUseRejectedUploadFlow(detail)) {
       return const _RejectedStatusBar();
     }
     if (isUploadMaterialsStage) {
@@ -1720,7 +1816,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     ? _ProviderMaterialReviewCard(
                         materials: detail.materials,
                         downloadingFileUrls: _downloadingMaterialUrls,
-                        onDownloadTap: _downloadMaterial,
+                        onDownloadTap: (MaterialVO material) async {
+                          await _downloadAndOpenMaterial(material);
+                        },
                       )
                     : const SizedBox.shrink()
               : showApplicantMaterialCard
