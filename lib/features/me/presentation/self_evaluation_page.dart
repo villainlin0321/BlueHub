@@ -2,11 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class SelfEvaluationPage extends StatefulWidget {
-  const SelfEvaluationPage({
-    super.key,
-    this.initialValue = '',
-  });
+  const SelfEvaluationPage({super.key, this.initialValue = ''});
 
   final String initialValue;
 
@@ -59,10 +58,17 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
     _focusNode.requestFocus();
   }
 
+  void _dismissKeyboard() {
+    if (_focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final int currentLength = _controller.text.characters.length;
+    final bool isKeyboardVisible = bottomInset > 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -82,11 +88,9 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
         ),
         title: Text(
           '我的.自我评价'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -106,19 +110,15 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                       maxLines: null,
                       expands: true,
                       textAlignVertical: TextAlignVertical.top,
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
+                      style: TestStyle.pingFangRegular(
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 24 / 16,
+                        color: Color(0xFF171A1D),
                       ),
                       decoration: InputDecoration(
                         hintText: '通用.请输入'.tr(),
-                        hintStyle: TextStyle(
-                          color: Color(0xFFBFBFBF),
+                        hintStyle: TestStyle.pingFangRegular(
                           fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 24 / 16,
+                          color: Color(0xFFBFBFBF),
                         ),
                         border: InputBorder.none,
                         counterText: '',
@@ -130,14 +130,32 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       '$currentLength/$_maxLength',
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
+                      style: TestStyle.regular(
                         fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
+                        color: Color(0xFF8C8C8C),
                       ),
                     ),
                   ),
+                  if (isKeyboardVisible) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _dismissKeyboard,
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor: const Color(0xFF096DD9),
+                        ),
+                        child: Text(
+                          '完成',
+                          style: TestStyle.pingFangMedium(fontSize: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
               ),
             ),
@@ -173,11 +191,7 @@ class _SelfEvaluationPageState extends State<SelfEvaluationPage> {
                   ),
                   child: Text(
                     '我的.保存'.tr(),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 22 / 16,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 16),
                   ),
                 ),
               ),

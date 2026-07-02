@@ -58,12 +58,14 @@ class MaterialBO {
     required this.description,
     required this.isRequired,
     required this.sortOrder,
+    this.exampleFileIds = const <int>[],
   });
 
   final String name;
   final String description;
   final bool isRequired;
   final int sortOrder;
+  final List<int> exampleFileIds;
 
   factory MaterialBO.fromJson(JsonMap json) {
     return MaterialBO(
@@ -71,6 +73,7 @@ class MaterialBO {
       description: readString(json, 'description'),
       isRequired: readBool(json, 'isRequired'),
       sortOrder: readInt(json, 'sortOrder'),
+      exampleFileIds: readIntList(json, 'exampleFileIds'),
     );
   }
 
@@ -80,42 +83,39 @@ class MaterialBO {
       'description': description,
       'isRequired': isRequired,
       'sortOrder': sortOrder,
+      if (exampleFileIds.isNotEmpty) 'exampleFileIds': exampleFileIds,
     };
   }
 }
 
-class MaterialVO {
-  const MaterialVO({
-    required this.materialName,
-    required this.fileUrl,
-    required this.fileType,
-    required this.fileSize,
-    required this.uploadedAt,
+class PackageMaterialVO {
+  const PackageMaterialVO({
+    required this.name,
+    required this.description,
+    required this.isRequired,
+    this.exampleFileUrls = const <String>[],
   });
 
-  final String materialName;
-  final String fileUrl;
-  final String fileType;
-  final int fileSize;
-  final String uploadedAt;
+  final String name;
+  final String description;
+  final bool isRequired;
+  final List<String> exampleFileUrls;
 
-  factory MaterialVO.fromJson(JsonMap json) {
-    return MaterialVO(
-      materialName: readString(json, 'materialName'),
-      fileUrl: readString(json, 'fileUrl'),
-      fileType: readString(json, 'fileType'),
-      fileSize: readInt(json, 'fileSize'),
-      uploadedAt: readString(json, 'uploadedAt'),
+  factory PackageMaterialVO.fromJson(JsonMap json) {
+    return PackageMaterialVO(
+      name: readString(json, 'name'),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
-      'materialName': materialName,
-      'fileUrl': fileUrl,
-      'fileType': fileType,
-      'fileSize': fileSize,
-      'uploadedAt': uploadedAt,
+      'name': name,
+      'description': description,
+      'isRequired': isRequired,
+      'exampleFileUrls': exampleFileUrls,
     };
   }
 }
@@ -202,6 +202,7 @@ class TierVO {
   final int soldCount;
 
   factory TierVO.fromJson(JsonMap json) {
+    // 文档只定义了基础档位字段；其余字段保留兼容，避免编辑页读取旧返回时崩溃。
     return TierVO(
       tierId: readInt(json, 'tierId'),
       name: readString(json, 'name'),
@@ -210,7 +211,11 @@ class TierVO {
       customServices: readStringList(json, 'customServices'),
       description: readString(json, 'description'),
       showMaterials: readBool(json, 'showMaterials'),
-      materials: readModelList<MaterialBO>(json, 'materials', MaterialBO.fromJson),
+      materials: readModelList<MaterialBO>(
+        json,
+        'materials',
+        MaterialBO.fromJson,
+      ),
       soldCount: readInt(json, 'soldCount'),
     );
   }
@@ -224,8 +229,172 @@ class TierVO {
       'customServices': customServices,
       'description': description,
       'showMaterials': showMaterials,
-      'materials': materials.map((item) => item.toJson()).toList(growable: false),
+      'materials': materials
+          .map((item) => item.toJson())
+          .toList(growable: false),
       'soldCount': soldCount,
+    };
+  }
+}
+
+class VisaPackageEditMaterialVO {
+  const VisaPackageEditMaterialVO({
+    required this.name,
+    required this.description,
+    required this.isRequired,
+    required this.sortOrder,
+    required this.exampleFileIds,
+    required this.exampleFileUrls,
+  });
+
+  final String name;
+  final String description;
+  final bool isRequired;
+  final int sortOrder;
+  final List<int> exampleFileIds;
+  final List<String> exampleFileUrls;
+
+  factory VisaPackageEditMaterialVO.fromJson(JsonMap json) {
+    return VisaPackageEditMaterialVO(
+      name: readString(json, 'name'),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+      sortOrder: readInt(json, 'sortOrder'),
+      exampleFileIds: readIntList(json, 'exampleFileIds'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'name': name,
+      'description': description,
+      'isRequired': isRequired,
+      'sortOrder': sortOrder,
+      'exampleFileIds': exampleFileIds,
+      'exampleFileUrls': exampleFileUrls,
+    };
+  }
+}
+
+class VisaPackageEditTierVO {
+  const VisaPackageEditTierVO({
+    required this.tierId,
+    required this.name,
+    required this.price,
+    required this.services,
+    required this.customServices,
+    required this.description,
+    required this.showMaterials,
+    required this.sortOrder,
+    required this.soldCount,
+    required this.materials,
+  });
+
+  final int tierId;
+  final String name;
+  final double price;
+  final List<String> services;
+  final List<String> customServices;
+  final String description;
+  final bool showMaterials;
+  final int sortOrder;
+  final int soldCount;
+  final List<VisaPackageEditMaterialVO> materials;
+
+  factory VisaPackageEditTierVO.fromJson(JsonMap json) {
+    return VisaPackageEditTierVO(
+      tierId: readInt(json, 'tierId'),
+      name: readString(json, 'name'),
+      price: readDouble(json, 'price'),
+      services: readStringList(json, 'services'),
+      customServices: readStringList(json, 'customServices'),
+      description: readString(json, 'description'),
+      showMaterials: readBool(json, 'showMaterials'),
+      sortOrder: readInt(json, 'sortOrder'),
+      soldCount: readInt(json, 'soldCount'),
+      materials: readModelList<VisaPackageEditMaterialVO>(
+        json,
+        'materials',
+        VisaPackageEditMaterialVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'tierId': tierId,
+      'name': name,
+      'price': price,
+      'services': services,
+      'customServices': customServices,
+      'description': description,
+      'showMaterials': showMaterials,
+      'sortOrder': sortOrder,
+      'soldCount': soldCount,
+      'materials': materials
+          .map((item) => item.toJson())
+          .toList(growable: false),
+    };
+  }
+}
+
+class VisaPackageEditVO {
+  const VisaPackageEditVO({
+    required this.packageId,
+    required this.name,
+    required this.targetCountry,
+    required this.visaType,
+    required this.estimatedDays,
+    required this.currency,
+    required this.coverImageIds,
+    required this.coverImages,
+    required this.status,
+    required this.tiers,
+  });
+
+  final int packageId;
+  final String name;
+  final String targetCountry;
+  final String visaType;
+  final int estimatedDays;
+  final String currency;
+  final List<int> coverImageIds;
+  final List<String> coverImages;
+  final String status;
+  final List<VisaPackageEditTierVO> tiers;
+
+  factory VisaPackageEditVO.fromJson(JsonMap json) {
+    return VisaPackageEditVO(
+      packageId: readInt(json, 'packageId'),
+      name: readString(json, 'name'),
+      targetCountry: readString(json, 'targetCountry'),
+      visaType: readString(json, 'visaType'),
+      estimatedDays: readInt(json, 'estimatedDays'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
+      coverImageIds: readIntList(json, 'coverImageIds'),
+      coverImages: readStringList(json, 'coverImages'),
+      status: readString(json, 'status'),
+      tiers: readModelList<VisaPackageEditTierVO>(
+        json,
+        'tiers',
+        VisaPackageEditTierVO.fromJson,
+      ),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'packageId': packageId,
+      'name': name,
+      'targetCountry': targetCountry,
+      'visaType': visaType,
+      'estimatedDays': estimatedDays,
+      'currency': currency,
+      'coverImageIds': coverImageIds,
+      'coverImages': coverImages,
+      'status': status,
+      'tiers': tiers.map((item) => item.toJson()).toList(growable: false),
     };
   }
 }
@@ -267,9 +436,10 @@ class VisaPackageVO {
   final String currency;
   final List<String> coverImages;
   final List<TierVO> tiers;
-  final List<MaterialVO> requiredMaterials;
+  final List<PackageMaterialVO> requiredMaterials;
 
-  /// 安全解析签证套餐详情，兼容后端返回币种和材料字段的类型波动。
+  /// 按接口文档解析签证套餐详情：
+  /// `requiredMaterials` 为 `PackageMaterialVO[]`，`tiers` 仅保证基础档位字段。
   factory VisaPackageVO.fromJson(JsonMap json) {
     return VisaPackageVO(
       providerId: readInt(json, 'providerId'),
@@ -281,10 +451,10 @@ class VisaPackageVO {
       currency: readString(json, 'currency', fallback: 'CNY'),
       coverImages: readStringList(json, 'coverImages'),
       tiers: readModelList<TierVO>(json, 'tiers', TierVO.fromJson),
-      requiredMaterials: readModelList<MaterialVO>(
+      requiredMaterials: readModelList<PackageMaterialVO>(
         json,
         'requiredMaterials',
-        MaterialVO.fromJson,
+        PackageMaterialVO.fromJson,
       ),
     );
   }

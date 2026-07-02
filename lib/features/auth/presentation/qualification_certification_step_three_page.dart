@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
@@ -13,6 +14,8 @@ import '../../service_detail/presentation/app_result_page.dart';
 import '../../visa/data/provider_providers.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
+
+import 'package:bluehub_app/shared/ui/test_style.dart';
 
 class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
   const QualificationCertificationStepThreePage({
@@ -124,9 +127,7 @@ class _QualificationCertificationStepThreePageState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('认证流程.提交失败'.tr())));
+      AppToast.show('认证流程.提交失败'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -156,11 +157,9 @@ class _QualificationCertificationStepThreePageState
         ),
         title: Text(
           '认证流程.资质认证'.tr(),
-          style: const TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -175,10 +174,9 @@ class _QualificationCertificationStepThreePageState
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   '认证流程.实名认证提示'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
               ),
@@ -207,31 +205,25 @@ class _QualificationCertificationStepThreePageState
                         children: <Widget>[
                           Text(
                             qualificationCountryLabel(_role),
-                            style: TextStyle(
-                              color: Color(0xFF262626),
+                            style: TestStyle.pingFangRegular(
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              height: 22 / 14,
+                              color: Color(0xFF262626),
                             ),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '认证流程.可多选'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
+                            style: TestStyle.pingFangRegular(
                               fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              height: 18 / 13,
+                              color: Color(0xFF8C8C8C),
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
+                          Text(
                             '*',
-                            style: TextStyle(
-                              color: Color(0xFFFF4D4F),
+                            style: TestStyle.regular(
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              height: 20 / 14,
+                              color: Color(0xFFFF4D4F),
                             ),
                           ),
                           const Spacer(),
@@ -273,21 +265,17 @@ class _QualificationCertificationStepThreePageState
                         children: <Widget>[
                           Text(
                             '认证流程.从业年限'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
+                            style: TestStyle.pingFangRegular(
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              height: 20 / 14,
+                              color: Color(0xFF262626),
                             ),
                           ),
                           SizedBox(width: 4),
                           Text(
                             '*',
-                            style: TextStyle(
-                              color: Color(0xFFFF4D4F),
+                            style: TestStyle.regular(
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              height: 20 / 14,
+                              color: Color(0xFFFF4D4F),
                             ),
                           ),
                         ],
@@ -307,17 +295,15 @@ class _QualificationCertificationStepThreePageState
                                 controller: _experienceController,
                                 keyboardType: TextInputType.number,
                                 textAlignVertical: TextAlignVertical.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
+                                style: TestStyle.pingFangRegular(
                                   fontSize: 14,
-                                  height: 20 / 14,
+                                  color: Color(0xFF262626),
                                 ),
                                 decoration: InputDecoration(
                                   hintText: '通用.请输入'.tr(),
-                                  hintStyle: const TextStyle(
-                                    color: Color(0xFFBFBFBF),
+                                  hintStyle: TestStyle.pingFangRegular(
                                     fontSize: 14,
-                                    height: 20 / 14,
+                                    color: Color(0xFFBFBFBF),
                                   ),
                                   border: InputBorder.none,
                                   isCollapsed: true,
@@ -332,11 +318,9 @@ class _QualificationCertificationStepThreePageState
                           const SizedBox(width: 12),
                           Text(
                             '认证流程.年'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
+                            style: TestStyle.pingFangMedium(
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              height: 20 / 14,
+                              color: Color(0xFF262626),
                             ),
                           ),
                         ],
@@ -372,11 +356,9 @@ class _QualificationCertificationStepThreePageState
                     ),
                     child: Text(
                       '认证流程.上一步'.tr(),
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
+                      style: TestStyle.pingFangRegular(
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
+                        color: Color(0xFF171A1D),
                       ),
                     ),
                   ),
@@ -398,11 +380,9 @@ class _QualificationCertificationStepThreePageState
                     ),
                     child: Text(
                       '认证流程.提交审核'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TestStyle.pingFangRegular(
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -440,12 +420,7 @@ class _CountryTag extends StatelessWidget {
           children: <Widget>[
             Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF096DD9),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 18 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF096DD9)),
             ),
             const SizedBox(width: 8),
             SvgPicture.asset(

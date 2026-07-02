@@ -1,12 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/network/page_result.dart';
 import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 import 'finance_page_shared.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceTransactionsPage extends ConsumerStatefulWidget {
   const FinanceTransactionsPage({super.key});
 
@@ -103,9 +105,7 @@ class _FinanceTransactionsPageState
         return;
       }
       setState(() => _isLoadingMore = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(normalizeFinanceError(error))),
-      );
+      AppToast.show(normalizeFinanceError(error));
     }
   }
 
@@ -121,11 +121,7 @@ class _FinanceTransactionsPageState
         centerTitle: true,
         title: Text(
           '财务.账单明细'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: _buildBody(),
@@ -179,10 +175,7 @@ class _FinanceTransactionsPageState
 }
 
 class _LoadMoreFooter extends StatelessWidget {
-  const _LoadMoreFooter({
-    required this.isLoadingMore,
-    required this.hasNext,
-  });
+  const _LoadMoreFooter({required this.isLoadingMore, required this.hasNext});
 
   final bool isLoadingMore;
   final bool hasNext;
@@ -199,11 +192,7 @@ class _LoadMoreFooter extends StatelessWidget {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
       ),
     );

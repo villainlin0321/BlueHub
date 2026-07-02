@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -15,6 +16,7 @@ import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
 import '../country_options_bottom_sheet.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
@@ -67,7 +69,7 @@ class CompanyMePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const _CompanyHeaderSection(),
-          const SizedBox(height: 40),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
@@ -76,18 +78,6 @@ class CompanyMePage extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-        ),
       ),
     );
   }
@@ -113,7 +103,6 @@ class CompanyMePage extends ConsumerWidget {
       context.go(RoutePaths.jobs);
       return;
     }
-    _showPlaceholderToast(context, label);
   }
 
   Future<void> _openQualificationCertification(
@@ -145,9 +134,7 @@ class CompanyMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '我的.资料加载失败'.tr();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
     }
   }
 }
@@ -160,12 +147,12 @@ class _CompanyHeaderSection extends StatelessWidget {
     final double topPadding = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
-      height: 248,
+      height: 228,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
           Container(
-            height: 220,
+            height: 200,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(28),
@@ -202,7 +189,7 @@ class _CompanyHeaderSection extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       _HeaderActions(),
-                      SizedBox(height: 10),
+                      SizedBox(height: 15),
                       _CompanyProfileRow(),
                     ],
                   ),
@@ -335,23 +322,14 @@ class _CompanyInfo extends StatelessWidget {
           companyName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            height: 20 / 17,
-          ),
+          style: TestStyle.semibold(fontSize: 17, color: Colors.white),
         ),
         const SizedBox(height: 6),
         Row(
           children: <Widget>[
             Text(
               industry,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                height: 14 / 11,
-              ),
+              style: TestStyle.regular(fontSize: 11, color: Colors.white),
             ),
             if (location.isNotEmpty) ...<Widget>[
               const SizedBox(width: 8),
@@ -359,11 +337,7 @@ class _CompanyInfo extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 location,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  height: 14 / 11,
-                ),
+                style: TestStyle.regular(fontSize: 11, color: Colors.white),
               ),
             ],
           ],
@@ -418,12 +392,7 @@ class _CompanyBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '通用.企业简称'.tr(),
-        style: TextStyle(
-          color: Color(0xFF784301),
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          height: 10 / 9,
-        ),
+        style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
       ),
     );
   }
@@ -453,7 +422,10 @@ class _StatCard extends ConsumerWidget {
               value: _formatCompanyCount(stats.pendingInterviews),
               labelKey: '我的.待面试',
             ),
-            _StatData(value: _formatCompanyCount(stats.hired), labelKey: '我的.已录用'),
+            _StatData(
+              value: _formatCompanyCount(stats.hired),
+              labelKey: '我的.已录用',
+            ),
           ];
 
     return Container(
@@ -490,22 +462,12 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 20 / 18,
-          ),
+          style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
         ),
-        const SizedBox(height: 12),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 12,
-            height: 16 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -571,11 +533,7 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(

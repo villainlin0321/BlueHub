@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
+
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
+const double _kResumeCardFooterHeight = 32;
 
 /// 我的简历页。
 ///
@@ -49,7 +56,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: _buildAppBar(context),
       body: _buildBody(),
-      bottomNavigationBar: _buildBottomAction(context),
+      bottomNavigationBar: _isManaging ? null : _buildBottomAction(context),
     );
   }
 
@@ -118,10 +125,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       ),
       title: Text(
         '我的.我的简历标题'.tr(),
-        style: const TextStyle(
-          color: Color(0xE6000000),
+        style: TestStyle.pingFangSemibold(
           fontSize: 17,
-          fontWeight: FontWeight.w600,
+          color: Color(0xE6000000),
         ),
       ),
       actions: <Widget>[
@@ -138,10 +144,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
               ),
               child: Text(
                 _isManaging ? '我的.完成'.tr() : '我的.管理'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
+                style: TestStyle.pingFangRegular(
                   fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF262626),
                 ),
               ),
             ),
@@ -164,11 +169,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         children: <Widget>[
           Text(
             '我的.选择默认展示简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF262626),
             ),
           ),
           const SizedBox(height: 12),
@@ -186,11 +189,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         if (index == 0) {
           return Text(
             _isManaging ? '我的.管理我的简历'.tr() : '我的.选择默认展示简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF262626),
             ),
           );
         }
@@ -209,18 +210,21 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
               ? '我的.期望职位待完善'.tr()
               : item.targetPositions.first);
     final String duration = latestExperience == null
-        ? (item.updatedAt.isEmpty ? '招聘.刚刚更新'.tr() : item.updatedAt)
+        ? ''
         : latestExperience.isCurrent
         ? '${latestExperience.startDate}-${'我的.至今'.tr()}'
         : '${latestExperience.startDate}-${latestExperience.endDate ?? '我的.至今'.tr()}';
-    final String summary = latestExperience?.description.trim().isNotEmpty == true
+    final String summary =
+        latestExperience?.description.trim().isNotEmpty == true
         ? latestExperience!.description.trim()
         : (latestExperience?.company.trim().isNotEmpty == true
               ? latestExperience!.company.trim()
               : '我的.请完善工作经历'.tr());
 
     return _ResumeItemData(
-      name: item.nickname.trim().isEmpty ? '我的.未命名用户'.tr() : item.nickname.trim(),
+      name: item.nickname.trim().isEmpty
+          ? '我的.未命名用户'.tr()
+          : item.nickname.trim(),
       region: item.currentLocation.trim().isEmpty
           ? '我的.地区待完善'.tr()
           : item.currentLocation.trim(),
@@ -240,7 +244,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   /// 构建单张简历卡片，展示列表接口返回的摘要数据。
   Widget _buildResumeCard(ResumeListItemVO resume) {
     final _ResumeItemData item = _buildResumeItemData(resume);
-    final bool isSavingVisibility = _savingVisibilityResumeId == resume.resumeId;
+    final bool isSavingVisibility = _savingVisibilityResumeId != null;
     final bool isSettingDefault = _settingDefaultResumeId == resume.resumeId;
     final bool isDeleting = _deletingResumeId == resume.resumeId;
     final bool canSetDefault = !resume.isDefault && !isSettingDefault;
@@ -271,10 +275,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                     child: Center(
                       child: Text(
                         item.avatarFallbackText,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TestStyle.semibold(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -305,22 +308,18 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                   item.jobTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF262626),
+                  style: TestStyle.regular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 16 / 14,
+                    color: Color(0xFF262626),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 item.duration,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
+                style: TestStyle.regular(
                   fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 16 / 12,
+                  color: Color(0xFF8C8C8C),
                 ),
               ),
             ],
@@ -328,79 +327,80 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
           const SizedBox(height: 8),
           Text(
             item.summary,
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 12),
-          if (_isManaging)
-            _buildManageActions(
-              resume: resume,
-              isSettingDefault: isSettingDefault,
-              isDeleting: isDeleting,
-              canSetDefault: canSetDefault,
-            )
-          else
-            Row(
-              children: <Widget>[
-                InkWell(
-                  onTap: canSetDefault ? () => _setDefaultResume(resume) : null,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Row(
+          SizedBox(
+            height: _kResumeCardFooterHeight,
+            child: _isManaging
+                ? _buildManageActions(
+                    resume: resume,
+                    isSettingDefault: isSettingDefault,
+                    isDeleting: isDeleting,
+                    canSetDefault: canSetDefault,
+                  )
+                : Row(
                     children: <Widget>[
-                      Icon(
-                        resume.isDefault
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded,
-                        size: 20,
-                        color: resume.isDefault
-                            ? const Color(0xFF096DD9)
-                            : const Color(0xFFBFBFBF),
-                      ),
-                      SizedBox(width: 7),
-                      Text(
-                        isSettingDefault
-                            ? '我的.设置中'.tr()
-                            : (resume.isDefault ? '我的.已设默认'.tr() : '我的.设为默认'.tr()),
-                        style: const TextStyle(
-                          color: Color(0xFF8C8C8C),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 20 / 14,
+                      InkWell(
+                        onTap: canSetDefault
+                            ? () => _setDefaultResume(resume)
+                            : null,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              resume.isDefault
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 20,
+                              color: resume.isDefault
+                                  ? const Color(0xFF096DD9)
+                                  : const Color(0xFFBFBFBF),
+                            ),
+                            SizedBox(width: 7),
+                            Text(
+                              isSettingDefault
+                                  ? '我的.设置中'.tr()
+                                  : (resume.isDefault
+                                        ? '我的.已设默认'.tr()
+                                        : '我的.设为默认'.tr()),
+                              style: TestStyle.pingFangRegular(
+                                fontSize: 14,
+                                color: Color(0xFF8C8C8C),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const Spacer(),
+                      if (resume.isDefault) ...<Widget>[
+                        Text(
+                          resume.isPublic ? '我的.可见'.tr() : '我的.隐藏'.tr(),
+                          style: TestStyle.pingFangRegular(
+                            fontSize: 14,
+                            color: Color(0xFF8C8C8C),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Switch(
+                          value: resume.isPublic,
+                          onChanged: isSavingVisibility
+                              ? null
+                              : (bool value) =>
+                                    _updateResumeVisibility(resume, value),
+                          activeThumbColor: Colors.white,
+                          activeTrackColor: const Color(0xFF096DD9),
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: const Color(0xFFD9D9D9),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
                     ],
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  resume.isPublic ? '我的.可见'.tr() : '我的.隐藏'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Switch(
-                  value: resume.isPublic,
-                  onChanged: isSavingVisibility
-                      ? null
-                      : (bool value) => _updateResumeVisibility(resume, value),
-                  activeThumbColor: Colors.white,
-                  activeTrackColor: const Color(0xFF096DD9),
-                  inactiveThumbColor: Colors.white,
-                  inactiveTrackColor: const Color(0xFFD9D9D9),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ],
-            ),
+          ),
         ],
       ),
     );
@@ -436,11 +436,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                   isSettingDefault
                       ? '我的.设置中'.tr()
                       : (resume.isDefault ? '我的.已设默认'.tr() : '我的.设为默认'.tr()),
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
               ],
@@ -463,11 +461,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
                 const SizedBox(width: 4),
                 Text(
                   isDeleting ? '我的.删除中'.tr() : '我的.删除简历'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFFD9363E),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
+                    color: Color(0xFFD9363E),
                   ),
                 ),
               ],
@@ -485,12 +481,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       children: <Widget>[
         Text(
           item.name,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            height: 20 / 15,
-          ),
+          style: TestStyle.medium(fontSize: 15, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 4),
         Wrap(
@@ -513,26 +504,19 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
   Widget _buildMetaText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF595959),
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        height: 16 / 12,
-      ),
+      style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF595959)),
     );
   }
 
   /// 构建基础信息之间的分隔符。
   Widget _buildSeparator() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 6),
       child: Text(
         '|',
-        style: TextStyle(
-          color: Color(0xFFBFBFBF),
+        style: TestStyle.pingFangRegular(
           fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 16 / 12,
+          color: Color(0xFFBFBFBF),
         ),
       ),
     );
@@ -559,11 +543,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
             ),
             child: Text(
               _isCreatingResume ? '我的.创建中'.tr() : '我的.创建简历'.tr(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 16),
             ),
           ),
         ),
@@ -581,15 +561,17 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(Icons.description_outlined, size: 32, color: Color(0xFFBFBFBF)),
+          const Icon(
+            Icons.description_outlined,
+            size: 32,
+            color: Color(0xFFBFBFBF),
+          ),
           const SizedBox(height: 12),
           Text(
             '我的.暂无简历'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF8C8C8C),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF8C8C8C),
             ),
           ),
         ],
@@ -640,9 +622,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _isCreatingResume = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
@@ -667,15 +647,16 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
   /// 切换简历公开状态，并通过保存接口同步到服务端。
-  Future<void> _updateResumeVisibility(ResumeListItemVO resume, bool value) async {
-    if (_savingVisibilityResumeId != null) {
+  Future<void> _updateResumeVisibility(
+    ResumeListItemVO resume,
+    bool value,
+  ) async {
+    if (_savingVisibilityResumeId != null || !resume.isDefault) {
       return;
     }
 
@@ -685,7 +666,24 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
     try {
       final service = ref.read(resumeServiceProvider);
-      final ResumeVO detail = await service.getResumeDetail(resumeId: resume.resumeId);
+      if (value) {
+        final List<ResumeListItemVO> otherVisibleResumes = _resumes
+            .where((item) => item.resumeId != resume.resumeId && item.isPublic)
+            .toList(growable: false);
+        for (final ResumeListItemVO item in otherVisibleResumes) {
+          final ResumeVO detail = await service.getResumeDetail(
+            resumeId: item.resumeId,
+          );
+          await service.updateResume(
+            resumeId: item.resumeId,
+            request: detail.toSaveResumeBO(isPublic: false),
+          );
+        }
+      }
+
+      final ResumeVO detail = await service.getResumeDetail(
+        resumeId: resume.resumeId,
+      );
       await service.updateResume(
         resumeId: resume.resumeId,
         request: detail.toSaveResumeBO(isPublic: value),
@@ -698,35 +696,14 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         _resumes = _resumes
             .map(
               (item) => item.resumeId == resume.resumeId
-                  ? ResumeListItemVO(
-                      resumeId: item.resumeId,
-                      isDefault: item.isDefault,
-                      completeness: item.completeness,
-                      targetPositions: item.targetPositions,
-                      targetCountries: item.targetCountries,
-                      isPublic: value,
-                      updatedAt: item.updatedAt,
-                      nickname: item.nickname,
-                      avatarUrl: item.avatarUrl,
-                      gender: item.gender,
-                      age: item.age,
-                      currentLocation: item.currentLocation,
-                      salaryMin: item.salaryMin,
-                      salaryMax: item.salaryMax,
-                      salaryCurrency: item.salaryCurrency,
-                      latestExperience: item.latestExperience,
-                    )
-                  : item,
+                  ? item.copyWith(isPublic: value)
+                  : (value && item.isPublic
+                        ? item.copyWith(isPublic: false)
+                        : item),
             )
             .toList(growable: false);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(value ? '我的.已设为可见'.tr() : '我的.已设为不可见'.tr()),
-        ),
-      );
+      AppToast.show(value ? '我的.已设为可见'.tr() : '我的.已设为不可见'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -734,9 +711,11 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _savingVisibilityResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      await _loadResume();
+      if (!mounted) {
+        return;
+      }
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
@@ -763,9 +742,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.已设为默认简历'.tr())));
+      AppToast.show('我的.已设为默认简历'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -773,15 +750,24 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _settingDefaultResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 
   /// 删除当前简历，并在成功后从本地移除卡片。
   Future<void> _deleteResume(ResumeListItemVO resume) async {
     if (_deletingResumeId != null) {
+      return;
+    }
+
+    final bool confirmed = await showAppDeleteConfirmDialog(
+      context: context,
+      title: '通用.确认删除'.tr(),
+      message: '我的.删除简历不可恢复'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.删除'.tr(),
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -803,9 +789,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.简历已删除'.tr())));
+      AppToast.show('我的.简历已删除'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -813,9 +797,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       setState(() {
         _deletingResumeId = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
+      AppToast.show(_resolveErrorMessage(error));
     }
   }
 }
@@ -844,11 +826,7 @@ class _ResumeErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -915,13 +893,16 @@ extension on _MyResumePageState {
     if ((min == null || min <= 0) && (max == null || max <= 0)) {
       return '我的.薪资待完善'.tr();
     }
-    final String currency = item.salaryCurrency.trim().isEmpty
+    final String currencyPrefix = item.salaryCurrency.trim().isEmpty
         ? ''
-        : '${item.salaryCurrency.trim()} ';
+        : AppCurrency.displayPrefixFor(
+            item.salaryCurrency,
+            fallback: AppCurrency.eur,
+          );
     if (max != null && max > 0) {
-      return '$currency${_formatNullableDouble(min)}-${_formatNullableDouble(max)}';
+      return '$currencyPrefix${_formatNullableDouble(min)}-${_formatNullableDouble(max)}';
     }
-    return '$currency${_formatNullableDouble(min)}';
+    return '$currencyPrefix${_formatNullableDouble(min)}';
   }
 
   String _formatNullableDouble(double? value) {
@@ -936,7 +917,6 @@ extension on _MyResumePageState {
 }
 
 extension on ResumeVO {
-
   /// 将当前简历详情转换成保存接口需要的全量请求。
   SaveResumeBO toSaveResumeBO({required bool isPublic}) {
     return SaveResumeBO(
@@ -1009,6 +989,31 @@ extension on ResumeVO {
           .toList(growable: false),
       selfEvaluation: selfEvaluation,
       isPublic: isPublic,
+      completeness: 0,
+      currentLocation: basicInfo.currentLocation,
+    );
+  }
+}
+
+extension on ResumeListItemVO {
+  ResumeListItemVO copyWith({bool? isDefault, bool? isPublic}) {
+    return ResumeListItemVO(
+      resumeId: resumeId,
+      isDefault: isDefault ?? this.isDefault,
+      completeness: completeness,
+      targetPositions: targetPositions,
+      targetCountries: targetCountries,
+      isPublic: isPublic ?? this.isPublic,
+      updatedAt: updatedAt,
+      nickname: nickname,
+      avatarUrl: avatarUrl,
+      gender: gender,
+      age: age,
+      currentLocation: currentLocation,
+      salaryMin: salaryMin,
+      salaryMax: salaryMax,
+      salaryCurrency: salaryCurrency,
+      latestExperience: latestExperience,
     );
   }
 }

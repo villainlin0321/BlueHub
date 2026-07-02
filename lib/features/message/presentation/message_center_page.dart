@@ -13,6 +13,7 @@ import '../application/chat/chat_page_args.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 消息中心页，按 Figma 设计稿还原顶部导航、Tab 及系统通知列表。
 class MessageCenterPage extends ConsumerStatefulWidget {
   const MessageCenterPage({super.key});
@@ -117,25 +118,25 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
 
   List<_SystemNoticeItem> _buildInitialSystemItems() {
     return <_SystemNoticeItem>[
-      _SystemNoticeItem(
-        title: '消息.资质审核通过'.tr(),
-        time: '10-22 12:23:21',
-        content: '消息.资质审核通过内容'.tr(),
-        cardAssetPath: _noticeCardPrimaryAsset,
-        isUnread: true,
-      ),
-      _SystemNoticeItem(
-        title: '消息.资质审核未通过'.tr(),
-        time: '09-22 12:23:21',
-        content: '消息.资质审核未通过内容'.tr(),
-        cardAssetPath: _noticeCardSecondaryAsset,
-      ),
-      _SystemNoticeItem(
-        title: '消息.资质审核中'.tr(),
-        time: '09-18 12:23:21',
-        content: '消息.资质审核中内容'.tr(),
-        cardAssetPath: _noticeCardPendingAsset,
-      ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核通过'.tr(),
+      //   time: '10-22 12:23:21',
+      //   content: '消息.资质审核通过内容'.tr(),
+      //   cardAssetPath: _noticeCardPrimaryAsset,
+      //   isUnread: true,
+      // ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核未通过'.tr(),
+      //   time: '09-22 12:23:21',
+      //   content: '消息.资质审核未通过内容'.tr(),
+      //   cardAssetPath: _noticeCardSecondaryAsset,
+      // ),
+      // _SystemNoticeItem(
+      //   title: '消息.资质审核中'.tr(),
+      //   time: '09-18 12:23:21',
+      //   content: '消息.资质审核中内容'.tr(),
+      //   cardAssetPath: _noticeCardPendingAsset,
+      // ),
     ];
   }
 
@@ -221,12 +222,7 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         '消息.消息中心'.tr(),
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.black.withValues(alpha: 0.9),
-          fontSize: 17,
-          fontWeight: FontWeight.w500,
-          height: 24 / 17,
-        ),
+        style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black.withValues(alpha: 0.9)),
       ),
       actions: <Widget>[
         Padding(
@@ -252,11 +248,7 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 6),
                   Text(
                     '消息.全部已读'.tr(),
-                    style: TextStyle(
-                      color: _MessageCenterPageState._secondaryText,
-                      fontSize: 14,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: _MessageCenterPageState._secondaryText),
                   ),
                 ],
               ),
@@ -335,14 +327,9 @@ class _MessageTab extends StatelessWidget {
               children: <Widget>[
                 Text(
                   label,
-                  style: TextStyle(
-                    color: isSelected
+                  style: TestStyle.medium(fontSize: 14, color: isSelected
                         ? _MessageCenterPageState._primaryBlue
-                        : _MessageCenterPageState._titleColor,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                    height: 22 / 14,
-                  ),
+                        : _MessageCenterPageState._titleColor),
                 ),
                 if (hasUnread) ...<Widget>[
                   const SizedBox(width: 2),
@@ -464,21 +451,13 @@ class _ChatConversationTile extends StatelessWidget {
                                   item.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: _MessageCenterPageState._titleColor,
-                                    fontSize: 16,
-                                    height: 22 / 16,
-                                  ),
+                                  style: TestStyle.regular(fontSize: 16, color: _MessageCenterPageState._titleColor),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 item.time,
-                                style: TextStyle(
-                                  color: const Color(0xFFBFBFBF),
-                                  fontSize: 12,
-                                  height: 18 / 12,
-                                ),
+                                style: TestStyle.regular(fontSize: 12, color: const Color(0xFFBFBFBF)),
                               ),
                             ],
                           ),
@@ -491,10 +470,7 @@ class _ChatConversationTile extends StatelessWidget {
                                   item.preview,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: _MessageCenterPageState._hintText,
-                                    fontSize: 14,
-                                  ),
+                                  style: TestStyle.regular(fontSize: 14, color: _MessageCenterPageState._hintText),
                                 ),
                               ),
                               if (item.isUnread) ...<Widget>[
@@ -535,7 +511,7 @@ class _UnreadBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: TextStyle(color: Colors.white, fontSize: 12, height: 14 / 12),
+        style: TestStyle.regular(fontSize: 12, color: Colors.white),
       ),
     );
   }
@@ -553,7 +529,7 @@ class _AvatarFallbackText extends StatelessWidget {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Colors.white, fontSize: 14, height: 20 / 14),
+        style: TestStyle.regular(fontSize: 14, color: Colors.white),
       ),
     );
   }
@@ -590,11 +566,7 @@ class _ChatStatusView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _MessageCenterPageState._hintText,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: _MessageCenterPageState._hintText),
             ),
             if (actionLabel != null && onAction != null) ...<Widget>[
               const SizedBox(height: 12),
@@ -706,33 +678,20 @@ class _SystemNoticeCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   item.title,
-                                  style: TextStyle(
-                                    color: _MessageCenterPageState._titleColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    height: 20 / 14,
-                                  ),
+                                  style: TestStyle.medium(fontSize: 14, color: _MessageCenterPageState._titleColor),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 item.time,
-                                style: TextStyle(
-                                  color: _MessageCenterPageState._hintText,
-                                  fontSize: 12,
-                                  height: 18 / 12,
-                                ),
+                                style: TestStyle.regular(fontSize: 12, color: _MessageCenterPageState._hintText),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
                             item.content,
-                            style: TextStyle(
-                              color: _MessageCenterPageState._secondaryText,
-                              fontSize: 12,
-                              height: 18 / 12,
-                            ),
+                            style: TestStyle.regular(fontSize: 12, color: _MessageCenterPageState._secondaryText),
                           ),
                         ],
                       ),

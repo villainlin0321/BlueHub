@@ -1,4 +1,5 @@
 "CFBundleDisplayName" = "欧洲通";
 "NSCameraUsageDescription" = "允许访问相机，用于拍摄个人资料与申请材料照片。";
+"NSMicrophoneUsageDescription" = "允许访问麦克风，用于在聊天中录制并发送语音消息。";
 "NSPhotoLibraryUsageDescription" = "允许访问相册，用于选择个人资料与申请材料照片。";
 "NSPhotoLibraryAddUsageDescription" = "允许访问相册，用于保存图片到设备相册。";

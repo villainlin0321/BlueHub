@@ -10,6 +10,8 @@ import '../../../../shared/widgets/visa_service_card.dart';
 import '../../application/search_page/visa_provider_search_state.dart';
 import '../../data/provider_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class VisaProviderSearchPageView extends StatelessWidget {
   const VisaProviderSearchPageView({
     super.key,
@@ -65,11 +67,9 @@ class _HistorySection extends StatelessWidget {
 
   static const double _chipHorizontalPadding = 24;
   static const double _chipSpacing = 12;
-  static const TextStyle _chipTextStyle = TextStyle(
-    color: Color(0xFF262626),
+  static final TextStyle _chipTextStyle = TestStyle.regular(
     fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 20 / 14,
+    color: Color(0xFF262626),
   );
 
   final List<String> historyKeywords;
@@ -94,11 +94,9 @@ class _HistorySection extends StatelessWidget {
               Expanded(
                 child: Text(
                   '签证搜索.历史记录'.tr(),
-                  style: TextStyle(
-                    color: Color(0xFF262626),
+                  style: TestStyle.pingFangMedium(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 22 / 16,
+                    color: Color(0xFF262626),
                   ),
                 ),
               ),
@@ -135,11 +133,9 @@ class _HistorySection extends StatelessWidget {
           if (historyKeywords.isEmpty)
             Text(
               '签证搜索.暂无搜索记录'.tr(),
-              style: TextStyle(
-                color: Color(0xFF8C8C8C),
+              style: TestStyle.pingFangRegular(
                 fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
+                color: Color(0xFF8C8C8C),
               ),
             )
           else
@@ -247,9 +243,7 @@ class _SearchResultSection extends StatelessWidget {
     return providersAsync.when(
       data: (PageResult<VisaProviderListVO> pageResult) {
         if (pageResult.list.isEmpty) {
-          return Center(
-            child: AppEmptyState(message: '签证搜索.未找到相关签证服务商'.tr()),
-          );
+          return Center(child: AppEmptyState(message: '签证搜索.未找到相关签证服务商'.tr()));
         }
 
         final Set<int>? collectedPackageIds =
@@ -281,11 +275,9 @@ class _SearchResultSection extends StatelessWidget {
                 Text(
                   _resolveVisaProviderErrorMessage(error),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
+                  style: TestStyle.pingFangRegular(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
                 const SizedBox(height: 12),

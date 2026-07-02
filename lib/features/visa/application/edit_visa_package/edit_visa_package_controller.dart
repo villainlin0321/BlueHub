@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../data/visa_package_models.dart';
 import '../../data/visa_package_providers.dart';
 import 'edit_visa_package_state.dart';
@@ -19,11 +20,13 @@ class EditVisaPackageMaterialDraftInput {
     required this.name,
     required this.description,
     required this.isRequired,
+    required this.exampleFileIds,
   });
 
   final String name;
   final String description;
   final bool isRequired;
+  final List<int> exampleFileIds;
 }
 
 class EditVisaPackageTierDraftInput {
@@ -52,17 +55,21 @@ class EditVisaPackageFormDraft {
   const EditVisaPackageFormDraft({
     required this.name,
     required this.estimatedDays,
+    required this.currency,
+    required this.coverImageIds,
+    required this.coverImages,
     required this.tiers,
   });
 
   final String name;
   final String estimatedDays;
+  final AppCurrency currency;
+  final List<int> coverImageIds;
+  final List<String> coverImages;
   final List<EditVisaPackageTierDraftInput> tiers;
 }
 
 class EditVisaPackageController extends Notifier<EditVisaPackageState> {
-  static const String _currency = 'CNY';
-
   @override
   EditVisaPackageState build() => const EditVisaPackageState();
 
@@ -74,18 +81,12 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       return;
     }
 
-    state = state.copyWith(
-      isLoadingServiceTags: true,
-      serviceTagsError: null,
-    );
+    state = state.copyWith(isLoadingServiceTags: true, serviceTagsError: null);
 
     try {
-      final TagDictVO response = await ref
-          .read(configServiceProvider)
-          .getTags();
-      final List<TagItemVO> tags = List<TagItemVO>.from(
-        response.tags[TagCategory.service.value] ?? const <TagItemVO>[],
-      )..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+      final List<TagItemVO> tags = await ref
+          .read(tagDictionaryCacheControllerProvider)
+          .getTagsForCategory(TagCategory.service);
       state = state.copyWith(
         serviceTags: tags,
         hasLoadedServiceTags: true,
@@ -107,6 +108,10 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     state = state.copyWith(selectedVisaTypeCode: code);
   }
 
+  void setCurrency(AppCurrency currency) {
+    state = state.copyWith(selectedCurrency: currency);
+  }
+
   void clearFeedback() {
     state = state.copyWith(feedbackMessage: null);
   }
@@ -118,7 +123,10 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     return tag.tagNameEn.trim();
   }
 
-  Future<void> saveDraft(EditVisaPackageFormDraft draft, {int? packageId}) async {
+  Future<void> saveDraft(
+    EditVisaPackageFormDraft draft, {
+    int? packageId,
+  }) async {
     await _submit(draft, isDraft: true, packageId: packageId);
   }
 
@@ -147,7 +155,9 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
     try {
       if (packageId == null) {
-        await ref.read(visaPackageServiceProvider).createPackage(request: request);
+        await ref
+            .read(visaPackageServiceProvider)
+            .createPackage(request: request);
       } else {
         await ref
             .read(visaPackageServiceProvider)
@@ -161,23 +171,15 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       );
       _emitFeedback(
         packageId == null
-            ? (isDraft
-                  ? '签证编辑.草稿保存成功'.tr()
-                  : '签证编辑.签证套餐发布成功'.tr())
-            : (isDraft
-                  ? '签证编辑.草稿更新成功'.tr()
-                  : '签证编辑.签证套餐更新成功'.tr()),
+            ? (isDraft ? '签证编辑.草稿保存成功'.tr() : '签证编辑.签证套餐发布成功'.tr())
+            : (isDraft ? '签证编辑.草稿更新成功'.tr() : '签证编辑.签证套餐更新成功'.tr()),
       );
     } catch (_) {
       state = state.copyWith(isSavingDraft: false, isPublishing: false);
       _emitFeedback(
         packageId == null
-            ? (isDraft
-                  ? '签证编辑.草稿保存失败'.tr()
-                  : '签证编辑.签证套餐发布失败'.tr())
-            : (isDraft
-                  ? '签证编辑.草稿更新失败'.tr()
-                  : '签证编辑.签证套餐更新失败'.tr()),
+            ? (isDraft ? '签证编辑.草稿保存失败'.tr() : '签证编辑.签证套餐发布失败'.tr())
+            : (isDraft ? '签证编辑.草稿更新失败'.tr() : '签证编辑.签证套餐更新失败'.tr()),
         isError: true,
       );
     }
@@ -263,7 +265,11 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
 
       final List<MaterialBO> materials = <MaterialBO>[];
       if (tier.showMaterials) {
-        for (int materialIndex = 0; materialIndex < tier.materials.length; materialIndex++) {
+        for (
+          int materialIndex = 0;
+          materialIndex < tier.materials.length;
+          materialIndex++
+        ) {
           final EditVisaPackageMaterialDraftInput material =
               tier.materials[materialIndex];
           final String materialName = material.name.trim();
@@ -289,6 +295,7 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
               description: materialDescription,
               isRequired: material.isRequired,
               sortOrder: materials.length + 1,
+              exampleFileIds: material.exampleFileIds,
             ),
           );
         }
@@ -309,14 +316,21 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
       );
     }
 
+    final List<int> coverImageIds = draft.coverImageIds
+        .take(1)
+        .toList(growable: false);
+    final List<String> coverImages = draft.coverImages
+        .take(1)
+        .toList(growable: false);
+
     return CreateVisaPackageBO(
       name: name,
       targetCountry: countryCode,
       visaType: visaTypeCode,
       estimatedDays: estimatedDays,
-      currency: _currency,
-      coverImageIds: const <int>[],
-      coverImages: const <String>[],
+      currency: draft.currency.apiValue,
+      coverImageIds: coverImageIds,
+      coverImages: coverImages,
       tiers: tiers,
       isDraft: isDraft,
     );

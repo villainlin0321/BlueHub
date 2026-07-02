@@ -11,7 +11,8 @@ class AppIconSwitcher {
 
   static Locale? _lastSyncedLocale;
 
-  static bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static bool get _isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   /// 同步 App 图标：中文 Locale 使用中文图标，其余使用默认图标。
   static Future<void> syncByLocale(Locale locale) async {
@@ -27,10 +28,9 @@ class AppIconSwitcher {
     final isChinese = locale.languageCode == 'zh';
 
     try {
-      await _channel.invokeMethod<void>(
-        'setIcon',
-        <String, Object?>{'isChinese': isChinese},
-      );
+      await _channel.invokeMethod<void>('setIcon', <String, Object?>{
+        'isChinese': isChinese,
+      });
     } on PlatformException {
       return;
     }

@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../data/my_applications_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyApplicationCard extends StatelessWidget {
-  const MyApplicationCard({
-    super.key,
-    required this.item,
-    this.onActionTap,
-  });
+  const MyApplicationCard({super.key, required this.item, this.onActionTap});
 
   final MyApplicationItem item;
   final VoidCallback? onActionTap;
@@ -17,6 +14,7 @@ class MyApplicationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColors = _statusColorsFor(item.status);
     final isApplied = item.status == MyApplicationStatus.applied;
+    final bool hasLocation = item.locationText.trim().isNotEmpty;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -38,36 +36,24 @@ class MyApplicationCard extends StatelessWidget {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 24 / 16,
-                      ),
+                      style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     item.salary,
-                    style: const TextStyle(
-                      color: Color(0xFFFE5815),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 14,
-                    ),
+                    style: TestStyle.medium(fontSize: 14, color: Color(0xFFFE5815)),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: <Widget>[
-                  Expanded(
-                    child: _CompanyRow(
-                      companyName: item.companyName,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _LocationRow(locationText: item.locationText),
+                  Expanded(child: _CompanyRow(companyName: item.companyName)),
+                  if (hasLocation) ...<Widget>[
+                    const SizedBox(width: 12),
+                    _LocationRow(locationText: item.locationText),
+                  ],
                 ],
               ),
               const Spacer(),
@@ -85,18 +71,14 @@ class MyApplicationCard extends StatelessWidget {
                       item.updatedText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   _ActionButton(
                     label: item.actionLabel.tr(),
-                    filled: !isApplied,
+                    // filled: !isApplied,
+                    filled: true,
                     onPressed: onActionTap,
                   ),
                 ],
@@ -111,23 +93,11 @@ class MyApplicationCard extends StatelessWidget {
   (Color, Color, Color?) _statusColorsFor(MyApplicationStatus status) {
     switch (status) {
       case MyApplicationStatus.applied:
-        return (
-          Colors.white,
-          const Color(0xFF546D96),
-          const Color(0xFFA3AFD4),
-        );
+        return (Colors.white, const Color(0xFF546D96), const Color(0xFFA3AFD4));
       case MyApplicationStatus.viewed:
-        return (
-          const Color(0xFFEDF5FF),
-          const Color(0xFF386EF8),
-          null,
-        );
+        return (const Color(0xFFEDF5FF), const Color(0xFF386EF8), null);
       case MyApplicationStatus.interview:
-        return (
-          const Color(0xFFEDF5FF),
-          const Color(0xFF386EF8),
-          null,
-        );
+        return (const Color(0xFFEDF5FF), const Color(0xFF386EF8), null);
     }
   }
 }
@@ -160,21 +130,14 @@ class _StatusTag extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         label,
-        style: TextStyle(
-          color: foregroundColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: foregroundColor),
       ),
     );
   }
 }
 
 class _CompanyRow extends StatelessWidget {
-  const _CompanyRow({
-    required this.companyName,
-  });
+  const _CompanyRow({required this.companyName});
 
   final String companyName;
 
@@ -202,12 +165,7 @@ class _CompanyRow extends StatelessWidget {
             companyName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 16 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
           ),
         ),
       ],
@@ -233,12 +191,7 @@ class _LocationRow extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           locationText,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 16 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -260,7 +213,9 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final backgroundColor = filled ? const Color(0xFF096DD9) : Colors.white;
     final foregroundColor = filled ? Colors.white : const Color(0xFF262626);
-    final borderColor = filled ? const Color(0xFF096DD9) : const Color(0xFFD9D9D9);
+    final borderColor = filled
+        ? const Color(0xFF096DD9)
+        : const Color(0xFFD9D9D9);
 
     return SizedBox(
       width: 77,
@@ -291,12 +246,7 @@ class _ActionButton extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(
-              color: foregroundColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              height: 12 / 12,
-            ),
+            style: TestStyle.medium(fontSize: 12, color: foregroundColor),
           ),
         ),
       ),

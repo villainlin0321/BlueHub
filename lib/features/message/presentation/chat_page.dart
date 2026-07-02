@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:chat_bottom_container/chat_bottom_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,8 +19,10 @@ import '../../../features/me/data/user_models.dart';
 import '../../../features/me/data/user_providers.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../application/message_session/message_session_controller.dart';
@@ -28,6 +31,7 @@ import '../application/chat/chat_page_args.dart';
 import '../application/chat/chat_page_controller.dart';
 import '../application/chat/chat_page_state.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key, required this.args});
 
@@ -51,6 +55,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   static const String _voiceAsset = 'assets/images/chat_page_voice.svg';
   static const String _keyboardAsset = 'assets/images/chat_page_keyboard.svg';
   static const String _addAsset = 'assets/images/chat_page_add.svg';
+  static const String _sendAsset = 'assets/images/icon_send.svg';
 
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
@@ -85,7 +90,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (playerState.processingState == ProcessingState.completed) {
         _chatController.setPlayingMessageId(null);
-        unawaited(_audioPlayer.seek(Duration.zero));
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -187,9 +191,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (pickedFiles.isEmpty) {
         if (emptyMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(emptyMessage)));
+          AppToast.show(emptyMessage);
         }
         return;
       }
@@ -202,9 +204,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(errorMessage)));
+      AppToast.show(errorMessage);
       return;
     }
   }
@@ -223,9 +223,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _handleOrderCardTap() {
     final int orderId = widget.args.relatedOrderId;
     if (orderId <= 0) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('订单.订单详情不存在'.tr())));
+      AppToast.show('订单.订单详情不存在'.tr());
       return;
     }
     context.push(
@@ -242,9 +240,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final String label = message.type == 'image'
         ? '消息.图片预览开发中'.tr()
         : '消息.文件预览开发中'.tr();
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(label)));
+    AppToast.show(label);
   }
 
   Future<void> _handleVoiceRecordStart() async {
@@ -261,14 +257,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       if (!status.isGranted) {
         await _chatController.resetVoiceRecordingState();
-        _scaffoldMessenger
-          ?..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('消息.麦克风权限说明'.tr())));
+        if (status.isPermanentlyDenied || status.isRestricted) {
+          await _showMicrophonePermissionDialog();
+          return;
+        }
+        AppToast.show('消息.麦克风权限说明'.tr());
         return;
       }
     }
     await _stopAudioPlayback();
     await _chatController.startVoiceRecording();
+  }
+
+  Future<void> _showMicrophonePermissionDialog() async {
+    if (!mounted) {
+      return;
+    }
+    final bool shouldOpenSettings = await showAppConfirmDialog(
+      context: context,
+      title: '消息.麦克风权限标题'.tr(),
+      message: '消息.麦克风权限说明'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '消息.去设置'.tr(),
+    );
+    if (shouldOpenSettings) {
+      await openAppSettings();
+    }
   }
 
   Future<void> _handleVoiceRecordEnd() async {
@@ -300,17 +314,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       await _stopAudioPlayback();
       final String audioPath = await _ensureAudioPlayablePath(message);
       await _audioPlayer.setFilePath(audioPath);
+      await _audioPlayer.setLoopMode(LoopMode.off);
       _chatController.setPlayingMessageId(message.messageId);
       await _audioPlayer.play();
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(_resolveAudioPlaybackErrorMessage(error))),
-        );
+      AppToast.show(_resolveAudioPlaybackErrorMessage(error));
     }
   }
 
@@ -459,11 +470,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(_resolveBlockUserErrorMessage(error))),
-        );
+      AppToast.show(_resolveBlockUserErrorMessage(error));
     } finally {
       if (mounted) {
         setState(() {
@@ -516,9 +523,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
       if (previous?.feedbackId != next.feedbackId &&
           next.feedbackMessage != null) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(next.feedbackMessage!)));
+        AppToast.show(next.feedbackMessage!);
         _chatController.clearFeedback();
       }
 
@@ -555,118 +560,105 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         onBack: () => Navigator.of(context).maybePop(),
         onMoreTap: _showMoreMenu,
       ),
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double contentWidth = constraints.maxWidth.clamp(
-            0,
-            _chatContentMaxWidth,
-          );
-          return Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: Column(
-                children: <Widget>[
-                  if (_shouldShowOrderCard(widget.args))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                      child: _OrderSummaryCard(
-                        packageName: widget.args.packageName,
-                        orderStatus: _resolveOrderStatusLabel(
-                          widget.args.orderStatus,
-                        ),
-                        onTap: _handleOrderCardTap,
-                      ),
-                    ),
-                  if (_shouldShowOrderCard(widget.args))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        '消息.签证申请沟通提示'.tr(),
-                        style: const TextStyle(
-                          color: _subtleTextColor,
-                          fontSize: 11,
-                          height: 18 / 11,
-                        ),
-                      ),
-                    ),
-                  if (state.messages.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24),
-                      child: Text(
-                        _formatChatDateTime(state.messages.last.sentAt),
-                        style: const TextStyle(
-                          color: _subtleTextColor,
-                          fontSize: 11,
-                          height: 14 / 11,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: state.isInitialLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : state.loadErrorMessage != null
-                        ? _ChatLoadError(
-                            message: state.loadErrorMessage!,
-                            onRetry: _chatController.retry,
-                          )
-                        : _ChatMessageList(
-                            messages: state.messages,
-                            currentUserId: authUser?.userId ?? 0,
-                            targetNickname: widget.args.nickname,
-                            targetAvatarUrl: widget.args.avatarUrl,
-                            currentUserNickname:
-                                authUser?.nickname ?? '消息.我'.tr(),
-                            currentUserAvatarUrl: authUser?.avatarUrl ?? '',
-                            scrollController: _scrollController,
-                            isLoadingMore: state.isLoadingMore,
-                            playingMessageId: state.playingMessageId,
-                            downloadingAudioMessageIds:
-                                state.downloadingAudioMessageIds,
-                            onTapFileMessage: _handleFileMessageTap,
+      body: TapBlankToDismissKeyboard(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double contentWidth = constraints.maxWidth.clamp(
+              0,
+              _chatContentMaxWidth,
+            );
+            return Center(
+              child: SizedBox(
+                width: contentWidth,
+                child: Column(
+                  children: <Widget>[
+                    if (_shouldShowOrderCard(widget.args))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                        child: _OrderSummaryCard(
+                          packageName: widget.args.packageName,
+                          orderStatus: _resolveOrderStatusLabel(
+                            widget.args.orderStatus,
                           ),
-                  ),
-                  _ChatComposer(
-                    controller: _inputController,
-                    focusNode: _inputFocusNode,
-                    isSending: state.isSending,
-                    isVoiceMode: state.isVoiceMode,
-                    recordingState: state.recordingState,
-                    recordingSeconds: state.recordingSeconds,
-                    onVoiceTap: _handleVoiceTap,
-                    onVoiceRecordStart: _handleVoiceRecordStart,
-                    onVoiceRecordEnd: _handleVoiceRecordEnd,
-                    onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
-                    onFileTap: _handleFileAction,
-                    onSend: () =>
-                        _chatController.sendTextMessage(_inputController.text),
-                  ),
-                  ChatBottomPanelContainer<_ChatPanelType>(
-                    controller: _bottomPanelController,
-                    inputFocusNode: _inputFocusNode,
-                    panelBgColor: Colors.transparent,
-                    safeAreaBottom: 0,
-                    otherPanelWidget: (_ChatPanelType? type) {
-                      switch (type) {
-                        case _ChatPanelType.attachment:
-                          return _ChatAttachmentPanel(
-                            onClose: _hideBottomPanel,
-                            onCameraTap: _handleCameraPick,
-                            onGalleryTap: _handleGalleryPick,
-                            onFileTap: _handleLocalFilePick,
-                          );
-                        case null:
-                          return const SizedBox(height: 20);
-                      }
-                    },
-                  ),
-                  Container(height: 20, color: Colors.white),
-                ],
+                          onTap: _handleOrderCardTap,
+                        ),
+                      ),
+                    if (_shouldShowOrderCard(widget.args))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          '消息.签证申请沟通提示'.tr(),
+                          style: TestStyle.pingFangRegular(fontSize: 11, color: _subtleTextColor),
+                        ),
+                      ),
+                    Expanded(
+                      child: state.isInitialLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : state.loadErrorMessage != null
+                          ? _ChatLoadError(
+                              message: state.loadErrorMessage!,
+                              onRetry: _chatController.retry,
+                            )
+                          : _ChatMessageList(
+                              messages: state.messages,
+                              currentUserId: authUser?.userId ?? 0,
+                              targetNickname: widget.args.nickname,
+                              targetAvatarUrl: widget.args.avatarUrl,
+                              currentUserNickname:
+                                  authUser?.nickname ?? '消息.我'.tr(),
+                              currentUserAvatarUrl: authUser?.avatarUrl ?? '',
+                              scrollController: _scrollController,
+                              isLoadingMore: state.isLoadingMore,
+                              playingMessageId: state.playingMessageId,
+                              downloadingAudioMessageIds:
+                                  state.downloadingAudioMessageIds,
+                              onTapFileMessage: _handleFileMessageTap,
+                            ),
+                    ),
+                    _ChatComposer(
+                      controller: _inputController,
+                      focusNode: _inputFocusNode,
+                      isSending: state.isSending,
+                      isVoiceMode: state.isVoiceMode,
+                      recordingState: state.recordingState,
+                      recordingSeconds: state.recordingSeconds,
+                      onVoiceTap: _handleVoiceTap,
+                      onVoiceRecordStart: _handleVoiceRecordStart,
+                      onVoiceRecordEnd: _handleVoiceRecordEnd,
+                      onVoiceRecordMoveUpdate: _handleVoiceRecordMove,
+                      onFileTap: _handleFileAction,
+                      onSend: () => _chatController.sendTextMessage(
+                        _inputController.text,
+                      ),
+                    ),
+                    ChatBottomPanelContainer<_ChatPanelType>(
+                      controller: _bottomPanelController,
+                      inputFocusNode: _inputFocusNode,
+                      panelBgColor: Colors.transparent,
+                      safeAreaBottom: 0,
+                      otherPanelWidget: (_ChatPanelType? type) {
+                        switch (type) {
+                          case _ChatPanelType.attachment:
+                            return _ChatAttachmentPanel(
+                              onClose: _hideBottomPanel,
+                              onCameraTap: _handleCameraPick,
+                              onGalleryTap: _handleGalleryPick,
+                              onFileTap: _handleLocalFilePick,
+                            );
+                          case null:
+                            return const SizedBox(height: 20);
+                        }
+                      },
+                    ),
+                    Container(height: 20, color: Colors.white),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -718,12 +710,7 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
               '${args.nickname}（${_resolveRoleLabel(args.targetUserRole)}）',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 20 / 14,
-              ),
+              style: TestStyle.medium(fontSize: 14, color: Colors.black),
             ),
             const SizedBox(height: 2),
             Row(
@@ -742,13 +729,9 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 4),
                 Text(
                   args.isOnline ? '消息.在线'.tr() : '消息.离线'.tr(),
-                  style: TextStyle(
-                    color: args.isOnline
+                  style: TestStyle.pingFangRegular(fontSize: 10, color: args.isOnline
                         ? _ChatPageState._onlineGreen
-                        : const Color(0xFFBFBFBF),
-                    fontSize: 10,
-                    height: 14 / 10,
-                  ),
+                        : const Color(0xFFBFBFBF)),
                 ),
               ],
             ),
@@ -830,11 +813,7 @@ class _ChatMoreMenuItem extends StatelessWidget {
           SizedBox(width: 10),
           Text(
             '消息.拉黑'.tr(),
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.black),
           ),
         ],
       ),
@@ -881,12 +860,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       packageName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _ChatPageState._titleColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.pingFangMedium(fontSize: 14, color: _ChatPageState._titleColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -895,11 +869,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _ChatPageState._subtleTextColor,
-                        fontSize: 12,
-                        height: 16 / 12,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: _ChatPageState._subtleTextColor),
                     ),
                   ],
                 ),
@@ -935,11 +905,7 @@ class _ChatLoadError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _ChatPageState._subtleTextColor,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: _ChatPageState._subtleTextColor),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('消息.重新加载'.tr())),
@@ -1063,11 +1029,7 @@ class _ChatMessageRow extends StatelessWidget {
       placeholder: Center(
         child: Text(
           _buildAvatarFallbackText(fallbackName),
-          style: TextStyle(
-            color: isMine ? const Color(0xFF171A1D) : Colors.white,
-            fontSize: 14,
-            height: 20 / 14,
-          ),
+          style: TestStyle.regular(fontSize: 14, color: isMine ? const Color(0xFF171A1D) : Colors.white),
         ),
       ),
     );
@@ -1150,10 +1112,7 @@ class _ChatBubble extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       child: Text(
                         '消息.图片加载失败'.tr(),
-                        style: const TextStyle(
-                          color: attachmentForegroundColor,
-                          fontSize: 14,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                       ),
                     )
                   : _isRemoteFileUrl(imagePath)
@@ -1166,10 +1125,7 @@ class _ChatBubble extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         child: Text(
                           '消息.图片加载失败'.tr(),
-                          style: const TextStyle(
-                            color: attachmentForegroundColor,
-                            fontSize: 14,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                         ),
                       ),
                     )
@@ -1182,10 +1138,7 @@ class _ChatBubble extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         child: Text(
                           '消息.图片加载失败'.tr(),
-                          style: const TextStyle(
-                            color: attachmentForegroundColor,
-                            fontSize: 14,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                         ),
                       ),
                     ),
@@ -1219,11 +1172,7 @@ class _ChatBubble extends StatelessWidget {
                   message.fileName.isEmpty ? '消息.文件消息'.tr() : message.fileName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: attachmentForegroundColor,
-                    fontSize: 14,
-                    height: 20 / 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: attachmentForegroundColor),
                 ),
               ),
             ],
@@ -1263,12 +1212,7 @@ class _ChatBubble extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 _formatAudioDuration(message.duration),
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.medium(fontSize: 14, color: foregroundColor),
               ),
             ],
           ),
@@ -1284,7 +1228,7 @@ class _ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Text(
         message.isRetracted ? '消息.消息已撤回'.tr() : message.content,
-        style: TextStyle(color: foregroundColor, fontSize: 15, height: 22 / 15),
+        style: TestStyle.pingFangRegular(fontSize: 15, color: foregroundColor),
       ),
     );
   }
@@ -1320,11 +1264,7 @@ class _ChatSystemMessage extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _ChatPageState._subtleTextColor,
-            fontSize: 11,
-            height: 18 / 11,
-          ),
+          style: TestStyle.regular(fontSize: 11, color: _ChatPageState._subtleTextColor),
         ),
       ),
     );
@@ -1417,18 +1357,10 @@ class _ChatComposer extends StatelessWidget {
                         decoration: InputDecoration(
                           isCollapsed: true,
                           hintText: '消息.发消息'.tr(),
-                          hintStyle: const TextStyle(
-                            color: _ChatPageState._subtleTextColor,
-                            fontSize: 15,
-                            height: 22 / 15,
-                          ),
+                          hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: _ChatPageState._subtleTextColor),
                           border: InputBorder.none,
                         ),
-                        style: const TextStyle(
-                          color: _ChatPageState._titleColor,
-                          fontSize: 15,
-                          height: 22 / 15,
-                        ),
+                        style: TestStyle.regular(fontSize: 15, color: _ChatPageState._titleColor),
                       ),
               ),
               const SizedBox(width: 12),
@@ -1462,20 +1394,12 @@ class _ChatComposer extends StatelessWidget {
                           return InkWell(
                             onTap: isSending ? null : onSend,
                             borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: Text(
-                                '消息.发送'.tr(),
-                                style: TextStyle(
-                                  color: isSending
-                                      ? const Color(0xFFBFBFBF)
-                                      : _ChatPageState._brandBlue,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  height: 24 / 15,
-                                ),
+                            child: Opacity(
+                              opacity: isSending ? 0.45 : 1,
+                              child: SvgPicture.asset(
+                                _ChatPageState._sendAsset,
+                                width: 32,
+                                height: 32,
                               ),
                             ),
                           );
@@ -1530,12 +1454,12 @@ class _VoiceRecordButton extends StatelessWidget {
     final Color backgroundColor = isCancel
         ? const Color(0xFFFFEAEA)
         : isRecording
-        ? const Color(0xFFEAF3FF)
-        : Colors.transparent;
+        ? const Color(0xFFE5E7EB)
+        : Colors.white;
     final Color foregroundColor = isCancel
         ? const Color(0xFFD9363E)
         : isRecording
-        ? _ChatPageState._brandBlue
+        ? _ChatPageState._titleColor
         : _ChatPageState._subtleTextColor;
     final String label = isCancel
         ? '消息.松开取消'.tr()
@@ -1558,12 +1482,7 @@ class _VoiceRecordButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: foregroundColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              height: 22 / 15,
-            ),
+            style: TestStyle.medium(fontSize: 15, color: foregroundColor),
           ),
         ),
       ),
@@ -1675,12 +1594,7 @@ class _ChatAttachmentAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF595959),
-                fontWeight: FontWeight.w400,
-                fontSize: 13,
-                height: 18 / 13,
-              ),
+              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
             ),
           ],
         ),

@@ -1,10 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/widgets/app_text_input_dialog.dart';
 import '../../data/ai_models.dart';
 import '../../data/ai_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+const String _kAiHistoryEditIconAsset = 'assets/images/ai_history_edit.svg';
+const String _kAiHistoryDeleteIconAsset = 'assets/images/ai_history_delete.svg';
 Future<void> showAiSessionHistorySheet(
   BuildContext context, {
   required int? currentSessionId,
@@ -41,7 +48,8 @@ class _AiSessionHistorySheet extends ConsumerStatefulWidget {
       _AiSessionHistorySheetState();
 }
 
-class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> {
+class _AiSessionHistorySheetState
+    extends ConsumerState<_AiSessionHistorySheet> {
   List<AiSessionVO> _sessions = const <AiSessionVO>[];
   bool _isLoading = true;
   bool _isBusy = false;
@@ -61,7 +69,9 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
       _errorMessage = null;
     });
     try {
-      final List<AiSessionVO> sessions = await ref.read(aiServiceProvider).listSessions();
+      final List<AiSessionVO> sessions = await ref
+          .read(aiServiceProvider)
+          .listSessions();
       if (!mounted) {
         return;
       }
@@ -84,47 +94,24 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
     if (_isBusy) {
       return;
     }
-    final TextEditingController controller = TextEditingController(
-      text: session.title.trim(),
-    );
-    final String? nextTitle = await showDialog<String>(
+    final String? nextTitle = await showAppTextInputDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('AI.历史记录'.tr()),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(hintText: 'AI.AI助手'.tr()),
-            onSubmitted: (String value) {
-              Navigator.of(dialogContext).pop(value.trim());
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text('通用.取消'.tr()),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(
-                controller.text.trim(),
-              ),
-              child: Text('通用.确认'.tr()),
-            ),
-          ],
-        );
-      },
+      title: 'AI.编辑对话名称'.tr(),
+      initialValue: session.title.trim(),
+      hintText: 'AI.AI助手'.tr(),
     );
-    controller.dispose();
-    if (nextTitle == null || nextTitle.isEmpty || nextTitle == session.title.trim()) {
+    if (nextTitle == null ||
+        nextTitle.isEmpty ||
+        nextTitle == session.title.trim()) {
       return;
     }
     setState(() {
       _isBusy = true;
     });
     try {
-      await ref.read(aiServiceProvider).renameSession(id: session.sessionId, title: nextTitle);
+      await ref
+          .read(aiServiceProvider)
+          .renameSession(id: session.sessionId, title: nextTitle);
       await _loadSessions();
     } catch (error) {
       _showMessage(error.toString(), isError: true);
@@ -141,31 +128,14 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
     if (_isBusy) {
       return;
     }
-    final bool? confirmed = await showDialog<bool>(
+    final bool confirmed = await showAppDeleteConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('AI.历史记录'.tr()),
-          content: Text(
-            tr(
-              '通用.删除确认提示',
-              namedArgs: <String, String>{'name': session.title.trim()},
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('通用.取消'.tr()),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('通用.删除'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '通用.确认删除'.tr(),
+      message: 'AI.删除对话不可恢复'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.删除'.tr(),
     );
-    if (confirmed != true) {
+    if (!confirmed) {
       return;
     }
     setState(() {
@@ -192,14 +162,7 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   @override
@@ -218,21 +181,28 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD9D9D9),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'AI.历史记录'.tr(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+              SizedBox(
+                height: 35,
+                width: double.infinity,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Text(
+                      'AI.历史记录'.tr(),
+                      style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF171A1D)),
+                    ),
+                    Positioned(
+                      right: 0,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 22,
+                          color: Color(0xFF171A1D),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -264,7 +234,7 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
       return Center(
         child: Text(
           'AI.暂无历史记录'.tr(),
-          style: const TextStyle(color: Color(0xFF8C8C8C)),
+          style: TestStyle.pingFangRegular(color: Color(0xFF8C8C8C)),
         ),
       );
     }
@@ -272,50 +242,144 @@ class _AiSessionHistorySheetState extends ConsumerState<_AiSessionHistorySheet> 
       onRefresh: _loadSessions,
       child: ListView.separated(
         itemCount: _sessions.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, __) => const Divider(
+          height: 0.5,
+          thickness: 0.5,
+          color: Color(0xFFF0F0F0),
+        ),
         itemBuilder: (BuildContext context, int index) {
           final AiSessionVO item = _sessions[index];
-          final bool isCurrent = item.sessionId == widget.currentSessionId;
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              item.title.trim().isEmpty ? 'AI.AI助手'.tr() : item.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              item.updatedAt,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Wrap(
-              spacing: 8,
+          return _AiSessionHistoryItem(
+            title: item.title.trim().isEmpty ? 'AI.AI助手'.tr() : item.title,
+            updatedAt: item.updatedAt,
+            isBusy: _isBusy,
+            onRename: () => _handleRename(item),
+            onDelete: () => _handleDelete(item),
+            onTap: () async {
+              final NavigatorState navigator = Navigator.of(context);
+              await widget.onSessionSelected(item);
+              if (mounted) {
+                navigator.pop();
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AiSessionHistoryItem extends StatelessWidget {
+  const _AiSessionHistoryItem({
+    required this.title,
+    required this.updatedAt,
+    required this.isBusy,
+    required this.onRename,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  final String title;
+  final String updatedAt;
+  final bool isBusy;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color iconColor = isBusy
+        ? const Color(0xFFBFBFBF)
+        : const Color(0xFF8C8C8C);
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: isBusy ? null : onTap,
+        child: SizedBox(
+          height: 64,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+            child: Row(
               children: <Widget>[
-                if (isCurrent)
-                  const Icon(Icons.check_circle, color: Color(0xFF1677FF), size: 18),
-                IconButton(
-                  onPressed: _isBusy ? null : () => _handleRename(item),
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: '通用.编辑'.tr(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 29),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          updatedAt,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                IconButton(
-                  onPressed: _isBusy ? null : () => _handleDelete(item),
-                  icon: const Icon(Icons.delete_outline),
+                _AiSessionHistoryActionIcon(
+                  assetPath: _kAiHistoryEditIconAsset,
+                  tooltip: '通用.编辑'.tr(),
+                  color: iconColor,
+                  onTap: isBusy ? null : onRename,
+                ),
+                const SizedBox(width: 20),
+                _AiSessionHistoryActionIcon(
+                  assetPath: _kAiHistoryDeleteIconAsset,
                   tooltip: '通用.删除'.tr(),
+                  color: iconColor,
+                  onTap: isBusy ? null : onDelete,
                 ),
               ],
             ),
-            onTap: _isBusy
-                ? null
-                : () async {
-                    final NavigatorState navigator = Navigator.of(context);
-                    await widget.onSessionSelected(item);
-                    if (mounted) {
-                      navigator.pop();
-                    }
-                  },
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AiSessionHistoryActionIcon extends StatelessWidget {
+  const _AiSessionHistoryActionIcon({
+    required this.assetPath,
+    required this.tooltip,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String assetPath;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 20,
+          height: 20,
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: SvgPicture.asset(
+            assetPath,
+            width: 18,
+            height: 18,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+        ),
       ),
     );
   }

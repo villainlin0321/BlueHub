@@ -53,7 +53,8 @@ class ApplicationService {
 
   /// 求职者分页查询自己的投递记录。
   ///
-  /// 支持按分页参数和投递状态 `status` 过滤。
+  /// 支持按分页参数和投递状态 `status` 过滤，
+  /// 其中状态值与接口文档保持一致：`all` / `submitted` / `viewed` / `interview`。
   Future<PageResult<ApplicationVO>> listMyApplications({
     int? page,
     int? pageSize,

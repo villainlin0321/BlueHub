@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
@@ -111,11 +112,7 @@ Future<List<CountryVO>?> showCountryOptionsBottomSheet({
     final List<SelectableSheetOption<String>> options =
         buildCountrySheetOptions(countries);
     if (options.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(content: Text(emptyMessage ?? '我的.暂无可选国家'.tr())),
-      );
+      AppToast.show(emptyMessage ?? '我的.暂无可选国家'.tr());
       return null;
     }
     final Set<String> validValues = options
@@ -143,13 +140,7 @@ Future<List<CountryVO>?> showCountryOptionsBottomSheet({
     if (!context.mounted) {
       return null;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(loadFailedMessage ?? '订单.国家列表加载失败'.tr()),
-      ),
-    );
+    AppToast.show(loadFailedMessage ?? '订单.国家列表加载失败'.tr());
     return null;
   }
 }

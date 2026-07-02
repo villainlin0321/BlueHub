@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
@@ -11,11 +12,9 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AddEducationExperiencePage extends ConsumerStatefulWidget {
-  const AddEducationExperiencePage({
-    super.key,
-    this.args,
-  });
+  const AddEducationExperiencePage({super.key, this.args});
 
   final AddEducationExperiencePageArgs? args;
 
@@ -75,12 +74,14 @@ class _AddEducationExperiencePageState
     final List<TagItemVO> tags = await ref.read(
       tagDictionaryProvider(TagCategory.educationLevel).future,
     );
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _openDegreeSheet() async {
@@ -184,9 +185,7 @@ class _AddEducationExperiencePageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   @override
@@ -211,12 +210,7 @@ class _AddEducationExperiencePageState
         ),
         title: Text(
           '我的.教育经历'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: TapBlankToDismissKeyboard(
@@ -280,11 +274,7 @@ class _AddEducationExperiencePageState
                       ),
                       child: Text(
                         '我的.删除'.tr(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16),
                       ),
                     ),
                   ),
@@ -307,11 +297,7 @@ class _AddEducationExperiencePageState
                     ),
                     child: Text(
                       '我的.保存'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),
@@ -333,9 +319,7 @@ class AddEducationExperiencePageArgs {
 class EducationExperiencePageResult {
   const EducationExperiencePageResult.saved(this.value) : deleted = false;
 
-  const EducationExperiencePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const EducationExperiencePageResult.deleted() : value = null, deleted = true;
 
   final EducationExperienceFormResult? value;
   final bool deleted;
@@ -368,10 +352,7 @@ class EducationExperienceFormResult {
 }
 
 class _EducationInputField extends StatelessWidget {
-  const _EducationInputField({
-    required this.label,
-    required this.controller,
-  });
+  const _EducationInputField({required this.label, required this.controller});
 
   final String label;
   final TextEditingController controller;
@@ -385,12 +366,7 @@ class _EducationInputField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -402,20 +378,10 @@ class _EducationInputField extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
-                  color: Color(0xFF171A1D),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF171A1D)),
                 decoration: InputDecoration(
                   hintText: '通用.请输入'.tr(),
-                  hintStyle: TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 22 / 16,
-                  ),
+                  hintStyle: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFBFBFBF)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.only(top: 15, bottom: 15),
                 ),
@@ -448,12 +414,7 @@ class _EducationSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -472,14 +433,9 @@ class _EducationSelectorField extends StatelessWidget {
                       Expanded(
                         child: Text(
                           value ?? '通用.请选择'.tr(),
-                          style: TextStyle(
-                            color: value == null
+                          style: TestStyle.pingFangRegular(fontSize: 16, color: value == null
                                 ? const Color(0xFFBFBFBF)
-                                : const Color(0xFF171A1D),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
+                                : const Color(0xFF171A1D)),
                         ),
                       ),
                       const Icon(

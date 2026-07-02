@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../config/data/config_models.dart';
 import '../../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../post_job_page_styles.dart';
@@ -23,6 +24,7 @@ class PostJobPageView extends StatelessWidget {
     required this.salaryUnits,
     required this.selectedJobType,
     required this.selectedSalaryUnit,
+    required this.selectedSalaryCurrencyLabel,
     required this.requirementTags,
     required this.selectedRequirementTagCodes,
     required this.customTags,
@@ -35,6 +37,7 @@ class PostJobPageView extends StatelessWidget {
     required this.onRetryLoadRequirementTags,
     required this.onJobTypeChanged,
     required this.onSalaryUnitChanged,
+    required this.onSalaryCurrencyTap,
     required this.onRequirementTagTap,
     required this.onRemoveCustomTag,
     required this.onCustomTagSubmitted,
@@ -54,6 +57,7 @@ class PostJobPageView extends StatelessWidget {
   final List<String> salaryUnits;
   final String selectedJobType;
   final String selectedSalaryUnit;
+  final String selectedSalaryCurrencyLabel;
   final List<TagItemVO> requirementTags;
   final Set<String> selectedRequirementTagCodes;
   final List<String> customTags;
@@ -66,6 +70,7 @@ class PostJobPageView extends StatelessWidget {
   final VoidCallback onRetryLoadRequirementTags;
   final ValueChanged<String> onJobTypeChanged;
   final ValueChanged<String> onSalaryUnitChanged;
+  final VoidCallback onSalaryCurrencyTap;
   final ValueChanged<String> onRequirementTagTap;
   final ValueChanged<String> onRemoveCustomTag;
   final ValueChanged<String> onCustomTagSubmitted;
@@ -195,7 +200,14 @@ class PostJobPageView extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             PostJobFieldGroup(
-                              label: '岗位发布.薪资范围欧元'.tr(),
+                              label: '岗位发布.薪资范围'.tr(),
+                              trailing: FieldTrailingSelector(
+                                label: selectedSalaryCurrencyLabel,
+                                onTap: onSalaryCurrencyTap,
+                                textStyle: PostJobPageStyles.optionText.copyWith(
+                                  color: PostJobPageStyles.secondaryText,
+                                ),
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
@@ -463,10 +475,7 @@ class _RequirementTagContent extends StatelessWidget {
     }
 
     if (requirementTags.isEmpty) {
-      return Text(
-        '岗位发布.暂无任职要求标签'.tr(),
-        style: PostJobPageStyles.placeholder,
-      );
+      return Text('岗位发布.暂无任职要求标签'.tr(), style: PostJobPageStyles.placeholder);
     }
 
     return GridView.builder(

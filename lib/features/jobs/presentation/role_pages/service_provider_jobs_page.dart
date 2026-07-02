@@ -1,14 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
 class ServiceProviderJobsPage extends ConsumerStatefulWidget {
   const ServiceProviderJobsPage({super.key});
@@ -105,11 +109,7 @@ enum _PackageTab {
     secondaryActionLabel: '套餐管理.上架',
     secondaryActionStatus: 'active',
   ),
-  draft(
-    label: '套餐管理.已驳回',
-    status: 'draft',
-    emptyText: '套餐管理.暂无已驳回套餐',
-  );
+  draft(label: '套餐管理.已驳回', status: 'draft', emptyText: '套餐管理.暂无已驳回套餐');
 
   const _PackageTab({
     required this.label,
@@ -136,8 +136,141 @@ class _PackageTabView extends ConsumerStatefulWidget {
 }
 
 class _PackageTabViewState extends ConsumerState<_PackageTabView> {
-  List<VisaPackageVO>? _packages;
+  static const int _pageSize = 20;
+
+  List<VisaPackageVO> _packages = const <VisaPackageVO>[];
   final Set<int> _updatingPackageIds = <int>{};
+  int _currentPage = 1;
+  bool _hasMore = false;
+  bool _isInitialLoading = true;
+  bool _isRefreshing = false;
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_loadPackages);
+  }
+
+  Future<void> _loadPackages() async {
+    setState(() {
+      _isInitialLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = pageResult.list;
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isInitialLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isInitialLoading = false;
+        _hasMore = false;
+        _errorMessage = _normalizeError(error);
+      });
+    }
+  }
+
+  Future<void> _refreshPackages() async {
+    if (_isRefreshing) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      if (_packages.isEmpty) {
+        _errorMessage = null;
+      }
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = pageResult.list;
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isRefreshing = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isRefreshing = false;
+        if (_packages.isEmpty) {
+          _errorMessage = _normalizeError(error);
+        }
+      });
+      if (_packages.isNotEmpty) {
+        _showMessage(_normalizeError(error), isError: true);
+      }
+    }
+  }
+
+  Future<void> _loadMorePackages() async {
+    if (_isInitialLoading || _isRefreshing || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final PageResult<VisaPackageVO> pageResult = await ref
+          .read(visaPackageServiceProvider)
+          .listMyPackages(
+            page: _currentPage + 1,
+            pageSize: _pageSize,
+            status: widget.tab.status,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _packages = <VisaPackageVO>[..._packages, ...pageResult.list];
+        _currentPage = pageResult.pagination.page;
+        _hasMore = pageResult.pagination.hasNext;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingMore = false;
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
 
   Future<void> _handleSecondaryAction(VisaPackageVO package) async {
     final String? nextStatus = widget.tab.secondaryActionStatus;
@@ -161,18 +294,14 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       }
       setState(() {
         _updatingPackageIds.remove(package.packageId);
-        final List<VisaPackageVO> currentPackages =
-            _packages ?? const <VisaPackageVO>[];
-        _packages = currentPackages
+        _packages = _packages
             .where((VisaPackageVO item) => item.packageId != package.packageId)
             .toList(growable: false);
       });
       ref.invalidate(myVisaPackageListProvider(widget.tab.status));
       ref.invalidate(myVisaPackageListProvider(nextStatus));
       _showMessage(
-        widget.tab.status == 'active'
-            ? '套餐管理.套餐已下架'.tr()
-            : '套餐管理.套餐已上架'.tr(),
+        widget.tab.status == 'active' ? '套餐管理.套餐已下架'.tr() : '套餐管理.套餐已上架'.tr(),
       );
     } catch (error) {
       if (!mounted) {
@@ -186,14 +315,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   String _normalizeError(Object error) {
@@ -214,7 +336,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
         key: PageStorageKey<String>(
           'service-provider-jobs-empty-${widget.tab.name}',
         ),
-        text: widget.tab.emptyText,
+        text: widget.tab.emptyText.tr(),
         bottomPadding: bottomPadding,
       );
     }
@@ -236,7 +358,12 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
           onPrimaryAction: () {
             context.push(
               '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
-            );
+            ).then((_) {
+              if (!mounted) {
+                return;
+              }
+              _refreshPackages();
+            });
           },
           isSecondaryActionLoading: _updatingPackageIds.contains(
             package.packageId,
@@ -249,43 +376,34 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final AsyncValue<PageResult<VisaPackageVO>> packagesAsync = ref.watch(
-      myVisaPackageListProvider(widget.tab.status),
-    );
-    ref.listen<AsyncValue<PageResult<VisaPackageVO>>>(
-      myVisaPackageListProvider(widget.tab.status),
-      (_, AsyncValue<PageResult<VisaPackageVO>> next) {
-        next.whenData((PageResult<VisaPackageVO> pageResult) {
-          if (!mounted) {
-            return;
+    return EasyRefresh(
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _refreshPackages,
+      onLoad: _hasMore && _packages.isNotEmpty ? _loadMorePackages : null,
+      child: Builder(
+        builder: (BuildContext context) {
+          if (_isInitialLoading && _packages.isEmpty) {
+            return _PackageLoadingState(bottomPadding: bottomPadding);
           }
-          setState(() {
-            _packages = pageResult.list;
-          });
-        });
-      },
-    );
-
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.refresh(myVisaPackageListProvider(widget.tab.status).future),
-      child: packagesAsync.when(
-        data: (PageResult<VisaPackageVO> pageResult) {
-          final List<VisaPackageVO> packages = _packages ?? pageResult.list;
-          return _buildPackageList(context, bottomPadding, packages);
-        },
-        loading: () => _packages != null
-            ? _buildPackageList(context, bottomPadding, _packages!)
-            : _PackageLoadingState(bottomPadding: bottomPadding),
-        error: (Object error, StackTrace _) => _packages != null
-            ? _buildPackageList(context, bottomPadding, _packages!)
-            : _PackageLoadError(
-                bottomPadding: bottomPadding,
-                errorText: error.toString(),
-                onRetry: () {
-                  ref.invalidate(myVisaPackageListProvider(widget.tab.status));
-                },
+          if (_errorMessage != null && _packages.isEmpty) {
+            return _PackageLoadError(
+              bottomPadding: bottomPadding,
+              errorText: _errorMessage!,
+              onRetry: _loadPackages,
+            );
+          }
+          if (_packages.isEmpty) {
+            return _PackageEmptyState(
+              key: PageStorageKey<String>(
+                'service-provider-jobs-empty-${widget.tab.name}',
               ),
+              text: widget.tab.emptyText.tr(),
+              bottomPadding: bottomPadding,
+            );
+          }
+          return _buildPackageList(context, bottomPadding, _packages);
+        },
       ),
     );
   }
@@ -307,12 +425,7 @@ class _PageHeader extends StatelessWidget {
           Expanded(
             child: Text(
               '套餐管理.标题'.tr(),
-              style: TextStyle(
-                color: Color(0xE6000000),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
             ),
           ),
           InkWell(
@@ -322,12 +435,7 @@ class _PageHeader extends StatelessWidget {
               padding: EdgeInsets.only(top: 2),
               child: Text(
                 '套餐管理.发布'.tr(),
-                style: TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -366,16 +474,9 @@ class _PageTabBar extends StatelessWidget {
                     Text(
                       tabs[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: selected
+                      style: TestStyle.medium(fontSize: 14, color: selected
                             ? const Color(0xFF096DD9)
-                            : const Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight: selected
-                            ? FontWeight.w500
-                            : FontWeight.w400,
-                        height: 22 / 14,
-                      ),
+                            : const Color(0xFF262626)),
                     ),
                     if (selected) ...<Widget>[
                       const SizedBox(height: 9),
@@ -434,12 +535,7 @@ class _PackageCard extends StatelessWidget {
                             data.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
-                            ),
+                            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                           ),
                         ),
                       ],
@@ -461,12 +557,7 @@ class _PackageCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     data.metaText,
-                    style: const TextStyle(
-                      color: Color(0xFF8C8C8C),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                   ),
                 ],
               ),
@@ -496,10 +587,7 @@ class _PackageCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  _PrimaryButton(
-                    label: '企业岗位.编辑'.tr(),
-                    onTap: onPrimaryAction,
-                  ),
+                  _PrimaryButton(label: '企业岗位.编辑'.tr(), onTap: onPrimaryAction),
                 ],
               ),
             ],
@@ -528,32 +616,17 @@ class _PackagePriceRow extends StatelessWidget {
         children: <Widget>[
           Text(
             item.name,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 20 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626)),
           ),
           const SizedBox(width: 12),
           Text(
             item.price,
-            style: const TextStyle(
-              color: Color(0xFFFE5815),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              height: 20 / 13,
-            ),
+            style: TestStyle.medium(fontSize: 13, color: Color(0xFFFE5815)),
           ),
           const Spacer(),
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 20 / 12,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
               children: <InlineSpan>[
                 TextSpan(
                   text: '套餐管理.已售'.tr(
@@ -586,12 +659,7 @@ class _TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF546D96)),
       ),
     );
   }
@@ -611,12 +679,7 @@ class _EmptyTierState extends StatelessWidget {
       ),
       child: Text(
         '套餐管理.暂无套餐档位'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 20 / 12,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -656,13 +719,7 @@ class _DeleteButton extends StatelessWidget {
       ),
       child: Text(
         '企业岗位.删除'.tr(),
-        style: TextStyle(
-          color: Color(0xFFD9363E),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 12 / 12,
-          letterSpacing: 0.2,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFFD9363E), letterSpacing: 0.2),
       ),
     );
   }
@@ -696,13 +753,7 @@ class _GhostButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 12 / 12,
-                  letterSpacing: 0.2,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626), letterSpacing: 0.2),
               ),
       ),
     );
@@ -730,13 +781,7 @@ class _PrimaryButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 12 / 12,
-            letterSpacing: 0.2,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
         ),
       ),
     );
@@ -891,23 +936,13 @@ class _PackageLoadError extends StatelessWidget {
         Text(
           '套餐管理.套餐列表加载失败'.tr(),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 24 / 16,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 8),
         Text(
           errorText,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 20 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
         ),
         const SizedBox(height: 16),
         Center(
@@ -961,36 +996,5 @@ String _resolveVisaTypeLabel(String value) {
 }
 
 String _formatCurrencyAmount(String currency, double amount) {
-  final String prefix = switch (currency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => 'EUR ',
-    'USD' => 'USD ',
-    _ => currency.trim().isEmpty ? '' : '${currency.trim().toUpperCase()} ',
-  };
-  return '$prefix${_formatDecimal(amount)}';
-}
-
-String _formatDecimal(double amount) {
-  final bool isInteger = amount == amount.roundToDouble();
-  final String raw = isInteger
-      ? amount.toStringAsFixed(0)
-      : amount.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-  final List<String> parts = raw.split('.');
-  final StringBuffer buffer = StringBuffer();
-  final String integerPart = parts.first;
-
-  for (int index = 0; index < integerPart.length; index++) {
-    final int remaining = integerPart.length - index;
-    buffer.write(integerPart[index]);
-    if (remaining > 1 && remaining % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-
-  if (parts.length > 1 && parts[1].isNotEmpty) {
-    buffer
-      ..write('.')
-      ..write(parts[1]);
-  }
-  return buffer.toString();
+  return AppCurrency.formatAmount(amount, currency);
 }

@@ -16,7 +16,7 @@ class VisaPackageService {
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/visa-packages',
-      data: request.toJson(),
+      data: _buildPackageRequestBody(request),
       decode: (data) => decodeMapValues<dynamic>(
         data ?? const <String, dynamic>{},
         (value) => value,
@@ -63,6 +63,20 @@ class VisaPackageService {
     return response;
   }
 
+  /// 获取签证套餐编辑态详情。
+  ///
+  /// 返回专门用于服务商编辑页回填的数据结构，包含 `coverImageIds`、
+  /// `status` 以及材料示例文件 ID 等编辑态字段。
+  Future<VisaPackageEditVO> getPackageEditDetail({
+    required int packageId,
+  }) async {
+    final response = await _apiClient.get<VisaPackageEditVO>(
+      '/visa-packages/$packageId/edit',
+      decode: (data) => VisaPackageEditVO.fromJson(asJsonMap(data)),
+    );
+    return response;
+  }
+
   /// 更新指定签证套餐的完整信息。
   Future<void> updatePackage({
     required int packageId,
@@ -70,7 +84,7 @@ class VisaPackageService {
   }) async {
     return _apiClient.putVoid(
       '/visa-packages/$packageId',
-      data: request.toJson(),
+      data: _buildPackageRequestBody(request),
     );
   }
 
@@ -85,5 +99,45 @@ class VisaPackageService {
       '/visa-packages/$packageId/status',
       data: request.toJson(),
     );
+  }
+
+  Map<String, dynamic> _buildPackageRequestBody(CreateVisaPackageBO request) {
+    return <String, dynamic>{
+      'name': request.name,
+      'targetCountry': request.targetCountry,
+      'visaType': request.visaType,
+      'estimatedDays': request.estimatedDays,
+      'currency': request.currency,
+      'coverImageIds': request.coverImageIds,
+      'coverImages': request.coverImages,
+      'tiers': request.tiers.map(_buildTierRequestBody).toList(growable: false),
+      'isDraft': request.isDraft,
+    };
+  }
+
+  Map<String, dynamic> _buildTierRequestBody(TierBO tier) {
+    return <String, dynamic>{
+      'tierId': tier.tierId,
+      'name': tier.name,
+      'price': tier.price,
+      'services': tier.services,
+      'customServices': tier.customServices,
+      'description': tier.description,
+      'showMaterials': tier.showMaterials,
+      'sortOrder': tier.sortOrder,
+      'materials': tier.materials
+          .map(_buildMaterialRequestBody)
+          .toList(growable: false),
+    };
+  }
+
+  Map<String, dynamic> _buildMaterialRequestBody(MaterialBO material) {
+    return <String, dynamic>{
+      'name': material.name,
+      'description': material.description,
+      'isRequired': material.isRequired,
+      'sortOrder': material.sortOrder,
+      'exampleFileIds': material.exampleFileIds,
+    };
   }
 }

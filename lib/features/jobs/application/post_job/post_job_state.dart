@@ -1,4 +1,5 @@
 import '../../../config/data/config_models.dart';
+import '../../../../shared/models/app_currency.dart';
 
 const Object _feedbackSentinel = Object();
 const Object _requirementTagsErrorSentinel = Object();
@@ -7,6 +8,7 @@ class PostJobState {
   const PostJobState({
     this.selectedJobType = 'any',
     this.selectedSalaryUnit = 'month',
+    this.selectedSalaryCurrency = AppCurrency.eur,
     this.requirementTags = const <TagItemVO>[],
     this.selectedRequirementTagCodes = const <String>{},
     this.customTags = const <String>[],
@@ -22,6 +24,7 @@ class PostJobState {
 
   final String selectedJobType;
   final String selectedSalaryUnit;
+  final AppCurrency selectedSalaryCurrency;
   final List<TagItemVO> requirementTags;
   final Set<String> selectedRequirementTagCodes;
   final List<String> customTags;
@@ -37,6 +40,7 @@ class PostJobState {
   PostJobState copyWith({
     String? selectedJobType,
     String? selectedSalaryUnit,
+    AppCurrency? selectedSalaryCurrency,
     List<TagItemVO>? requirementTags,
     Set<String>? selectedRequirementTagCodes,
     List<String>? customTags,
@@ -52,6 +56,8 @@ class PostJobState {
     return PostJobState(
       selectedJobType: selectedJobType ?? this.selectedJobType,
       selectedSalaryUnit: selectedSalaryUnit ?? this.selectedSalaryUnit,
+      selectedSalaryCurrency:
+          selectedSalaryCurrency ?? this.selectedSalaryCurrency,
       requirementTags: requirementTags ?? this.requirementTags,
       selectedRequirementTagCodes:
           selectedRequirementTagCodes ?? this.selectedRequirementTagCodes,

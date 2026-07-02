@@ -9,11 +9,8 @@ final talentServiceProvider = Provider<TalentService>((ref) {
   return TalentService(apiClient: ref.watch(apiClientProvider));
 });
 
-final talentListProvider =
-    FutureProvider.autoDispose.family<PageResult<TalentVO>, TalentListQuery>((
-      ref,
-      query,
-    ) async {
+final talentListProvider = FutureProvider.autoDispose
+    .family<PageResult<TalentVO>, TalentListQuery>((ref, query) async {
       final service = ref.watch(talentServiceProvider);
       return service.listTalents(
         keyword: query.keyword,
@@ -56,12 +53,6 @@ class TalentListQuery {
   }
 
   @override
-  int get hashCode => Object.hash(
-    keyword,
-    country,
-    position,
-    sort,
-    page,
-    pageSize,
-  );
+  int get hashCode =>
+      Object.hash(keyword, country, position, sort, page, pageSize);
 }

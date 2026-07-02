@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../current_user_view_data.dart';
@@ -14,6 +15,7 @@ import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({super.key});
@@ -114,14 +116,8 @@ class JobSeekerMePage extends ConsumerWidget {
 
   /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。
   void _showPlaceholderToast(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-        ),
-      ),
+    AppToast.show(
+      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
     );
   }
 }
@@ -140,12 +136,7 @@ class _Header extends StatelessWidget {
           SizedBox(width: 6),
           Text(
             '我的.我的'.tr(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xE5000000),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE5000000)),
           ),
           const Spacer(),
           const MessageCenterIconButton(color: Colors.black),
@@ -249,12 +240,7 @@ class _ProfileCard extends StatelessWidget {
                               userViewData.nickname,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF262626),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                height: 26 / 20,
-                              ),
+                              style: TestStyle.semibold(fontSize: 20, color: Color(0xFF262626)),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -272,12 +258,7 @@ class _ProfileCard extends StatelessWidget {
                                   Center(
                                     child: Text(
                                       '我的.已实名'.tr(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        height: 14 / 10,
-                                      ),
+                                      style: TestStyle.pingFangMedium(fontSize: 10, color: Colors.white),
                                     ),
                                   ),
                                 ],
@@ -289,11 +270,7 @@ class _ProfileCard extends StatelessWidget {
                       const SizedBox(height: 5),
                       Text(
                         userViewData.maskedPhone,
-                        style: const TextStyle(
-                          color: Color(0xFF595959),
-                          fontSize: 13,
-                          height: 16 / 13,
-                        ),
+                        style: TestStyle.regular(fontSize: 13, color: Color(0xFF595959)),
                       ),
                     ],
                   ),
@@ -377,22 +354,13 @@ class _StatItem extends StatelessWidget {
             Text(
               value,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF313656),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                height: 20 / 18,
-              ),
+              style: TestStyle.semibold(fontSize: 18, color: Color(0xFF313656)),
             ),
             const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                height: 16 / 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
             ),
           ],
         ),
@@ -460,11 +428,7 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(

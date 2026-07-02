@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
@@ -22,6 +24,7 @@ import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 求职者首页：独立页面文件，后续该角色的业务逻辑统一放在这里处理。
 class JobSeekerHomePage extends ConsumerWidget {
   const JobSeekerHomePage({super.key});
@@ -67,56 +70,74 @@ class JobSeekerHomePage extends ConsumerWidget {
       homeLatestJobsProvider,
     );
 
-    return ListView(
-      physics: ClampingScrollPhysics(),
-      padding: EdgeInsets.only(bottom: bottomPadding + 20),
+    return Column(
       children: <Widget>[
-        _HomeTopHeader(
-          onShortcutTap: (_ShortcutItem item) =>
-              _handleShortcutTap(context, item),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              'assets/images/mon5bjog-qq5tufd.png',
-              height: 80,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+        const _HomeTopHeader(),
+        Expanded(
+          child: ListView(
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.only(bottom: bottomPadding + 20),
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 20, 15, 0),
+                child: _ShortcutRow(
+                  items: JobSeekerHomePage._shortcutItems,
+                  onItemTap: (_ShortcutItem item) =>
+                      _handleShortcutTap(context, item),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.go(RoutePaths.ai),
+                    borderRadius: BorderRadius.circular(12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/mon5bjog-qq5tufd.png',
+                        height: 80,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: _HomeSectionHeader(
+                  title: '首页.热门签证套餐'.tr(),
+                  onTap: () => _handleVisaMoreTap(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _HomeVisaPackagesSection(
+                packagesAsync: hotVisaPackagesAsync,
+                onRetry: () {
+                  ref.invalidate(homeHotVisaPackagesProvider);
+                },
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: _HomeSectionHeader(
+                  title: '首页.最新欧洲岗位'.tr(),
+                  onTap: () => _handleJobsMoreTap(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _HomeLatestJobsSection(
+                jobsAsync: latestJobsAsync,
+                onRetry: () {
+                  ref.invalidate(homeLatestJobsProvider);
+                },
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: _HomeSectionHeader(
-            title: '首页.热门签证套餐'.tr(),
-            onTap: () => _handleVisaMoreTap(context),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _HomeVisaPackagesSection(
-          packagesAsync: hotVisaPackagesAsync,
-          onRetry: () {
-            ref.invalidate(homeHotVisaPackagesProvider);
-          },
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: _HomeSectionHeader(
-            title: '首页.最新欧洲岗位'.tr(),
-            onTap: () => _handleJobsMoreTap(context),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _HomeLatestJobsSection(
-          jobsAsync: latestJobsAsync,
-          onRetry: () {
-            ref.invalidate(homeLatestJobsProvider);
-          },
         ),
       ],
     );
@@ -152,9 +173,7 @@ class JobSeekerHomePage extends ConsumerWidget {
 }
 
 class _HomeTopHeader extends StatelessWidget {
-  const _HomeTopHeader({required this.onShortcutTap});
-
-  final ValueChanged<_ShortcutItem> onShortcutTap;
+  const _HomeTopHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -169,11 +188,6 @@ class _HomeTopHeader extends StatelessWidget {
             const _HeaderProfileRow(),
             const SizedBox(height: 12),
             const _HomeSearchBar(),
-            const SizedBox(height: 20),
-            _ShortcutRow(
-              items: JobSeekerHomePage._shortcutItems,
-              onItemTap: onShortcutTap,
-            ),
           ],
         ),
       ),
@@ -200,6 +214,19 @@ class _ShortcutRow extends StatelessWidget {
   }
 }
 
+String _homeGreetingKeyForHour(int hour) {
+  if (hour < 11) {
+    return '首页.早上好';
+  }
+  if (hour < 14) {
+    return '首页.中午好';
+  }
+  if (hour < 18) {
+    return '首页.下午好';
+  }
+  return '首页.晚上好';
+}
+
 class _HeaderProfileRow extends ConsumerWidget {
   const _HeaderProfileRow();
 
@@ -209,13 +236,18 @@ class _HeaderProfileRow extends ConsumerWidget {
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       currentUser,
     );
+    final String greetingKey = _homeGreetingKeyForHour(DateTime.now().hour);
 
     return Row(
       children: <Widget>[
-        AppUserAvatar(
-          imageUrl: userViewData.avatarUrl,
-          size: 32,
-          placeholderAssetPath: 'assets/images/mon5bjog-wv3qvoa.png',
+        GestureDetector(
+          onTap: () => context.push(RoutePaths.myInfo),
+          behavior: HitTestBehavior.opaque,
+          child: AppUserAvatar(
+            imageUrl: userViewData.avatarUrl,
+            size: 32,
+            placeholderAssetPath: 'assets/images/mon5bjog-wv3qvoa.png',
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -223,16 +255,10 @@ class _HeaderProfileRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                '首页.早上好'.tr(
-                  namedArgs: <String, String>{
-                    'name': userViewData.nickname,
-                  },
+                greetingKey.tr(
+                  namedArgs: <String, String>{'name': userViewData.nickname},
                 ),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF262626),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
+                style: TestStyle.medium(fontSize: 15, color: const Color(0xFF262626)),
               ),
               const SizedBox(height: 4),
               Row(
@@ -246,10 +272,7 @@ class _HeaderProfileRow extends ConsumerWidget {
                   const SizedBox(width: 2),
                   Text(
                     '国家.德国'.tr(),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF595959),
-                      fontSize: 12,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF595959)),
                   ),
                 ],
               ),
@@ -293,10 +316,7 @@ class _HomeSearchBar extends StatelessWidget {
                   '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFBFBFBF),
-                    fontSize: 14,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFBFBFBF)),
                 ),
               ),
             ],
@@ -348,10 +368,7 @@ class _ShortcutButton extends StatelessWidget {
               Text(
                 item.labelKey.tr(),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF171A1D),
-                  fontSize: 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF171A1D)),
               ),
             ],
           ),
@@ -399,19 +416,12 @@ class _HomeSectionHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
                 ),
               ),
               Text(
                 '首页.更多'.tr(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF8C8C8C),
-                  fontSize: 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
               ),
               const SizedBox(width: 2),
               const Icon(
@@ -507,11 +517,7 @@ class _HomeLatestJobsSection extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(content: Text(errorMessage ?? '首页.投递成功'.tr())),
-    );
+    AppToast.show(errorMessage ?? '首页.投递成功'.tr());
   }
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
@@ -583,10 +589,7 @@ class _HomeSectionEmptyState extends StatelessWidget {
         child: AppEmptyState(
           message: message,
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF8C8C8C),
-            fontSize: 14,
-          ),
+          textStyle: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
         ),
       ),
     );
@@ -618,17 +621,10 @@ class _HomeSectionErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
           ),
           const SizedBox(height: 14),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: Text('通用.重试'.tr()),
-          ),
+          OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
         ],
       ),
     );
@@ -709,24 +705,15 @@ class _VisaMiniCard extends StatelessWidget {
                     alignment: Alignment.topRight,
                     child: RichText(
                       text: TextSpan(
-                        style: const TextStyle(
-                          color: Color(0xFFFE5815),
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TestStyle.medium(color: Color(0xFFFE5815)),
                         children: <InlineSpan>[
                           TextSpan(
                             text: data.pricePrefix,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 24 / 14,
-                            ),
+                            style: TestStyle.regular(fontSize: 14),
                           ),
                           TextSpan(
                             text: data.priceValue,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              height: 24 / 18,
-                            ),
+                            style: TestStyle.regular(fontSize: 18),
                           ),
                         ],
                       ),
@@ -736,21 +723,14 @@ class _VisaMiniCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFF262626),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     data.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF8C8C8C),
-                      fontSize: 12,
-                    ),
+                    style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                   ),
                   const Spacer(),
                   Row(
@@ -763,19 +743,12 @@ class _VisaMiniCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         data.rating,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFE5815),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TestStyle.medium(fontSize: 12, color: const Color(0xFFFE5815)),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         data.casesText,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8C8C8C),
-                          fontSize: 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                       ),
                       const Spacer(),
                       Image.asset(data.actionAssetPath, width: 20, height: 20),
@@ -800,10 +773,7 @@ class _VisaMiniCard extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
                         data.country,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: Colors.white),
                       ),
                     ),
                   ),
@@ -887,11 +857,9 @@ extension on HomeHotPackageVO {
 
   /// 格式化签证套餐价格，兼容常见币种符号与整数价格展示。
   ({String prefix, String value}) _buildPriceDisplay() {
-    final String symbol = _resolveCurrencyPrefix(currency);
-    final String priceText = priceFrom % 1 == 0
-        ? priceFrom.toInt().toString()
-        : priceFrom.toStringAsFixed(1);
-    return (prefix: symbol, value: priceText);
+    final ({String symbol, String value}) priceParts =
+        AppCurrency.buildAmountParts(priceFrom, currency);
+    return (prefix: priceParts.symbol, value: priceParts.value);
   }
 
   /// 格式化评分，确保 UI 始终展示单个小数位。
@@ -947,9 +915,7 @@ extension on JobListVO {
       if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
         visaSupportLabel,
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) urgentLabel,
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
 
     return JobPositionCardData(
       title: title,
@@ -959,22 +925,17 @@ extension on JobListVO {
       company: employer.name,
       location: _formatHomeLocation(),
       showApplyButton: true,
-      isCollected: isCollected,
     );
   }
 
   /// 组装首页岗位卡片的薪资展示。
   String _formatHomeSalary() {
-    final String currencyText = _resolveCurrencyPrefix(salaryCurrency);
-    final String minText = _formatHomeNumber(salaryMin);
-    final String maxText = _formatHomeNumber(salaryMax);
-    final String rangeText = salaryMax > 0
-        ? '$currencyText$minText~$maxText'
-        : '$currencyText$minText';
-    if (salaryPeriod.isEmpty) {
-      return rangeText;
-    }
-    return '$rangeText/$salaryPeriod';
+    return AppCurrency.formatRange(
+      min: salaryMin,
+      max: salaryMax,
+      rawCurrency: salaryCurrency,
+      period: salaryPeriod,
+    );
   }
 
   /// 组装首页岗位卡片的地点文案。
@@ -986,21 +947,4 @@ extension on JobListVO {
     return parts.join('·');
   }
 
-  /// 格式化首页岗位中的薪资数字，尽量避免多余的小数位。
-  String _formatHomeNumber(double value) {
-    if (value % 1 == 0) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(1);
-  }
-}
-
-/// 统一处理首页卡片中的币种前缀，优先转成常见符号展示。
-String _resolveCurrencyPrefix(String rawCurrency) {
-  return switch (rawCurrency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => rawCurrency.trim().isEmpty ? '¥' : '${rawCurrency.trim()} ',
-  };
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
+
 import '../auth/token_store.dart';
 import 'api_exception.dart';
 import 'sse_models.dart';
@@ -97,7 +99,7 @@ class SseClient {
         final message = await response.transform(utf8.decoder).join();
         throw ApiException.http(
           statusCode: response.statusCode,
-          message: message.isEmpty ? 'SSE 请求失败' : message,
+          message: message.isEmpty ? '通用.SSE请求失败'.tr() : message,
         );
       }
 

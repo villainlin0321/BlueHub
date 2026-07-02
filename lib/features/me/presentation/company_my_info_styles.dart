@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 企业端“我的信息”页的样式常量，统一管理颜色、间距与尺寸。
 abstract final class CompanyMyInfoStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);
@@ -18,42 +19,15 @@ abstract final class CompanyMyInfoStyles {
   static const double qualificationPreviewHeight = 110;
   static const double primaryButtonHeight = 44;
 
-  static const TextStyle navTitle = TextStyle(
-    color: primaryText,
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-    height: 24 / 17,
-  );
+  static final TextStyle navTitle = TestStyle.medium(fontSize: 17, color: primaryText);
 
-  static const TextStyle sectionTitle = TextStyle(
-    color: primaryText,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 22 / 16,
-  );
+  static final TextStyle sectionTitle = TestStyle.medium(fontSize: 16, color: primaryText);
 
-  static const TextStyle fieldLabel = TextStyle(
-    color: primaryText,
-    fontSize: 16,
-    height: 22 / 16,
-  );
+  static final TextStyle fieldLabel = TestStyle.regular(fontSize: 16, color: primaryText);
 
-  static const TextStyle fieldValue = TextStyle(
-    color: secondaryText,
-    fontSize: 16,
-    height: 22 / 16,
-  );
+  static final TextStyle fieldValue = TestStyle.regular(fontSize: 16, color: secondaryText);
 
-  static const TextStyle noteText = TextStyle(
-    color: secondaryText,
-    fontSize: 12,
-    height: 18 / 12,
-  );
+  static final TextStyle noteText = TestStyle.regular(fontSize: 12, color: secondaryText);
 
-  static const TextStyle buttonText = TextStyle(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 22 / 16,
-  );
+  static final TextStyle buttonText = TestStyle.medium(fontSize: 16, color: Colors.white);
 }

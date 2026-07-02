@@ -3,15 +3,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../data/dictionary_providers.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AddEducationSchoolPage extends ConsumerStatefulWidget {
-  const AddEducationSchoolPage({
-    super.key,
-    this.initialSchool,
-  });
+  const AddEducationSchoolPage({super.key, this.initialSchool});
 
   final String? initialSchool;
 
@@ -20,7 +19,8 @@ class AddEducationSchoolPage extends ConsumerStatefulWidget {
       _AddEducationSchoolPageState();
 }
 
-class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage> {
+class _AddEducationSchoolPageState
+    extends ConsumerState<AddEducationSchoolPage> {
   late final TextEditingController _searchController = TextEditingController(
     text: _initialKeyword(widget.initialSchool),
   )..addListener(_handleSearchChanged);
@@ -51,8 +51,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
 
   void _handleSearchChanged() {
     setState(() {
-      if (_selectedSchool != null &&
-          !_selectedSchool!.contains(_keyword)) {
+      if (_selectedSchool != null && !_selectedSchool!.contains(_keyword)) {
         _selectedSchool = null;
       }
     });
@@ -71,14 +70,13 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
         .map(_resolveSchoolName)
         .where((String name) => name.isNotEmpty)
         .toList(growable: false);
-    final String? result = _selectedSchool ??
+    final String? result =
+        _selectedSchool ??
         (schoolNames.contains(_keyword) ? _keyword : null) ??
         (schoolNames.length == 1 ? schoolNames.first : null);
 
     if (result == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('我的.请选择学校'.tr())));
+      AppToast.show('我的.请选择学校'.tr());
       return;
     }
 
@@ -88,7 +86,8 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
   @override
   Widget build(BuildContext context) {
     final schoolsAsync = ref.watch(schoolSearchProvider(_query));
-    final List<SchoolVO> schools = schoolsAsync.asData?.value.list ?? <SchoolVO>[];
+    final List<SchoolVO> schools =
+        schoolsAsync.asData?.value.list ?? <SchoolVO>[];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -108,12 +107,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
         ),
         title: Text(
           '我的.学校'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
         ),
         actions: <Widget>[
           TextButton(
@@ -124,11 +118,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
             ),
             child: Text(
               '通用.确定'.tr(),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14),
             ),
           ),
         ],
@@ -151,20 +141,10 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                       controller: _searchController,
                       autofocus: true,
                       cursorColor: const Color(0xFF096DD9),
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 14,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
                       decoration: InputDecoration(
                         hintText: '我的.请输入学校名称'.tr(),
-                        hintStyle: TextStyle(
-                          color: Color(0xFFBFBFBF),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 20 / 14,
-                        ),
+                        hintStyle: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 13,
@@ -184,11 +164,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                           _keyword.isEmpty
                               ? '我的.暂无学校数据'.tr()
                               : '我的.未找到相关学校'.tr(),
-                          style: const TextStyle(
-                            color: Color(0xFF8C8C8C),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
                         ),
                       );
                     }
@@ -242,11 +218,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
                       children: <Widget>[
                         Text(
                           '我的.学校加载失败'.tr(),
-                          style: TextStyle(
-                            color: Color(0xFF8C8C8C),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
                         ),
                         const SizedBox(height: 12),
                         TextButton(
@@ -287,12 +259,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
     if (keyword.isEmpty || !school.contains(keyword)) {
       return TextSpan(
         text: school,
-        style: const TextStyle(
-          color: Color(0xFF171A1D),
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          height: 22 / 16,
-        ),
+        style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
       );
     }
 
@@ -304,12 +271,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
         children.add(
           TextSpan(
             text: school.substring(start),
-            style: const TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
           ),
         );
         break;
@@ -319,12 +281,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
         children.add(
           TextSpan(
             text: school.substring(start, matchIndex),
-            style: const TextStyle(
-              color: Color(0xFF171A1D),
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
           ),
         );
       }
@@ -332,12 +289,7 @@ class _AddEducationSchoolPageState extends ConsumerState<AddEducationSchoolPage>
       children.add(
         TextSpan(
           text: keyword,
-          style: const TextStyle(
-            color: Color(0xFF096DD9),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            height: 22 / 16,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF096DD9)),
         ),
       );
       start = matchIndex + keyword.length;

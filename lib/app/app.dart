@@ -1,9 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/app_icon/app_icon_switcher.dart';
 import '../shared/localization/app_locales.dart';
+import '../shared/widgets/app_toast.dart';
 import 'router/app_router.dart';
 
 final appTitleProvider = Provider<String>((ref) => '应用.标题'.tr());
@@ -16,10 +18,12 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final title = ref.watch(appTitleProvider);
+    AppToast.configure();
 
     return _AppIconInitialSync(
       child: MaterialApp.router(
         title: title,
+        debugShowCheckedModeBanner: false,
         locale: context.locale,
         supportedLocales: AppLocales.supported,
         localizationsDelegates: context.localizationDelegates,
@@ -28,6 +32,10 @@ class App extends ConsumerWidget {
           scaffoldBackgroundColor: const Color(0xFFF5F7FA),
           useMaterial3: true,
         ),
+        builder: (BuildContext context, Widget? child) {
+          final TransitionBuilder easyLoadingBuilder = EasyLoading.init();
+          return easyLoadingBuilder(context, child ?? const SizedBox.shrink());
+        },
         routerConfig: router,
       ),
     );

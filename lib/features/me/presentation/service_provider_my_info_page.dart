@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -19,15 +20,51 @@ import '../data/dictionary_providers.dart';
 import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _serviceProviderMyInfoProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
       return service.getMyProfile();
     });
 
+final _serviceProviderDetailProvider = FutureProvider.autoDispose
+    .family<ProviderVO, int>((ref, providerId) async {
+      final service = ref.watch(providerServiceProvider);
+      final detail = await service.getProviderPackages(providerId: providerId);
+      return detail.provider;
+    });
+
+class ServiceProviderMyInfoPageArgs {
+  const ServiceProviderMyInfoPageArgs({
+    this.providerId,
+    required this.titleKey,
+    required this.showBottomAction,
+  });
+
+  const ServiceProviderMyInfoPageArgs.my()
+    : providerId = null,
+      titleKey = '我的.我的信息',
+      showBottomAction = true;
+
+  const ServiceProviderMyInfoPageArgs.readonly({required this.providerId})
+    : titleKey = '我的.服务商信息',
+      showBottomAction = false;
+
+  final int? providerId;
+  final String titleKey;
+  final bool showBottomAction;
+
+  bool get isReadonly => providerId != null;
+}
+
 /// 服务商“我的信息”页，使用当前登录服务商资料接口渲染。
 class ServiceProviderMyInfoPage extends ConsumerStatefulWidget {
-  const ServiceProviderMyInfoPage({super.key});
+  const ServiceProviderMyInfoPage({
+    super.key,
+    this.args = const ServiceProviderMyInfoPageArgs.my(),
+  });
+
+  final ServiceProviderMyInfoPageArgs args;
 
   static const String _logoFallbackAsset = 'assets/images/mou588hj-vpl779h.png';
   static const String _idCardEmblemPlaceholderAsset =
@@ -48,16 +85,20 @@ class _ServiceProviderMyInfoPageState
 
   @override
   Widget build(BuildContext context) {
+    final ServiceProviderMyInfoPageArgs args = widget.args;
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
-    final AsyncValue<VisaProviderProfileVO> profileAsync = ref.watch(
-      _serviceProviderMyInfoProfileProvider,
-    );
     final Map<String, String> countryLabelMap = ref
         .watch(countrySearchProvider(const CountrySearchQuery()))
         .maybeWhen(
           data: (result) => buildCountryLabelMap(result.list),
           orElse: () => const <String, String>{},
         );
+    final AsyncValue<VisaProviderProfileVO>? profileAsync = args.isReadonly
+        ? null
+        : ref.watch(_serviceProviderMyInfoProfileProvider);
+    final AsyncValue<ProviderVO>? providerAsync = args.isReadonly
+        ? ref.watch(_serviceProviderDetailProvider(args.providerId!))
+        : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -67,36 +108,55 @@ class _ServiceProviderMyInfoPageState
           children: <Widget>[
             Column(
               children: <Widget>[
-                _Header(onBackTap: context.pop),
+                _Header(onBackTap: context.pop, title: args.titleKey.tr()),
                 Expanded(
-                  child: profileAsync.when(
-                    data: (VisaProviderProfileVO profile) =>
-                        _ServiceProviderMyInfoContent(
-                          profile: profile,
-                          countryLabelMap: countryLabelMap,
-                          localAvatarPreviewPath: _localAvatarPreviewPath,
-                          onAvatarTap: () => _handleAvatarTap(profile),
+                  child: args.isReadonly
+                      ? providerAsync!.when(
+                          data: (ProviderVO provider) =>
+                              _ServiceProviderReadonlyContent(
+                                provider: provider,
+                                countryLabelMap: countryLabelMap,
+                              ),
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => _ServiceProviderMyInfoErrorView(
+                            message: '我的.加载服务商信息失败'.tr(),
+                            onRetry: () => ref.invalidate(
+                              _serviceProviderDetailProvider(args.providerId!),
+                            ),
+                          ),
+                        )
+                      : profileAsync!.when(
+                          data: (VisaProviderProfileVO profile) =>
+                              _ServiceProviderMyInfoContent(
+                                profile: profile,
+                                countryLabelMap: countryLabelMap,
+                                localAvatarPreviewPath: _localAvatarPreviewPath,
+                                onAvatarTap: () => _handleAvatarTap(profile),
+                              ),
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => _ServiceProviderMyInfoErrorView(
+                            message: '我的.加载服务商资料失败'.tr(),
+                            onRetry: () => ref.invalidate(
+                              _serviceProviderMyInfoProfileProvider,
+                            ),
+                          ),
                         ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => _ServiceProviderMyInfoErrorView(
-                      onRetry: () =>
-                          ref.invalidate(_serviceProviderMyInfoProfileProvider),
+                ),
+                if (args.showBottomAction)
+                  _BottomActionBar(
+                    bottomInset: bottomInset,
+                    onTap: () => context.push(
+                      RoutePaths.qualificationCertification,
+                      extra: QualificationCertificationPageArgs(
+                        role: QualificationCertificationRole.serviceProvider,
+                      ),
                     ),
                   ),
-                ),
-                _BottomActionBar(
-                  bottomInset: bottomInset,
-                  onTap: () => context.push(
-                    RoutePaths.qualificationCertification,
-                    extra: QualificationCertificationPageArgs(
-                      role: QualificationCertificationRole.serviceProvider,
-                    ),
-                  ),
-                ),
               ],
             ),
-            if (_isSubmitting)
+            if (_isSubmitting && args.showBottomAction)
               Positioned.fill(
                 child: ColoredBox(
                   color: const Color(0x33000000),
@@ -268,9 +328,7 @@ class _ServiceProviderMyInfoPageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -290,26 +348,47 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<_InfoItem> infoItems = <_InfoItem>[
-      _InfoItem(label: '我的.企业名称'.tr(), value: _textOrPlaceholder(profile.companyName)),
+      _InfoItem(
+        label: '我的.企业名称'.tr(),
+        value: _textOrPlaceholder(profile.companyName),
+      ),
       _InfoItem(
         label: '我的.统一社会信用代码'.tr(),
         value: _textOrPlaceholder(profile.unifiedCreditCode),
       ),
-      _InfoItem(label: '我的.法人姓名'.tr(), value: _textOrPlaceholder(profile.legalPerson)),
+      _InfoItem(
+        label: '我的.法人姓名'.tr(),
+        value: _textOrPlaceholder(profile.legalPerson),
+      ),
       _InfoItem(
         label: '我的.官方联系人'.tr(),
         value: _textOrPlaceholder(profile.contactPerson),
       ),
-      _InfoItem(label: '我的.联系电话'.tr(), value: _textOrPlaceholder(profile.contactPhone)),
-      _InfoItem(label: '我的.邮箱'.tr(), value: _textOrPlaceholder(profile.contactEmail)),
-      _InfoItem(label: '我的.官网'.tr(), value: _textOrPlaceholder(profile.website)),
+      _InfoItem(
+        label: '我的.联系电话'.tr(),
+        value: _textOrPlaceholder(profile.contactPhone),
+      ),
+      _InfoItem(
+        label: '我的.邮箱'.tr(),
+        value: _textOrPlaceholder(profile.contactEmail),
+      ),
+      _InfoItem(
+        label: '我的.官网'.tr(),
+        value: _textOrPlaceholder(profile.website),
+      ),
       _InfoItem(
         label: '我的.从业年限'.tr(),
-        value: profile.yearsOfService > 0 ? '${profile.yearsOfService}' : '我的.未完善'.tr(),
+        value: profile.yearsOfService > 0
+            ? '${profile.yearsOfService}'
+            : '我的.未完善'.tr(),
       ),
       _InfoItem(
         label: '我的.国家地区'.tr(),
-        value: _serviceCountriesText(profile.serviceCountries, countryLabelMap),
+        value: _serviceCountriesText(
+          profile.serviceCountries,
+          countryLabelMap,
+          fallback: '我的.未完善'.tr(),
+        ),
       ),
     ];
     final _ProviderQualificationDocs docs = _ProviderQualificationDocs.fromList(
@@ -334,11 +413,7 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               '我的.注意重新提交审核'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 12,
-                height: 18 / 12,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],
@@ -350,27 +425,13 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
     final String trimmed = value.trim();
     return trimmed.isEmpty ? '我的.未完善'.tr() : trimmed;
   }
-
-  static String _serviceCountriesText(
-    List<String> countries,
-    Map<String, String> countryLabelMap,
-  ) {
-    final List<String> labels = countries
-        .map((value) => resolveCountryLabel(value, countryLabelMap).trim())
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-    if (labels.isEmpty) {
-      return '我的.未完善'.tr();
-    }
-    return labels.join('/');
-  }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onBackTap});
+  const _Header({required this.onBackTap, required this.title});
 
   final VoidCallback onBackTap;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -388,13 +449,8 @@ class _Header extends StatelessWidget {
             ),
           ),
           Text(
-            '我的.我的信息'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 24 / 17,
-            ),
+            title,
+            style: TestStyle.medium(fontSize: 17, color: Color(0xFF262626)),
           ),
         ],
       ),
@@ -412,7 +468,7 @@ class _InfoSection extends StatelessWidget {
 
   final String avatarUrl;
   final String? localAvatarPreviewPath;
-  final VoidCallback onAvatarTap;
+  final VoidCallback? onAvatarTap;
   final List<_InfoItem> items;
 
   @override
@@ -429,12 +485,7 @@ class _InfoSection extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Text(
               '我的.基础信息'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 22 / 16,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           _AvatarRow(
@@ -464,7 +515,7 @@ class _AvatarRow extends StatelessWidget {
 
   final String avatarUrl;
   final String? localAvatarPath;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -477,50 +528,47 @@ class _AvatarRow extends StatelessWidget {
 
     final String resolvedLocalAvatarPath = localAvatarPath?.trim() ?? '';
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                '我的.头像'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+    final Widget child = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              '我的.头像'.tr(),
+              style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF262626)),
+            ),
+          ),
+          if (resolvedLocalAvatarPath.isNotEmpty)
+            ClipOval(
+              child: Image.file(
+                File(resolvedLocalAvatarPath),
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) {
+                  return AppUserAvatar(
+                    imageUrl: avatarUrl,
+                    size: 40,
+                    placeholder: fallback,
+                  );
+                },
+              ),
+            )
+          else
+            ClipOval(
+              child: AppUserAvatar(
+                imageUrl: avatarUrl,
+                size: 40,
+                placeholder: fallback,
               ),
             ),
-            if (resolvedLocalAvatarPath.isNotEmpty)
-              ClipOval(
-                child: Image.file(
-                  File(resolvedLocalAvatarPath),
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
-                    return AppUserAvatar(
-                      imageUrl: avatarUrl,
-                      size: 40,
-                      placeholder: fallback,
-                    );
-                  },
-                ),
-              )
-            else
-              ClipOval(
-                child: AppUserAvatar(
-                  imageUrl: avatarUrl,
-                  size: 40,
-                  placeholder: fallback,
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
+    if (onTap == null) {
+      return child;
+    }
+    return InkWell(onTap: onTap, child: child);
   }
 }
 
@@ -542,11 +590,7 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               item.label,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
           ),
           const SizedBox(width: 12),
@@ -554,11 +598,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               item.value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 16,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],
@@ -585,21 +625,12 @@ class _QualificationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '我的.材料资质'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 16),
           Text(
             '我的.身份证'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
           ),
           const SizedBox(height: 8),
           Row(
@@ -673,11 +704,7 @@ class _DocumentBlock extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF262626),
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF262626)),
           ),
         ),
         const SizedBox(height: 8),
@@ -737,8 +764,12 @@ class _MaterialPreviewCard extends StatelessWidget {
 }
 
 class _ServiceProviderMyInfoErrorView extends StatelessWidget {
-  const _ServiceProviderMyInfoErrorView({required this.onRetry});
+  const _ServiceProviderMyInfoErrorView({
+    required this.message,
+    required this.onRetry,
+  });
 
+  final String message;
   final VoidCallback onRetry;
 
   @override
@@ -750,12 +781,8 @@ class _ServiceProviderMyInfoErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              '我的.加载服务商资料失败'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              message,
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -797,11 +824,7 @@ class _BottomActionBar extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 22 / 16,
-            ),
+            textStyle: TestStyle.pingFangMedium(fontSize: 16),
           ),
           child: Text('我的.修改信息'.tr()),
         ),
@@ -815,6 +838,132 @@ class _InfoItem {
 
   final String label;
   final String value;
+}
+
+class _ServiceProviderReadonlyContent extends StatelessWidget {
+  const _ServiceProviderReadonlyContent({
+    required this.provider,
+    required this.countryLabelMap,
+  });
+
+  final ProviderVO provider;
+  final Map<String, String> countryLabelMap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_InfoItem> infoItems = <_InfoItem>[
+      _InfoItem(label: '我的.服务商名称'.tr(), value: _textOrFallback(provider.name)),
+      _InfoItem(
+        label: '服务详情.认证状态'.tr(),
+        value: provider.isVerified ? '服务详情.已认证'.tr() : '服务详情.未认证'.tr(),
+      ),
+      _InfoItem(
+        label: '我的.服务评分'.tr(),
+        value: provider.rating.toStringAsFixed(1),
+      ),
+      _InfoItem(label: '我的.累计服务'.tr(), value: provider.caseCount.toString()),
+      _InfoItem(
+        label: '我的.从业年限'.tr(),
+        value: provider.yearsOfService > 0
+            ? '服务详情.年数'.tr(
+                namedArgs: <String, String>{
+                  'count': provider.yearsOfService.toString(),
+                },
+              )
+            : '服务详情.暂无'.tr(),
+      ),
+      _InfoItem(
+        label: '我的.国家地区'.tr(),
+        value: _serviceCountriesText(
+          provider.serviceCountries,
+          countryLabelMap,
+          fallback: '服务详情.暂无'.tr(),
+        ),
+      ),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _InfoSection(
+            avatarUrl: provider.logoUrl,
+            localAvatarPreviewPath: null,
+            onAvatarTap: null,
+            items: infoItems,
+          ),
+          const SizedBox(height: 12),
+          _ReadonlyTextSection(
+            title: '服务详情.简介'.tr(),
+            content: provider.brief.trim().isEmpty
+                ? '服务详情.暂无商家简介'.tr()
+                : provider.brief,
+          ),
+          const SizedBox(height: 12),
+          _ReadonlyTextSection(
+            title: '服务详情.服务承诺'.tr(),
+            content: provider.servicePromise.trim().isEmpty
+                ? '服务详情.暂无服务承诺说明'.tr()
+                : provider.servicePromise,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _textOrFallback(String value) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? '服务详情.暂无'.tr() : trimmed;
+  }
+}
+
+class _ReadonlyTextSection extends StatelessWidget {
+  const _ReadonlyTextSection({required this.title, required this.content});
+
+  final String title;
+  final String content;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            content,
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _serviceCountriesText(
+  List<String> countries,
+  Map<String, String> countryLabelMap, {
+  required String fallback,
+}) {
+  final List<String> labels = countries
+      .map((value) => resolveCountryLabel(value, countryLabelMap).trim())
+      .where((value) => value.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+  if (labels.isEmpty) {
+    return fallback;
+  }
+  return labels.join('/');
 }
 
 class _ProviderQualificationDocs {

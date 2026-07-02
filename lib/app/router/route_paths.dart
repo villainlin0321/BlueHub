@@ -20,6 +20,9 @@ class RoutePaths {
   /// 招聘列表页。
   static const jobs = '/jobs';
 
+  /// 岗位搜索页。
+  static const jobSearch = '/jobs/search';
+
   /// 岗位详情页。
   static const jobDetail = '/jobs/detail';
 
@@ -43,6 +46,9 @@ class RoutePaths {
 
   /// 设置页。
   static const settings = '/me/settings';
+
+  /// 关于我们页。
+  static const aboutApp = '/me/about-app';
 
   /// 黑名单页。
   static const blacklist = '/me/blacklist';
@@ -85,6 +91,12 @@ class RoutePaths {
 
   /// 服务详情举报页。
   static const serviceDetailReport = '/service-detail/report';
+
+  /// 我的投诉页。
+  static const myComplaints = '/me/complaints';
+
+  /// 投诉详情页。
+  static const complaintDetail = '/me/complaints/detail';
 
   /// 通用结果页。
   static const appResult = '/result';

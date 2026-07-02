@@ -89,10 +89,8 @@ class ChatPageState {
       playingMessageId: identical(playingMessageId, _chatPageStateSentinel)
           ? this.playingMessageId
           : playingMessageId as int?,
-      downloadingAudioMessageIds: identical(
-            downloadingAudioMessageIds,
-            _chatPageStateIntSetSentinel,
-          )
+      downloadingAudioMessageIds:
+          identical(downloadingAudioMessageIds, _chatPageStateIntSetSentinel)
           ? this.downloadingAudioMessageIds
           : downloadingAudioMessageIds as Set<int>,
     );

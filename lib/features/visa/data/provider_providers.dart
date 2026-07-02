@@ -43,7 +43,10 @@ final visaProviderReviewsProvider = FutureProvider.autoDispose
 
 /// 根据签证列表页选中的标签获取服务商列表。
 final visaProviderListProvider = FutureProvider.autoDispose
-    .family<PageResult<VisaProviderListVO>, VisaProviderListQuery>((ref, query) async {
+    .family<PageResult<VisaProviderListVO>, VisaProviderListQuery>((
+      ref,
+      query,
+    ) async {
       final service = ref.watch(providerServiceProvider);
       return service.listProviders(
         page: query.page,

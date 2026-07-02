@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class AddWorkExperiencePage extends StatefulWidget {
-  const AddWorkExperiencePage({
-    super.key,
-    this.args,
-  });
+  const AddWorkExperiencePage({super.key, this.args});
 
   final AddWorkExperiencePageArgs? args;
 
@@ -22,6 +22,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   final TextEditingController _jobTitleController = TextEditingController();
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final FocusNode _contentFocusNode = FocusNode();
 
   AddWorkExperiencePageArgs get _resolvedArgs =>
       widget.args ?? const AddWorkExperiencePageArgs();
@@ -42,6 +43,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
       _selectedPeriod = initialValue.period;
     }
     _contentController.addListener(_handleContentChanged);
+    _contentFocusNode.addListener(_handleContentChanged);
   }
 
   @override
@@ -49,6 +51,9 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
     _companyController.dispose();
     _jobTitleController.dispose();
     _departmentController.dispose();
+    _contentFocusNode
+      ..removeListener(_handleContentChanged)
+      ..dispose();
     _contentController
       ..removeListener(_handleContentChanged)
       ..dispose();
@@ -109,9 +114,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   @override
@@ -136,50 +139,81 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
         ),
         title: Text(
           '我的.工作经历'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
-      body: TapBlankToDismissKeyboard(
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 140),
-            child: Column(
-              children: <Widget>[
-                _UnderlinedInputField(
-                  label: '我的.公司名称'.tr(),
-                  controller: _companyController,
+      body: Stack(
+        children: <Widget>[
+          TapBlankToDismissKeyboard(
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 140),
+                child: Column(
+                  children: <Widget>[
+                    _UnderlinedInputField(
+                      label: '我的.公司名称'.tr(),
+                      controller: _companyController,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedSelectorField(
+                      label: '我的.在职时间'.tr(),
+                      value: _selectedPeriod?.displayText,
+                      onTap: _openEmploymentPeriodSheet,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedInputField(
+                      label: '我的.职位名称'.tr(),
+                      controller: _jobTitleController,
+                    ),
+                    const SizedBox(height: 16),
+                    _UnderlinedInputField(
+                      label: '我的.所在部门'.tr(),
+                      controller: _departmentController,
+                    ),
+                    const SizedBox(height: 16),
+                    _WorkContentField(
+                      controller: _contentController,
+                      focusNode: _contentFocusNode,
+                      currentLength: _contentController.text.characters.length,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _UnderlinedSelectorField(
-                  label: '我的.在职时间'.tr(),
-                  value: _selectedPeriod?.displayText,
-                  onTap: _openEmploymentPeriodSheet,
-                ),
-                const SizedBox(height: 16),
-                _UnderlinedInputField(
-                  label: '我的.职位名称'.tr(),
-                  controller: _jobTitleController,
-                ),
-                const SizedBox(height: 16),
-                _UnderlinedInputField(
-                  label: '我的.所在部门'.tr(),
-                  controller: _departmentController,
-                ),
-                const SizedBox(height: 16),
-                _WorkContentField(
-                  controller: _contentController,
-                  currentLength: _contentController.text.characters.length,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (_contentFocusNode.hasFocus && bottomInset > 0)
+            Positioned(
+              right: 16,
+              bottom: 8,
+              child: SafeArea(
+                top: false,
+                child: TextButton(
+                  onPressed: _contentFocusNode.unfocus,
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: const Color(0xFF096DD9),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    '完成',
+                    style: TestStyle.pingFangMedium(fontSize: 14),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -208,11 +242,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                       ),
                       child: Text(
                         '我的.删除'.tr(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 16),
                       ),
                     ),
                   ),
@@ -235,11 +265,7 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
                     ),
                     child: Text(
                       '我的.保存'.tr(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
-                      ),
+                      style: TestStyle.pingFangRegular(fontSize: 16),
                     ),
                   ),
                 ),
@@ -252,7 +278,6 @@ class _AddWorkExperiencePageState extends State<AddWorkExperiencePage> {
   }
 }
 
-
 class AddWorkExperiencePageArgs {
   const AddWorkExperiencePageArgs({this.initialValue});
 
@@ -262,9 +287,7 @@ class AddWorkExperiencePageArgs {
 class WorkExperiencePageResult {
   const WorkExperiencePageResult.saved(this.value) : deleted = false;
 
-  const WorkExperiencePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const WorkExperiencePageResult.deleted() : value = null, deleted = true;
 
   final WorkExperienceFormResult? value;
   final bool deleted;
@@ -507,11 +530,9 @@ class _EmploymentPeriodBottomSheetState
                   ),
                   Text(
                     '我的.时间段'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF171A1D),
+                    style: TestStyle.pingFangRegular(
                       fontSize: 17,
-                      fontWeight: FontWeight.w400,
-                      height: 25 / 17,
+                      color: Color(0xFF171A1D),
                     ),
                   ),
                   Positioned(
@@ -523,11 +544,9 @@ class _EmploymentPeriodBottomSheetState
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text(
                           '通用.确定'.tr(),
-                          style: TextStyle(
-                            color: Color(0xFF096DD9),
+                          style: TestStyle.pingFangRegular(
                             fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 25 / 16,
+                            color: Color(0xFF096DD9),
                           ),
                         ),
                       ),
@@ -597,16 +616,14 @@ class _EmploymentPeriodBottomSheetState
                             },
                           ),
                         ),
-                        const SizedBox(
+                        SizedBox(
                           width: 16,
                           child: Center(
                             child: Text(
                               '-',
-                              style: TextStyle(
-                                color: Color(0xFF8C8C8C),
+                              style: TestStyle.regular(
                                 fontSize: 17,
-                                fontWeight: FontWeight.w400,
-                                height: 22 / 17,
+                                color: Color(0xFF8C8C8C),
                               ),
                             ),
                           ),
@@ -713,25 +730,19 @@ class _PickerWheel<T> extends StatelessWidget {
           final int distance = (index - selectedIndex).abs();
           final TextStyle textStyle;
           if (distance == 0) {
-            textStyle = const TextStyle(
-              color: Color(0xFF171A1D),
+            textStyle = TestStyle.medium(
               fontSize: 17,
-              fontWeight: FontWeight.w500,
-              height: 22 / 17,
+              color: Color(0xFF171A1D),
             );
           } else if (distance == 1) {
-            textStyle = const TextStyle(
-              color: Color(0x99171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 17,
-              fontWeight: FontWeight.w400,
-              height: 22 / 17,
+              color: Color(0x99171A1D),
             );
           } else {
-            textStyle = const TextStyle(
-              color: Color(0x66171A1D),
+            textStyle = TestStyle.regular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 22 / 14,
+              color: Color(0x66171A1D),
             );
           }
           return Center(
@@ -764,12 +775,7 @@ class _UnderlinedInputField extends StatelessWidget {
           const SizedBox(height: 0),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -781,19 +787,15 @@ class _UnderlinedInputField extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
-                  color: Color(0xFF171A1D),
+                style: TestStyle.pingFangRegular(
                   fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 16,
+                  color: Color(0xFF171A1D),
                 ),
                 decoration: InputDecoration(
                   hintText: '通用.请输入'.tr(),
-                  hintStyle: TextStyle(
-                    color: Color(0xFFBFBFBF),
+                  hintStyle: TestStyle.pingFangRegular(
                     fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 22 / 16,
+                    color: Color(0xFFBFBFBF),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.only(top: 15, bottom: 15),
@@ -827,12 +829,7 @@ class _UnderlinedSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           SizedBox(
             height: 52,
@@ -851,13 +848,11 @@ class _UnderlinedSelectorField extends StatelessWidget {
                       Expanded(
                         child: Text(
                           value ?? '通用.请选择'.tr(),
-                          style: TextStyle(
+                          style: TestStyle.pingFangRegular(
+                            fontSize: 16,
                             color: value == null
                                 ? const Color(0xFFBFBFBF)
                                 : const Color(0xFF171A1D),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
                           ),
                         ),
                       ),
@@ -881,10 +876,12 @@ class _UnderlinedSelectorField extends StatelessWidget {
 class _WorkContentField extends StatelessWidget {
   const _WorkContentField({
     required this.controller,
+    required this.focusNode,
     required this.currentLength,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final int currentLength;
 
   @override
@@ -896,32 +893,27 @@ class _WorkContentField extends StatelessWidget {
         children: <Widget>[
           Text(
             '我的.工作内容'.tr(),
-            style: TextStyle(
-              color: Color(0xFF595959),
+            style: TestStyle.pingFangRegular(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
+              color: Color(0xFF595959),
             ),
           ),
           Expanded(
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               maxLength: 500,
               maxLines: null,
               minLines: 9,
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
+              style: TestStyle.pingFangRegular(
                 fontSize: 16,
-                fontWeight: FontWeight.w400,
-                height: 24 / 16,
+                color: Color(0xFF171A1D),
               ),
               decoration: InputDecoration(
                 hintText: '通用.请输入'.tr(),
-                hintStyle: TextStyle(
-                  color: Color(0xFFBFBFBF),
+                hintStyle: TestStyle.pingFangRegular(
                   fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  height: 24 / 16,
+                  color: Color(0xFFBFBFBF),
                 ),
                 border: InputBorder.none,
                 counterText: '',
@@ -933,12 +925,7 @@ class _WorkContentField extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               '$currentLength/500',
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                height: 22 / 16,
-              ),
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
             ),
           ),
         ],

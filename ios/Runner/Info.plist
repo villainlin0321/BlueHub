@@ -33,13 +33,44 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.europepass.europepass.alipay</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(WECHAT_APP_ID)</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>weixin</string>
+		<string>weixinULAPI</string>
+		<string>alipay</string>
+		<string>alipays</string>
+		<string>weixinURLParamsAPI</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
@@ -50,6 +81,8 @@
 	<string>Allow access to your photo library to save images to your device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow access to your photo library to choose photos for your profile and application documents.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Allow speech recognition to convert your voice into text when chatting with the AI assistant.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

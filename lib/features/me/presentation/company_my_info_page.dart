@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -16,17 +17,47 @@ import 'company_my_info_styles.dart';
 import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _companyMyInfoProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
       return service.getEmployerProfile();
     });
 
+class CompanyMyInfoPageArgs {
+  const CompanyMyInfoPageArgs({
+    this.profileId,
+    required this.titleKey,
+    required this.showBottomAction,
+  });
+
+  const CompanyMyInfoPageArgs.my()
+    : profileId = null,
+      titleKey = '我的.我的信息',
+      showBottomAction = true;
+
+  const CompanyMyInfoPageArgs.readonly({required this.profileId})
+    : titleKey = '我的.企业信息',
+      showBottomAction = false;
+
+  final int? profileId;
+  final String titleKey;
+  final bool showBottomAction;
+
+  bool get isReadonly => profileId != null;
+}
+
 /// 企业端“我的信息”页，按 Figma 设计展示企业基础资料与材料资质。
 class CompanyMyInfoPage extends ConsumerStatefulWidget {
-  const CompanyMyInfoPage({super.key});
+  const CompanyMyInfoPage({
+    super.key,
+    this.args = const CompanyMyInfoPageArgs.my(),
+  });
 
-  static const String _avatarFallbackAsset = 'assets/images/mou64ult-sj15mxj.png';
+  final CompanyMyInfoPageArgs args;
+
+  static const String _avatarFallbackAsset =
+      'assets/images/mou64ult-sj15mxj.png';
   static const String _qualificationPlaceholderAsset =
       'assets/images/qualification_license_placeholder.png';
 
@@ -40,9 +71,13 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<EmployerProfileVO> profileAsync = ref.watch(
-      _companyMyInfoProfileProvider,
-    );
+    final CompanyMyInfoPageArgs args = widget.args;
+    final AsyncValue<EmployerProfileVO>? profileAsync = args.isReadonly
+        ? null
+        : ref.watch(_companyMyInfoProfileProvider);
+    final AsyncValue<EmployerPublicVO>? publicProfileAsync = args.isReadonly
+        ? ref.watch(employerPublicProfileProvider(args.profileId!))
+        : null;
     final Map<String, String> countryLabelMap = ref
         .watch(countrySearchProvider(const CountrySearchQuery()))
         .maybeWhen(
@@ -58,25 +93,48 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
           children: <Widget>[
             Column(
               children: <Widget>[
-                CompanyMyInfoHeader(onBackTap: context.pop),
+                CompanyMyInfoHeader(
+                  onBackTap: context.pop,
+                  title: args.titleKey.tr(),
+                ),
                 Expanded(
-                  child: profileAsync.when(
-                    data: (EmployerProfileVO profile) => _CompanyMyInfoContent(
-                      profile: profile,
-                      countryLabelMap: countryLabelMap,
-                      localAvatarPreviewPath: _localAvatarPreviewPath,
-                      onAvatarTap: () => _handleAvatarTap(profile),
-                    ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => _CompanyMyInfoErrorView(
-                      onRetry: () => ref.invalidate(_companyMyInfoProfileProvider),
-                    ),
-                  ),
+                  child: args.isReadonly
+                      ? publicProfileAsync!.when(
+                          data: (EmployerPublicVO profile) =>
+                              _CompanyPublicInfoContent(
+                                profile: profile,
+                                countryLabelMap: countryLabelMap,
+                              ),
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => _CompanyMyInfoErrorView(
+                            message: '我的.加载企业信息失败'.tr(),
+                            onRetry: () => ref.invalidate(
+                              employerPublicProfileProvider(args.profileId!),
+                            ),
+                          ),
+                        )
+                      : profileAsync!.when(
+                          data: (EmployerProfileVO profile) =>
+                              _CompanyMyInfoContent(
+                                profile: profile,
+                                countryLabelMap: countryLabelMap,
+                                localAvatarPreviewPath: _localAvatarPreviewPath,
+                                onAvatarTap: () => _handleAvatarTap(profile),
+                                showBottomAction: args.showBottomAction,
+                              ),
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => _CompanyMyInfoErrorView(
+                            message: '我的.加载企业资料失败'.tr(),
+                            onRetry: () =>
+                                ref.invalidate(_companyMyInfoProfileProvider),
+                          ),
+                        ),
                 ),
               ],
             ),
-            if (_isSubmitting)
+            if (_isSubmitting && args.showBottomAction)
               Positioned.fill(
                 child: ColoredBox(
                   color: const Color(0x33000000),
@@ -245,9 +303,7 @@ class _CompanyMyInfoPageState extends ConsumerState<CompanyMyInfoPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -257,12 +313,14 @@ class _CompanyMyInfoContent extends StatelessWidget {
     required this.countryLabelMap,
     required this.localAvatarPreviewPath,
     required this.onAvatarTap,
+    required this.showBottomAction,
   });
 
   final EmployerProfileVO profile;
   final Map<String, String> countryLabelMap;
   final String? localAvatarPreviewPath;
   final VoidCallback onAvatarTap;
+  final bool showBottomAction;
 
   @override
   Widget build(BuildContext context) {
@@ -329,23 +387,22 @@ class _CompanyMyInfoContent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            '我的.注意重新提交审核'.tr(),
-            style: CompanyMyInfoStyles.noteText,
-          ),
-          const SizedBox(height: 24),
-          CompanyMyInfoPrimaryButton(
-            label: '我的.修改信息'.tr(),
-            onTap: () {
-              context.push(
-                RoutePaths.qualificationCertification,
-                extra: QualificationCertificationPageArgs(
-                  role: QualificationCertificationRole.company,
-                ),
-              );
-            },
-          ),
+          if (showBottomAction) ...<Widget>[
+            const SizedBox(height: 12),
+            Text('我的.注意重新提交审核'.tr(), style: CompanyMyInfoStyles.noteText),
+            const SizedBox(height: 24),
+            CompanyMyInfoPrimaryButton(
+              label: '我的.修改信息'.tr(),
+              onTap: () {
+                context.push(
+                  RoutePaths.qualificationCertification,
+                  extra: QualificationCertificationPageArgs(
+                    role: QualificationCertificationRole.company,
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -408,8 +465,9 @@ class _CompanyInfoField {
 }
 
 class _CompanyMyInfoErrorView extends StatelessWidget {
-  const _CompanyMyInfoErrorView({required this.onRetry});
+  const _CompanyMyInfoErrorView({required this.message, required this.onRetry});
 
+  final String message;
   final VoidCallback onRetry;
 
   @override
@@ -421,12 +479,8 @@ class _CompanyMyInfoErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              '我的.加载企业资料失败'.tr(),
-              style: TextStyle(
-                color: CompanyMyInfoStyles.secondaryText,
-                fontSize: 14,
-                height: 20 / 14,
-              ),
+              message,
+              style: TestStyle.pingFangRegular(fontSize: 14, color: CompanyMyInfoStyles.secondaryText),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('我的.重试'.tr())),
@@ -434,5 +488,116 @@ class _CompanyMyInfoErrorView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CompanyPublicInfoContent extends StatelessWidget {
+  const _CompanyPublicInfoContent({
+    required this.profile,
+    required this.countryLabelMap,
+  });
+
+  final EmployerPublicVO profile;
+  final Map<String, String> countryLabelMap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_CompanyInfoField> basicInfoFields = <_CompanyInfoField>[
+      _CompanyInfoField(
+        label: '我的.企业名称'.tr(),
+        value: _displayText(profile.companyName),
+      ),
+      _CompanyInfoField(
+        label: '服务详情.认证状态'.tr(),
+        value: profile.isVerified ? '服务详情.已认证'.tr() : '服务详情.未认证'.tr(),
+      ),
+      _CompanyInfoField(
+        label: '我的.注册国家'.tr(),
+        value: _resolveCountry(profile.country),
+      ),
+      _CompanyInfoField(
+        label: '我的.所在城市'.tr(),
+        value: _displayText(profile.city),
+      ),
+      _CompanyInfoField(
+        label: '我的.所属行业'.tr(),
+        value: _displayText(profile.industry),
+      ),
+      _CompanyInfoField(
+        label: '我的.公司规模'.tr(),
+        value: _displayText(profile.companySize),
+      ),
+      _CompanyInfoField(label: '我的.成立年份'.tr(), value: _foundedYearText),
+      _CompanyInfoField(
+        label: '我的.官网地址'.tr(),
+        value: _displayText(profile.website),
+      ),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        CompanyMyInfoStyles.pageHorizontalPadding,
+        12,
+        CompanyMyInfoStyles.pageHorizontalPadding,
+        24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          CompanyMyInfoSectionCard(
+            title: '我的.基础信息'.tr(),
+            child: Column(
+              children: <Widget>[
+                CompanyMyInfoAvatarRow(
+                  label: '我的.头像'.tr(),
+                  avatarUrl: profile.logoUrl,
+                  fallbackAssetPath: CompanyMyInfoPage._avatarFallbackAsset,
+                ),
+                for (int index = 0; index < basicInfoFields.length; index++)
+                  CompanyMyInfoValueRow(
+                    label: basicInfoFields[index].label,
+                    value: basicInfoFields[index].value,
+                    showDivider: index != basicInfoFields.length - 1,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          CompanyMyInfoSectionCard(
+            title: '服务详情.简介'.tr(),
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+            child: Text(
+              profile.description.trim().isEmpty
+                  ? '服务详情.暂无商家简介'.tr()
+                  : profile.description,
+              style: CompanyMyInfoStyles.fieldValue.copyWith(
+                color: const Color(0xFF595959),
+                height: 22 / 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _resolveCountry(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '我的.未完善'.tr();
+    }
+    return resolveCountryLabel(trimmed, countryLabelMap);
+  }
+
+  String get _foundedYearText {
+    if (profile.foundedYear <= 0) {
+      return '我的.未完善'.tr();
+    }
+    return '${profile.foundedYear}${'我的.年份后缀'.tr()}';
+  }
+
+  String _displayText(String value) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? '我的.未完善'.tr() : trimmed;
   }
 }

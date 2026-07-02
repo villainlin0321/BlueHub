@@ -334,10 +334,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     return asJsonMap(payload['data']);
   }
 
-  int _extractConversationId(
-    JsonMap payload, {
-    JsonMap? messageJson,
-  }) {
+  int _extractConversationId(JsonMap payload, {JsonMap? messageJson}) {
     final int directConversationId = readInt(payload, 'conversationId');
     if (directConversationId > 0) {
       return directConversationId;
@@ -396,10 +393,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     return readInt(messageConversation, 'conversation_id');
   }
 
-  MessageVO? _parseMessage(
-    JsonMap messageJson, {
-    required int conversationId,
-  }) {
+  MessageVO? _parseMessage(JsonMap messageJson, {required int conversationId}) {
     if (messageJson.isEmpty || messageJson['messageId'] == null) {
       return null;
     }

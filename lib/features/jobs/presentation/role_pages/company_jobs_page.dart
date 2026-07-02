@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../data/application_models.dart';
 import '../../data/job_models.dart';
 import '../../data/application_providers.dart';
 import '../../data/talent_providers.dart';
 import '../widgets/invite_job_picker_sheet.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 企业招聘页：按 Figma「人才中心」实现。
 class CompanyJobsPage extends ConsumerStatefulWidget {
   const CompanyJobsPage({super.key});
@@ -68,14 +71,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: isError ? const Color(0xFFD9363E) : null,
-          content: Text(message),
-        ),
-      );
+    AppToast.show(message);
   }
 
   Future<void> _openResumePreview(int userId) async {
@@ -83,7 +79,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   }
 
   Future<String?> _showRemarkDialog(String actionLabel) async {
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) {
         return _RemarkDialog(actionLabel: actionLabel);
@@ -97,7 +93,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     }
 
     final String? remark = await _showRemarkDialog(
-      EmployerApplicationUpdateStatus.interview.label,
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
     );
     if (remark == null || !mounted) {
       return;
@@ -116,13 +112,15 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
         _showMessage('招聘.邀约失败'.tr(), isError: true);
         return;
       }
-      await ref.read(applicationServiceProvider).inviteInterview(
-        request: InviteInterviewBO(
-          jobId: selectedJob.jobId,
-          resumeId: data.resumeId,
-          remark: remark.trim().isEmpty ? null : remark.trim(),
-        ),
-      );
+      await ref
+          .read(applicationServiceProvider)
+          .inviteInterview(
+            request: InviteInterviewBO(
+              jobId: selectedJob.jobId,
+              resumeId: data.resumeId,
+              remark: remark.trim().isEmpty ? null : remark.trim(),
+            ),
+          );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
       _showMessage(error.toString(), isError: true);
@@ -235,8 +233,8 @@ class _RemarkDialogState extends State<_RemarkDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('${widget.actionLabel}${'招聘.备注'.tr()}'),
+    return AppDialog(
+      title: '${widget.actionLabel}${'招聘.备注'.tr()}',
       content: TextField(
         controller: _controller,
         maxLines: 4,
@@ -245,14 +243,14 @@ class _RemarkDialogState extends State<_RemarkDialog> {
           border: const OutlineInputBorder(),
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('通用.取消'.tr()),
         ),
-        FilledButton(
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          child: Text('通用.确定'.tr()),
         ),
       ],
     );
@@ -274,24 +272,14 @@ class _Header extends StatelessWidget {
           Expanded(
             child: Text(
               '招聘.人才中心'.tr(),
-              style: const TextStyle(
-                color: Color(0xE6000000),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 24 / 17,
-              ),
+              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
             ),
           ),
           Padding(
             padding: EdgeInsets.only(top: 2),
             child: Text(
               '招聘.筛选'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                height: 21 / 15,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
             ),
           ),
         ],
@@ -328,22 +316,12 @@ class _SearchBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
                 decoration: InputDecoration(
                   isDense: true,
                   border: InputBorder.none,
                   hintText: '招聘.搜索岗位技能经验'.tr(),
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFBFBFBF),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 20 / 14,
-                  ),
+                  hintStyle: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
                 ),
               ),
             ),
@@ -371,9 +349,7 @@ class _TabBarSection extends StatelessWidget {
     return Container(
       color: Colors.white,
       child: Row(
-        children: List<Widget>.generate(_tabs.length, (
-          int index,
-        ) {
+        children: List<Widget>.generate(_tabs.length, (int index) {
           final bool selected = index == selectedIndex;
           return Expanded(
             child: InkWell(
@@ -386,16 +362,9 @@ class _TabBarSection extends StatelessWidget {
                     Text(
                       _tabs[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: selected
+                      style: TestStyle.medium(fontSize: 14, color: selected
                             ? const Color(0xFF096DD9)
-                            : const Color(0xFF262626),
-                        fontSize: 14,
-                        fontWeight: selected
-                            ? FontWeight.w500
-                            : FontWeight.w400,
-                        height: 22 / 14,
-                      ),
+                            : const Color(0xFF262626)),
                     ),
                     if (selected) ...<Widget>[
                       const SizedBox(height: 9),
@@ -455,22 +424,12 @@ class _AiBanner extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               '招聘.AI业务助手'.tr(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w400,
-                                height: 22 / 15,
-                              ),
+                              style: TestStyle.pingFangRegular(fontSize: 15, color: Colors.white),
                             ),
                             SizedBox(height: 2),
                             Text(
                               '招聘.AI推荐文案'.tr(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                height: 16 / 12,
-                              ),
+                              style: TestStyle.pingFangRegular(fontSize: 12, color: Colors.white),
                             ),
                           ],
                         ),
@@ -510,13 +469,7 @@ class _BannerAction extends StatelessWidget {
               children: <Widget>[
                 Text(
                   '招聘.查看'.tr(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    height: 12 / 12,
-                    letterSpacing: 0.2,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
                 ),
                 const SizedBox(width: 2),
                 SvgPicture.asset(
@@ -575,34 +528,19 @@ class _CandidateCard extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             data.name,
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 24 / 16,
-                            ),
+                            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             data.ageGender,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
+                            style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         data.intention,
-                        style: const TextStyle(
-                          color: Color(0xFF595959),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          height: 16 / 12,
-                        ),
+                        style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
                       ),
                     ],
                   ),
@@ -612,22 +550,12 @@ class _CandidateCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       data.scoreText,
-                      style: const TextStyle(
-                        color: Color(0xFF096DD9),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 21 / 16,
-                      ),
+                      style: TestStyle.regular(fontSize: 16, color: Color(0xFF096DD9)),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       data.scoreLabel,
-                      style: const TextStyle(
-                        color: Color(0xFF096DD9),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                        height: 14 / 10,
-                      ),
+                      style: TestStyle.regular(fontSize: 10, color: Color(0xFF096DD9)),
                     ),
                   ],
                 ),
@@ -646,12 +574,7 @@ class _CandidateCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   data.updatedText,
-                  style: const TextStyle(
-                    color: Color(0xFF8C8C8C),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 12,
-                  ),
+                  style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
                 ),
                 const Spacer(),
                 _ResumeActionButton(
@@ -690,12 +613,7 @@ class _CandidateTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF546D96),
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: Color(0xFF546D96)),
       ),
     );
   }
@@ -745,13 +663,7 @@ class _ResumeActionButton extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: TextStyle(
-                    color: primary ? Colors.white : const Color(0xFF262626),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 12 / 12,
-                    letterSpacing: 0.2,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: primary ? Colors.white : const Color(0xFF262626), letterSpacing: 0.2),
                 ),
         ),
       ),
@@ -784,7 +696,10 @@ class _CandidateCardData {
   final List<String> tags;
   final String updatedText;
 
-  factory _CandidateCardData.fromTalent(TalentVO talent, {required String sort}) {
+  factory _CandidateCardData.fromTalent(
+    TalentVO talent, {
+    required String sort,
+  }) {
     final bool isMatchSort = sort == 'match';
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
@@ -810,7 +725,9 @@ class _CandidateCardData {
   static String _buildAgeGender(TalentVO talent) {
     final List<String> parts = <String>[];
     if (talent.age != null) {
-      parts.add('招聘.岁'.tr(namedArgs: <String, String>{'count': talent.age.toString()}));
+      parts.add(
+        '招聘.岁'.tr(namedArgs: <String, String>{'count': talent.age.toString()}),
+      );
     }
     final String genderText = switch (talent.gender.trim().toLowerCase()) {
       'male' => '招聘.男'.tr(),
@@ -845,7 +762,9 @@ class _CandidateCardData {
     if (talent.yearsOfExperience > 0) {
       tags.add(
         '招聘.年经验'.tr(
-          namedArgs: <String, String>{'count': talent.yearsOfExperience.toString()},
+          namedArgs: <String, String>{
+            'count': talent.yearsOfExperience.toString(),
+          },
         ),
       );
     }
@@ -939,7 +858,7 @@ class _TalentsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      return Padding(
+    return Padding(
       padding: const EdgeInsets.only(top: 48),
       child: Center(
         child: AppEmptyState(
@@ -966,11 +885,7 @@ class _TalentLoadError extends StatelessWidget {
           children: <Widget>[
             Text(
               '招聘.人才列表加载失败'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),

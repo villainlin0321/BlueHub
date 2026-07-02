@@ -3,8 +3,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/job_models.dart';
@@ -14,8 +16,10 @@ import '../../me/data/collection_providers.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../messages/data/message_models.dart';
 import '../../messages/data/message_providers.dart';
+import '../../me/presentation/company_my_info_page.dart';
 import 'job_apply_helper.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 职位详情页参数：当前至少透传岗位 ID，供“投递简历”调用真实接口。
 class JobDetailPageArgs {
   const JobDetailPageArgs({required this.jobId});
@@ -55,9 +59,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   }
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleBack(BuildContext context) {
@@ -147,11 +149,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         _isCollecting = false;
         _isCollectedOverride = !wasCollected;
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(
-        context,
-        wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr(),
-      );
+      _showMessage(context, wasCollected ? '招聘.已取消收藏'.tr() : '招聘.收藏成功'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -301,11 +301,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         title: Text(
           '招聘.招聘详情'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xE6000000),
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
         ),
         actions: <Widget>[
           Opacity(
@@ -420,23 +416,13 @@ class _JobHeaderSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   detail.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 22,
-                    height: 30 / 22,
-                  ),
+                  style: TestStyle.semibold(fontSize: 22, color: const Color(0xFF262626)),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 detail.salaryText,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFFE5815),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  height: 24 / 16,
-                ),
+                style: TestStyle.medium(fontSize: 16, color: const Color(0xFFFE5815)),
               ),
             ],
           ),
@@ -459,12 +445,7 @@ class _JobHeaderSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 detail.locationText,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF595959),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                  height: 16 / 12,
-                ),
+                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
               ),
             ],
           ),
@@ -489,12 +470,7 @@ class _BorderTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: const Color(0xFF546D96),
-          fontWeight: FontWeight.w400,
-          fontSize: 10,
-          height: 1,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: const Color(0xFF546D96)),
       ),
     );
   }
@@ -511,7 +487,7 @@ class _EmployerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget content = Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       child: Row(
@@ -529,22 +505,12 @@ class _EmployerCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   employer.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF262626),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 16,
-                    height: 24 / 16,
-                  ),
+                  style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   employer.subtitleText,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF8C8C8C),
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12,
-                    height: 16 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
                 ),
               ],
             ),
@@ -556,6 +522,20 @@ class _EmployerCard extends StatelessWidget {
             color: Color(0xFFBFBFBF),
           ),
         ],
+      ),
+    );
+    if (employer.employerId <= 0) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.push(
+          RoutePaths.companyMyInfo,
+          extra: CompanyMyInfoPageArgs.readonly(profileId: employer.employerId),
+        ),
+        child: content,
       ),
     );
   }
@@ -584,15 +564,13 @@ class _JobDescriptionSection extends StatelessWidget {
           ],
           Text(
             '招聘.职位详情'.tr(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFF262626),
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              height: 26 / 18,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 18, color: const Color(0xFF262626)),
           ),
           const SizedBox(height: 12),
-          _DescriptionBlock(title: '招聘.岗位职责'.tr(), items: detail.responsibilities),
+          _DescriptionBlock(
+            title: '招聘.岗位职责'.tr(),
+            items: detail.responsibilities,
+          ),
           const SizedBox(height: 20),
           _DescriptionBlock(title: '招聘.任职要求'.tr(), items: detail.requirements),
           const SizedBox(height: 20),
@@ -616,22 +594,12 @@ class _DescriptionBlock extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF262626),
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            height: 26 / 14,
-          ),
+          style: TestStyle.medium(fontSize: 14, color: const Color(0xFF262626)),
         ),
         for (final String item in items)
           Text(
             item,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF595959),
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              height: 26 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
           ),
       ],
     );
@@ -654,32 +622,18 @@ class _LocationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '招聘.工作地点'.tr(),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: const Color(0xFF262626),
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
-              height: 24 / 16,
-            ),
+            style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
           ),
           const SizedBox(height: 6),
           Text(
             detail.addressText,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
           ),
           if (detail.coordinateText != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
               detail.coordinateText!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFFBFBFBF),
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: const Color(0xFFBFBFBF)),
             ),
           ],
           const SizedBox(height: 12),
@@ -764,11 +718,7 @@ class _JobDetailErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -801,18 +751,8 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: const Color(0xFF171A1D),
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      height: 22 / 16,
-    );
-    final primaryStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: Colors.white,
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      height: 22 / 16,
-    );
+    final secondaryStyle = TestStyle.regular(fontSize: 16, color: const Color(0xFF171A1D));
+    final primaryStyle = TestStyle.regular(fontSize: 16, color: Colors.white);
 
     return SafeArea(
       top: false,

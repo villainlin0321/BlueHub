@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../ui/app_colors.dart';
 import '../ui/app_spacing.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 /// 主按钮（支持禁用态）。
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -32,13 +33,9 @@ class PrimaryButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+          style: TestStyle.semibold(fontSize: 16, color: Colors.white),
         ),
       ),
     );
   }
 }
-

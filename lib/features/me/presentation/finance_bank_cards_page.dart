@@ -1,11 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import 'finance_page_shared.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class FinanceBankCardsPage extends ConsumerStatefulWidget {
   const FinanceBankCardsPage({super.key});
 
@@ -26,9 +29,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   Future<void> _refresh() async {
@@ -88,30 +89,13 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
   /// 删除前先做二次确认，避免误删默认银行卡。
   Future<bool> _confirmDeleteBankCard(ProviderBankCardVO card) async {
     final String label = '${card.bankName} ${card.cardNoMask}'.trim();
-    final bool? confirmed = await showDialog<bool>(
+    return showAppConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('财务.删除银行卡'.tr()),
-          content: Text(
-            '财务.确认删除银行卡'.tr(
-              namedArgs: <String, String>{'label': label},
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('通用.取消'.tr()),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('财务.删除'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '财务.删除银行卡'.tr(),
+      message: '财务.确认删除银行卡'.tr(namedArgs: <String, String>{'label': label}),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '财务.删除'.tr(),
     );
-    return confirmed ?? false;
   }
 
   Future<void> _deleteBankCard(ProviderBankCardVO card) async {
@@ -149,11 +133,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
         centerTitle: true,
         title: Text(
           '财务.银行卡管理'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -179,12 +159,7 @@ class _FinanceBankCardsPageState extends ConsumerState<FinanceBankCardsPage> {
               ),
               child: Text(
                 '财务.新增银行卡'.tr(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.pingFangMedium(fontSize: 16, color: Colors.white),
               ),
             ),
           ),

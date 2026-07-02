@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/network/api_exception.dart';
@@ -35,14 +36,14 @@ class QualificationUploadHelper {
         .uploadFile(
           path: path,
           scene: docType.uploadScene,
-          errorMessage: '文件上传失败，请稍后重试',
+          errorMessage: '上传.文件上传失败'.tr(),
         );
 
     final UploadedQualificationDoc uploadedDoc = UploadedQualificationDoc(
       docType: docType,
       docName: docName?.trim().isNotEmpty == true
           ? docName!.trim()
-          : docType.defaultDocName,
+          : docType.localizedDefaultDocName,
       fileId: presign.fileId,
       fileUrl: presign.fileUrl,
       localPath: path,

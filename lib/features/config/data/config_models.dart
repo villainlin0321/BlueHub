@@ -15,7 +15,14 @@ class TagDictVO {
   }
 
   JsonMap toJson() {
-    return <String, dynamic>{'tags': tags};
+    return <String, dynamic>{
+      'tags': tags.map(
+        (String key, List<TagItemVO> value) => MapEntry<String, dynamic>(
+          key,
+          value.map((TagItemVO item) => item.toJson()).toList(growable: false),
+        ),
+      ),
+    };
   }
 }
 

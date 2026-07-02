@@ -52,9 +52,7 @@ class LoginVO {
       expiresIn: readInt(json, 'expiresIn'),
       isNewUser: readBool(json, 'isNewUser'),
       needSelectRole: readBool(json, 'needSelectRole'),
-      user: UserSimpleVO.fromJson(
-        readJsonMap(json, 'user'),
-      ),
+      user: UserSimpleVO.fromJson(readJsonMap(json, 'user')),
     );
   }
 

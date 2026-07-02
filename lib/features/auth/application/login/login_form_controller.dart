@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,12 +14,19 @@ final loginFormControllerProvider =
     );
 
 class LoginFormController extends Notifier<LoginFormState> {
-  static final RegExp _emailPattern = RegExp(
-    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-  );
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static const int _sendCodeCountdownSeconds = 60;
+
+  Timer? _sendCodeCountdownTimer;
 
   @override
-  LoginFormState build() => const LoginFormState();
+  LoginFormState build() {
+    ref.onDispose(() {
+      _sendCodeCountdownTimer?.cancel();
+      _sendCodeCountdownTimer = null;
+    });
+    return const LoginFormState();
+  }
 
   void setLoginMode(bool isPhoneLogin) {
     state = state.copyWith(isPhoneLogin: isPhoneLogin);
@@ -48,6 +57,10 @@ class LoginFormController extends Notifier<LoginFormState> {
   }
 
   Future<void> sendCode() async {
+    if (state.isSendingCode || state.resendCountdownSeconds > 0) {
+      return;
+    }
+
     final validationError = _validateBeforeSendingCode();
     if (validationError != null) {
       _emitFeedback(validationError, isError: true);
@@ -66,14 +79,13 @@ class LoginFormController extends Notifier<LoginFormState> {
             scene: 'login',
           ),
         );
+        _startSendCodeCountdown();
         _emitFeedback(tr('认证.已发送短信验证码'));
       } else {
         await authService.sendEmailCode(
-          request: SendEmailBO(
-            email: state.email.trim(),
-            scene: 'login',
-          ),
+          request: SendEmailBO(email: state.email.trim(), scene: 'login'),
         );
+        _startSendCodeCountdown();
         _emitFeedback(tr('认证.已发送邮箱验证码'));
       }
     } catch (_) {
@@ -149,6 +161,24 @@ class LoginFormController extends Notifier<LoginFormState> {
     }
   }
 
+  void _startSendCodeCountdown() {
+    _sendCodeCountdownTimer?.cancel();
+    state = state.copyWith(resendCountdownSeconds: _sendCodeCountdownSeconds);
+    _sendCodeCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
+      timer,
+    ) {
+      final nextSeconds = state.resendCountdownSeconds - 1;
+      if (nextSeconds <= 0) {
+        timer.cancel();
+        _sendCodeCountdownTimer = null;
+        state = state.copyWith(resendCountdownSeconds: 0);
+        return;
+      }
+
+      state = state.copyWith(resendCountdownSeconds: nextSeconds);
+    });
+  }
+
   String? _validateBeforeSendingCode() {
     if (!state.agreed) {
       return tr('认证.请先同意协议');
@@ -176,9 +206,7 @@ class LoginFormController extends Notifier<LoginFormState> {
       return sendCodeError;
     }
     if (state.code.trim().isEmpty) {
-      return state.isPhoneLogin
-          ? tr('认证.请输入短信验证码')
-          : tr('认证.请输入邮箱验证码校验');
+      return state.isPhoneLogin ? tr('认证.请输入短信验证码') : tr('认证.请输入邮箱验证码校验');
     }
     return null;
   }

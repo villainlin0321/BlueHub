@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -13,11 +14,10 @@ import '../application/qualification_upload_helper.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
-  const QualificationCertificationStepTwoPage({
-    super.key,
-    required this.args,
-  });
+  const QualificationCertificationStepTwoPage({super.key, required this.args});
 
   final QualificationCertificationPageArgs args;
 
@@ -98,7 +98,7 @@ class _QualificationCertificationStepTwoPageState
             role: _role,
             file: pickedFile,
             docType: docType,
-            docName: docType.defaultDocName,
+            docName: docType.localizedDefaultDocName,
           );
       if (!mounted) {
         return;
@@ -116,9 +116,7 @@ class _QualificationCertificationStepTwoPageState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('认证流程.上传失败'.tr())));
+      AppToast.show('认证流程.上传失败'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -152,11 +150,9 @@ class _QualificationCertificationStepTwoPageState
         ),
         title: Text(
           '认证流程.资质认证'.tr(),
-          style: const TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
       ),
@@ -170,10 +166,9 @@ class _QualificationCertificationStepTwoPageState
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 '认证流程.实名认证提示'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
+                style: TestStyle.pingFangRegular(
                   fontSize: 14,
-                  height: 20 / 14,
+                  color: Color(0xFF8C8C8C),
                 ),
               ),
             ),
@@ -228,9 +223,7 @@ class _QualificationCertificationStepTwoPageState
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            border: Border(
-              top: BorderSide(color: Color(0xFFF0F0F0)),
-            ),
+            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(
@@ -248,11 +241,9 @@ class _QualificationCertificationStepTwoPageState
                     ),
                     child: Text(
                       '认证流程.上一步'.tr(),
-                      style: const TextStyle(
-                        color: Color(0xFF171A1D),
+                      style: TestStyle.pingFangRegular(
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
+                        color: Color(0xFF171A1D),
                       ),
                     ),
                   ),
@@ -276,11 +267,9 @@ class _QualificationCertificationStepTwoPageState
                     ),
                     child: Text(
                       '认证流程.下一步'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TestStyle.pingFangRegular(
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        height: 22 / 16,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -311,6 +300,41 @@ class _LicenseUploadSection extends StatelessWidget {
   final bool isRequired;
   final String? optionalLabel;
 
+  void _showSampleDialog(BuildContext context) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierLabel: 'business-license-sample',
+      barrierDismissible: true,
+      barrierColor: const Color(0x99000000),
+      pageBuilder:
+          (
+            BuildContext dialogContext,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+          ) {
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(dialogContext).pop(),
+              child: Material(
+                color: Colors.transparent,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/image_business_license.png',
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -320,21 +344,15 @@ class _LicenseUploadSection extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: const TextStyle(
-                color: Color(0xFF262626),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 20 / 14,
-              ),
+              style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
             ),
             if (isRequired) ...<Widget>[
               const SizedBox(width: 4),
-              const Text(
+              Text(
                 '*',
-                style: TextStyle(
-                  color: Color(0xFFFF4D4F),
+                style: TestStyle.regular(
                   fontSize: 14,
-                  height: 20 / 14,
+                  color: Color(0xFFFF4D4F),
                 ),
               ),
             ],
@@ -342,20 +360,15 @@ class _LicenseUploadSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 optionalLabel!,
-                style: const TextStyle(
-                  color: Color(0xFF8C8C8C),
+                style: TestStyle.regular(
                   fontSize: 13,
-                  height: 18 / 13,
+                  color: Color(0xFF8C8C8C),
                 ),
               ),
             ],
             const Spacer(),
             TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('认证流程.查看样例占位'.tr())),
-                );
-              },
+              onPressed: () => _showSampleDialog(context),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
@@ -363,11 +376,9 @@ class _LicenseUploadSection extends StatelessWidget {
               ),
               child: Text(
                 '认证流程.查看样例'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF096DD9),
+                style: TestStyle.pingFangRegular(
                   fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
+                  color: Color(0xFF096DD9),
                 ),
               ),
             ),

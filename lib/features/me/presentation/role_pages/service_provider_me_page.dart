@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../../shared/widgets/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,7 @@ import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -61,7 +63,7 @@ class ServiceProviderMePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _HeaderSection(onSettingsTap: () => _handleSettingsTap(context)),
-          const SizedBox(height: 40),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _MenuCard(
@@ -71,17 +73,6 @@ class ServiceProviderMePage extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// 展示暂未接入功能的占位提示。
-  void _showPlaceholderToast(BuildContext context, String labelKey) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '我的.占位提示'.tr(namedArgs: <String, String>{'label': labelKey.tr()}),
-        ),
       ),
     );
   }
@@ -104,7 +95,6 @@ class ServiceProviderMePage extends ConsumerWidget {
       context.push(RoutePaths.financeSettlement);
       return;
     }
-    _showPlaceholderToast(context, labelKey);
   }
 
   void _handleSettingsTap(BuildContext context) {
@@ -140,9 +130,7 @@ class ServiceProviderMePage extends ConsumerWidget {
       final String message = error is ApiException
           ? error.message
           : '我的.加载服务商资料失败'.tr();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
     }
   }
 }
@@ -290,11 +278,7 @@ class _ProviderProfileRow extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     providerSummary,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      height: 14 / 11,
-                    ),
+                    style: TestStyle.regular(fontSize: 11, color: Colors.white),
                   ),
                 ],
               ],
@@ -335,11 +319,7 @@ class _ProviderNameRow extends ConsumerWidget {
             displayName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TestStyle.semibold(fontSize: 17, color: Colors.white),
           ),
         ),
         if (isVerified) ...<Widget>[
@@ -373,12 +353,7 @@ class _ProviderNameRow extends ConsumerWidget {
                   top: 2,
                   child: Text(
                     '我的.认证'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF784301),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      height: 10 / 9,
-                    ),
+                    style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
                   ),
                 ),
               ],
@@ -434,22 +409,13 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF262626),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 20 / 18,
-          ),
+          style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 5),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 12,
-            height: 16 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
         ),
       ],
     );
@@ -553,11 +519,7 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 16,
-                  height: 22 / 16,
-                ),
+                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
               ),
             ),
             const Icon(

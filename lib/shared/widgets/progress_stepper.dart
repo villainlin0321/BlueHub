@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ProgressStepper extends StatelessWidget {
   const ProgressStepper({
     super.key,
@@ -125,18 +126,11 @@ class ProgressStepper extends StatelessWidget {
                   child: Text(
                     step.label,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: switch (step.state) {
+                    style: TestStyle.medium(fontSize: 11, color: switch (step.state) {
                         ProgressStepState.pending => _pendingLabelColor,
                         ProgressStepState.current => _activeColor,
                         ProgressStepState.completed => _completedLabelColor,
-                      },
-                      fontWeight: step.state == ProgressStepState.current
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                      fontSize: 11,
-                      height: 18 / 11,
-                    ),
+                      }),
                   ),
                 ),
               ],
@@ -227,11 +221,7 @@ class _NumberIndicator extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '$number',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-        ),
+        style: TestStyle.medium(fontSize: 14, color: Colors.white),
       ),
     );
   }

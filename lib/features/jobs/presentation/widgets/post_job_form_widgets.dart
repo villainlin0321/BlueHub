@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../post_job_page_styles.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
+
 class PostJobSectionCard extends StatelessWidget {
   const PostJobSectionCard({
     super.key,
@@ -56,11 +58,13 @@ class PostJobFieldGroup extends StatelessWidget {
     super.key,
     required this.label,
     this.required = true,
+    this.trailing,
     required this.child,
   });
 
   final String label;
   final bool required;
+  final Widget? trailing;
   final Widget child;
 
   @override
@@ -69,20 +73,29 @@ class PostJobFieldGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text(label, style: PostJobPageStyles.fieldLabel),
-            if (required) ...<Widget>[
-              const SizedBox(width: 4),
-              const Text(
-                '*',
-                style: TextStyle(
-                  color: PostJobPageStyles.required,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 14,
-                ),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(label, style: PostJobPageStyles.fieldLabel),
+                  if (required) ...<Widget>[
+                    const SizedBox(width: 4),
+                    Text(
+                      '*',
+                      style: TestStyle.regular(
+                        fontSize: 14,
+                        color: PostJobPageStyles.required,
+                      ),
+                    ),
+                  ],
+                ],
               ),
+            ),
+            if (trailing != null) ...<Widget>[
+              const SizedBox(width: 12),
+              trailing!,
             ],
           ],
         ),
@@ -248,12 +261,7 @@ class PostJobSelectableChip extends StatelessWidget {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 14,
-                    ),
+                    style: TestStyle.regular(fontSize: 14, color: textColor),
                   ),
                 ),
               ),

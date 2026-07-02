@@ -1,10 +1,16 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../config/data/config_models.dart';
+import '../../../../utils/upload_picker_utils.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
+
+import 'package:bluehub_app/shared/ui/test_style.dart';
 
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({
@@ -44,11 +50,15 @@ class EditVisaPackageMaterialViewDraft {
     required this.titleController,
     required this.descriptionController,
     required this.isRequired,
+    this.exampleFiles = const <PickedUploadFile>[],
+    this.existingExampleFileIds = const <int>[],
   });
 
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   bool isRequired;
+  List<PickedUploadFile> exampleFiles;
+  List<int> existingExampleFileIds;
 
   void dispose() {
     titleController.dispose();
@@ -60,7 +70,7 @@ class EditVisaPackageMaterialViewDraft {
 Future<String?> showEditVisaPackageCustomServiceDialog(
   BuildContext context,
 ) async {
-  return showDialog<String>(
+  return showAppDialog<String>(
     context: context,
     useRootNavigator: false,
     builder: (BuildContext dialogContext) {
@@ -95,194 +105,107 @@ class _EditVisaPackageCustomServiceDialogState
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              '签证编辑.添加自定义服务'.tr(),
-              style: TextStyle(
-                color: EditVisaPackageStyles.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 24 / 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              maxLines: 1,
-              maxLength: 12,
-              inputFormatters: <TextInputFormatter>[
-                LengthLimitingTextInputFormatter(12),
-              ],
-              cursorColor: EditVisaPackageStyles.primary,
-              decoration: InputDecoration(
-                hintText: '签证编辑.请输入自定义服务'.tr(),
-                hintStyle: EditVisaPackageStyles.fieldHint,
-                counterText: '',
-                filled: true,
-                fillColor: EditVisaPackageStyles.fieldBackground,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: EditVisaPackageStyles.inputBorder(Colors.transparent),
-                enabledBorder: EditVisaPackageStyles.inputBorder(
-                  Colors.transparent,
-                ),
-                focusedBorder: EditVisaPackageStyles.inputBorder(
-                  EditVisaPackageStyles.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(_controller.text.trim());
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: EditVisaPackageStyles.primary,
-                  foregroundColor: EditVisaPackageStyles.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  '通用.确定'.tr(),
-                  style: EditVisaPackageStyles.primaryButton,
-                ),
-              ),
-            ),
-          ],
+    return AppDialog(
+      title: '签证编辑.添加自定义服务'.tr(),
+      content: TextField(
+        controller: _controller,
+        maxLines: 1,
+        maxLength: 12,
+        inputFormatters: <TextInputFormatter>[
+          LengthLimitingTextInputFormatter(12),
+        ],
+        cursorColor: EditVisaPackageStyles.primary,
+        decoration: InputDecoration(
+          hintText: '签证编辑.请输入自定义服务'.tr(),
+          hintStyle: EditVisaPackageStyles.fieldHint,
+          counterText: '',
+          filled: true,
+          fillColor: EditVisaPackageStyles.fieldBackground,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
+          border: EditVisaPackageStyles.inputBorder(Colors.transparent),
+          enabledBorder: EditVisaPackageStyles.inputBorder(Colors.transparent),
+          focusedBorder: EditVisaPackageStyles.inputBorder(
+            EditVisaPackageStyles.primary,
+          ),
         ),
       ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+        ),
+      ],
     );
   }
 }
 
-class EditVisaPackageHeader extends StatelessWidget {
+class EditVisaPackageHeader extends StatelessWidget
+    implements PreferredSizeWidget {
   const EditVisaPackageHeader({
     super.key,
-    required this.topPadding,
     required this.onBackTap,
     required this.onSaveDraftTap,
     required this.isSavingDraft,
     required this.actionsEnabled,
   });
 
-  final double topPadding;
   final VoidCallback onBackTap;
   final VoidCallback onSaveDraftTap;
   final bool isSavingDraft;
   final bool actionsEnabled;
 
   @override
-  Widget build(BuildContext context) {
-    final double statusBarHeight = topPadding > 0 ? topPadding : 44;
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-    return Container(
-      color: EditVisaPackageStyles.surface,
-      child: Column(
-        children: <Widget>[
-          SizedBox(
-            height: statusBarHeight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 20, 0),
-              child: Row(
-                children: <Widget>[
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        '10:41',
-                        style: TextStyle(
-                          color: EditVisaPackageStyles.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 19 / 16,
-                          fontFamilyFallback: <String>[
-                            'SF Pro Text',
-                            'PingFang SC',
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/images/visa_package_status_icons.svg',
-                    width: 71,
-                    height: 12,
-                  ),
-                ],
-              ),
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: EditVisaPackageStyles.surface,
+      surfaceTintColor: EditVisaPackageStyles.surface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: true,
+      automaticallyImplyLeading: false,
+      leadingWidth: 44,
+      leading: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onBackTap,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/images/visa_package_back.svg',
+              width: 12,
+              height: 24,
             ),
           ),
-          SizedBox(
-            height: 44,
-            child: Stack(
-              children: <Widget>[
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onBackTap,
-                      child: SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/images/visa_package_back.svg',
-                            width: 12,
-                            height: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    '签证编辑.编辑签证套餐'.tr(),
-                    style: EditVisaPackageStyles.headerTitle,
-                  ),
-                ),
-                Positioned(
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: TextButton(
-                    onPressed: actionsEnabled ? onSaveDraftTap : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: EditVisaPackageStyles.textPrimary,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(44, 44),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      isSavingDraft
-                          ? '签证编辑.保存中'.tr()
-                          : '签证编辑.存草稿'.tr(),
-                      style: EditVisaPackageStyles.headerAction,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
+      title: Text('签证编辑.编辑签证套餐'.tr(), style: EditVisaPackageStyles.headerTitle),
+      actions: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: TextButton(
+            onPressed: actionsEnabled ? onSaveDraftTap : null,
+            style: TextButton.styleFrom(
+              foregroundColor: EditVisaPackageStyles.textPrimary,
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              isSavingDraft ? '签证编辑.保存中'.tr() : '签证编辑.存草稿'.tr(),
+              style: EditVisaPackageStyles.headerAction,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -312,18 +235,299 @@ class EditVisaPackageSectionCard extends StatelessWidget {
 }
 
 class EditVisaPackageSectionTitle extends StatelessWidget {
-  const EditVisaPackageSectionTitle({super.key, required this.title});
+  const EditVisaPackageSectionTitle({
+    super.key,
+    required this.title,
+    this.actionLabel,
+    this.onActionTap,
+  });
 
   final String title;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
+    final bool showAction =
+        actionLabel != null &&
+        actionLabel!.trim().isNotEmpty &&
+        onActionTap != null;
+
     return Row(
       children: <Widget>[
         Container(width: 3, height: 12, color: EditVisaPackageStyles.primary),
         const SizedBox(width: 8),
         Text(title, style: EditVisaPackageStyles.sectionTitle),
+        const Spacer(),
+        if (showAction)
+          TextButton(
+            onPressed: onActionTap,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF096DD9),
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(actionLabel!),
+          ),
       ],
+    );
+  }
+}
+
+class EditVisaPackageCoverPreview extends StatelessWidget {
+  const EditVisaPackageCoverPreview({
+    super.key,
+    required this.file,
+    required this.onUploadTap,
+    this.onDeleteTap,
+  });
+
+  final PickedUploadFile? file;
+  final VoidCallback onUploadTap;
+  final VoidCallback? onDeleteTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (file == null) {
+      return InkWell(
+        onTap: onUploadTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          height: 148,
+          decoration: BoxDecoration(
+            color: EditVisaPackageStyles.fieldBackground,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SvgPicture.asset(
+                'assets/images/order_upload_add_inline.svg',
+                width: 20,
+                height: 20,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '签证编辑.上传封面'.tr(),
+                style: TestStyle.pingFangMedium(fontSize: 14, color: const Color(0xFF171A1D)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '签证编辑.封面图提示'.tr(),
+                style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: EditVisaPackageStyles.fieldBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            child: SizedBox(
+              height: 148,
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  _CoverPreviewImage(file: file!),
+                  if (file!.state == UploadItemState.uploading)
+                    _CoverPreviewOverlay(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              value: file!.progress > 0 ? file!.progress : null,
+                              strokeWidth: 2,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '签证编辑.封面上传中'.tr(),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (file!.state == UploadItemState.failure)
+                    _CoverPreviewOverlay(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            '签证编辑.封面上传失败'.tr(),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextButton(
+                            onPressed: onUploadTap,
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              minimumSize: Size.zero,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text('签证编辑.重新上传封面'.tr()),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (onDeleteTap != null)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: InkWell(
+                        onTap: onDeleteTap,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/images/order_upload_remove.svg',
+                            width: 8,
+                            height: 8,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    file!.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TestStyle.medium(fontSize: 14, color: const Color(0xFF171A1D)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: onUploadTap,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF096DD9),
+                    minimumSize: Size.zero,
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text('签证编辑.重新上传封面'.tr()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoverPreviewImage extends StatelessWidget {
+  const _CoverPreviewImage({required this.file});
+
+  final PickedUploadFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    final String remoteUrl = (file.uploadedFileUrl ?? '').trim();
+    final bool useRemoteImage = remoteUrl.isNotEmpty;
+    final String path = file.path.trim();
+
+    if (useRemoteImage) {
+      return Image.network(
+        remoteUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _CoverPreviewImageFallback(),
+      );
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _CoverPreviewImageFallback(),
+      );
+    }
+    final File localFile = File(path);
+    if (localFile.existsSync()) {
+      return Image.file(
+        localFile,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _CoverPreviewImageFallback(),
+      );
+    }
+    return const _CoverPreviewImageFallback();
+  }
+}
+
+class _CoverPreviewOverlay extends StatelessWidget {
+  const _CoverPreviewOverlay({required this.color, required this.child});
+
+  final Color color;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: color,
+      child: Center(child: child),
+    );
+  }
+}
+
+class _CoverPreviewImageFallback extends StatelessWidget {
+  const _CoverPreviewImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFFF0F2F5),
+      child: Center(
+        child: SvgPicture.asset(
+          'assets/images/order_upload_sheet_gallery.svg',
+          width: 28,
+          height: 28,
+        ),
+      ),
     );
   }
 }
@@ -386,34 +590,45 @@ class EditVisaPackageLabeledField extends StatelessWidget {
     required this.label,
     required this.child,
     this.required = false,
+    this.trailing,
   });
 
   final String label;
   final bool required;
   final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        RichText(
-          text: TextSpan(
-            style: EditVisaPackageStyles.fieldLabel,
-            children: <InlineSpan>[
-              TextSpan(text: label),
-              if (required)
-                const TextSpan(
-                  text: '  *',
-                  style: TextStyle(
-                    color: EditVisaPackageStyles.required,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 20 / 10,
-                  ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: EditVisaPackageStyles.fieldLabel,
+                  children: <InlineSpan>[
+                    TextSpan(text: label),
+                    if (required)
+                      TextSpan(
+                        text: '  *',
+                        style: TestStyle.semibold(
+                          fontSize: 10,
+                          color: EditVisaPackageStyles.required,
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+            ),
+            if (trailing != null) ...<Widget>[
+              const SizedBox(width: 12),
+              trailing!,
             ],
-          ),
+          ],
         ),
         const SizedBox(height: 8),
         child,
@@ -722,12 +937,7 @@ class EditVisaPackageServiceChip extends StatelessWidget {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 18 / 14,
-                    ),
+                    style: TestStyle.regular(fontSize: 14, color: textColor),
                   ),
                 ),
               ),
@@ -803,10 +1013,7 @@ class EditVisaPackageAddCustomServiceChip extends StatelessWidget {
             borderRadius: EditVisaPackageStyles.chipRadius,
             border: Border.all(color: EditVisaPackageStyles.border),
           ),
-          child: Text(
-            '签证编辑.自定义'.tr(),
-            style: EditVisaPackageStyles.plainChip,
-          ),
+          child: Text('签证编辑.自定义'.tr(), style: EditVisaPackageStyles.plainChip),
         ),
       ),
     );
@@ -1130,9 +1337,7 @@ class _EditVisaPackageChipCheckIcon extends StatelessWidget {
       width: 15,
       height: 12,
       child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(4),
-        ),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(4)),
         child: CustomPaint(painter: _EditVisaPackageChipCheckIconPainter()),
       ),
     );

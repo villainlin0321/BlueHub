@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'permission_utils.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 enum UploadSourceType { camera, gallery, file }
 
 enum UploadItemState { uploading, success, failure }
@@ -24,6 +26,7 @@ class PickedUploadFile {
     this.progress = 0.48,
     this.uploadedFileId,
     this.uploadedFileUrl,
+    this.fileSizeBytes,
   });
 
   final String id;
@@ -37,6 +40,7 @@ class PickedUploadFile {
   final double progress;
   final int? uploadedFileId;
   final String? uploadedFileUrl;
+  final int? fileSizeBytes;
 
   PickedUploadFile copyWith({
     String? id,
@@ -50,6 +54,7 @@ class PickedUploadFile {
     double? progress,
     Object? uploadedFileId = _sentinel,
     Object? uploadedFileUrl = _sentinel,
+    Object? fileSizeBytes = _sentinel,
   }) {
     return PickedUploadFile(
       id: id ?? this.id,
@@ -69,6 +74,9 @@ class PickedUploadFile {
       uploadedFileUrl: identical(uploadedFileUrl, _sentinel)
           ? this.uploadedFileUrl
           : uploadedFileUrl as String?,
+      fileSizeBytes: identical(fileSizeBytes, _sentinel)
+          ? this.fileSizeBytes
+          : fileSizeBytes as int?,
     );
   }
 
@@ -92,23 +100,24 @@ class UploadPickerUtils {
         cameraErrorMessage ?? tr('上传.打开相机失败');
     final String resolvedGalleryErrorMessage =
         galleryErrorMessage ?? tr('上传.打开相册失败');
-    final _ImageSourceOption? source = await showModalBottomSheet<_ImageSourceOption>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (BuildContext sheetContext) {
-        return _UploadImageSourceBottomSheet(
-          title: resolvedTitle,
-          onClose: () => Navigator.of(sheetContext).pop(),
-          onCameraTap: () {
-            Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
-          },
-          onGalleryTap: () {
-            Navigator.of(sheetContext).pop(_ImageSourceOption.gallery);
+    final _ImageSourceOption? source =
+        await showModalBottomSheet<_ImageSourceOption>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: 0.35),
+          builder: (BuildContext sheetContext) {
+            return _UploadImageSourceBottomSheet(
+              title: resolvedTitle,
+              onClose: () => Navigator.of(sheetContext).pop(),
+              onCameraTap: () {
+                Navigator.of(sheetContext).pop(_ImageSourceOption.camera);
+              },
+              onGalleryTap: () {
+                Navigator.of(sheetContext).pop(_ImageSourceOption.gallery);
+              },
+            );
           },
         );
-      },
-    );
 
     if (source == null) {
       return const <PickedUploadFile>[];
@@ -128,9 +137,7 @@ class UploadPickerUtils {
       final String message = source == _ImageSourceOption.camera
           ? resolvedCameraErrorMessage
           : resolvedGalleryErrorMessage;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppToast.show(message);
       return const <PickedUploadFile>[];
     }
   }
@@ -216,7 +223,9 @@ class UploadPickerUtils {
       sourceType: sourceType,
       state: UploadItemState.success,
       isImage: isImagePath(path),
-      sizeLabel: resolvedSizeBytes > 0 ? formatFileSize(resolvedSizeBytes) : null,
+      sizeLabel: resolvedSizeBytes > 0
+          ? formatFileSize(resolvedSizeBytes)
+          : null,
     );
   }
 
@@ -297,12 +306,7 @@ class _UploadImageSourceBottomSheet extends StatelessWidget {
                     child: Center(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          color: Color(0xFF171A1D),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w400,
-                          height: 25 / 17,
-                        ),
+                        style: TestStyle.regular(fontSize: 17, color: Color(0xFF171A1D)),
                       ),
                     ),
                   ),
@@ -317,10 +321,7 @@ class _UploadImageSourceBottomSheet extends StatelessWidget {
               ),
             ),
             _BottomSheetActionItem(label: tr('上传.拍照'), onTap: onCameraTap),
-            _BottomSheetActionItem(
-              label: tr('上传.从相册选择'),
-              onTap: onGalleryTap,
-            ),
+            _BottomSheetActionItem(label: tr('上传.从相册选择'), onTap: onGalleryTap),
             const SizedBox(height: 8),
           ],
         ),
@@ -348,12 +349,7 @@ class _BottomSheetActionItem extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF171A1D),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            height: 22 / 16,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF171A1D)),
         ),
       ),
     );

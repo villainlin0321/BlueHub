@@ -1,10 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../me/presentation/service_provider_my_info_page.dart';
 import '../../visa/data/provider_models.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class ServiceDetailMerchantTab extends StatelessWidget {
   const ServiceDetailMerchantTab({
     super.key,
@@ -59,20 +63,10 @@ class _MerchantHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 17,
-      fontWeight: FontWeight.w600,
-      height: 24 / 17,
-    );
-    final metaStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 11,
-      fontWeight: FontWeight.w400,
-      height: 14 / 11,
-    );
+    final titleStyle = TestStyle.semibold(fontSize: 17, color: const Color(0xFF262626));
+    final metaStyle = TestStyle.regular(fontSize: 11, color: const Color(0xFF8C8C8C));
 
-    return SizedBox(
+    final Widget content = SizedBox(
       height: 52,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,6 +146,23 @@ class _MerchantHeaderCard extends StatelessWidget {
         ],
       ),
     );
+    if (provider.providerId <= 0) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push(
+          RoutePaths.serviceProviderMyInfo,
+          extra: ServiceProviderMyInfoPageArgs.readonly(
+            providerId: provider.providerId,
+          ),
+        ),
+        child: content,
+      ),
+    );
   }
 }
 
@@ -162,26 +173,10 @@ class _MerchantInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
-    );
-    final contentStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF595959),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
-    final infoLabelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF262626),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
-    final infoValueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF8C8C8C),
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-    );
+    final titleStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
+    final contentStyle = TestStyle.regular(fontSize: 13, color: const Color(0xFF595959));
+    final infoLabelStyle = TestStyle.regular(fontSize: 13, color: const Color(0xFF262626));
+    final infoValueStyle = TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF8C8C8C));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,9 +184,7 @@ class _MerchantInfoPanel extends StatelessWidget {
         Text('服务详情.简介'.tr(), style: titleStyle),
         const SizedBox(height: 8),
         Text(
-          provider.brief.trim().isEmpty
-              ? '服务详情.暂无商家简介'.tr()
-              : provider.brief,
+          provider.brief.trim().isEmpty ? '服务详情.暂无商家简介'.tr() : provider.brief,
           style: contentStyle,
         ),
         const SizedBox(height: 24),
@@ -208,9 +201,7 @@ class _MerchantInfoPanel extends StatelessWidget {
         const SizedBox(height: 12),
         _MerchantInfoRow(
           label: '服务详情.认证状态'.tr(),
-          value: provider.isVerified
-              ? '服务详情.已认证'.tr()
-              : '服务详情.未认证'.tr(),
+          value: provider.isVerified ? '服务详情.已认证'.tr() : '服务详情.未认证'.tr(),
           labelStyle: infoLabelStyle,
           valueStyle: infoValueStyle,
         ),

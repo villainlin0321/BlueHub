@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../visa/data/review_models.dart';
 import '../../visa/data/review_providers.dart';
@@ -12,6 +13,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class OrderReviewPageArgs {
   const OrderReviewPageArgs({
     required this.orderId,
@@ -44,7 +46,7 @@ class OrderReviewPage extends ConsumerStatefulWidget {
 class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   final TextEditingController _commentController = TextEditingController();
 
-  double _rating = 1.5;
+  double _rating = 5;
   bool _isSubmitting = false;
   bool _isUploadingImages = false;
   List<String> _uploadedImageUrls = const <String>[];
@@ -73,9 +75,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   }
 
   void _showPlaceholder(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   Future<void> _handlePublish() async {
@@ -147,11 +147,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
         ),
         title: Text(
           '评价.标题'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xE6000000),
-            fontWeight: FontWeight.w500,
-            fontSize: 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE6000000)),
         ),
       ),
       body: TapBlankToDismissKeyboard(
@@ -171,12 +167,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                 children: <Widget>[
                   Text(
                     '评价.综合评价'.tr(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      height: 20 / 14,
-                    ),
+                    style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.black),
                   ),
                   const SizedBox(height: 12),
                   _RatingRow(
@@ -205,32 +196,19 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
                             textAlignVertical: TextAlignVertical.top,
                             decoration: InputDecoration(
                               hintText: '评价.写评论'.tr(),
-                              hintStyle: TextStyle(
-                                color: Color(0xFF8C8C8C),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                              ),
+                              hintStyle: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
                               border: InputBorder.none,
                               counterText: '',
                               isCollapsed: true,
                             ),
-                            style: const TextStyle(
-                              color: Color(0xFF262626),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: TestStyle.regular(fontSize: 13, color: Color(0xFF262626)),
                           ),
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
                           child: Text(
                             '${_commentController.text.characters.length}/500',
-                            style: const TextStyle(
-                              color: Color(0xFFBFBFBF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 16 / 12,
-                            ),
+                            style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
                           ),
                         ),
                       ],
@@ -273,10 +251,10 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               opacity: _canPublish && !_isSubmitting ? 1 : 0.3,
               child: IgnorePointer(
                 ignoring: !_canPublish || _isSubmitting,
-                  child: PrimaryButton(
-                    label: '评价.发布'.tr(),
-                    onPressed: _handlePublish,
-                  ),
+                child: PrimaryButton(
+                  label: '评价.发布'.tr(),
+                  onPressed: _handlePublish,
+                ),
               ),
             ),
           ),
@@ -327,23 +305,13 @@ class _ReviewTitleRow extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: const Color(0xFF262626),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              height: 22 / 16,
-            ),
+            style: TestStyle.semibold(fontSize: 16, color: const Color(0xFF262626)),
           ),
         ),
         const SizedBox(width: 8),
         Text(
           price,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF262626),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 22 / 16,
-          ),
+          style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
         ),
       ],
     );
@@ -362,12 +330,7 @@ class _ReviewInfoRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF8C8C8C),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 18 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
         ),
         const Spacer(),
         Flexible(
@@ -376,12 +339,7 @@ class _ReviewInfoRow extends StatelessWidget {
             textAlign: TextAlign.right,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 18 / 12,
-            ),
+            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
           ),
         ),
       ],
@@ -408,11 +366,7 @@ class _RatingRow extends StatelessWidget {
         children: <Widget>[
           Text(
             '评价.服务评价'.tr(),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
+            style: TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF8C8C8C)),
           ),
           const SizedBox(width: 16),
           ...List<Widget>.generate(5, (index) {
@@ -442,11 +396,7 @@ class _RatingRow extends StatelessWidget {
           const Spacer(),
           Text(
             ratingLabel,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8C8C8C),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
+            style: TestStyle.regular(fontSize: 13, color: const Color(0xFF8C8C8C)),
           ),
         ],
       ),

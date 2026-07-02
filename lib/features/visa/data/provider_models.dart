@@ -35,35 +35,39 @@ class DocItemBO {
 class MaterialVO {
   const MaterialVO({
     required this.materialName,
-    required this.fileUrl,
-    required this.fileType,
-    required this.fileSize,
-    required this.uploadedAt,
+    required this.description,
+    required this.isRequired,
+    required this.exampleFileUrls,
   });
 
   final String materialName;
-  final String fileUrl;
-  final String fileType;
-  final int fileSize;
-  final String uploadedAt;
+  final String description;
+  final bool isRequired;
+  final List<String> exampleFileUrls;
+
+  String get fileUrl =>
+      exampleFileUrls.isEmpty ? '' : exampleFileUrls.first.trim();
 
   factory MaterialVO.fromJson(JsonMap json) {
     return MaterialVO(
-      materialName: readString(json, 'materialName'),
-      fileUrl: readString(json, 'fileUrl'),
-      fileType: readString(json, 'fileType'),
-      fileSize: readInt(json, 'fileSize'),
-      uploadedAt: readString(json, 'uploadedAt'),
+      materialName: readString(
+        json,
+        'materialName',
+        fallback: readString(json, 'name'),
+      ),
+      description: readString(json, 'description'),
+      isRequired: readBool(json, 'isRequired'),
+      exampleFileUrls: readStringList(json, 'exampleFileUrls'),
     );
   }
 
   JsonMap toJson() {
     return <String, dynamic>{
       'materialName': materialName,
-      'fileUrl': fileUrl,
-      'fileType': fileType,
-      'fileSize': fileSize,
-      'uploadedAt': uploadedAt,
+      'name': materialName,
+      'description': description,
+      'isRequired': isRequired,
+      'exampleFileUrls': exampleFileUrls,
     };
   }
 }
@@ -314,7 +318,7 @@ class ReviewItemVO {
   });
 
   final int reviewId;
-  final UserSimpleVO user;
+  final ReviewUserSimpleVO user;
   final int rating;
   final String content;
   final List<String> images;
@@ -324,7 +328,7 @@ class ReviewItemVO {
   factory ReviewItemVO.fromJson(JsonMap json) {
     return ReviewItemVO(
       reviewId: readInt(json, 'reviewId'),
-      user: UserSimpleVO.fromJson(readJsonMap(json, 'user')),
+      user: ReviewUserSimpleVO.fromJson(readJsonMap(json, 'user')),
       rating: readInt(json, 'rating'),
       content: readString(json, 'content'),
       images: readStringList(json, 'images'),
@@ -547,47 +551,21 @@ class UploadQualificationDocsBO {
   }
 }
 
-class UserSimpleVO {
-  const UserSimpleVO({
-    required this.userId,
-    required this.phone,
-    required this.countryCode,
-    required this.role,
-    required this.avatarUrl,
-    required this.nickname,
-    required this.email,
-  });
+class ReviewUserSimpleVO {
+  const ReviewUserSimpleVO({required this.avatarUrl, required this.nickname});
 
-  final int userId;
-  final String phone;
-  final String countryCode;
-  final String role;
   final String avatarUrl;
   final String nickname;
-  final String email;
 
-  factory UserSimpleVO.fromJson(JsonMap json) {
-    return UserSimpleVO(
-      userId: readInt(json, 'userId'),
-      phone: readString(json, 'phone'),
-      countryCode: readString(json, 'countryCode'),
-      role: readString(json, 'role'),
+  factory ReviewUserSimpleVO.fromJson(JsonMap json) {
+    return ReviewUserSimpleVO(
       avatarUrl: readString(json, 'avatarUrl'),
       nickname: readString(json, 'nickname'),
-      email: readString(json, 'email'),
     );
   }
 
   JsonMap toJson() {
-    return <String, dynamic>{
-      'userId': userId,
-      'phone': phone,
-      'countryCode': countryCode,
-      'role': role,
-      'avatarUrl': avatarUrl,
-      'nickname': nickname,
-      'email': email,
-    };
+    return <String, dynamic>{'avatarUrl': avatarUrl, 'nickname': nickname};
   }
 }
 

@@ -11,9 +11,12 @@ import '../../features/auth/presentation/qualification_certification_step_three_
 import '../../features/auth/presentation/qualification_certification_step_two_page.dart';
 import '../../features/auth/select_role/presentation/select_role_page.dart';
 import '../../features/ai/presentation/ai_assistant_page.dart';
+import '../../features/complaint/presentation/complaint_detail_page.dart';
+import '../../features/complaint/presentation/my_complaints_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/jobs/presentation/company_application_management_page.dart';
 import '../../features/jobs/presentation/job_detail_page.dart';
+import '../../features/jobs/presentation/job_search_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/jobs/presentation/post_job_page.dart';
 import '../../features/jobs/presentation/service_provider_talent_center_page.dart';
@@ -22,6 +25,7 @@ import '../../features/me/presentation/add_education_experience_page.dart';
 import '../../features/me/presentation/add_education_school_page.dart';
 import '../../features/me/presentation/add_work_experience_page.dart';
 import '../../features/me/presentation/add_skill_certificate_page.dart';
+import '../../features/me/presentation/about_app_page.dart';
 import '../../features/me/presentation/my_applications_page.dart';
 import '../../features/me/presentation/company_my_info_page.dart';
 import '../../features/me/presentation/blacklist_page.dart';
@@ -69,6 +73,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authSession = ref.read(authSessionProvider);
       final location = state.matchedLocation;
+      final pendingRedirect = _extractSafeRedirectTarget(state.uri);
       final isLoginRoute = location == RoutePaths.loginPhone;
       final isSelectRoleRoute = location == RoutePaths.selectRole;
       final isAuthRoute = isLoginRoute || isSelectRoleRoute;
@@ -86,39 +91,53 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (isLoginRoute) {
           return null;
         }
+        final redirectTarget =
+            pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
         AppLogger.instance.warn(
           'ROUTE',
           '未登录，跳转到登录页',
           context: <String, Object?>{
             'from': location,
-            'to': RoutePaths.loginPhone,
+            'to': _buildAuthEntryLocation(
+              RoutePaths.loginPhone,
+              redirectTarget,
+            ),
           },
         );
-        return RoutePaths.loginPhone;
+        return _buildAuthEntryLocation(RoutePaths.loginPhone, redirectTarget);
       }
 
       if (authSession.needSelectRole) {
         if (isSelectRoleRoute) {
           return null;
         }
+        final redirectTarget =
+            pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
         AppLogger.instance.warn(
           'ROUTE',
           '角色未选择，跳转到角色选择页',
           context: <String, Object?>{
             'from': location,
-            'to': RoutePaths.selectRole,
+            'to': _buildAuthEntryLocation(
+              RoutePaths.selectRole,
+              redirectTarget,
+            ),
           },
         );
-        return RoutePaths.selectRole;
+        return _buildAuthEntryLocation(RoutePaths.selectRole, redirectTarget);
       }
 
       if (location == RoutePaths.root || isAuthRoute) {
+        final target = pendingRedirect;
         AppLogger.instance.info(
           'ROUTE',
-          '登录态已就绪，跳转到首页',
-          context: <String, Object?>{'from': location, 'to': RoutePaths.home},
+          target == null ? '登录态已就绪，跳转到首页' : '登录态已就绪，恢复目标路由',
+          context: <String, Object?>{
+            'from': location,
+            'to': target ?? RoutePaths.home,
+          },
         );
-        return RoutePaths.home;
+        return target ?? RoutePaths.home;
       }
 
       return null;
@@ -177,8 +196,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.jobDetail,
-        builder: (context, state) =>
-            JobDetailPage(args: state.extra as JobDetailPageArgs?),
+        builder: (context, state) => JobDetailPage(
+          args:
+              state.extra as JobDetailPageArgs? ??
+              _buildJobDetailArgsFromUri(state.uri),
+        ),
       ),
       GoRoute(
         path: RoutePaths.postJob,
@@ -197,6 +219,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => OrderDetailPage(
           args:
               state.extra as OrderDetailPageArgs? ??
+              _buildOrderDetailArgsFromUri(state.uri) ??
               const OrderDetailPageArgs(orderId: 0),
         ),
       ),
@@ -234,8 +257,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceDetail,
-        builder: (context, state) =>
-            ServiceDetailPage(args: state.extra as ServiceDetailPageArgs?),
+        builder: (context, state) => ServiceDetailPage(
+          args:
+              state.extra as ServiceDetailPageArgs? ??
+              _buildServiceDetailArgsFromUri(state.uri),
+        ),
       ),
       GoRoute(
         path: RoutePaths.editVisaPackage,
@@ -245,7 +271,27 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.serviceDetailReport,
-        builder: (context, state) => const ServiceDetailReportPage(),
+        builder: (context, state) => ServiceDetailReportPage(
+          args:
+              state.extra as ServiceDetailReportPageArgs? ??
+              const ServiceDetailReportPageArgs(
+                targetType: '',
+                targetId: 0,
+                targetName: '',
+              ),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.myComplaints,
+        builder: (context, state) => const MyComplaintsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.complaintDetail,
+        builder: (context, state) => ComplaintDetailPage(
+          args:
+              state.extra as ComplaintDetailPageArgs? ??
+              const ComplaintDetailPageArgs(complaintId: 0),
+        ),
       ),
       GoRoute(
         path: RoutePaths.appResult,
@@ -256,20 +302,36 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: RoutePaths.jobSearch,
+        builder: (context, state) => const JobSearchPage(),
+      ),
+      GoRoute(
         path: RoutePaths.myInfo,
         builder: (context, state) => const MyInfoPage(),
       ),
       GoRoute(
         path: RoutePaths.serviceProviderMyInfo,
-        builder: (context, state) => const ServiceProviderMyInfoPage(),
+        builder: (context, state) => ServiceProviderMyInfoPage(
+          args:
+              state.extra as ServiceProviderMyInfoPageArgs? ??
+              const ServiceProviderMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.companyMyInfo,
-        builder: (context, state) => const CompanyMyInfoPage(),
+        builder: (context, state) => CompanyMyInfoPage(
+          args:
+              state.extra as CompanyMyInfoPageArgs? ??
+              const CompanyMyInfoPageArgs.my(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.aboutApp,
+        builder: (context, state) => const AboutAppPage(),
       ),
       GoRoute(
         path: RoutePaths.blacklist,
@@ -315,10 +377,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             return MyResumePreviewPage(args: extra);
           }
           if (extra is int) {
-            return MyResumePreviewPage(
-              userId: extra,
-              title: '我的.简历详情标题'.tr(),
-            );
+            return MyResumePreviewPage(userId: extra, title: '我的.简历详情标题'.tr());
           }
           return const MyResumePreviewPage();
         },
@@ -491,5 +550,112 @@ String _readCurrentLocation(
   } on StateError {
     // 关键兜底：初始化阶段尚未产生 match 时，回退到已知地址。
     return fallbackLocation;
+  }
+}
+
+/// 生成登录/选角色入口地址，并在需要时透传原始目标路由，避免登录后丢失 Universal Link。
+String _buildAuthEntryLocation(String basePath, String? redirectTarget) {
+  if (redirectTarget == null || redirectTarget.isEmpty) {
+    return basePath;
+  }
+  return Uri(
+    path: basePath,
+    queryParameters: <String, String>{'redirect': redirectTarget},
+  ).toString();
+}
+
+/// 从当前地址提取可恢复的站内目标路由，只允许应用内部相对路径，避免外部跳转注入。
+String? _extractSafeRedirectTarget(Uri uri) {
+  final rawTarget = uri.queryParameters['redirect']?.trim();
+  if (rawTarget == null || rawTarget.isEmpty) {
+    return null;
+  }
+  final parsedTarget = Uri.tryParse(rawTarget);
+  if (parsedTarget == null) {
+    return null;
+  }
+  if (parsedTarget.hasScheme || parsedTarget.host.isNotEmpty) {
+    return null;
+  }
+  if (!parsedTarget.path.startsWith('/')) {
+    return null;
+  }
+  if (_isAuthPath(parsedTarget.path) || parsedTarget.path == RoutePaths.root) {
+    return null;
+  }
+  return parsedTarget.toString();
+}
+
+/// 从当前访问地址反推“登录后应恢复到哪里”，只保留真正的业务页地址。
+String? _buildRedirectTargetFromStateUri(Uri uri) {
+  if (_isAuthPath(uri.path) || uri.path == RoutePaths.root) {
+    return null;
+  }
+  return uri.toString();
+}
+
+/// 判断当前路径是否属于鉴权入口页，避免在登录页和选角色页之间产生循环跳转。
+bool _isAuthPath(String path) {
+  return path == RoutePaths.loginPhone || path == RoutePaths.selectRole;
+}
+
+/// 解析岗位详情链接参数，支持 Universal Link 直接使用 `jobId` 查询参数打开页面。
+JobDetailPageArgs? _buildJobDetailArgsFromUri(Uri uri) {
+  final jobId = _readPositiveIntQueryParameter(uri, 'jobId');
+  if (jobId == null) {
+    return null;
+  }
+  return JobDetailPageArgs(jobId: jobId);
+}
+
+/// 解析订单详情链接参数，支持通过 `orderId` 查询参数直达订单页面。
+OrderDetailPageArgs? _buildOrderDetailArgsFromUri(Uri uri) {
+  final orderId = _readPositiveIntQueryParameter(uri, 'orderId');
+  if (orderId == null) {
+    return null;
+  }
+  return OrderDetailPageArgs(orderId: orderId);
+}
+
+/// 解析签证服务详情链接参数，兼容 `packageId/providerId/isCollected` 的站内分享形式。
+ServiceDetailPageArgs? _buildServiceDetailArgsFromUri(Uri uri) {
+  final packageId = _readPositiveIntQueryParameter(uri, 'packageId');
+  if (packageId == null) {
+    return null;
+  }
+  return ServiceDetailPageArgs(
+    packageId: packageId,
+    providerId: _readPositiveIntQueryParameter(uri, 'providerId'),
+    initialIsCollected: _readBoolQueryParameter(uri, 'isCollected') ?? false,
+  );
+}
+
+/// 统一读取正整数查询参数，非法值直接返回空，避免路由层因脏参数抛异常。
+int? _readPositiveIntQueryParameter(Uri uri, String key) {
+  final rawValue = uri.queryParameters[key];
+  if (rawValue == null || rawValue.isEmpty) {
+    return null;
+  }
+  final value = int.tryParse(rawValue);
+  if (value == null || value <= 0) {
+    return null;
+  }
+  return value;
+}
+
+/// 统一解析布尔查询参数，兼容常见的 `true/false/1/0/yes/no` 写法。
+bool? _readBoolQueryParameter(Uri uri, String key) {
+  final rawValue = uri.queryParameters[key]?.trim().toLowerCase();
+  switch (rawValue) {
+    case 'true':
+    case '1':
+    case 'yes':
+      return true;
+    case 'false':
+    case '0':
+    case 'no':
+      return false;
+    default:
+      return null;
   }
 }

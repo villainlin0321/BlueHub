@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -12,13 +13,50 @@ import '../application/company_applications/company_application_list_state.dart'
 import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
 import 'company_application_management_styles.dart';
+import 'widgets/company_application_job_filter_bottom_sheet.dart';
 import 'widgets/company_application_management_widgets.dart';
 
-class CompanyApplicationManagementPage extends ConsumerWidget {
+import 'package:bluehub_app/shared/ui/test_style.dart';
+class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
   const CompanyApplicationManagementPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CompanyApplicationManagementPage> createState() =>
+      _CompanyApplicationManagementPageState();
+}
+
+class _CompanyApplicationManagementPageState
+    extends ConsumerState<CompanyApplicationManagementPage> {
+  int? _selectedJobId;
+  String? _selectedJobTitle;
+
+  String get _jobFilterLabel {
+    final String title = _selectedJobTitle?.trim() ?? '';
+    return title.isEmpty ? '应聘管理.全部岗位'.tr() : title;
+  }
+
+  Future<void> _handleJobFilterTap() async {
+    final CompanyApplicationJobFilterResult? result =
+        await showCompanyApplicationJobFilterBottomSheet(
+          context: context,
+          initialJobId: _selectedJobId,
+          initialJobTitle: _selectedJobTitle,
+        );
+    if (!mounted || result == null) {
+      return;
+    }
+    if (result.jobId == _selectedJobId &&
+        (result.jobTitle ?? '') == (_selectedJobTitle ?? '')) {
+      return;
+    }
+    setState(() {
+      _selectedJobId = result.jobId;
+      _selectedJobTitle = result.jobTitle;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DefaultTabController(
       length: _CompanyApplicationTab.values.length,
       child: Scaffold(
@@ -42,12 +80,7 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
           ),
           title: Text(
             '我的.应聘管理'.tr(),
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              height: 24 / 17,
-            ),
+            style: TestStyle.pingFangSemibold(fontSize: 17, color: Colors.black),
           ),
         ),
         body: Column(
@@ -58,11 +91,8 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
                   .toList(growable: false),
             ),
             CompanyApplicationJobFilterBar(
-              label: '应聘管理.全部岗位'.tr(),
-              onTap: () => _showPlaceholderSnackBar(
-                context,
-                '应聘管理.岗位筛选功能'.tr(),
-              ),
+              label: _jobFilterLabel,
+              onTap: _handleJobFilterTap,
             ),
             Expanded(
               child: TabBarView(
@@ -71,9 +101,10 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
                       (_CompanyApplicationTab tab) =>
                           _CompanyApplicationTabView(
                             key: PageStorageKey<String>(
-                              'company-applications-${tab.name}',
+                              'company-applications-${tab.name}-${_selectedJobId ?? 'all'}',
                             ),
                             tab: tab,
+                            selectedJobId: _selectedJobId,
                           ),
                     )
                     .toList(growable: false),
@@ -83,18 +114,6 @@ class CompanyApplicationManagementPage extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static void _showPlaceholderSnackBar(BuildContext context, String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
   }
 }
 
@@ -132,9 +151,14 @@ enum _CompanyApplicationTab {
 }
 
 class _CompanyApplicationTabView extends ConsumerStatefulWidget {
-  const _CompanyApplicationTabView({super.key, required this.tab});
+  const _CompanyApplicationTabView({
+    super.key,
+    required this.tab,
+    required this.selectedJobId,
+  });
 
   final _CompanyApplicationTab tab;
+  final int? selectedJobId;
 
   @override
   ConsumerState<_CompanyApplicationTabView> createState() =>
@@ -159,9 +183,10 @@ class _CompanyApplicationTabViewState
       if (!mounted) {
         return;
       }
-      ref
-          .read(companyApplicationListsControllerProvider.notifier)
-          .loadInitial(status: widget.tab.status);
+      ref.read(companyApplicationListsControllerProvider.notifier).loadInitial(
+        status: widget.tab.status,
+        jobId: widget.selectedJobId,
+      );
     });
   }
 
@@ -174,7 +199,7 @@ class _CompanyApplicationTabViewState
   Future<void> _onRefresh() async {
     final bool success = await ref
         .read(companyApplicationListsControllerProvider.notifier)
-        .refresh(status: widget.tab.status);
+        .refresh(status: widget.tab.status, jobId: widget.selectedJobId);
     if (!mounted) {
       return;
     }
@@ -190,15 +215,20 @@ class _CompanyApplicationTabViewState
   Future<void> _onLoadMore() async {
     final bool success = await ref
         .read(companyApplicationListsControllerProvider.notifier)
-        .loadMore(status: widget.tab.status);
+        .loadMore(status: widget.tab.status, jobId: widget.selectedJobId);
     if (!mounted) {
       return;
     }
 
     final CompanyApplicationListState latestState = ref.read(
       companyApplicationListsControllerProvider.select(
-        (Map<String, CompanyApplicationListState> states) =>
-            states[widget.tab.status] ?? const CompanyApplicationListState(),
+        (Map<String, CompanyApplicationListState> states) => states[
+              buildCompanyApplicationListStateKey(
+                status: widget.tab.status,
+                jobId: widget.selectedJobId,
+              )
+            ] ??
+            const CompanyApplicationListState(),
       ),
     );
     if (success) {
@@ -215,8 +245,13 @@ class _CompanyApplicationTabViewState
     super.build(context);
     final CompanyApplicationListState listState = ref.watch(
       companyApplicationListsControllerProvider.select(
-        (Map<String, CompanyApplicationListState> states) =>
-            states[widget.tab.status] ?? const CompanyApplicationListState(),
+        (Map<String, CompanyApplicationListState> states) => states[
+              buildCompanyApplicationListStateKey(
+                status: widget.tab.status,
+                jobId: widget.selectedJobId,
+              )
+            ] ??
+            const CompanyApplicationListState(),
       ),
     );
 
@@ -242,7 +277,7 @@ class _CompanyApplicationTabViewState
               children: <Widget>[
                 Center(
                   child: AppEmptyState(
-                    message: listState.errorMessage ?? '暂无数据'.tr(),
+                    message: listState.errorMessage ?? '通用.暂无数据'.tr(),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                 ),
@@ -282,6 +317,7 @@ class _CompanyApplicationTabViewState
           .read(companyApplicationListsControllerProvider.notifier)
           .updateApplicationStatus(
             sourceStatus: widget.tab.status,
+            jobId: widget.selectedJobId,
             applicationId: item.applicationId,
             nextStatus: EmployerApplicationUpdateStatus.interview,
             remark: '',
@@ -289,14 +325,7 @@ class _CompanyApplicationTabViewState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: result.success ? null : const Color(0xFFD9363E),
-          ),
-        );
+      AppToast.show(result.message);
       if (!result.success) {
         return;
       }
@@ -307,8 +336,6 @@ class _CompanyApplicationTabViewState
       await _handlePhoneCall(item);
       return;
     }
-
-    _showPlaceholderSnackBar(context, widget.tab.secondaryActionLabel.tr());
   }
 
   /// 尝试读取求职者手机号并唤起系统拨号页。
@@ -328,10 +355,8 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (phone.isEmpty) {
-        _showErrorSnackBar(
-          '应聘管理.未获取联系电话'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          ),
+        _showErrorToast(
+          '应聘管理.未获取联系电话'.tr(namedArgs: <String, String>{'name': fallbackName}),
         );
         return;
       }
@@ -342,25 +367,18 @@ class _CompanyApplicationTabViewState
         return;
       }
       if (!launched) {
-        _showErrorSnackBar('应聘管理.暂时无法拨打电话'.tr());
+        _showErrorToast('应聘管理.暂时无法拨打电话'.tr());
       }
     } catch (error) {
       if (!mounted) {
         return;
       }
-      _showErrorSnackBar(_normalizeActionError(error, fallbackName));
+      _showErrorToast(_normalizeActionError(error, fallbackName));
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: const Color(0xFFD9363E),
-        ),
-      );
+  void _showErrorToast(String message) {
+    AppToast.show(message);
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
@@ -374,9 +392,7 @@ class _CompanyApplicationTabViewState
           : normalized;
     }
     return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(
-            namedArgs: <String, String>{'name': fallbackName},
-          )
+        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
         : message;
   }
 
@@ -523,17 +539,5 @@ class _CompanyApplicationTabViewState
 
   String _twoDigits(int value) {
     return value < 10 ? '0$value' : value.toString();
-  }
-
-  void _showPlaceholderSnackBar(BuildContext context, String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '我的.占位提示'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
   }
 }

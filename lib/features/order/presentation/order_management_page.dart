@@ -4,17 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/me/data/dictionary_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
+import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import 'order_detail_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+
+import 'package:bluehub_app/shared/ui/test_style.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
   const OrderManagementPage({super.key});
@@ -59,18 +63,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   void initState() {
     super.initState();
     Future<void>.microtask(_loadOrders);
-  }
-
-  void _showPlaceholderToast(String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '订单.搜索占位'.tr(namedArgs: <String, String>{'label': label}),
-          ),
-        ),
-      );
   }
 
   Future<void> _loadOrders({
@@ -164,9 +156,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
 
       setState(() => _isLoadingMore = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(_normalizeError(error))));
+      AppToast.show(_normalizeError(error));
     }
   }
 
@@ -179,9 +169,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleContactTap(VisaOrderVO order) {
@@ -248,9 +236,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('订单.国家列表加载失败'.tr())));
+      AppToast.show('订单.国家列表加载失败'.tr());
       return;
     }
     if (!mounted) {
@@ -308,10 +294,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF262626),
+                      style: TestStyle.semibold(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF262626),
                       ),
                     ),
                   ),
@@ -328,14 +313,11 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
                           ),
                           title: Text(
                             labelBuilder(option).tr(),
-                            style: TextStyle(
+                            style: TestStyle.semibold(
+                              fontSize: 14,
                               color: selected
                                   ? const Color(0xFF096DD9)
                                   : const Color(0xFF262626),
-                              fontSize: 14,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
                             ),
                           ),
                           trailing: selected
@@ -360,6 +342,13 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(orderRefreshTickProvider, (int? previous, int next) {
+      if (previous == next || !mounted) {
+        return;
+      }
+      Future<void>.microtask(_loadOrders);
+    });
+
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
@@ -391,25 +380,11 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
         ),
         title: Text(
           '订单.订单管理'.tr(),
-          style: const TextStyle(
-            color: Color(0xE6000000),
+          style: TestStyle.pingFangMedium(
             fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
+            color: Color(0xE6000000),
           ),
         ),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => _showPlaceholderToast('订单.搜索'.tr()),
-            icon: const AppSvgIcon(
-              assetPath: 'assets/images/company_application_search.svg',
-              fallback: Icons.search_rounded,
-              size: 20,
-              color: Color(0xE6000000),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       body: Column(
         children: <Widget>[
@@ -591,15 +566,11 @@ class _OrderTabs extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         tab.label.tr(),
-                        style: TextStyle(
+                        style: TestStyle.medium(
+                          fontSize: 14,
                           color: selected
                               ? const Color(0xFF096DD9)
                               : const Color(0xFF262626),
-                          fontSize: 14,
-                          fontWeight: selected
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          height: 22 / 14,
                         ),
                       ),
                       const SizedBox(height: 9),
@@ -678,12 +649,7 @@ class _FilterButton extends StatelessWidget {
           children: <Widget>[
             Text(
               label.tr(),
-              style: const TextStyle(
-                color: Color(0xFF171A1D),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF171A1D)),
             ),
             const SizedBox(width: 2),
             SvgPicture.asset(
@@ -743,20 +709,15 @@ class _OrderCard extends StatelessWidget {
                           TextSpan(text: '订单.订单号'.tr()),
                           TextSpan(
                             text: order.orderNo,
-                            style: const TextStyle(
-                              color: Color(0xFF8C8C8C),
-                              fontFamily: 'SF UI Text',
-                            ),
+                            style: TestStyle.regular(color: Color(0xFF8C8C8C)),
                           ),
                         ],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
+                      style: TestStyle.regular(
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
+                        color: Color(0xFF8C8C8C),
                       ),
                     ),
                   ),
@@ -786,11 +747,9 @@ class _OrderCard extends StatelessWidget {
                                 _customerNameFor(order),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF262626),
+                                style: TestStyle.medium(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  height: 24 / 16,
+                                  color: Color(0xFF262626),
                                 ),
                               ),
                             ),
@@ -805,11 +764,9 @@ class _OrderCard extends StatelessWidget {
                           _serviceNameFor(order),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF8C8C8C),
+                          style: TestStyle.regular(
                             fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 18 / 12,
+                            color: Color(0xFF8C8C8C),
                           ),
                         ),
                       ],
@@ -817,12 +774,10 @@ class _OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _formatAmount(order.amount),
-                    style: const TextStyle(
-                      color: Color(0xFFFE5815),
+                    _formatAmount(order.amount, order.currency),
+                    style: TestStyle.medium(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 16,
+                      color: Color(0xFFFE5815),
                     ),
                   ),
                 ],
@@ -833,11 +788,9 @@ class _OrderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       _formatUpdatedText(order.updatedAt),
-                      style: const TextStyle(
-                        color: Color(0xFF8C8C8C),
+                      style: TestStyle.pingFangRegular(
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 16 / 12,
+                        color: Color(0xFF8C8C8C),
                       ),
                     ),
                   ),
@@ -898,25 +851,13 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
-  static String _formatAmount(double amount) {
-    final bool hasFraction = amount % 1 != 0;
-    final String raw = hasFraction
-        ? amount.toStringAsFixed(2)
-        : amount.toStringAsFixed(0);
-    final List<String> parts = raw.split('.');
-    final String integerPart = parts.first;
-    final StringBuffer buffer = StringBuffer();
-    for (int i = 0; i < integerPart.length; i++) {
-      final int reverseIndex = integerPart.length - i;
-      buffer.write(integerPart[i]);
-      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    if (parts.length == 2 && parts[1].isNotEmpty && parts[1] != '00') {
-      return '¥${buffer.toString()}.${parts[1]}';
-    }
-    return '¥${buffer.toString()}';
+  static String _formatAmount(double amount, String? currency) {
+    return AppCurrency.formatAmount(
+      amount,
+      currency,
+      fractionDigitsWhenNeeded: 2,
+      trimTrailingZeros: false,
+    );
   }
 
   static String _formatUpdatedText(String raw) {
@@ -1003,12 +944,7 @@ class _StatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          height: 12 / 11,
-        ),
+        style: TestStyle.regular(fontSize: 11, color: textColor),
       ),
     );
   }
@@ -1028,11 +964,9 @@ class _UrgentTag extends StatelessWidget {
       ),
       child: Text(
         '订单.紧急'.tr(),
-        style: const TextStyle(
-          color: Color(0xFFFF0B03),
+        style: TestStyle.pingFangRegular(
           fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
+          color: Color(0xFFFF0B03),
         ),
       ),
     );
@@ -1076,12 +1010,7 @@ class _ActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            height: 12 / 12,
-          ),
+          style: TestStyle.regular(fontSize: 12, color: textColor),
         ),
       ),
     );
@@ -1136,11 +1065,7 @@ class _OrderManagementErrorState extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF8C8C8C),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+          style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
         ),
         const SizedBox(height: 16),
         TextButton(

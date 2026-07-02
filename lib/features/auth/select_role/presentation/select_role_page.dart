@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/localization/app_locales.dart';
@@ -13,6 +14,7 @@ import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class SelectRolePage extends ConsumerStatefulWidget {
   const SelectRolePage({super.key});
 
@@ -44,8 +46,9 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
 
   /// 提交当前角色选择，成功后进入首页。
   Future<void> _handleConfirm() async {
-    final success =
-        await ref.read(selectRoleControllerProvider.notifier).submitSelection();
+    final success = await ref
+        .read(selectRoleControllerProvider.notifier)
+        .submitSelection();
     if (!mounted || !success) {
       return;
     }
@@ -60,13 +63,12 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
     final isChineseSelected = context.isChineseLocale;
 
     ref.listen(selectRoleControllerProvider, (previous, next) {
-      if (previous?.feedbackId == next.feedbackId || next.feedbackMessage == null) {
+      if (previous?.feedbackId == next.feedbackId ||
+          next.feedbackMessage == null) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(next.feedbackMessage!)),
-      );
+      AppToast.show(next.feedbackMessage!);
       ref.read(selectRoleControllerProvider.notifier).clearFeedback();
     });
 
@@ -87,10 +89,7 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
         ),
         title: Text(
           '认证.选择角色标题'.tr(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
         ),
         actions: <Widget>[
           Padding(
@@ -118,20 +117,16 @@ class _SelectRolePageState extends ConsumerState<SelectRolePage> {
                     children: <Widget>[
                       Text(
                         '认证.选择角色说明'.tr(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.6,
-                        ),
+                        style: TestStyle.pingFangRegular(fontSize: 14, color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 28),
                       for (final role in _roles) ...<Widget>[
                         _RoleCard(
                           role: role,
                           selected: state.selectedRoleId == role.id,
-                          onTap: () =>
-                              ref
-                                  .read(selectRoleControllerProvider.notifier)
-                                  .setSelectedRole(role.id),
+                          onTap: () => ref
+                              .read(selectRoleControllerProvider.notifier)
+                              .setSelectedRole(role.id),
                         ),
                         if (role != _roles.last) const SizedBox(height: 14),
                       ],
@@ -219,18 +214,12 @@ class _RoleCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       role.title.tr(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       role.description.tr(),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
+                      style: TestStyle.regular(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),

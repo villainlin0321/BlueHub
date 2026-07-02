@@ -1,5 +1,64 @@
 import 'package:bluehub_app/shared/network/api_decoders.dart';
 
+const int _resumeCompletenessFieldCount = 7;
+
+int _resolveResumeCompleteness({
+  required int rawCompleteness,
+  required List<String> targetPositions,
+  required List<String> targetCountries,
+  required String currentLocation,
+  required double? salaryMin,
+  required double? salaryMax,
+  required String salaryCurrency,
+  required bool hasLatestExperience,
+}) {
+  if (rawCompleteness > 0) {
+    return rawCompleteness;
+  }
+  return computeResumeCompleteness(
+    targetPositions: targetPositions,
+    targetCountries: targetCountries,
+    currentLocation: currentLocation,
+    salaryMin: salaryMin,
+    salaryMax: salaryMax,
+    salaryCurrency: salaryCurrency,
+    hasLatestExperience: hasLatestExperience,
+  );
+}
+
+int computeResumeCompleteness({
+  required List<String> targetPositions,
+  required List<String> targetCountries,
+  required String currentLocation,
+  required double? salaryMin,
+  required double? salaryMax,
+  required String salaryCurrency,
+  required bool hasLatestExperience,
+}) {
+  final int filledCount = <bool>[
+    _hasAnyNonEmptyText(targetPositions),
+    _hasAnyNonEmptyText(targetCountries),
+    _hasNonEmptyText(currentLocation),
+    _hasPositiveValue(salaryMin),
+    _hasPositiveValue(salaryMax),
+    _hasNonEmptyText(salaryCurrency),
+    hasLatestExperience,
+  ].where((item) => item).length;
+  return ((filledCount / _resumeCompletenessFieldCount) * 100).round();
+}
+
+bool _hasAnyNonEmptyText(List<String> values) {
+  return values.any((value) => value.trim().isNotEmpty);
+}
+
+bool _hasNonEmptyText(String value) {
+  return value.trim().isNotEmpty;
+}
+
+bool _hasPositiveValue(num? value) {
+  return value != null && value > 0;
+}
+
 class BasicInfoVO {
   const BasicInfoVO({
     required this.realName,
@@ -302,44 +361,61 @@ class ResumeListItemVO {
   final LatestExperienceVO? latestExperience;
 
   factory ResumeListItemVO.fromJson(JsonMap json) {
+    final List<String> targetPositions = _readStringListByKeys(json, const [
+      'target_positions',
+      'targetPositions',
+    ]);
+    final List<String> targetCountries = _readStringListByKeys(json, const [
+      'target_countries',
+      'targetCountries',
+    ]);
+    final String currentLocation = _readStringByKeys(json, const [
+      'current_location',
+      'currentLocation',
+    ]);
+    final double? salaryMin = _readNullableDoubleByKeys(json, const [
+      'salary_min',
+      'salaryMin',
+    ]);
+    final double? salaryMax = _readNullableDoubleByKeys(json, const [
+      'salary_max',
+      'salaryMax',
+    ]);
+    final String salaryCurrency = _readStringByKeys(json, const [
+      'salary_currency',
+      'salaryCurrency',
+    ]);
+    final LatestExperienceVO? latestExperience = _readLatestExperience(
+      json,
+      const ['latest_experience', 'latestExperience'],
+    );
+    final int rawCompleteness = readInt(json, 'completeness');
     return ResumeListItemVO(
       resumeId: _readIntByKeys(json, const ['resume_id', 'resumeId']),
       isDefault: _readBoolByKeys(json, const ['is_default', 'isDefault']),
-      completeness: readInt(json, 'completeness'),
-      targetPositions: _readStringListByKeys(
-        json,
-        const ['target_positions', 'targetPositions'],
+      completeness: _resolveResumeCompleteness(
+        rawCompleteness: rawCompleteness,
+        targetPositions: targetPositions,
+        targetCountries: targetCountries,
+        currentLocation: currentLocation,
+        salaryMin: salaryMin,
+        salaryMax: salaryMax,
+        salaryCurrency: salaryCurrency,
+        hasLatestExperience: latestExperience != null,
       ),
-      targetCountries: _readStringListByKeys(
-        json,
-        const ['target_countries', 'targetCountries'],
-      ),
+      targetPositions: targetPositions,
+      targetCountries: targetCountries,
       isPublic: _readBoolByKeys(json, const ['is_public', 'isPublic']),
       updatedAt: _readStringByKeys(json, const ['updated_at', 'updatedAt']),
       nickname: readString(json, 'nickname'),
       avatarUrl: _readStringByKeys(json, const ['avatar_url', 'avatarUrl']),
       gender: readString(json, 'gender'),
       age: _readNullableIntByKeys(json, const ['age']),
-      currentLocation: _readStringByKeys(
-        json,
-        const ['current_location', 'currentLocation'],
-      ),
-      salaryMin: _readNullableDoubleByKeys(
-        json,
-        const ['salary_min', 'salaryMin'],
-      ),
-      salaryMax: _readNullableDoubleByKeys(
-        json,
-        const ['salary_max', 'salaryMax'],
-      ),
-      salaryCurrency: _readStringByKeys(
-        json,
-        const ['salary_currency', 'salaryCurrency'],
-      ),
-      latestExperience: _readLatestExperience(
-        json,
-        const ['latest_experience', 'latestExperience'],
-      ),
+      currentLocation: currentLocation,
+      salaryMin: salaryMin,
+      salaryMax: salaryMax,
+      salaryCurrency: salaryCurrency,
+      latestExperience: latestExperience,
     );
   }
 
@@ -434,16 +510,34 @@ class ResumeVO {
 
   /// 安全解析简历详情；`isPublic` 在文档中未声明时允许为空，避免误判可见性。
   factory ResumeVO.fromJson(JsonMap json) {
+    final BasicInfoVO basicInfo = BasicInfoVO.fromJson(
+      readJsonMap(json, 'basicInfo'),
+    );
+    final JobIntentionVO jobIntention = JobIntentionVO.fromJson(
+      readJsonMap(json, 'jobIntention'),
+    );
+    final List<WorkExperienceVO> workExperiences =
+        readModelList<WorkExperienceVO>(
+          json,
+          'workExperiences',
+          WorkExperienceVO.fromJson,
+        );
+    final int rawCompleteness = readInt(json, 'completeness');
     return ResumeVO(
       resumeId: readInt(json, 'resumeId'),
-      completeness: readInt(json, 'completeness'),
-      basicInfo: BasicInfoVO.fromJson(readJsonMap(json, 'basicInfo')),
-      jobIntention: JobIntentionVO.fromJson(readJsonMap(json, 'jobIntention')),
-      workExperiences: readModelList<WorkExperienceVO>(
-        json,
-        'workExperiences',
-        WorkExperienceVO.fromJson,
+      completeness: _resolveResumeCompleteness(
+        rawCompleteness: rawCompleteness,
+        targetPositions: jobIntention.positions,
+        targetCountries: jobIntention.countries,
+        currentLocation: basicInfo.currentLocation,
+        salaryMin: jobIntention.salaryMin,
+        salaryMax: jobIntention.salaryMax,
+        salaryCurrency: jobIntention.salaryCurrency,
+        hasLatestExperience: workExperiences.isNotEmpty,
       ),
+      basicInfo: basicInfo,
+      jobIntention: jobIntention,
+      workExperiences: workExperiences,
       languages: readModelList<LanguageAbilityVO>(
         json,
         'languages',
@@ -519,11 +613,7 @@ String? _readNullableStringByKeys(JsonMap json, List<String> keys) {
   return null;
 }
 
-int _readIntByKeys(
-  JsonMap json,
-  List<String> keys, {
-  int fallback = 0,
-}) {
+int _readIntByKeys(JsonMap json, List<String> keys, {int fallback = 0}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
       return readInt(json, key, fallback: fallback);
@@ -532,11 +622,42 @@ int _readIntByKeys(
   return fallback;
 }
 
-bool _readBoolByKeys(
-  JsonMap json,
-  List<String> keys, {
-  bool fallback = false,
-}) {
+String _normalizeYearMonthValue(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  final RegExpMatch? match = RegExp(
+    r'^(\d{4})[.-](\d{1,2})$',
+  ).firstMatch(trimmed);
+  if (match == null) {
+    return trimmed.replaceAll('.', '-');
+  }
+  final String year = match.group(1)!;
+  final String month = match.group(2)!.padLeft(2, '0');
+  return '$year-$month';
+}
+
+String? _normalizeOptionalYearMonthValue(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return _normalizeYearMonthValue(trimmed);
+}
+
+String _normalizeUrlValue(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  return trimmed.replaceAll('`', '').trim();
+}
+
+bool _readBoolByKeys(JsonMap json, List<String> keys, {bool fallback = false}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
       return readBool(json, key, fallback: fallback);
@@ -621,6 +742,8 @@ class SaveResumeBO {
     required this.educations,
     required this.selfEvaluation,
     required this.isPublic,
+    required this.completeness,
+    this.currentLocation = '',
   });
 
   final JobIntentionBO jobIntention;
@@ -630,6 +753,20 @@ class SaveResumeBO {
   final List<EducationBO> educations;
   final String selfEvaluation;
   final bool isPublic;
+  final int completeness;
+  final String currentLocation;
+
+  int get computedCompleteness {
+    return computeResumeCompleteness(
+      targetPositions: jobIntention.positions,
+      targetCountries: jobIntention.countries,
+      currentLocation: currentLocation,
+      salaryMin: jobIntention.salaryMin,
+      salaryMax: jobIntention.salaryMax,
+      salaryCurrency: jobIntention.salaryCurrency,
+      hasLatestExperience: workExperiences.isNotEmpty,
+    );
+  }
 
   factory SaveResumeBO.fromJson(JsonMap json) {
     return SaveResumeBO(
@@ -656,6 +793,11 @@ class SaveResumeBO {
       ),
       selfEvaluation: readString(json, 'selfEvaluation'),
       isPublic: readBool(json, 'isPublic'),
+      completeness: readInt(json, 'completeness'),
+      currentLocation: _readStringByKeys(json, const [
+        'currentLocation',
+        'current_location',
+      ]),
     );
   }
 
@@ -676,6 +818,7 @@ class SaveResumeBO {
           .toList(growable: false),
       'selfEvaluation': selfEvaluation,
       'isPublic': isPublic,
+      'completeness': computedCompleteness,
     };
   }
 }
@@ -717,8 +860,8 @@ class SkillCertificateBO {
       'name': name,
       'level': level,
       'issuer': issuer,
-      'issuedDate': issuedDate,
-      'imageUrl': imageUrl,
+      'issuedDate': _normalizeYearMonthValue(issuedDate),
+      'imageUrl': _normalizeUrlValue(imageUrl),
       'sortOrder': sortOrder,
     };
   }
@@ -782,7 +925,7 @@ class WorkExperienceBO {
   final String department;
   final String position;
   final String startDate;
-  final String endDate;
+  final String? endDate;
   final bool isCurrent;
   final String description;
   final int sortOrder;
@@ -794,7 +937,7 @@ class WorkExperienceBO {
       department: readString(json, 'department'),
       position: readString(json, 'position'),
       startDate: readString(json, 'startDate'),
-      endDate: readString(json, 'endDate'),
+      endDate: _readNullableStringByKeys(json, const ['endDate']),
       isCurrent: readBool(json, 'isCurrent'),
       description: readString(json, 'description'),
       sortOrder: readInt(json, 'sortOrder'),
@@ -807,8 +950,8 @@ class WorkExperienceBO {
       'company': company,
       'department': department,
       'position': position,
-      'startDate': startDate,
-      'endDate': endDate,
+      'startDate': _normalizeYearMonthValue(startDate),
+      'endDate': isCurrent ? null : _normalizeOptionalYearMonthValue(endDate),
       'isCurrent': isCurrent,
       'description': description,
       'sortOrder': sortOrder,

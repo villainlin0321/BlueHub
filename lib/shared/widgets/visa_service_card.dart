@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'app_svg_icon.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class VisaServiceCardData {
   const VisaServiceCardData({
     required this.title,
@@ -88,12 +89,7 @@ class VisaServiceCard extends StatelessWidget {
                                         data.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Color(0xFF262626),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          height: 24 / 16,
-                                        ),
+                                        style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
                                       ),
                                     ),
                                     if (data.verified) ...<Widget>[
@@ -107,12 +103,7 @@ class VisaServiceCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   data.statusText!,
-                                  style: const TextStyle(
-                                    color: Color(0xFF8C8C8C),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    height: 20 / 14,
-                                  ),
+                                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
                                 ),
                               ],
                             ],
@@ -130,21 +121,12 @@ class VisaServiceCard extends StatelessWidget {
                                 const SizedBox(width: 2),
                                 Text(
                                   data.rating,
-                                  style: const TextStyle(
-                                    color: Color(0xFFFE5815),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    height: 16 / 12,
-                                  ),
+                                  style: TestStyle.medium(fontSize: 12, color: Color(0xFFFE5815)),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   data.cases,
-                                  style: const TextStyle(
-                                    color: Color(0xFF8C8C8C),
-                                    fontSize: 12,
-                                    height: 16 / 12,
-                                  ),
+                                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
                                 ),
                                 ...data.tags
                                     .take(2)
@@ -169,12 +151,7 @@ class VisaServiceCard extends StatelessWidget {
                   data.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF595959),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 18 / 12,
-                  ),
+                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
                 ),
                 if (data.packages.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 16),
@@ -303,12 +280,7 @@ class _VisaServiceInlineTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF386EF8),
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          height: 10 / 10,
-        ),
+        style: TestStyle.regular(fontSize: 10, color: Color(0xFF386EF8)),
       ),
     );
   }
@@ -357,34 +329,19 @@ class _VisaServicePackageRow extends StatelessWidget {
               item.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: titleColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 24 / 14,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: titleColor),
             ),
           ),
           if (item.priceHint != null) ...<Widget>[
             Text(
               item.priceHint!,
-              style: const TextStyle(
-                color: Color(0xFFFE5815),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 24 / 12,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: Color(0xFFFE5815)),
             ),
             const SizedBox(width: 8),
           ],
           Text(
             item.price,
-            style: TextStyle(
-              color: priceColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 24 / 14,
-            ),
+            style: TestStyle.medium(fontSize: 14, color: priceColor),
           ),
         ],
       ),

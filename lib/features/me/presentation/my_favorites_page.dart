@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
@@ -15,6 +17,7 @@ import '../../service_detail/presentation/service_detail_page.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 
@@ -26,10 +29,19 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
   static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
+  static const int _pageSize = 50;
   late final TabController _tabController = TabController(
     length: 2,
     vsync: this,
   )..addListener(_handleTabChanged);
+  final EasyRefreshController _serviceRefreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
+  final EasyRefreshController _jobRefreshController = EasyRefreshController(
+    controlFinishRefresh: true,
+    controlFinishLoad: true,
+  );
 
   List<collection_models.VisaPackageVO> _serviceItems =
       <collection_models.VisaPackageVO>[];
@@ -39,6 +51,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   FavoriteTabType _currentTab = FavoriteTabType.services;
   bool _isServiceLoading = false;
   bool _isJobLoading = false;
+  int _serviceNextPage = 1;
+  int _jobNextPage = 1;
+  bool _serviceHasMore = true;
+  bool _jobHasMore = true;
   String? _serviceErrorMessage;
   String? _jobErrorMessage;
   final Set<String> _selectedServiceIds = <String>{};
@@ -57,6 +73,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   @override
   void dispose() {
+    _serviceRefreshController.dispose();
+    _jobRefreshController.dispose();
     _tabController
       ..removeListener(_handleTabChanged)
       ..dispose();
@@ -85,9 +103,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _enterManageMode() {
@@ -113,63 +129,174 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
   }
 
   /// 加载收藏签证套餐列表，成功后用于详情跳转与取消收藏。
-  Future<void> _loadCollectedPackages() async {
+  Future<bool> _loadCollectedPackages({bool refresh = false}) async {
+    final int page = refresh ? 1 : _serviceNextPage;
+    if (_isServiceLoading || (!refresh && !_serviceHasMore)) {
+      return false;
+    }
     setState(() {
       _isServiceLoading = true;
-      _serviceErrorMessage = null;
+      if (refresh) {
+        _serviceErrorMessage = null;
+      }
     });
 
     try {
       final response = await ref
           .read(collectionServiceProvider)
-          .listCollectedPackages(page: 1, pageSize: 50);
+          .listCollectedPackages(page: page, pageSize: _pageSize);
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isServiceLoading = false;
-        _serviceItems = response.list;
+        _serviceItems = refresh
+            ? response.list
+            : <collection_models.VisaPackageVO>[
+                ..._serviceItems,
+                ...response.list,
+              ];
+        _serviceNextPage = response.pagination.page + 1;
+        _serviceHasMore = response.pagination.hasNext;
         _serviceErrorMessage = null;
       });
+      return true;
     } catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isServiceLoading = false;
         _serviceErrorMessage = _resolveServiceErrorMessage(error);
       });
+      return false;
     }
   }
 
   /// 加载收藏岗位列表，成功后用于详情跳转与投递。
-  Future<void> _loadCollectedJobs() async {
+  Future<bool> _loadCollectedJobs({bool refresh = false}) async {
+    final int page = refresh ? 1 : _jobNextPage;
+    if (_isJobLoading || (!refresh && !_jobHasMore)) {
+      return false;
+    }
     setState(() {
       _isJobLoading = true;
-      _jobErrorMessage = null;
+      if (refresh) {
+        _jobErrorMessage = null;
+      }
     });
 
     try {
       final response = await ref
           .read(collectionServiceProvider)
-          .listCollectedJobs(page: 1, pageSize: 50);
+          .listCollectedJobs(page: page, pageSize: _pageSize);
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isJobLoading = false;
-        _jobItems = response.list;
+        _jobItems = refresh
+            ? response.list
+            : <collection_models.JobListVO>[..._jobItems, ...response.list];
+        _jobNextPage = response.pagination.page + 1;
+        _jobHasMore = response.pagination.hasNext;
         _jobErrorMessage = null;
       });
+      return true;
     } catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _isJobLoading = false;
         _jobErrorMessage = _resolveJobErrorMessage(error);
       });
+      return false;
     }
+  }
+
+  Future<void> _onServiceRefresh() async {
+    final bool success = await _loadCollectedPackages(refresh: true);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _serviceRefreshController.finishRefresh();
+      _serviceRefreshController.resetFooter();
+      return;
+    }
+    _serviceRefreshController.finishRefresh(IndicatorResult.fail);
+    if (_serviceErrorMessage != null &&
+        _serviceErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_serviceErrorMessage!);
+    }
+  }
+
+  Future<void> _onServiceLoadMore() async {
+    final bool success = await _loadCollectedPackages();
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _serviceRefreshController.finishLoad(
+        _serviceHasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+      return;
+    }
+    _serviceRefreshController.finishLoad(IndicatorResult.fail);
+    if (_serviceErrorMessage != null &&
+        _serviceErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_serviceErrorMessage!);
+    }
+  }
+
+  Future<void> _onJobRefresh() async {
+    final bool success = await _loadCollectedJobs(refresh: true);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _jobRefreshController.finishRefresh();
+      _jobRefreshController.resetFooter();
+      return;
+    }
+    _jobRefreshController.finishRefresh(IndicatorResult.fail);
+    if (_jobErrorMessage != null && _jobErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_jobErrorMessage!);
+    }
+  }
+
+  Future<void> _onJobLoadMore() async {
+    final bool success = await _loadCollectedJobs();
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _jobRefreshController.finishLoad(
+        _jobHasMore ? IndicatorResult.success : IndicatorResult.noMore,
+      );
+      return;
+    }
+    _jobRefreshController.finishLoad(IndicatorResult.fail);
+    if (_jobErrorMessage != null && _jobErrorMessage!.trim().isNotEmpty) {
+      _showMessage(_jobErrorMessage!);
+    }
+  }
+
+  Widget _buildScrollableState({
+    required BuildContext context,
+    required Widget child,
+  }) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        96,
+        24,
+        MediaQuery.paddingOf(context).bottom + (_isManaging ? 104 : 24),
+      ),
+      children: <Widget>[Center(child: child)],
+    );
   }
 
   /// 统一提取收藏岗位列表的错误文案。
@@ -319,9 +446,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         );
       });
       ref.read(collectionRefreshTickProvider.notifier).bump();
-      _showMessage(
-        jobIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr(),
-      );
+      _showMessage(jobIds.length == 1 ? '我的.已取消收藏'.tr() : '我的.已批量取消收藏'.tr());
     } catch (error) {
       if (!mounted) {
         return;
@@ -392,8 +517,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       if (previous == next) {
         return;
       }
-      _loadCollectedPackages();
-      _loadCollectedJobs();
+      _loadCollectedPackages(refresh: true);
+      _loadCollectedJobs(refresh: true);
     });
 
     return Scaffold(
@@ -416,11 +541,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         ),
         title: Text(
           '我的.我的收藏'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
         ),
         actions: <Widget>[
           Padding(
@@ -435,11 +556,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               ),
               child: Text(
                 _isManaging ? '我的.退出管理'.tr() : '我的.管理'.tr(),
-                style: const TextStyle(
-                  color: Color(0xFF262626),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
+                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
               ),
             ),
           ),
@@ -461,16 +578,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               controller: _tabController,
               labelColor: const Color(0xFF096DD9),
               unselectedLabelColor: const Color(0xFF262626),
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 22 / 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 22 / 14,
-              ),
+              labelStyle: TestStyle.medium(fontSize: 14),
+              unselectedLabelStyle: TestStyle.regular(fontSize: 14),
               indicatorSize: TabBarIndicatorSize.label,
               indicatorColor: const Color(0xFF096DD9),
               indicatorWeight: 2,
@@ -493,51 +602,87 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   /// 根据收藏岗位加载状态切换列表、空态和错误态。
   Widget _buildJobTab() {
+    final Widget child;
     if (_isJobLoading && _jobItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_jobErrorMessage != null && _jobItems.isEmpty) {
-      return _FavoriteJobsErrorState(
-        message: _jobErrorMessage!,
-        onRetry: _loadCollectedJobs,
+      child = _buildScrollableState(
+        context: context,
+        child: const CircularProgressIndicator(),
+      );
+    } else if (_jobErrorMessage != null && _jobItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: _FavoriteJobsErrorState(
+          message: _jobErrorMessage!,
+          onRetry: _onJobRefresh,
+        ),
+      );
+    } else if (_jobItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: const _FavoriteJobsEmptyState(),
+      );
+    } else {
+      child = _FavoriteJobList(
+        items: _jobItems,
+        isManaging: _isManaging,
+        selectedIds: _selectedJobIds,
+        mapAssetPath: _mapAsset,
+        onItemSelectionToggle: _toggleJobSelection,
+        applyingJobIds: _submittingJobIds,
+        appliedJobIds: _appliedJobIds,
+        onApplyTap: _handleApplyJob,
+        onDeleteItem: _deleteJobItem,
       );
     }
-    if (_jobItems.isEmpty) {
-      return const _FavoriteJobsEmptyState();
-    }
-    return _FavoriteJobList(
-      items: _jobItems,
-      isManaging: _isManaging,
-      selectedIds: _selectedJobIds,
-      mapAssetPath: _mapAsset,
-      onItemSelectionToggle: _toggleJobSelection,
-      applyingJobIds: _submittingJobIds,
-      appliedJobIds: _appliedJobIds,
-      onApplyTap: _handleApplyJob,
-      onDeleteItem: _deleteJobItem,
+    return EasyRefresh(
+      controller: _jobRefreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _onJobRefresh,
+      onLoad: _jobHasMore && _jobItems.isNotEmpty ? _onJobLoadMore : null,
+      child: child,
     );
   }
 
   /// 根据收藏签证加载状态切换列表、空态和错误态。
   Widget _buildServiceTab() {
+    final Widget child;
     if (_isServiceLoading && _serviceItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_serviceErrorMessage != null && _serviceItems.isEmpty) {
-      return _FavoriteServicesErrorState(
-        message: _serviceErrorMessage!,
-        onRetry: _loadCollectedPackages,
+      child = _buildScrollableState(
+        context: context,
+        child: const CircularProgressIndicator(),
+      );
+    } else if (_serviceErrorMessage != null && _serviceItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: _FavoriteServicesErrorState(
+          message: _serviceErrorMessage!,
+          onRetry: _onServiceRefresh,
+        ),
+      );
+    } else if (_serviceItems.isEmpty) {
+      child = _buildScrollableState(
+        context: context,
+        child: const _FavoriteServicesEmptyState(),
+      );
+    } else {
+      child = _FavoriteServiceList(
+        items: _serviceItems,
+        isManaging: _isManaging,
+        selectedIds: _selectedServiceIds,
+        onItemSelectionToggle: _toggleServiceSelection,
+        onDeleteItem: _deleteServiceItem,
       );
     }
-    if (_serviceItems.isEmpty) {
-      return const _FavoriteServicesEmptyState();
-    }
-    return _FavoriteServiceList(
-      items: _serviceItems,
-      isManaging: _isManaging,
-      selectedIds: _selectedServiceIds,
-      onItemSelectionToggle: _toggleServiceSelection,
-      onDeleteItem: _deleteServiceItem,
+    return EasyRefresh(
+      controller: _serviceRefreshController,
+      header: const ClassicHeader(),
+      footer: const ClassicFooter(),
+      onRefresh: _onServiceRefresh,
+      onLoad: _serviceHasMore && _serviceItems.isNotEmpty
+          ? _onServiceLoadMore
+          : null,
+      child: child,
     );
   }
 }
@@ -562,6 +707,7 @@ class _FavoriteServiceList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(12, 12, 12, isManaging ? 104 : 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -606,6 +752,7 @@ class _FavoriteJobList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(12, 12, 12, isManaging ? 104 : 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -669,11 +816,7 @@ class _SelectableWrapper extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -788,11 +931,7 @@ class _FavoriteServicesEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏签证服务'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -819,11 +958,7 @@ class _FavoriteServicesErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -843,11 +978,7 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏岗位'.tr(),
-        style: TextStyle(
-          color: Color(0xFF8C8C8C),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
       ),
     );
   }
@@ -877,11 +1008,7 @@ class _FavoriteJobsErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF8C8C8C),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+              style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -932,11 +1059,7 @@ class _FavoritesManageBar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '我的.全选'.tr(),
-                    style: TextStyle(
-                      color: Color(0xFF262626),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
                   ),
                 ],
               ),
@@ -956,11 +1079,7 @@ class _FavoritesManageBar extends StatelessWidget {
                 ),
                 child: Text(
                   '我的.删除'.tr(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -983,9 +1102,7 @@ extension on collection_models.JobListVO {
       if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
         '招聘卡片.提供签证'.tr(),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[
-      if (isUrgent) '招聘卡片.急招'.tr(),
-    ];
+    final List<String> highlightTags = <String>[if (isUrgent) '招聘卡片.急招'.tr()];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),
@@ -1009,7 +1126,6 @@ extension on collection_models.JobListVO {
       company: employer.name,
       location: parts.join('·'),
       showApplyButton: true,
-      isCollected: true,
       previewImageAssetPath: mapAssetPath,
     );
   }
@@ -1027,9 +1143,9 @@ extension on collection_models.VisaPackageVO {
       title: name.trim().isEmpty ? '首页.签证套餐'.tr() : name,
       rating: '0.0',
       cases: estimatedDays > 0
-          ? '服务详情.预计办理天数'.tr(namedArgs: <String, String>{
-              'days': estimatedDays.toString(),
-            })
+          ? '服务详情.预计办理天数'.tr(
+              namedArgs: <String, String>{'days': estimatedDays.toString()},
+            )
           : '我的.已收藏套餐'.tr(),
       tags: tags.isEmpty ? <String>['我的.签证服务'.tr()] : tags,
       description: _buildFavoriteDescription(),
@@ -1057,13 +1173,15 @@ extension on collection_models.VisaPackageVO {
   String _buildFavoriteDescription() {
     final List<String> parts = <String>[
       if (requiredMaterials.isNotEmpty)
-        '我的.所需材料项'.tr(namedArgs: <String, String>{
-          'count': requiredMaterials.length.toString(),
-        }),
+        '我的.所需材料项'.tr(
+          namedArgs: <String, String>{
+            'count': requiredMaterials.length.toString(),
+          },
+        ),
       if (estimatedDays > 0)
-        '我的.预计办理天数'.tr(namedArgs: <String, String>{
-          'days': estimatedDays.toString(),
-        }),
+        '我的.预计办理天数'.tr(
+          namedArgs: <String, String>{'days': estimatedDays.toString()},
+        ),
     ];
     if (parts.isEmpty) {
       return '我的.已收藏签证套餐说明'.tr();

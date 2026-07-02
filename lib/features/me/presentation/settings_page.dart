@@ -2,14 +2,20 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../auth/presentation/widgets/auth_language_switch.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/localization/app_locales.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../auth/data/auth_providers.dart';
+import '../data/user_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
+
+import 'package:bluehub_app/shared/ui/test_style.dart';
 
 /// 设置页：承接企业端“我的”页右上角设置入口，并提供基础账号操作。
 class SettingsPage extends ConsumerStatefulWidget {
@@ -20,7 +26,14 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _isLoggingOut = false;
+  bool _isSubmittingAccountAction = false;
+  String _versionLabel = '--';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersionCode();
+  }
 
   @override
   /// 构建设置页主体，按设计稿组织顶部导航、列表项与底部操作区。
@@ -52,6 +65,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             title: '设置.黑名单'.tr(),
                             onTap: _handleBlacklistTap,
                           ),
+                          _SettingsActionRow(
+                            title: '设置.关于我们'.tr(),
+                            onTap: _handleAboutTap,
+                          ),
                         ],
                       ),
                       Expanded(child: SizedBox()),
@@ -59,13 +76,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: _BottomTextButton(
                           label: '设置.退出登录'.tr(),
-                          onTap: _isLoggingOut ? null : _handleLogoutTap,
+                          onTap: _isSubmittingAccountAction
+                              ? null
+                              : _handleLogoutTap,
                         ),
                       ),
                       const SizedBox(height: 16),
                       _BottomLinkButton(
                         label: '设置.注销'.tr(),
-                        onTap: _handleDeleteTap,
+                        onTap: _isSubmittingAccountAction
+                            ? null
+                            : _handleDeleteTap,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '— $_versionLabel —',
+                        style: TestStyle.regular(
+                          fontSize: 12,
+                          color: Color(0xFFBFBFBF),
+                        ),
                       ),
                     ],
                   ),
@@ -73,7 +102,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 const SizedBox(height: 100),
               ],
             ),
-            if (_isLoggingOut)
+            if (_isSubmittingAccountAction)
               Positioned.fill(
                 child: ColoredBox(
                   color: const Color(0x33000000),
@@ -101,6 +130,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     await context.switchAppLocale(isChinese);
   }
 
+  /// 读取平台版本号与构建号，组合成设置页底部展示文案。
+  Future<void> _loadVersionCode() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version.trim();
+    final String buildNumber = packageInfo.buildNumber.trim();
+    final String nextVersionLabel = switch ((
+      version.isEmpty,
+      buildNumber.isEmpty,
+    )) {
+      (true, true) => '--',
+      (false, true) => 'v$version',
+      (true, false) => '($buildNumber)',
+      (false, false) => 'v$version ($buildNumber)',
+    };
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _versionLabel = nextVersionLabel;
+    });
+  }
+
   /// 按当前角色分流“我的信息”入口，避免不同身份误入不匹配的资料页。
   void _handleMyInfoTap() {
     switch (ref.read(shellRoleProvider)) {
@@ -116,14 +167,52 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  /// 黑名单暂未接入真实业务，先保留占位提示避免点击无反馈。
+  /// 打开黑名单页，复用“我的”模块已注册的真实路由入口。
   void _handleBlacklistTap() {
     context.push(RoutePaths.blacklist);
   }
 
-  /// 注销能力尚未接入接口，先提示用户当前状态。
-  void _handleDeleteTap() {
-    _showMessage('设置.注销未开放'.tr());
+  /// 打开关于我们页，便于用户查看应用版本和公司主体信息。
+  void _handleAboutTap() {
+    context.push(RoutePaths.aboutApp);
+  }
+
+  /// 确认注销账号后调用软删除接口，并清空本地会话返回登录页。
+  Future<void> _handleDeleteTap() async {
+    final bool confirmed = await _showDeleteConfirmDialog();
+    if (!mounted || !confirmed) {
+      return;
+    }
+    if (_isSubmittingAccountAction) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingAccountAction = true;
+    });
+    try {
+      await ref
+          .read(userServiceProvider)
+          .deleteAccount(reason: 'user_requested');
+      await ref
+          .read(authSessionProvider.notifier)
+          .clearSession(reason: 'manual_delete_account');
+      if (!mounted) {
+        return;
+      }
+      context.go(RoutePaths.loginPhone);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '设置.注销失败'.tr()));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingAccountAction = false;
+        });
+      }
+    }
   }
 
   /// 确认退出登录后调用服务端注销，并清空本地会话回到登录页。
@@ -132,12 +221,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (!mounted || !confirmed) {
       return;
     }
-    if (_isLoggingOut) {
+    if (_isSubmittingAccountAction) {
       return;
     }
 
     setState(() {
-      _isLoggingOut = true;
+      _isSubmittingAccountAction = true;
     });
     try {
       // 关键流程：先通知服务端登出，再清理本地登录态。
@@ -153,11 +242,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error));
+      _showMessage(_resolveErrorMessage(error, fallback: '设置.退出登录失败'.tr()));
     } finally {
       if (mounted) {
         setState(() {
-          _isLoggingOut = false;
+          _isSubmittingAccountAction = false;
         });
       }
     }
@@ -165,41 +254,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// 展示退出登录确认框，避免误触直接丢失当前会话。
   Future<bool> _showLogoutConfirmDialog() async {
-    final bool? confirmed = await showDialog<bool>(
+    return showAppConfirmDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('设置.退出登录标题'.tr()),
-          content: Text('设置.退出登录内容'.tr()),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('通用.取消'.tr()),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('通用.确定'.tr()),
-            ),
-          ],
-        );
-      },
+      title: '设置.退出登录标题'.tr(),
+      message: '设置.退出登录内容'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.确定'.tr(),
     );
-    return confirmed ?? false;
+  }
+
+  /// 展示注销账号确认框，避免误删导致当前账号不可继续使用。
+  Future<bool> _showDeleteConfirmDialog() async {
+    return showAppConfirmDialog(
+      context: context,
+      title: '设置.注销标题'.tr(),
+      message: '设置.注销内容'.tr(),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.确定'.tr(),
+    );
   }
 
   /// 将异常转换成适合页面提示的文案，优先展示接口返回信息。
-  String _resolveErrorMessage(Object error) {
+  String _resolveErrorMessage(Object error, {required String fallback}) {
     if (error is ApiException) {
       return error.message;
     }
-    return '设置.退出登录失败'.tr();
+    return fallback;
   }
 
-  /// 统一通过页面级 Snackbar 反馈点击结果或异常信息。
+  /// 统一通过全局 Toast 反馈点击结果或异常信息。
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 }
 
@@ -226,12 +311,7 @@ class _SettingsHeader extends StatelessWidget {
       ),
       title: Text(
         '设置.标题'.tr(),
-        style: const TextStyle(
-          color: Color(0xFF262626),
-          fontSize: 17,
-          fontWeight: FontWeight.w500,
-          height: 24 / 17,
-        ),
+        style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
       ),
     );
   }
@@ -271,10 +351,9 @@ class _LanguageRow extends StatelessWidget {
           Expanded(
             child: Text(
               '设置.系统语言'.tr(),
-              style: const TextStyle(
-                color: Color(0xFF262626),
+              style: TestStyle.pingFangRegular(
                 fontSize: 16,
-                height: 22 / 16,
+                color: Color(0xFF262626),
               ),
             ),
           ),
@@ -306,10 +385,9 @@ class _SettingsActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF262626),
+                style: TestStyle.regular(
                   fontSize: 16,
-                  height: 22 / 16,
+                  color: Color(0xFF262626),
                 ),
               ),
             ),
@@ -342,11 +420,7 @@ class _BottomTextButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF595959),
-            fontSize: 16,
-            height: 22 / 16,
-          ),
+          style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
         ),
       ),
     );
@@ -357,7 +431,7 @@ class _BottomLinkButton extends StatelessWidget {
   const _BottomLinkButton({required this.label, required this.onTap});
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   /// 构建底部文本入口，适合承载次级设置动作。
@@ -370,11 +444,7 @@ class _BottomLinkButton extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 16,
-              height: 22 / 16,
-            ),
+            style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
           ),
         ),
       ),

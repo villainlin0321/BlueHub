@@ -73,6 +73,12 @@ class VisaOrderService {
       '/visa-orders/$orderId',
       decode: (data) => VisaOrderVO.fromJson(asJsonMap(data)),
     );
+    if (response.currentStep == 1) {
+      return VisaOrderVO.fromJson(<String, dynamic>{
+        ...response.toJson(),
+        'currentStep': 2,
+      });
+    }
     return response;
   }
 
@@ -92,15 +98,48 @@ class VisaOrderService {
     return _apiClient.postVoid('/visa-orders/$orderId/pay');
   }
 
+  /// 发起订单退款。
+  ///
+  /// 供服务商端在符合退款条件时触发退款流程。
+  Future<void> refundOrder({required int orderId}) async {
+    return _apiClient.postVoid('/visa-orders/$orderId/refund');
+  }
+
   /// 提交服务商侧订单处理结果或处理动作。
   Future<void> processOrder({
     required int orderId,
     required ProcessOrderBO request,
   }) async {
+    final String normalizedAction = request.action.trim().toLowerCase();
+    final ProcessOrderBO normalizedRequest =
+        normalizedAction == 'reject' &&
+            (request.remark ?? '').trim().isEmpty &&
+            (request.materialRejections?.isNotEmpty ?? false)
+        ? ProcessOrderBO(
+            action: request.action,
+            remark: request.materialRejections!.first.reason.trim(),
+            materialRejections: request.materialRejections,
+            nextStatus: request.nextStatus,
+          )
+        : request;
     return _apiClient.putVoid(
       '/visa-orders/$orderId/process',
-      data: request.toJson(),
+      data: normalizedRequest.toJson(),
     );
+  }
+
+  /// 查询订单驳回历史，返回按时间倒序的驳回记录列表。
+  Future<List<OrderRejectRecordVO>> listRejectHistory({
+    required int orderId,
+  }) async {
+    final response = await _apiClient.get<List<OrderRejectRecordVO>>(
+      '/visa-orders/$orderId/reject-history',
+      decode: (data) => decodeModelList<OrderRejectRecordVO>(
+        data,
+        OrderRejectRecordVO.fromJson,
+      ),
+    );
+    return response;
   }
 
   /// 上传签证办理过程中产生的签证文件或出签材料。

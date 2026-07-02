@@ -38,9 +38,7 @@ class PageResult<T> {
   }) {
     return PageResult<T>(
       list: readModelList<T>(json, 'list', fromJson),
-      pagination: Pagination.fromJson(
-        readJsonMap(json, 'pagination'),
-      ),
+      pagination: Pagination.fromJson(readJsonMap(json, 'pagination')),
     );
   }
 }

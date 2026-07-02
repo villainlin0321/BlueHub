@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AuthLanguageSwitch extends StatelessWidget {
   const AuthLanguageSwitch({
     super.key,
@@ -59,18 +60,17 @@ class _LanguageOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(17),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 4,
+        ),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF1890FF) : Colors.transparent,
           borderRadius: BorderRadius.circular(17),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF262626),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TestStyle.semibold(fontSize: 12, color: selected ? Colors.white : const Color(0xFF262626)),
         ),
       ),
     );

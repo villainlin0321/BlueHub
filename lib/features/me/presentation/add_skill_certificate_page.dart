@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
@@ -11,11 +12,9 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class AddSkillCertificatePage extends ConsumerStatefulWidget {
-  const AddSkillCertificatePage({
-    super.key,
-    this.args,
-  });
+  const AddSkillCertificatePage({super.key, this.args});
 
   final AddSkillCertificatePageArgs? args;
 
@@ -61,12 +60,14 @@ class _AddSkillCertificatePageState
     final List<TagItemVO> tags = await ref.read(
       tagDictionaryProvider(TagCategory.skillCertType).future,
     );
-    return tags.map((TagItemVO item) {
-      final String label = item.tagNameZh.trim().isNotEmpty
-          ? item.tagNameZh.trim()
-          : item.tagCode.trim();
-      return SelectableSheetOption<String>(value: label, label: label);
-    }).toList(growable: false);
+    return tags
+        .map((TagItemVO item) {
+          final String label = item.tagNameZh.trim().isNotEmpty
+              ? item.tagNameZh.trim()
+              : item.tagCode.trim();
+          return SelectableSheetOption<String>(value: label, label: label);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _openCertificateSheet() async {
@@ -129,9 +130,7 @@ class _AddSkillCertificatePageState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppToast.show(message);
   }
 
   void _handleSave() {
@@ -188,12 +187,7 @@ class _AddSkillCertificatePageState
         ),
         title: Text(
           '我的.技能证书'.tr(),
-          style: TextStyle(
-            color: Color(0xE6000000),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 24 / 17,
-          ),
+          style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
         ),
       ),
       body: SafeArea(
@@ -215,12 +209,7 @@ class _AddSkillCertificatePageState
             const SizedBox(height: 16),
             Text(
               '我的.证书图片'.tr(),
-              style: TextStyle(
-                color: Color(0xFF595959),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 20 / 14,
-              ),
+              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
             ),
             const SizedBox(height: 12),
             UploadImageGrid(
@@ -275,11 +264,7 @@ class _AddSkillCertificatePageState
                           ),
                           child: Text(
                             '我的.删除'.tr(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                              height: 22 / 16,
-                            ),
+                            style: TestStyle.pingFangRegular(fontSize: 16),
                           ),
                         ),
                       ),
@@ -302,18 +287,14 @@ class _AddSkillCertificatePageState
                         ),
                         child: Text(
                           '我的.保存'.tr(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 22 / 16,
-                          ),
+                          style: TestStyle.pingFangRegular(fontSize: 16),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 33)
+              const SizedBox(height: 33),
             ],
           ),
         ),
@@ -345,9 +326,7 @@ class AddSkillCertificatePageArgs {
 class ResumeCertificatePageResult {
   const ResumeCertificatePageResult.saved(this.value) : deleted = false;
 
-  const ResumeCertificatePageResult.deleted()
-    : value = null,
-      deleted = true;
+  const ResumeCertificatePageResult.deleted() : value = null, deleted = true;
 
   final ResumeCertificateFormResult? value;
   final bool deleted;
@@ -373,12 +352,7 @@ class _CertificateSelectorField extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF595959),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 20 / 14,
-            ),
+            style: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
           ),
           Expanded(
             child: InkWell(
@@ -395,14 +369,9 @@ class _CertificateSelectorField extends StatelessWidget {
                     Expanded(
                       child: Text(
                         value ?? '通用.请选择'.tr(),
-                        style: TextStyle(
-                          color: value == null
+                        style: TestStyle.pingFangRegular(fontSize: 16, color: value == null
                               ? const Color(0xFFBFBFBF)
-                              : const Color(0xFF171A1D),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 22 / 16,
-                        ),
+                              : const Color(0xFF171A1D)),
                       ),
                     ),
                     const Icon(

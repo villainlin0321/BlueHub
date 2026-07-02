@@ -4,7 +4,8 @@ import 'package:bluehub_app/shared/network/api_decoders.dart';
 import 'package:bluehub_app/shared/network/page_result.dart';
 
 class ProviderFinanceService {
-  ProviderFinanceService({required ApiClient apiClient}) : _apiClient = apiClient;
+  ProviderFinanceService({required ApiClient apiClient})
+    : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 

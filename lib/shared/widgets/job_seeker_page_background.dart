@@ -23,11 +23,7 @@ class JobSeekerPageBackground extends StatelessWidget {
       children: <Widget>[
         Positioned.fill(
           child: IgnorePointer(
-            child: SvgPicture.asset(
-              assetPath,
-              fit: fit,
-              alignment: alignment,
-            ),
+            child: SvgPicture.asset(assetPath, fit: fit, alignment: alignment),
           ),
         ),
         child,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:bluehub_app/shared/ui/test_style.dart';
 class BlacklistPageStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);
   static const Color navBackground = Colors.white;
@@ -15,42 +16,17 @@ class BlacklistPageStyles {
   static const double tileHeight = 56;
   static const double avatarSize = 36;
 
-  static const TextStyle navTitle = TextStyle(
-    color: titleColor,
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-    height: 24 / 17,
-  );
+  static final TextStyle navTitle = TestStyle.medium(fontSize: 17, color: titleColor);
 
-  static const TextStyle countText = TextStyle(
-    color: titleColor,
-    fontSize: 14,
-    height: 20 / 14,
-  );
+  static final TextStyle countText = TestStyle.regular(fontSize: 14, color: titleColor);
 
-  static const TextStyle nickname = TextStyle(
-    color: titleColor,
-    fontSize: 16,
-    height: 22 / 16,
-  );
+  static final TextStyle nickname = TestStyle.regular(fontSize: 16, color: titleColor);
 
-  static const TextStyle action = TextStyle(
-    color: actionColor,
-    fontSize: 14,
-    height: 20 / 14,
-  );
+  static final TextStyle action = TestStyle.regular(fontSize: 14, color: actionColor);
 
-  static const TextStyle footer = TextStyle(
-    color: secondaryText,
-    fontSize: 12,
-    height: 18 / 12,
-  );
+  static final TextStyle footer = TestStyle.regular(fontSize: 12, color: secondaryText);
 
-  static const TextStyle errorText = TextStyle(
-    color: secondaryText,
-    fontSize: 14,
-    height: 20 / 14,
-  );
+  static final TextStyle errorText = TestStyle.regular(fontSize: 14, color: secondaryText);
 
   const BlacklistPageStyles._();
 }
