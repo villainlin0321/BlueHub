@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
+import '../logging/app_logger.dart';
 import 'api_exception.dart';
 import 'api_result.dart';
 
@@ -8,6 +13,9 @@ class ApiClient {
   ApiClient(this._dio);
 
   final Dio _dio;
+  static const MethodChannel _nativeDebugChannel = MethodChannel(
+    'bluehub/app_icon',
+  );
 
   Future<T> get<T>(
     String path, {
@@ -221,6 +229,11 @@ class ApiClient {
   }
 
   ApiException _mapDioException(DioException e) {
+    if (e.type == DioExceptionType.connectionError) {
+      // #region debug-point B:native-probe-for-failed-url
+      unawaited(_runNativeProbeForFailedUrl(e.requestOptions.uri.toString()));
+      // #endregion
+    }
     if (e.response != null) {
       return ApiException.http(
         statusCode: e.response?.statusCode,
@@ -235,5 +248,39 @@ class ApiClient {
       return ApiException.network(e);
     }
     return ApiException.unknown(e);
+  }
+
+  /// 当 Dart 网络栈连接失败时，使用 iOS 原生 URLSession 对同一 URL 再探测一次。
+  Future<void> _runNativeProbeForFailedUrl(String url) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    try {
+      final Map<Object?, Object?>? result =
+          await _nativeDebugChannel.invokeMapMethod<Object?, Object?>(
+            'probeHttp',
+            <String, Object?>{'url': url},
+          );
+      AppLogger.instance.info(
+        'NATIVE_HTTP',
+        'Dio 失败后 iOS 原生同 URL 探针完成',
+        context: <String, Object?>{
+          'target': url,
+          'result': result?.map(
+                (Object? key, Object? value) =>
+                    MapEntry(key.toString(), value),
+              ) ??
+              <String, Object?>{},
+        },
+      );
+    } on PlatformException catch (error, stackTrace) {
+      AppLogger.instance.error(
+        'NATIVE_HTTP',
+        'Dio 失败后原生同 URL 探针调用失败',
+        error: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{'target': url},
+      );
+    }
   }
 }
