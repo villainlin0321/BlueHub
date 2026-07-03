@@ -161,18 +161,18 @@ class JobPositionCard extends StatelessWidget {
                 ],
               ],
             ),
-            if (data.previewImageAssetPath != null) ...<Widget>[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  data.previewImageAssetPath!,
-                  width: double.infinity,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
+            // if (data.previewImageAssetPath != null) ...<Widget>[
+            //   const SizedBox(height: 12),
+            //   ClipRRect(
+            //     borderRadius: BorderRadius.circular(12),
+            //     child: Image.asset(
+            //       data.previewImageAssetPath!,
+            //       width: double.infinity,
+            //       height: 120,
+            //       fit: BoxFit.cover,
+            //     ),
+            //   ),
+            // ],
           ],
         ),
       ),

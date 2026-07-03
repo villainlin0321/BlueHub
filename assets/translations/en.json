@@ -817,6 +817,8 @@
   "套餐管理": {
     "标题": "Package Management",
     "发布": "Publish",
+    "删除套餐": "Delete Package",
+    "确认删除套餐": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "已上架": "Published",
     "已下架": "Offline",
     "已驳回": "Rejected",
@@ -825,6 +827,7 @@
     "暂无已驳回套餐": "No rejected packages yet",
     "上架": "Publish",
     "下架": "Take Offline",
+    "套餐已删除": "Package deleted",
     "套餐已上架": "Package published",
     "套餐已下架": "Package taken offline",
     "操作失败": "Operation failed. Please try again later.",
