@@ -28,7 +28,6 @@ class MyFavoritesPage extends ConsumerStatefulWidget {
 class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
-  static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
   static const int _pageSize = 50;
   late final TabController _tabController = TabController(
     length: 2,
@@ -626,7 +625,6 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         items: _jobItems,
         isManaging: _isManaging,
         selectedIds: _selectedJobIds,
-        mapAssetPath: _mapAsset,
         onItemSelectionToggle: _toggleJobSelection,
         applyingJobIds: _submittingJobIds,
         appliedJobIds: _appliedJobIds,
@@ -731,7 +729,6 @@ class _FavoriteJobList extends StatelessWidget {
     required this.items,
     required this.isManaging,
     required this.selectedIds,
-    required this.mapAssetPath,
     required this.onItemSelectionToggle,
     required this.applyingJobIds,
     required this.appliedJobIds,
@@ -742,7 +739,6 @@ class _FavoriteJobList extends StatelessWidget {
   final List<collection_models.JobListVO> items;
   final bool isManaging;
   final Set<String> selectedIds;
-  final String mapAssetPath;
   final ValueChanged<String> onItemSelectionToggle;
   final Set<String> applyingJobIds;
   final Set<String> appliedJobIds;
@@ -767,7 +763,6 @@ class _FavoriteJobList extends StatelessWidget {
           onDelete: () => onDeleteItem(item.jobId),
           child: _FavoriteJobCard(
             item: item,
-            mapAssetPath: mapAssetPath,
             isApplying: applyingJobIds.contains(itemId),
             isApplied: appliedJobIds.contains(itemId),
             onApplyTap: onApplyTap,
@@ -891,14 +886,12 @@ class _FavoriteServiceCard extends StatelessWidget {
 class _FavoriteJobCard extends StatelessWidget {
   const _FavoriteJobCard({
     required this.item,
-    required this.mapAssetPath,
     required this.isApplying,
     required this.isApplied,
     required this.onApplyTap,
   });
 
   final collection_models.JobListVO item;
-  final String mapAssetPath;
   final bool isApplying;
   final bool isApplied;
   final Future<void> Function(collection_models.JobListVO item) onApplyTap;
@@ -906,7 +899,7 @@ class _FavoriteJobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return JobPositionCard(
-      data: item.toCardData(mapAssetPath: mapAssetPath),
+      data: item.toCardData(),
       onTap: () => context.push(
         RoutePaths.jobDetail,
         extra: JobDetailPageArgs(jobId: item.jobId),
@@ -1092,7 +1085,7 @@ class _FavoritesManageBar extends StatelessWidget {
 
 extension on collection_models.JobListVO {
   /// 将收藏岗位接口返回的数据映射为职位卡片数据。
-  JobPositionCardData toCardData({required String mapAssetPath}) {
+  JobPositionCardData toCardData() {
     final List<String> tagLabels = tags
         .map((collection_models.TagVO tag) => tag.label.trim())
         .where((String label) => label.isNotEmpty)
@@ -1126,7 +1119,6 @@ extension on collection_models.JobListVO {
       company: employer.name,
       location: parts.join('·'),
       showApplyButton: true,
-      previewImageAssetPath: mapAssetPath,
     );
   }
 }

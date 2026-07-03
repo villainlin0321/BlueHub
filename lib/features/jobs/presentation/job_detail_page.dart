@@ -283,7 +283,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -637,15 +637,15 @@ class _LocationSection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              mapAssetPath,
-              width: double.infinity,
-              height: 180,
-              fit: BoxFit.cover,
-            ),
-          ),
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(12),
+          //   child: Image.asset(
+          //     mapAssetPath,
+          //     width: double.infinity,
+          //     height: 180,
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
         ],
       ),
     );

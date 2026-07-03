@@ -3,6 +3,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -140,6 +141,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
 
   List<VisaPackageVO> _packages = const <VisaPackageVO>[];
   final Set<int> _updatingPackageIds = <int>{};
+  final Set<int> _deletingPackageIds = <int>{};
   int _currentPage = 1;
   bool _hasMore = false;
   bool _isInitialLoading = true;
@@ -274,7 +276,9 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
 
   Future<void> _handleSecondaryAction(VisaPackageVO package) async {
     final String? nextStatus = widget.tab.secondaryActionStatus;
-    if (nextStatus == null || _updatingPackageIds.contains(package.packageId)) {
+    if (nextStatus == null ||
+        _updatingPackageIds.contains(package.packageId) ||
+        _deletingPackageIds.contains(package.packageId)) {
       return;
     }
 
@@ -309,6 +313,59 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       }
       setState(() {
         _updatingPackageIds.remove(package.packageId);
+      });
+      _showMessage(_normalizeError(error), isError: true);
+    }
+  }
+
+  Future<bool> _confirmDeletePackage(VisaPackageVO package) async {
+    return showAppDeleteConfirmDialog(
+      context: context,
+      title: '套餐管理.删除套餐'.tr(),
+      message: '套餐管理.确认删除套餐'.tr(
+        namedArgs: <String, String>{'name': package.name},
+      ),
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '企业岗位.删除'.tr(),
+    );
+  }
+
+  Future<void> _deletePackage(VisaPackageVO package) async {
+    if (_deletingPackageIds.contains(package.packageId) ||
+        _updatingPackageIds.contains(package.packageId)) {
+      return;
+    }
+
+    final bool confirmed = await _confirmDeletePackage(package);
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _deletingPackageIds.add(package.packageId);
+    });
+
+    try {
+      await ref
+          .read(visaPackageServiceProvider)
+          .deletePackage(packageId: package.packageId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _deletingPackageIds.remove(package.packageId);
+        _packages = _packages
+            .where((VisaPackageVO item) => item.packageId != package.packageId)
+            .toList(growable: false);
+      });
+      ref.invalidate(myVisaPackageListProvider(widget.tab.status));
+      _showMessage('套餐管理.套餐已删除'.tr());
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _deletingPackageIds.remove(package.packageId);
       });
       _showMessage(_normalizeError(error), isError: true);
     }
@@ -350,21 +407,26 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (BuildContext context, int index) {
         final VisaPackageVO package = packages[index];
+        final bool isDeleting = _deletingPackageIds.contains(package.packageId);
         return _PackageCard(
           data: _PackageCardData.fromVisaPackage(package, widget.tab),
-          onSecondaryAction: widget.tab.secondaryActionStatus == null
+          onDeleteAction: isDeleting ? null : () => _deletePackage(package),
+          onSecondaryAction: widget.tab.secondaryActionStatus == null || isDeleting
               ? null
               : () => _handleSecondaryAction(package),
-          onPrimaryAction: () {
-            context.push(
-              '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
-            ).then((_) {
-              if (!mounted) {
-                return;
-              }
-              _refreshPackages();
-            });
-          },
+          onPrimaryAction: isDeleting
+              ? null
+              : () {
+                  context.push(
+                    '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
+                  ).then((_) {
+                    if (!mounted) {
+                      return;
+                    }
+                    _refreshPackages();
+                  });
+                },
+          isDeleteActionLoading: isDeleting,
           isSecondaryActionLoading: _updatingPackageIds.contains(
             package.packageId,
           ),
@@ -500,14 +562,18 @@ class _PageTabBar extends StatelessWidget {
 class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.data,
+    this.onDeleteAction,
     this.onSecondaryAction,
     this.onPrimaryAction,
+    this.isDeleteActionLoading = false,
     this.isSecondaryActionLoading = false,
   });
 
   final _PackageCardData data;
+  final VoidCallback? onDeleteAction;
   final VoidCallback? onSecondaryAction;
   final VoidCallback? onPrimaryAction;
+  final bool isDeleteActionLoading;
   final bool isSecondaryActionLoading;
 
   @override
@@ -577,7 +643,10 @@ class _PackageCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: <Widget>[
-                  const _DeleteButton(),
+                  _DeleteButton(
+                    onTap: onDeleteAction,
+                    isLoading: isDeleteActionLoading,
+                  ),
                   const Spacer(),
                   if (data.secondaryActionLabel != null) ...<Widget>[
                     _GhostButton(
@@ -705,21 +774,41 @@ class _MoreIcon extends StatelessWidget {
 }
 
 class _DeleteButton extends StatelessWidget {
-  const _DeleteButton();
+  const _DeleteButton({this.onTap, this.isLoading = false});
+
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 86,
-      height: 28,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFFF4D4F), width: 0.5),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        '企业岗位.删除'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFFD9363E), letterSpacing: 0.2),
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 86,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFFF4D4F), width: 0.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFFD9363E),
+                ),
+              )
+            : Text(
+                '企业岗位.删除'.tr(),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 12,
+                  color: Color(0xFFD9363E),
+                  letterSpacing: 0.2,
+                ),
+              ),
       ),
     );
   }
