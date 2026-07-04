@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -151,25 +152,27 @@ class LoginPhoneView extends StatelessWidget {
                     onChanged: onCodeChanged,
                     onGetCode: onSendCode,
                   ),
-                  const SizedBox(height: 48),
-                  _LoginButton(
-                    label: '认证.测试登录求职者'.tr(),
-                    enabled: !state.isSendingCode && !state.isSubmitting,
-                    onPressed: onTestWorkerLogin,
-                  ),
-                  const SizedBox(height: 12),
-                  _LoginButton(
-                    key: AppTestKeys.loginTestServiceProviderButton,
-                    label: '认证.测试登录服务商'.tr(),
-                    enabled: !state.isSendingCode && !state.isSubmitting,
-                    onPressed: onTestServiceProviderLogin,
-                  ),
-                  const SizedBox(height: 12),
-                  _LoginButton(
-                    label: '认证.测试登录雇主'.tr(),
-                    enabled: !state.isSendingCode && !state.isSubmitting,
-                    onPressed: onTestEmployerLogin,
-                  ),
+                  if (kDebugMode) ...<Widget>[
+                    const SizedBox(height: 48),
+                    _LoginButton(
+                      label: '认证.测试登录求职者'.tr(),
+                      enabled: !state.isSendingCode && !state.isSubmitting,
+                      onPressed: onTestWorkerLogin,
+                    ),
+                    const SizedBox(height: 12),
+                    _LoginButton(
+                      key: AppTestKeys.loginTestServiceProviderButton,
+                      label: '认证.测试登录服务商'.tr(),
+                      enabled: !state.isSendingCode && !state.isSubmitting,
+                      onPressed: onTestServiceProviderLogin,
+                    ),
+                    const SizedBox(height: 12),
+                    _LoginButton(
+                      label: '认证.测试登录雇主'.tr(),
+                      enabled: !state.isSendingCode && !state.isSubmitting,
+                      onPressed: onTestEmployerLogin,
+                    ),
+                  ],
                   const SizedBox(height: 48),
                   _LoginButton(
                     label: state.isSubmitting ? '认证.登录中'.tr() : '认证.登录'.tr(),
