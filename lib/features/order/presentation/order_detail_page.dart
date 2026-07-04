@@ -637,7 +637,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return;
       }
       setState(() => _isSubmitting = false);
-      _showMessage(resolveOrderPaymentErrorMessage(error));
+      _showMessage(resolveOrderPaymentErrorMessage(context, error));
     }
   }
 

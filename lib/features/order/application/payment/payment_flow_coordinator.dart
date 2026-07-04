@@ -54,7 +54,7 @@ class PaymentFlowCoordinator {
     required int orderId,
     required AppPaymentMethod method,
   }) async {
-    final String traceId = buildAppTraceId('payment');
+    final String traceId = _resolvePaymentTraceId();
     return AppLogScope.run<Future<PaymentFlowResult>>(
       traceId: traceId,
       fields: _buildPaymentScopeFields(orderId: orderId, method: method),
@@ -103,6 +103,15 @@ class PaymentFlowCoordinator {
         }
       },
     );
+  }
+
+  /// 优先复用上游交互链路的 traceId，仅在缺失时才为支付流程补建新链路。
+  String _resolvePaymentTraceId() {
+    final Object? inheritedTraceId = AppLogScope.current['traceId'];
+    if (inheritedTraceId is String && inheritedTraceId.trim().isNotEmpty) {
+      return inheritedTraceId;
+    }
+    return buildAppTraceId('payment');
   }
 
   /// 轮询最终支付状态，并持续记录 pending/success/fail 结果。

@@ -1204,6 +1204,14 @@
     "已解决": "Resolved",
     "已驳回": "Rejected"
   },
+  "订单支付": {
+    "确认支付": "Confirm Payment",
+    "支付中": "Paying...",
+    "支付倒计时": "Please complete payment within {minutes}m {seconds}s, or it will be canceled.",
+    "支付宝支付": "Alipay",
+    "微信支付": "WeChat Pay",
+    "支付发起失败": "Failed to initiate payment. Please try again later."
+  },
   "支付": {
     "支付宝支付参数缺失": "Missing Alipay payment parameters",
     "请先安装支付宝客户端": "Please install Alipay first",

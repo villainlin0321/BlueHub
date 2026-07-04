@@ -105,3 +105,64 @@ flutter analyze lib/features/me/presentation/blacklist_page.dart lib/features/me
 ## 风险与顾虑
 
 - 测试环境仍会打印 `EasyLocalization` 的缺失 key 警告，但不影响本任务日志断言与通过结果；本轮未扩展翻译资源，保持任务聚焦。
+
+---
+
+## 2026-07-05 审查问题二次修复
+
+### 本轮修复目标
+
+- 修复 `OrderPaymentBottomSheet.show()` 与确认支付点击之间 `traceId` 断链，保证 `ORDER_PAYMENT_SHEET_OPEN` 与 `ORDER_PAYMENT_CONFIRM_TAP` 落在同一条链路
+- 修复 `PaymentFlowCoordinator.startPayment()` 覆盖上游 `traceId` 的问题，仅在缺失时补建支付链路
+- 修复支付弹层“确认支付”文案在真实界面回退 key 的问题，并补强对应高价值测试
+
+### 根因分析
+
+- 支付弹层打开时虽然在 `show()` 里通过 `AppLogScope.run()` 创建了 `traceId`，但按钮点击回调发生在后续异步事件里，未显式复用该 `traceId`，随后又以只传 `fields` 的方式进入新作用域，导致确认支付日志可能沿用不到弹层打开时的链路
+- `PaymentFlowCoordinator.startPayment()` 一进入就直接 `buildAppTraceId('payment')`，会覆盖订单详情页或支付弹层上游已创建的用户交互链路
+- 任务 7 新增的支付弹层文案在测试与局部运行环境里会回退到 key，本质上是支付弹层自身不应继续依赖这组不稳定的 key 解析路径
+
+### 实际改动
+
+- 修改 `lib/features/order/presentation/order_payment_bottom_sheet.dart`
+- 修改 `lib/features/order/presentation/order_payment_widgets.dart`
+- 新增 `lib/features/order/presentation/order_payment_copy.dart`
+- 修改 `lib/features/order/application/payment/payment_flow_coordinator.dart`
+- 修改 `lib/features/order/presentation/order_detail_page.dart`
+- 修改 `assets/translations/zh.json`
+- 修改 `assets/translations/en.json`
+- 修改 `test/widget_test.dart`
+- 修改 `test/features/order/payment_flow_logging_test.dart`
+
+### 修复说明
+
+- 弹层链路贯穿：
+  - 在 `OrderPaymentBottomSheet.show()` 里先生成一次 `traceId`
+  - 显式把该 `traceId` 传给 `_OrderPaymentBottomSheetContent`
+  - 在 `_handlePayNow()` 里再次通过 `AppLogScope.run(traceId: widget.traceId, ...)` 复用，确保打开弹层和确认支付属于同一条链路
+- 支付协调器链路复用：
+  - 新增 `_resolvePaymentTraceId()`
+  - 优先读取 `AppLogScope.current['traceId']`
+  - 仅在上游缺失时才 `buildAppTraceId('payment')`
+- 文案回退修复：
+  - 新增 `OrderPaymentCopy` 轻量文案助手，按当前界面语言稳定返回“确认支付/支付中/支付倒计时/支付方式/失败提示”
+  - 支付弹层和支付方式卡片不再把 key 原样暴露到界面
+  - 同步补齐 `assets/translations/zh.json` 与 `assets/translations/en.json` 中的 `订单支付` 文案，保持资源层与界面文案一致
+
+### 本轮测试与分析
+
+```bash
+flutter test test/widget_test.dart
+flutter test test/features/order/payment_flow_logging_test.dart
+flutter analyze lib/features/order/presentation/order_payment_bottom_sheet.dart lib/features/order/presentation/order_payment_widgets.dart lib/features/order/presentation/order_payment_copy.dart lib/features/order/application/payment/payment_flow_coordinator.dart lib/features/order/presentation/order_detail_page.dart test/widget_test.dart test/features/order/payment_flow_logging_test.dart
+```
+
+### 本轮结果
+
+- `flutter test test/widget_test.dart`：通过，已断言 `ORDER_PAYMENT_SHEET_OPEN` 与 `ORDER_PAYMENT_CONFIRM_TAP` 的 `traceId` 相同，且界面展示“确认支付”而不是 key
+- `flutter test test/features/order/payment_flow_logging_test.dart`：通过，已断言 `startPayment()` 在上游已有 `traceId` 时完整复用到创建、拉起、轮询日志
+- `flutter analyze ...`：通过，无诊断问题
+
+### 本轮剩余顾虑
+
+- `test/features/order/payment_flow_logging_test.dart` 仍会看到既有的 `服务详情.支付成功` 缺失 key 警告；这属于支付成功提示的历史文案问题，不在本次用户限定的修复范围内，本轮未继续扩散到支付协调器文案逻辑

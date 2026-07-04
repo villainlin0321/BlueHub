@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:europepass/features/order/application/payment/payment_flow_coordinator.dart';
 import 'package:europepass/features/order/data/payment_models.dart';
 import 'package:europepass/shared/logging/app_logger.dart';
+import 'package:europepass/shared/logging/app_log_scope.dart';
 import 'package:europepass/shared/network/api_client.dart';
 import 'package:europepass/shared/network/services/payment_service.dart';
 import 'package:europepass/shared/payment/payment_channel_config.dart';
@@ -243,6 +244,67 @@ void main() {
 
     final String rawLogContent = await readRawLogContent();
     expect(rawLogContent, isNot(contains('alipay-order-sensitive-token')));
+  });
+
+  test('startPayment 在上游已有 traceId 时会直接复用，不重新生成链路', () async {
+    const String upstreamTraceId = 'upstream-payment-trace';
+    final PaymentFlowCoordinator coordinator = PaymentFlowCoordinator(
+      paymentService: _FakePaymentService.success(),
+      paymentLauncher: const _FakePaymentLauncher.success(),
+    );
+
+    final PaymentFlowResult result = await AppLogScope.run<Future<PaymentFlowResult>>(
+      traceId: upstreamTraceId,
+      fields: const <String, Object?>{
+        'route': '/orders/1003',
+        'source': 'widget_test',
+      },
+      action: () {
+        return coordinator.startPayment(
+          orderId: 1003,
+          method: AppPaymentMethod.alipay,
+        );
+      },
+    );
+    await waitForLogFlush();
+
+    expect(result.status, PaymentFlowStatus.success);
+
+    final List<Map<String, Object?>> entries = await readJsonLogEntries();
+    final List<Map<String, Object?>> matchedEntries = entries.where((
+      Map<String, Object?> item,
+    ) {
+      final Map<String, Object?>? context =
+          item['context'] == null ? null : readContext(item);
+      return context?['orderId'] == '1003' &&
+          (item['event'] == 'PAYMENT_CREATE_START' ||
+              item['event'] == 'PAYMENT_LAUNCH_SUCCESS' ||
+              item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS');
+    }).toList();
+
+    final Map<String, Object?> createContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) => item['event'] == 'PAYMENT_CREATE_START',
+      ),
+    );
+    final Map<String, Object?> launchContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) => item['event'] == 'PAYMENT_LAUNCH_SUCCESS',
+      ),
+    );
+    final Map<String, Object?> pollContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) =>
+            item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS',
+      ),
+    );
+
+    // 上游点击链路已经生成 traceId 时，支付协调器必须透传而不是切断链路。
+    expect(createContext['traceId'], upstreamTraceId);
+    expect(launchContext['traceId'], upstreamTraceId);
+    expect(pollContext['traceId'], upstreamTraceId);
+    expect(createContext['route'], '/orders/1003');
+    expect(createContext['source'], 'widget_test');
   });
 }
 

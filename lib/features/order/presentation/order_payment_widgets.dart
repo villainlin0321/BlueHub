@@ -1,8 +1,8 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/models/app_currency.dart';
 import '../application/payment/payment_flow_coordinator.dart';
+import 'order_payment_copy.dart';
 
 class OrderPaymentAmountCard extends StatelessWidget {
   const OrderPaymentAmountCard({
@@ -72,11 +72,10 @@ class OrderPaymentAmountCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '服务详情.支付倒计时'.tr(
-                namedArgs: <String, String>{
-                  'minutes': minutes,
-                  'seconds': seconds,
-                },
+              OrderPaymentCopy.countdown(
+                context,
+                minutes: minutes,
+                seconds: seconds,
               ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -117,14 +116,14 @@ class OrderPaymentMethodCard extends StatelessWidget {
         child: Column(
           children: <Widget>[
             _OrderPaymentMethodRow(
-              label: '服务详情.支付宝支付'.tr(),
+              label: OrderPaymentCopy.alipay(context),
               logoAsset: 'assets/images/service_detail_payment_alipay_logo.png',
               selected: selectedMethod == AppPaymentMethod.alipay,
               showDivider: true,
               onTap: () => onSelected(AppPaymentMethod.alipay),
             ),
             _OrderPaymentMethodRow(
-              label: '服务详情.微信支付'.tr(),
+              label: OrderPaymentCopy.wechat(context),
               logoAsset: 'assets/images/service_detail_payment_wechat_logo.png',
               selected: selectedMethod == AppPaymentMethod.wechat,
               showDivider: false,
@@ -229,7 +228,8 @@ class _OrderPaymentRadio extends StatelessWidget {
   }
 }
 
-String resolveOrderPaymentErrorMessage(Object error) {
+/// 解析支付发起异常文案，优先展示真实错误，否则回退到当前语言的统一兜底提示。
+String resolveOrderPaymentErrorMessage(BuildContext context, Object error) {
   final String message = error.toString().trim();
   if (message.startsWith('Exception: ')) {
     return message.substring('Exception: '.length);
@@ -237,5 +237,5 @@ String resolveOrderPaymentErrorMessage(Object error) {
   if (message.isNotEmpty) {
     return message;
   }
-  return '服务详情.支付发起失败'.tr();
+  return OrderPaymentCopy.startFail(context);
 }

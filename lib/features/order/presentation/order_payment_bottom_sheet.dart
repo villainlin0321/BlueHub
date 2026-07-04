@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +13,7 @@ import '../data/visa_order_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import '../data/payment_providers.dart';
+import 'order_payment_copy.dart';
 import 'order_payment_widgets.dart';
 
 class OrderPaymentBottomSheet {
@@ -28,8 +28,9 @@ class OrderPaymentBottomSheet {
     required BuildContext parentContext,
     Future<void> Function()? onFlowCompleted,
   }) async {
+    final String traceId = buildAppTraceId('order_payment_sheet');
     await AppLogScope.run<Future<void>>(
-      traceId: buildAppTraceId('order_payment_sheet'),
+      traceId: traceId,
       fields: _buildSheetLogContext(
         amount: amount,
         currency: currency,
@@ -54,6 +55,7 @@ class OrderPaymentBottomSheet {
               orderId: orderId,
               packageName: packageName,
               parentContext: parentContext,
+              traceId: traceId,
               onFlowCompleted: onFlowCompleted,
             );
           },
@@ -89,6 +91,7 @@ class _OrderPaymentBottomSheetContent extends ConsumerStatefulWidget {
     required this.orderId,
     required this.packageName,
     required this.parentContext,
+    required this.traceId,
     this.onFlowCompleted,
   });
 
@@ -97,6 +100,7 @@ class _OrderPaymentBottomSheetContent extends ConsumerStatefulWidget {
   final int orderId;
   final String packageName;
   final BuildContext parentContext;
+  final String traceId;
   final Future<void> Function()? onFlowCompleted;
 
   @override
@@ -159,7 +163,7 @@ class _OrderPaymentBottomSheetContentState
                   children: <Widget>[
                     Align(
                       child: Text(
-                        '服务详情.确认支付'.tr(),
+                        _confirmPaymentLabel(),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: const Color(0xFF171A1D),
                           fontSize: 17,
@@ -229,7 +233,7 @@ class _OrderPaymentBottomSheetContentState
               shadowColor: Colors.transparent,
             ),
             child: Text(
-              _isPaying ? '服务详情.支付中'.tr() : '服务详情.确认支付'.tr(),
+              _isPaying ? _payingLabel() : _confirmPaymentLabel(),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -250,6 +254,8 @@ class _OrderPaymentBottomSheetContentState
     setState(() => _isPaying = true);
     try {
       await AppLogScope.run<Future<void>>(
+        // 点击回调可能脱离 show() 的 Zone，这里显式复用弹层打开时创建的 traceId。
+        traceId: widget.traceId,
         fields: _buildConfirmPayLogContext(),
         action: () async {
           // 确认支付点击日志必须贴近按钮触发点，保证和真实点击顺序一致。
@@ -292,8 +298,18 @@ class _OrderPaymentBottomSheetContentState
         return;
       }
       setState(() => _isPaying = false);
-      _showMessage(resolveOrderPaymentErrorMessage(error));
+      _showMessage(resolveOrderPaymentErrorMessage(context, error));
     }
+  }
+
+  /// 返回确认支付主文案，统一复用当前支付弹层专用翻译 key。
+  String _confirmPaymentLabel() {
+    return OrderPaymentCopy.confirmPayment(context);
+  }
+
+  /// 返回支付中主文案，避免界面回退到未翻译的 key。
+  String _payingLabel() {
+    return OrderPaymentCopy.paying(context);
   }
 
   /// 构建确认支付点击日志上下文，补齐支付方式与弹层来源。
