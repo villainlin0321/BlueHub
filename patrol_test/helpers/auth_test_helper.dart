@@ -1,6 +1,9 @@
 import 'package:europepass/app/router/app_router.dart';
 import 'package:europepass/app/router/route_paths.dart';
+import 'package:europepass/features/auth/application/auth_role_mapper.dart';
 import 'package:europepass/features/auth/application/auth_session_provider.dart';
+import 'package:europepass/features/auth/application/auth_session_state.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,20 +19,27 @@ Future<void> ensureServiceProviderAuthenticated(
 ) async {
   final container = _readProviderContainer($);
   final authSession = container.read(authSessionProvider);
-  if (authSession.isAuthenticated && !authSession.needSelectRole) {
+  if (isServiceProviderAuthenticatedSession(authSession)) {
     return;
   }
+  if (authSession.isAuthenticated && !authSession.needSelectRole) {
+    throw StateError('当前登录态不是服务商角色：${authSession.user?.role ?? 'unknown'}');
+  }
 
-  // 读取当前路由，便于把异常信息限定在真正的登录入口场景中。
-  final currentRoute = container.read(routerProvider).state.matchedLocation;
+  // 通过安全读取方法获取当前路由，避免 go_router 尚未完成匹配时直接读 state 抛错。
+  final currentRoute = readCurrentRouterLocation(
+    container.read(routerProvider),
+    fallbackLocation: RoutePaths.loginPhone,
+  );
   if (currentRoute != RoutePaths.loginPhone) {
     throw StateError('当前不在登录页，无法执行服务商登录前置：$currentRoute');
   }
 
-  try {
-    // 优先走项目现有的测试快捷登录入口，减少对输入框结构的依赖。
-    await $('测试登录服务商').tap();
-  } catch (_) {
+  final quickLoginButton = $(find.byKey(AppTestKeys.loginTestServiceProviderButton));
+  if (quickLoginButton.visible) {
+    // 优先走稳定 Key 对应的测试快捷登录入口，避免依赖中文文案。
+    await quickLoginButton.tap();
+  } else {
     if (!account.isValid) {
       throw StateError('服务商测试账号未配置，且当前页面缺少快捷登录入口');
     }
@@ -41,15 +51,28 @@ Future<void> ensureServiceProviderAuthenticated(
     await $('登录').tap();
   }
 
-  await expectRouteReady(
-    $,
-    routePath: RoutePaths.home,
-    fallbackFinder: find.text('首页'),
-  );
+  await waitForPageReady($, page: 'serviceProviderHome');
+  _assertServiceProviderSession(container.read(authSessionProvider));
 }
 
 /// 读取应用根节点对应的 Riverpod 容器，供 Patrol helper 访问共享状态。
 ProviderContainer _readProviderContainer(PatrolIntegrationTester $) {
   final context = $.tester.element(find.byKey(const Key('app-root')));
   return ProviderScope.containerOf(context, listen: false);
+}
+
+/// 判断当前会话是否已经是可复用的服务商登录态。
+bool isServiceProviderAuthenticatedSession(AuthSessionState authSession) {
+  final role = authSession.user?.role.trim() ?? '';
+  return authSession.isAuthenticated &&
+      !authSession.needSelectRole &&
+      role == visaProviderRoleId;
+}
+
+/// 在登录流程结束后再次校验角色，避免误复用到企业或求职者会话。
+void _assertServiceProviderSession(AuthSessionState authSession) {
+  if (isServiceProviderAuthenticatedSession(authSession)) {
+    return;
+  }
+  throw StateError('服务商登录完成后角色校验失败：${authSession.user?.role ?? 'unknown'}');
 }

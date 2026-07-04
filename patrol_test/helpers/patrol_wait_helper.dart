@@ -1,4 +1,5 @@
 import 'package:europepass/app/router/route_paths.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 
@@ -8,7 +9,11 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
     <String, PatrolRouteMatcher>{
       'home': PatrolRouteMatcher(
         routePath: RoutePaths.home,
-        fallbackText: '首页',
+        readyKey: AppTestKeys.pageServiceProviderHome,
+      ),
+      'serviceProviderHome': PatrolRouteMatcher(
+        routePath: RoutePaths.home,
+        readyKey: AppTestKeys.pageServiceProviderHome,
       ),
     };
 

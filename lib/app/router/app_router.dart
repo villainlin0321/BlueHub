@@ -501,7 +501,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 
   // go_router 刚创建时，首轮路由匹配可能尚未完成，此时直接读取 state 会抛错。
-  String previousLocation = _readCurrentLocation(
+  String previousLocation = readCurrentRouterLocation(
     router,
     fallbackLocation: RoutePaths.loginPhone,
   );
@@ -513,7 +513,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   /// 监听 go_router 当前地址变化，记录真实跳转结果。
   void handleRouteChanged() {
-    final currentLocation = _readCurrentLocation(
+    final currentLocation = readCurrentRouterLocation(
       router,
       fallbackLocation: previousLocation,
     );
@@ -553,7 +553,7 @@ class _RouterRefreshNotifier extends ChangeNotifier {
 }
 
 /// 安全读取当前路由地址，避免 go_router 在首轮匹配前访问 `state` 抛出异常。
-String _readCurrentLocation(
+String readCurrentRouterLocation(
   GoRouter router, {
   required String fallbackLocation,
 }) {
