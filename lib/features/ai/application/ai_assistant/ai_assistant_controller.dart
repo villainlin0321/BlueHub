@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../../shared/network/api_decoders.dart';
@@ -23,10 +24,14 @@ final aiAssistantControllerProvider =
     );
 
 class AiAssistantController extends Notifier<AiAssistantState> {
+  static const Duration _finalVoiceResultWaitTimeout = Duration(
+    milliseconds: 2500,
+  );
   final stt.SpeechToText _speechToText = stt.SpeechToText();
   Timer? _voiceTimer;
   bool _isDisposed = false;
   bool _hasBootstrapped = false;
+  bool _speechInitialized = false;
   int _voiceSessionId = 0;
   String _latestRecognizedText = '';
   Completer<String>? _finalVoiceResultCompleter;
@@ -37,6 +42,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   /// 初始化控制器状态，并在销毁时回收语音识别相关资源。
   AiAssistantState build() {
     _isDisposed = false;
+    _speechInitialized = false;
     ref.onDispose(() {
       _isDisposed = true;
       _voiceTimer?.cancel();
@@ -95,6 +101,48 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   Future<void> resetToDefaultConversation() async {
     _showDefaultConversation();
     await _loadRecommendedJob();
+  }
+
+  Future<bool> _ensureSpeechInitialized() async {
+    if (_speechInitialized) {
+      return true;
+    }
+
+    final bool initialized = await _speechToText.initialize(
+      onStatus: _handleSpeechStatus,
+      onError: _handleSpeechError,
+      debugLogging: true,
+      options: <stt.SpeechConfigOption>[stt.SpeechToText.androidNoBluetooth],
+    );
+    if (initialized) {
+      _speechInitialized = true;
+    }
+    return initialized;
+  }
+
+  void _handleSpeechStatus(String status) {
+    if (_isDisposed) {
+      return;
+    }
+
+    if (status == 'done') {
+      final Completer<String>? completer = _finalVoiceResultCompleter;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete(_latestRecognizedText);
+      }
+    }
+  }
+
+  void _handleSpeechError(SpeechRecognitionError error) {
+    if (_isDisposed) {
+      return;
+    }
+
+    if (state.voiceInputState == AiAssistantVoiceInputState.idle) {
+      return;
+    }
+    _resetVoiceInputState();
+    _emitFeedback(error.errorMsg, isError: true);
   }
 
   /// 发送文本消息，并消费 AI 返回的 SSE 流更新 assistant 回复。
@@ -179,52 +227,31 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
-  /// 开始语音识别，负责初始化识别器、匹配语言并同步录音计时状态。
-  Future<void> startVoiceInput({required bool isChineseLocale}) async {
+  /// 开始语音识别，固定使用中文 locale 并同步录音计时状态。
+  Future<void> startVoiceInput() async {
     if (state.isSending || state.isVoiceListening) {
+      return;
+    }
+
+    final bool hadPermissionBeforeInit = await _speechToText.hasPermission;
+    final bool initialized = await _ensureSpeechInitialized();
+    if (_isDisposed) {
+      return;
+    }
+    if (!initialized) {
+      if (hadPermissionBeforeInit) {
+        _emitFeedback('AI.语音识别不可用'.tr(), isError: true);
+      }
+      return;
+    }
+    if (!hadPermissionBeforeInit) {
       return;
     }
 
     final int voiceSessionId = ++_voiceSessionId;
     _latestRecognizedText = '';
     _finalVoiceResultCompleter = Completer<String>();
-    final bool initialized = await _speechToText.initialize(
-      onStatus: (String status) {
-        if (_isDisposed || voiceSessionId != _voiceSessionId) {
-          return;
-        }
-        if (status == 'done' || status == 'notListening') {
-          final Completer<String>? completer = _finalVoiceResultCompleter;
-          if (completer != null && !completer.isCompleted) {
-            completer.complete(_latestRecognizedText);
-          }
-        }
-      },
-      onError: (error) {
-        if (_isDisposed) {
-          return;
-        }
-        if (voiceSessionId != _voiceSessionId) {
-          return;
-        }
-        if (state.voiceInputState == AiAssistantVoiceInputState.idle) {
-          return;
-        }
-        _resetVoiceInputState();
-        _emitFeedback(error.errorMsg, isError: true);
-      },
-    );
-    if (_isDisposed) {
-      return;
-    }
-    if (!initialized) {
-      _emitFeedback('AI.语音识别不可用'.tr(), isError: true);
-      return;
-    }
-
-    final String? speechLocaleId = await _resolveSpeechLocaleId(
-      isChineseLocale: isChineseLocale,
-    );
+    final String? speechLocaleId = await _resolveSpeechLocaleId();
     if (_isDisposed) {
       return;
     }
@@ -257,9 +284,11 @@ class AiAssistantController extends Notifier<AiAssistantState> {
           final String nextRecognizedText = result.recognizedWords.trim();
           if (nextRecognizedText.isNotEmpty) {
             _latestRecognizedText = nextRecognizedText;
-            _updateState((AiAssistantState current) {
-              return current.copyWith(recognizedText: nextRecognizedText);
-            });
+            if (state.voiceInputState != AiAssistantVoiceInputState.idle) {
+              _updateState((AiAssistantState current) {
+                return current.copyWith(recognizedText: nextRecognizedText);
+              });
+            }
           }
           if (result.finalResult) {
             final Completer<String>? completer = _finalVoiceResultCompleter;
@@ -287,26 +316,30 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     required int voiceSessionId,
   }) async {
     final String immediateText = state.recognizedText.trim();
-    if (immediateText.isNotEmpty) {
-      return immediateText;
-    }
-
+    final String latestText = _latestRecognizedText.trim();
     final Completer<String>? completer = _finalVoiceResultCompleter;
     if (completer == null) {
-      return _latestRecognizedText.trim();
+      return latestText.isNotEmpty ? latestText : immediateText;
     }
 
     try {
       final String finalText = await completer.future.timeout(
-        const Duration(milliseconds: 400),
-        onTimeout: () => _latestRecognizedText,
+        _finalVoiceResultWaitTimeout,
+        onTimeout: () {
+          return latestText.isNotEmpty ? latestText : immediateText;
+        },
       );
       if (voiceSessionId != _voiceSessionId) {
-        return _latestRecognizedText.trim();
+        return latestText.isNotEmpty ? latestText : immediateText;
       }
-      return finalText.trim();
+      final String trimmedText = finalText.trim();
+      if (trimmedText.isEmpty &&
+          (latestText.isNotEmpty || immediateText.isNotEmpty)) {
+        return latestText.isNotEmpty ? latestText : immediateText;
+      }
+      return trimmedText;
     } catch (_) {
-      return _latestRecognizedText.trim();
+      return latestText.isNotEmpty ? latestText : immediateText;
     }
   }
 
@@ -335,6 +368,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     final int voiceSessionId = _voiceSessionId;
     final bool shouldCancel =
         state.voiceInputState == AiAssistantVoiceInputState.cancel;
+    _clearVoiceInputUiState();
     try {
       await _speechToText.stop();
     } catch (_) {
@@ -344,7 +378,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     final String recognizedText = await _resolveRecognizedTextAfterStop(
       voiceSessionId: voiceSessionId,
     );
-    _resetVoiceInputState();
+    _completeVoiceInputSession();
 
     if (shouldCancel) {
       return;
@@ -670,16 +704,18 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     });
   }
 
-  /// 根据当前界面语言匹配 speech_to_text 可用的 localeId。
-  Future<String?> _resolveSpeechLocaleId({
-    required bool isChineseLocale,
-  }) async {
-    final List<String> preferredLocaleIds = isChineseLocale
-        ? <String>['zh_CN', 'cmn_Hans_CN', 'zh-Hans-CN', 'zh-CN', 'zh']
-        : <String>['en_US', 'en-US', 'en_GB', 'en-GB', 'en'];
+  /// 固定匹配中文 speech_to_text localeId。
+  Future<String?> _resolveSpeechLocaleId() async {
+    final List<String> preferredLocaleIds = <String>[
+      'zh_CN',
+      'cmn_Hans_CN',
+      'zh-Hans-CN',
+      'zh-CN',
+      'zh',
+    ];
     final List<stt.LocaleName> availableLocales = await _speechToText.locales();
     if (availableLocales.isEmpty) {
-      return isChineseLocale ? 'zh_CN' : 'en_US';
+      return null;
     }
 
     for (final String preferredLocaleId in preferredLocaleIds) {
@@ -692,14 +728,13 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       }
     }
 
-    final String languageCode = isChineseLocale ? 'zh' : 'en';
     for (final stt.LocaleName locale in availableLocales) {
-      if (_extractLanguageCode(locale.localeId) == languageCode) {
+      if (_extractLanguageCode(locale.localeId) == 'zh') {
         return locale.localeId;
       }
     }
 
-    return availableLocales.first.localeId;
+    return null;
   }
 
   /// 在设备支持的语音 locale 列表中查找目标 locale 的精确匹配项。
@@ -730,14 +765,12 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
   /// 重置语音输入状态，并停止录音计时。
   void _resetVoiceInputState() {
+    _clearVoiceInputUiState();
+    _completeVoiceInputSession();
+  }
+
+  void _clearVoiceInputUiState() {
     _voiceTimer?.cancel();
-    _voiceSessionId++;
-    final Completer<String>? completer = _finalVoiceResultCompleter;
-    if (completer != null && !completer.isCompleted) {
-      completer.complete(_latestRecognizedText);
-    }
-    _finalVoiceResultCompleter = null;
-    _latestRecognizedText = '';
     _updateState((AiAssistantState current) {
       return current.copyWith(
         voiceInputState: AiAssistantVoiceInputState.idle,
@@ -745,6 +778,16 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         recognizedText: '',
       );
     });
+  }
+
+  void _completeVoiceInputSession() {
+    _voiceSessionId++;
+    final Completer<String>? completer = _finalVoiceResultCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(_latestRecognizedText);
+    }
+    _finalVoiceResultCompleter = null;
+    _latestRecognizedText = '';
   }
 
   /// 统一解析岗位投递失败文案，优先透传接口真实错误信息。

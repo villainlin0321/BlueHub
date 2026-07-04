@@ -14,6 +14,7 @@ import '../../../jobs/data/job_models.dart';
 import '../../application/ai_assistant/ai_assistant_state.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class AiAssistantPageView extends StatelessWidget {
   const AiAssistantPageView({
     super.key,
@@ -21,6 +22,7 @@ class AiAssistantPageView extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.scrollController,
+    required this.isVoiceInputEnabled,
     required this.onOpenHistory,
     required this.onToggleComposerMode,
     required this.onSend,
@@ -41,6 +43,7 @@ class AiAssistantPageView extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final ScrollController scrollController;
+  final bool isVoiceInputEnabled;
   final VoidCallback onOpenHistory;
   final VoidCallback onToggleComposerMode;
   final Future<void> Function() onSend;
@@ -65,7 +68,10 @@ class AiAssistantPageView extends StatelessWidget {
         centerTitle: false,
         title: Text(
           'AI.AI助手'.tr(),
-          style: TestStyle.numberBold(fontSize: 22, color: AppColors.textPrimary),
+          style: TestStyle.numberBold(
+            fontSize: 22,
+            color: AppColors.textPrimary,
+          ),
         ),
         actions: <Widget>[
           TextButton(onPressed: onOpenHistory, child: Text('AI.历史记录'.tr())),
@@ -94,6 +100,7 @@ class AiAssistantPageView extends StatelessWidget {
                 controller: controller,
                 focusNode: focusNode,
                 isSending: state.isSending,
+                isVoiceInputEnabled: isVoiceInputEnabled,
                 isVoiceMode: state.isVoiceMode,
                 voiceInputState: state.voiceInputState,
                 voiceSeconds: state.voiceSeconds,
@@ -265,7 +272,10 @@ class _AssistantMessageItem extends StatelessWidget {
                       ),
                       child: Text(
                         message.text,
-                        style: TestStyle.regular(fontSize: 14, color: AppColors.textPrimary),
+                        style: TestStyle.regular(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -276,7 +286,10 @@ class _AssistantMessageItem extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       message.footer!,
-                      style: TestStyle.semibold(fontSize: 11, color: AppColors.textTertiary),
+                      style: TestStyle.semibold(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   ),
                 ],
@@ -424,7 +437,10 @@ class _UserMessageItem extends StatelessWidget {
                 maxWidth: MediaQuery.sizeOf(context).width * 0.75,
               ),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.brand,
                   borderRadius: BorderRadius.circular(16),
@@ -493,12 +509,18 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
+                    style: TestStyle.numberBold(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 Text(
                   job.formatAiSalary(),
-                  style: TestStyle.numberBold(fontSize: 16, color: AppColors.warning),
+                  style: TestStyle.numberBold(
+                    fontSize: 16,
+                    color: AppColors.warning,
+                  ),
                 ),
               ],
             ),
@@ -534,7 +556,10 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.employer.name,
-                    style: TestStyle.numberBold(fontSize: 12, color: AppColors.textSecondary),
+                    style: TestStyle.numberBold(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 SizedBox(
@@ -574,7 +599,10 @@ class _EmbeddedJobCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   locationParts.join('·'),
-                  style: TestStyle.semibold(fontSize: 12, color: AppColors.textSecondary),
+                  style: TestStyle.semibold(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -601,6 +629,7 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.isSending,
+    required this.isVoiceInputEnabled,
     required this.isVoiceMode,
     required this.voiceInputState,
     required this.voiceSeconds,
@@ -614,6 +643,7 @@ class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isSending;
+  final bool isVoiceInputEnabled;
   final bool isVoiceMode;
   final AiAssistantVoiceInputState voiceInputState;
   final int voiceSeconds;
@@ -626,6 +656,8 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool effectiveIsVoiceMode = isVoiceInputEnabled && isVoiceMode;
+
     return SafeArea(
       top: false,
       child: Material(
@@ -642,27 +674,33 @@ class _Composer extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: InkWell(
-                    onTap: isSending ? null : onVoiceTap,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        isVoiceMode
-                            ? AiAssistantPageView._keyboardAsset
-                            : AiAssistantPageView._voiceAsset,
-                        width: 24,
-                        height: 24,
+                if (isVoiceInputEnabled) ...<Widget>[
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: InkWell(
+                      key: const ValueKey<String>('ai_assistant_voice_toggle'),
+                      onTap: isSending ? null : onVoiceTap,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          effectiveIsVoiceMode
+                              ? AiAssistantPageView._keyboardAsset
+                              : AiAssistantPageView._voiceAsset,
+                          width: 24,
+                          height: 24,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
-                  child: isVoiceMode
+                  child: effectiveIsVoiceMode
                       ? _VoiceRecordButton(
+                          key: const ValueKey<String>(
+                            'ai_assistant_voice_record_button',
+                          ),
                           isSending: isSending,
                           voiceInputState: voiceInputState,
                           voiceSeconds: voiceSeconds,
@@ -671,6 +709,9 @@ class _Composer extends StatelessWidget {
                           onRecordMoveUpdate: onVoiceRecordMoveUpdate,
                         )
                       : TextField(
+                          key: const ValueKey<String>(
+                            'ai_assistant_text_input',
+                          ),
                           controller: controller,
                           focusNode: focusNode,
                           minLines: 1,
@@ -686,13 +727,19 @@ class _Composer extends StatelessWidget {
                                 border: InputBorder.none,
                               ).copyWith(
                                 hintText: '消息.发消息'.tr(),
-                                hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: AiAssistantPageView._subtleTextColor),
+                                hintStyle: TestStyle.pingFangRegular(
+                                  fontSize: 15,
+                                  color: AiAssistantPageView._subtleTextColor,
+                                ),
                               ),
-                          style: TestStyle.regular(fontSize: 15, color: AiAssistantPageView._titleColor),
+                          style: TestStyle.regular(
+                            fontSize: 15,
+                            color: AiAssistantPageView._titleColor,
+                          ),
                         ),
                 ),
                 const SizedBox(width: 12),
-                if (!isVoiceMode)
+                if (!effectiveIsVoiceMode)
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: controller,
                     builder:
@@ -730,6 +777,7 @@ class _Composer extends StatelessWidget {
 
 class _VoiceRecordButton extends StatelessWidget {
   const _VoiceRecordButton({
+    super.key,
     required this.isSending,
     required this.voiceInputState,
     required this.voiceSeconds,

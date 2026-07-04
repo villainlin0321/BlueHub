@@ -1,13 +1,12 @@
 import 'dart:async';
 import '../../../shared/widgets/app_toast.dart';
 
-import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
-import '../../../shared/localization/app_locales.dart';
 import '../data/ai_models.dart';
 import '../../jobs/data/job_models.dart';
 import '../../jobs/presentation/job_detail_page.dart';
@@ -31,6 +30,9 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
   final FocusNode _inputFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   double _lastKeyboardInset = 0;
+
+  bool get _isVoiceInputEnabled =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -91,7 +93,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
     AiAssistantController controller,
     AiAssistantState state,
   ) {
-    if (state.isSending || state.isVoiceListening) {
+    if (!_isVoiceInputEnabled || state.isSending || state.isVoiceListening) {
       return;
     }
     final bool willEnterVoice = !state.isVoiceMode;
@@ -102,8 +104,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
   }
 
   String _resolveLanguage() {
-    final String code = context.locale.languageCode.trim().toLowerCase();
-    return code == 'en' ? 'en' : 'zh';
+    return 'zh';
   }
 
   void _openRecommendedJobDetail(JobListVO job) {
@@ -197,11 +198,11 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
       controller: _controller,
       focusNode: _inputFocusNode,
       scrollController: _scrollController,
+      isVoiceInputEnabled: _isVoiceInputEnabled,
       onOpenHistory: _openSessionHistory,
       onToggleComposerMode: () => _handleToggleComposerMode(controller, state),
       onSend: () => _handleSend(controller),
-      onVoiceRecordStart: () =>
-          controller.startVoiceInput(isChineseLocale: context.isChineseLocale),
+      onVoiceRecordStart: controller.startVoiceInput,
       onVoiceRecordEnd: () =>
           controller.finishVoiceInput(language: _resolveLanguage()),
       onVoiceRecordMoveUpdate: controller.updateVoiceDrag,
