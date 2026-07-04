@@ -37,8 +37,8 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   // oulu@example.com
   // zhongde@example.com
   // final _emailController = TextEditingController();
-  final _emailController = TextEditingController(text: _workerTestEmail);
-  final _codeController = TextEditingController(text: _testCode);
+  final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
 
   @override
   void dispose() {
