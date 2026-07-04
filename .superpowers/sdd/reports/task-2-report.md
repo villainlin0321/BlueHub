@@ -85,3 +85,40 @@
 ## 提交说明
 
 - 预期提交信息：`feat(logging): add route and provider log observers`
+
+## 审查修复记录（2026-07-04）
+
+### 修复范围
+
+- 仅修复本轮审查指定的两个阻塞问题。
+- `Patrol` 相关改动按人类决策保留，不作为本轮修复项。
+
+### 修复项 1：Provider 观察器不再误吞关键状态变化
+
+- 问题根因：原实现基于 `toString()` 文本快照去噪，像 `AuthSessionState` 这类未自定义 `toString()` 的对象，前后都会表现为 `Instance of 'Xxx'`，导致真实状态变化被误判为重复噪音。
+- 修复策略：仅对基础类型、集合、`DateTime`、`Uri` 等可稳定比较的值生成可比较快照；复杂对象若缺少稳定快照，则保留更新日志，不再基于 `toString()` 误判跳过。
+- 去噪保留：对于基础类型、集合等可判等值，仍继续执行去噪，避免高频简单状态写入刷屏。
+- 验证方式：新增并通过 `test/shared/logging/app_provider_observer_test.dart`，用一个与 `AuthSessionState` 一样缺少自定义 `toString()` 的假状态对象复现并验证日志不会被吞掉。
+
+### 修复项 2：启动阶段首条路由日志只在真实首屏解析后记录
+
+- 问题根因：`app_router.dart` 之前在 `GoRouter` 创建后立即用回退值读取当前路由，并直接记录首条 `ROUTE_ENTER`，当首轮匹配尚未完成时，会伪造一条 `/login` 进入事件。
+- 修复策略：新增 `RouteLogCoordinator`，在路由尚未解析出真实地址时返回空事件；只有拿到真实首屏后才输出第一条进入日志，后续切页统一产出“先退出旧页、再进入新页”的回放顺序。
+- 追踪同步：路由追踪器改为跟随协调器输出的真实事件更新，避免日志与 `AppRouteTracker` 状态不一致。
+- 验证方式：新增并通过 `test/app/router/app_router_test.dart`，覆盖“未完成匹配不记日志”和“真实切页先 exit 后 enter”两个关键场景。
+
+### 本轮验证
+
+- 失败验证：`flutter test test/shared/logging/app_provider_observer_test.dart test/app/router/app_router_test.dart`
+  - 初始失败点为 `RouteLogCoordinator` 与 `RouteLogTransitionType` 尚未实现，符合预期。
+- 通过验证：`flutter test test/shared/logging/app_provider_observer_test.dart test/app/router/app_router_test.dart`
+  - 结果：通过。
+- 回归验证：`flutter test test/shared/logging test/app/router`
+  - 结果：通过。
+- 静态检查：`flutter analyze lib/main.dart lib/app/app.dart lib/app/router/app_router.dart lib/shared/logging test/shared/logging/app_provider_observer_test.dart test/app/router/app_router_test.dart`
+  - 结果：`No issues found!`
+
+### 本轮顾虑
+
+- `AppProviderObserver` 现在采取“可稳定比较的简单值继续去噪，复杂对象默认保留更新”的策略，已经避免误吞关键状态变化；代价是复杂对象更新日志会偏保守一些，但这比漏掉关键会话切换更安全。
+- `RouteLogCoordinator` 解决了首条伪造进入事件问题；如果后续需要记录更细粒度的页面实例生命周期，仍建议在后续任务中追加页面级埋点，而不是再次依赖初始化回退值推断。

@@ -65,6 +65,7 @@ import 'route_paths.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier();
   final routeTracker = AppRouteTracker.instance;
+  final routeLogCoordinator = RouteLogCoordinator();
   ref.onDispose(refreshNotifier.dispose);
   ref.listen(authSessionProvider, (_, __) {
     refreshNotifier.refresh();
@@ -500,42 +501,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // go_router 刚创建时，首轮路由匹配可能尚未完成，此时直接读取 state 会抛错。
-  String previousLocation = _readCurrentLocation(
-    router,
-    fallbackLocation: RoutePaths.loginPhone,
-  );
-  routeTracker.track(previousLocation);
-  RouteLog.enter(
-    route: previousLocation,
-    context: const <String, Object?>{'source': 'router_init'},
+  _emitRouteTransitions(
+    coordinator: routeLogCoordinator,
+    routeTracker: routeTracker,
+    currentLocation: _tryReadCurrentLocation(router),
+    source: 'router_init',
   );
 
   /// 监听 go_router 当前地址变化，记录真实跳转结果。
   void handleRouteChanged() {
-    final currentLocation = _readCurrentLocation(
-      router,
-      fallbackLocation: previousLocation,
+    _emitRouteTransitions(
+      coordinator: routeLogCoordinator,
+      routeTracker: routeTracker,
+      currentLocation: _tryReadCurrentLocation(router),
+      source: 'router_delegate',
     );
-    if (currentLocation == previousLocation) {
-      return;
-    }
-    RouteLog.exit(
-      route: previousLocation,
-      to: currentLocation,
-      context: const <String, Object?>{'source': 'router_delegate'},
-    );
-    routeTracker.track(currentLocation);
-    RouteLog.enter(
-      route: currentLocation,
-      from: previousLocation,
-      context: <String, Object?>{
-        'source': 'router_delegate',
-        if (routeTracker.previousRoute != null)
-          'trackerPreviousRoute': routeTracker.previousRoute,
-      },
-    );
-    previousLocation = currentLocation;
   }
 
   router.routerDelegate.addListener(handleRouteChanged);
@@ -552,16 +532,126 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   }
 }
 
-/// 安全读取当前路由地址，避免 go_router 在首轮匹配前访问 `state` 抛出异常。
-String _readCurrentLocation(
-  GoRouter router, {
-  required String fallbackLocation,
-}) {
+/// 尝试读取当前真实路由地址；若首轮匹配尚未完成，则返回空并等待后续监听补齐。
+String? _tryReadCurrentLocation(GoRouter router) {
   try {
     return router.state.uri.toString();
   } on StateError {
-    // 关键兜底：初始化阶段尚未产生 match 时，回退到已知地址。
-    return fallbackLocation;
+    // 关键兜底：初始化阶段尚未拿到真实路由时，绝不伪造 `/login` 之类的首屏日志。
+    return null;
+  }
+}
+
+/// 将一次路由同步结果转成结构化日志，并同步更新路由追踪器。
+void _emitRouteTransitions({
+  required RouteLogCoordinator coordinator,
+  required AppRouteTracker routeTracker,
+  required String? currentLocation,
+  required String source,
+}) {
+  final transitions = coordinator.sync(currentLocation: currentLocation);
+  for (final transition in transitions) {
+    switch (transition.type) {
+      case RouteLogTransitionType.exit:
+        RouteLog.exit(
+          route: transition.route,
+          to: transition.to,
+          context: <String, Object?>{'source': source},
+        );
+        break;
+      case RouteLogTransitionType.enter:
+        routeTracker.track(transition.route);
+        RouteLog.enter(
+          route: transition.route,
+          from: transition.from,
+          context: <String, Object?>{
+            'source': source,
+            if (routeTracker.previousRoute != null)
+              'trackerPreviousRoute': routeTracker.previousRoute,
+          },
+        );
+        break;
+    }
+  }
+}
+
+/// 路由日志协调器：只在拿到真实路由后产生日志，并统一推导进出场顺序。
+class RouteLogCoordinator {
+  String? _currentLocation;
+
+  /// 根据最新真实路由生成需要输出的过渡事件；初始未解析阶段不会产生日志。
+  List<RouteLogTransition> sync({required String? currentLocation}) {
+    final normalizedLocation = _normalizeLocation(currentLocation);
+    if (normalizedLocation == null) {
+      return const <RouteLogTransition>[];
+    }
+    if (_currentLocation == null) {
+      _currentLocation = normalizedLocation;
+      return <RouteLogTransition>[
+        RouteLogTransition.enter(route: normalizedLocation),
+      ];
+    }
+    if (_currentLocation == normalizedLocation) {
+      return const <RouteLogTransition>[];
+    }
+
+    final previousLocation = _currentLocation!;
+    _currentLocation = normalizedLocation;
+    return <RouteLogTransition>[
+      RouteLogTransition.exit(route: previousLocation, to: normalizedLocation),
+      RouteLogTransition.enter(route: normalizedLocation, from: previousLocation),
+    ];
+  }
+
+  /// 统一清洗路由字符串，避免空白值污染协调状态。
+  String? _normalizeLocation(String? currentLocation) {
+    final normalizedLocation = currentLocation?.trim();
+    if (normalizedLocation == null || normalizedLocation.isEmpty) {
+      return null;
+    }
+    return normalizedLocation;
+  }
+}
+
+/// 路由过渡类型：用于区分页面退出和进入事件。
+enum RouteLogTransitionType { exit, enter }
+
+/// 单次路由过渡事件，供协调器与日志输出流程之间传递。
+class RouteLogTransition {
+  const RouteLogTransition._({
+    required this.type,
+    required this.route,
+    this.from,
+    this.to,
+  });
+
+  final RouteLogTransitionType type;
+  final String route;
+  final String? from;
+  final String? to;
+
+  /// 构建页面进入事件。
+  factory RouteLogTransition.enter({
+    required String route,
+    String? from,
+  }) {
+    return RouteLogTransition._(
+      type: RouteLogTransitionType.enter,
+      route: route,
+      from: from,
+    );
+  }
+
+  /// 构建页面退出事件。
+  factory RouteLogTransition.exit({
+    required String route,
+    String? to,
+  }) {
+    return RouteLogTransition._(
+      type: RouteLogTransitionType.exit,
+      route: route,
+      to: to,
+    );
   }
 }
 
