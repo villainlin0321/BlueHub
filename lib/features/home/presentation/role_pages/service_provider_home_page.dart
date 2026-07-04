@@ -19,6 +19,7 @@ import '../../../../features/visa/data/provider_models.dart'
     show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -70,6 +71,7 @@ class ServiceProviderHomePage extends ConsumerWidget {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return SingleChildScrollView(
+      key: AppTestKeys.pageServiceProviderHome,
       padding: EdgeInsets.only(bottom: bottomPadding + 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

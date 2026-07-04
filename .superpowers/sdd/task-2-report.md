@@ -1,0 +1,23 @@
+# Task 2 Report
+
+- 状态：已修复 Task2 审查问题，相关 Patrol 测试通过
+- 审查项修复：
+  - 已为 `ensureServiceProviderAuthenticated()` 增加服务商角色校验，避免误复用企业/求职者会话
+  - 已移除 Patrol 登录流程对中文文案“测试登录服务商”的硬编码依赖，改为稳定 `Key`
+  - 已改为通过 `readCurrentRouterLocation()` 安全读取当前路由，避免 `go_router` 初始化阶段直接读 `state` 抛错
+- 稳定锚点：
+  - 新增 `AppTestKeys.loginTestServiceProviderButton`
+  - 新增 `AppTestKeys.pageServiceProviderHome`
+- 报告相关文件：
+  - `patrol_test/helpers/auth_test_helper.dart`
+  - `patrol_test/helpers/patrol_wait_helper.dart`
+  - `lib/app/router/app_router.dart`
+  - `lib/features/auth/presentation/widgets/login_phone_view.dart`
+  - `lib/features/home/presentation/role_pages/service_provider_home_page.dart`
+  - `lib/shared/ui/test_keys.dart`
+  - `test/patrol/auth_test_helper_test.dart`
+- 提交：
+  - `fix(patrol): address task2 review findings`
+- 测试：
+  - `flutter test test/patrol`：PASS
+  - `flutter test test/widget_test.dart -r compact`：FAIL，原因为测试文件仍引用已失效的 `package:bluehub_app/...` 路径，属于现有遗留问题，非本次 Task2 改动引入

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_session_provider.dart';
+import '../../features/auth/application/auth_session_state.dart';
 import '../../features/auth/presentation/login_phone_page.dart';
 import '../../features/auth/presentation/qualification_certification_flow.dart';
 import '../../features/auth/presentation/qualification_certification_page.dart';
@@ -56,12 +57,16 @@ import '../../features/visa/presentation/company_visa_service_page.dart';
 import '../../features/visa/presentation/edit_visa_package_page.dart';
 import '../../features/visa/presentation/visa_provider_search_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
-import '../../shared/logging/app_logger.dart';
+import '../../shared/logging/app_log_event.dart';
+import '../../shared/logging/app_log_facade.dart';
+import '../../shared/logging/app_route_tracker.dart';
 import 'route_paths.dart';
 
 /// 提供全局 `GoRouter` 实例，并在关键路由变化时输出日志。
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier();
+  final routeTracker = AppRouteTracker.instance;
+  final routeLogCoordinator = RouteLogCoordinator();
   ref.onDispose(refreshNotifier.dispose);
   ref.listen(authSessionProvider, (_, __) {
     refreshNotifier.refresh();
@@ -79,9 +84,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = isLoginRoute || isSelectRoleRoute;
 
       if (authSession.isHydrating) {
-        AppLogger.instance.debug(
-          'ROUTE',
-          '会话恢复中，暂不拦截路由',
+        RouteLog.log(
+          event: 'ROUTE_GUARD_SKIPPED',
+          message: '会话恢复中，暂不拦截路由',
+          level: AppLogLevel.debug,
+          result: AppLogResult.skip,
           context: <String, Object?>{'location': location},
         );
         return null;
@@ -93,18 +100,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         final redirectTarget =
             pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
-        AppLogger.instance.warn(
-          'ROUTE',
-          '未登录，跳转到登录页',
-          context: <String, Object?>{
-            'from': location,
-            'to': _buildAuthEntryLocation(
-              RoutePaths.loginPhone,
-              redirectTarget,
-            ),
-          },
+        final authEntryLocation = _buildAuthEntryLocation(
+          RoutePaths.loginPhone,
+          redirectTarget,
         );
-        return _buildAuthEntryLocation(RoutePaths.loginPhone, redirectTarget);
+        RouteLog.redirectApplied(
+          from: location,
+          to: authEntryLocation,
+          reason: 'unauthenticated',
+          context: _buildRedirectLogContext(
+            redirectTarget: redirectTarget,
+            authSession: authSession,
+          ),
+        );
+        return authEntryLocation;
       }
 
       if (authSession.needSelectRole) {
@@ -113,29 +122,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         final redirectTarget =
             pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
-        AppLogger.instance.warn(
-          'ROUTE',
-          '角色未选择，跳转到角色选择页',
-          context: <String, Object?>{
-            'from': location,
-            'to': _buildAuthEntryLocation(
-              RoutePaths.selectRole,
-              redirectTarget,
-            ),
-          },
+        final selectRoleLocation = _buildAuthEntryLocation(
+          RoutePaths.selectRole,
+          redirectTarget,
         );
-        return _buildAuthEntryLocation(RoutePaths.selectRole, redirectTarget);
+        RouteLog.redirectApplied(
+          from: location,
+          to: selectRoleLocation,
+          reason: 'role_not_selected',
+          context: _buildRedirectLogContext(
+            redirectTarget: redirectTarget,
+            authSession: authSession,
+          ),
+        );
+        return selectRoleLocation;
       }
 
       if (location == RoutePaths.root || isAuthRoute) {
         final target = pendingRedirect;
-        AppLogger.instance.info(
-          'ROUTE',
-          target == null ? '登录态已就绪，跳转到首页' : '登录态已就绪，恢复目标路由',
-          context: <String, Object?>{
-            'from': location,
-            'to': target ?? RoutePaths.home,
-          },
+        RouteLog.redirectApplied(
+          from: location,
+          to: target ?? RoutePaths.home,
+          reason: target == null ? 'auth_ready_default_home' : 'auth_ready_resume_target',
+          level: AppLogLevel.info,
+          context: _buildRedirectLogContext(
+            redirectTarget: target,
+            authSession: authSession,
+          ),
         );
         return target ?? RoutePaths.home;
       }
@@ -495,35 +508,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // go_router 刚创建时，首轮路由匹配可能尚未完成，此时直接读取 state 会抛错。
-  String previousLocation = _readCurrentLocation(
-    router,
-    fallbackLocation: RoutePaths.loginPhone,
-  );
-  AppLogger.instance.info(
-    'ROUTE',
-    '路由器初始化完成',
-    context: <String, Object?>{'location': previousLocation},
+  _emitRouteTransitions(
+    coordinator: routeLogCoordinator,
+    routeTracker: routeTracker,
+    currentLocation: _tryReadCurrentLocation(router),
+    source: 'router_init',
   );
 
   /// 监听 go_router 当前地址变化，记录真实跳转结果。
   void handleRouteChanged() {
-    final currentLocation = _readCurrentLocation(
-      router,
-      fallbackLocation: previousLocation,
+    _emitRouteTransitions(
+      coordinator: routeLogCoordinator,
+      routeTracker: routeTracker,
+      currentLocation: _tryReadCurrentLocation(router),
+      source: 'router_delegate',
     );
-    if (currentLocation == previousLocation) {
-      return;
-    }
-    AppLogger.instance.info(
-      'ROUTE',
-      '路由已切换',
-      context: <String, Object?>{
-        'from': previousLocation,
-        'to': currentLocation,
-      },
-    );
-    previousLocation = currentLocation;
   }
 
   router.routerDelegate.addListener(handleRouteChanged);
@@ -540,16 +539,126 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   }
 }
 
-/// 安全读取当前路由地址，避免 go_router 在首轮匹配前访问 `state` 抛出异常。
-String _readCurrentLocation(
-  GoRouter router, {
-  required String fallbackLocation,
-}) {
+/// 尝试读取当前真实路由地址；若首轮匹配尚未完成，则返回空并等待后续监听补齐。
+String? _tryReadCurrentLocation(GoRouter router) {
   try {
     return router.state.uri.toString();
   } on StateError {
-    // 关键兜底：初始化阶段尚未产生 match 时，回退到已知地址。
-    return fallbackLocation;
+    // 关键兜底：初始化阶段尚未拿到真实路由时，绝不伪造 `/login` 之类的首屏日志。
+    return null;
+  }
+}
+
+/// 将一次路由同步结果转成结构化日志，并同步更新路由追踪器。
+void _emitRouteTransitions({
+  required RouteLogCoordinator coordinator,
+  required AppRouteTracker routeTracker,
+  required String? currentLocation,
+  required String source,
+}) {
+  final transitions = coordinator.sync(currentLocation: currentLocation);
+  for (final transition in transitions) {
+    switch (transition.type) {
+      case RouteLogTransitionType.exit:
+        RouteLog.exit(
+          route: transition.route,
+          to: transition.to,
+          context: <String, Object?>{'source': source},
+        );
+        break;
+      case RouteLogTransitionType.enter:
+        routeTracker.track(transition.route);
+        RouteLog.enter(
+          route: transition.route,
+          from: transition.from,
+          context: <String, Object?>{
+            'source': source,
+            if (routeTracker.previousRoute != null)
+              'trackerPreviousRoute': routeTracker.previousRoute,
+          },
+        );
+        break;
+    }
+  }
+}
+
+/// 路由日志协调器：只在拿到真实路由后产生日志，并统一推导进出场顺序。
+class RouteLogCoordinator {
+  String? _currentLocation;
+
+  /// 根据最新真实路由生成需要输出的过渡事件；初始未解析阶段不会产生日志。
+  List<RouteLogTransition> sync({required String? currentLocation}) {
+    final normalizedLocation = _normalizeLocation(currentLocation);
+    if (normalizedLocation == null) {
+      return const <RouteLogTransition>[];
+    }
+    if (_currentLocation == null) {
+      _currentLocation = normalizedLocation;
+      return <RouteLogTransition>[
+        RouteLogTransition.enter(route: normalizedLocation),
+      ];
+    }
+    if (_currentLocation == normalizedLocation) {
+      return const <RouteLogTransition>[];
+    }
+
+    final previousLocation = _currentLocation!;
+    _currentLocation = normalizedLocation;
+    return <RouteLogTransition>[
+      RouteLogTransition.exit(route: previousLocation, to: normalizedLocation),
+      RouteLogTransition.enter(route: normalizedLocation, from: previousLocation),
+    ];
+  }
+
+  /// 统一清洗路由字符串，避免空白值污染协调状态。
+  String? _normalizeLocation(String? currentLocation) {
+    final normalizedLocation = currentLocation?.trim();
+    if (normalizedLocation == null || normalizedLocation.isEmpty) {
+      return null;
+    }
+    return normalizedLocation;
+  }
+}
+
+/// 路由过渡类型：用于区分页面退出和进入事件。
+enum RouteLogTransitionType { exit, enter }
+
+/// 单次路由过渡事件，供协调器与日志输出流程之间传递。
+class RouteLogTransition {
+  const RouteLogTransition._({
+    required this.type,
+    required this.route,
+    this.from,
+    this.to,
+  });
+
+  final RouteLogTransitionType type;
+  final String route;
+  final String? from;
+  final String? to;
+
+  /// 构建页面进入事件。
+  factory RouteLogTransition.enter({
+    required String route,
+    String? from,
+  }) {
+    return RouteLogTransition._(
+      type: RouteLogTransitionType.enter,
+      route: route,
+      from: from,
+    );
+  }
+
+  /// 构建页面退出事件。
+  factory RouteLogTransition.exit({
+    required String route,
+    String? to,
+  }) {
+    return RouteLogTransition._(
+      type: RouteLogTransitionType.exit,
+      route: route,
+      to: to,
+    );
   }
 }
 
@@ -597,6 +706,20 @@ String? _buildRedirectTargetFromStateUri(Uri uri) {
 /// 判断当前路径是否属于鉴权入口页，避免在登录页和选角色页之间产生循环跳转。
 bool _isAuthPath(String path) {
   return path == RoutePaths.loginPhone || path == RoutePaths.selectRole;
+}
+
+/// 统一补齐重定向日志上下文，明确当前会话状态和目标恢复地址。
+Map<String, Object?> _buildRedirectLogContext({
+  required AuthSessionState authSession,
+  String? redirectTarget,
+}) {
+  return <String, Object?>{
+    'isAuthenticated': authSession.isAuthenticated,
+    'isHydrating': authSession.isHydrating,
+    'needSelectRole': authSession.needSelectRole,
+    if (authSession.user != null) 'userId': authSession.user!.userId,
+    if (redirectTarget != null) 'redirectTarget': redirectTarget,
+  };
 }
 
 /// 解析岗位详情链接参数，支持 Universal Link 直接使用 `jobId` 查询参数打开页面。
