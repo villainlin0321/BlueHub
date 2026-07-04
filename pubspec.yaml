@@ -76,6 +76,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  patrol: ^4.6.1
 
 dependency_overrides:
   audio_session:
@@ -88,11 +89,16 @@ dependency_overrides:
 tobias:
   url_scheme: com.europepass.europepass.alipay
 
+patrol:
+  test_directory: patrol_test
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  config:
+    enable-swift-package-manager: true
   generate: true
 
   # The following line ensures that the Material Icons font is

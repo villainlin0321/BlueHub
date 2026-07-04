@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../auth/application/auth_session_provider.dart';
@@ -19,6 +20,7 @@ import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -58,6 +60,7 @@ class ServiceProviderMePage extends ConsumerWidget {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SingleChildScrollView(
+      key: AppTestKeys.pageServiceProviderMe,
       padding: EdgeInsets.only(bottom: bottomInset + 96),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -197,6 +200,7 @@ class _HeaderActions extends StatelessWidget {
         const MessageCenterIconButton(),
         const SizedBox(width: 16),
         _TopIconButton(
+          buttonKey: AppTestKeys.actionServiceProviderMeSettings,
           assetPath: ServiceProviderMePage._settingsAsset,
           fallbackIcon: Icons.settings_outlined,
           onTap: onSettingsTap,
@@ -208,11 +212,13 @@ class _HeaderActions extends StatelessWidget {
 
 class _TopIconButton extends StatelessWidget {
   const _TopIconButton({
+    this.buttonKey,
     required this.assetPath,
     required this.fallbackIcon,
     required this.onTap,
   });
 
+  final Key? buttonKey;
   final String assetPath;
   final IconData fallbackIcon;
   final VoidCallback onTap;
@@ -220,6 +226,7 @@ class _TopIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: buttonKey,
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
@@ -353,7 +360,10 @@ class _ProviderNameRow extends ConsumerWidget {
                   top: 2,
                   child: Text(
                     '我的.认证'.tr(),
-                    style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
+                    style: TestStyle.pingFangSemibold(
+                      fontSize: 9,
+                      color: Color(0xFF784301),
+                    ),
                   ),
                 ),
               ],
@@ -519,7 +529,10 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                style: TestStyle.regular(
+                  fontSize: 16,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
             const Icon(

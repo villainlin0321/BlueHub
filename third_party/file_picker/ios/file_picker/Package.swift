@@ -11,21 +11,17 @@ let package = Package(
     products: [
         .library(name: "file-picker", targets: ["file_picker"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/zhangao0086/DKImagePickerController", branch: "4.3.9")
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "file_picker",
-            dependencies: [
-                .product(name: "DKImagePickerController", package: "DKImagePickerController")
-            ],
+            dependencies: [],
             resources: [
                 .process("PrivacyInfo.xcprivacy")
             ],
             cSettings: [
                 .headerSearchPath("include/file_picker"),
-                .define("PICKER_MEDIA"),
+                // 项目当前仅使用文件选择能力，避免引入媒体依赖链与 image_cropper 的裁剪库冲突。
                 .define("PICKER_AUDIO"),
                 .define("PICKER_DOCUMENT")
             ]
