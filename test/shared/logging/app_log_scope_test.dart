@@ -36,14 +36,19 @@ void main() {
       context: <String, Object?>{
         'token': 'abc',
         'phone': '13800000000',
+        'email': 'debugger@example.com',
         'module': 'auth',
       },
     );
 
     final Map<String, Object?> json = event.toJson();
+    final Map<String, Object?> context =
+        json['context']! as Map<String, Object?>;
     expect(json['layer'], 'HTTP');
-    expect((json['context']! as Map<String, Object?>)['token'], '***');
-    expect((json['context']! as Map<String, Object?>)['module'], 'auth');
+    expect(context['token'], '***');
+    expect(context['phone'], '***');
+    expect(context['email'], '***');
+    expect(context['module'], 'auth');
   });
 
   test('AppLogScope 会在异步边界内继续保留当前链路上下文', () async {

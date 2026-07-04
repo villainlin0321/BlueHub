@@ -110,7 +110,10 @@ bool isSensitiveAppLogKey(String? key) {
   return normalized.contains('token') ||
       normalized.contains('authorization') ||
       normalized.contains('password') ||
-      normalized.contains('secret');
+      normalized.contains('secret') ||
+      // 统一把手机号和邮箱也纳入敏感字段规则，避免结构化快照明文落日志。
+      normalized.contains('phone') ||
+      normalized.contains('email');
 }
 
 /// 对超长日志文本做统一裁剪，保留前缀用于快速排障。

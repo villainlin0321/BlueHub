@@ -55,6 +55,43 @@ class AppFlowLog {
       },
     );
   }
+
+  /// 记录应用启动开始事件，统一补齐启动链路的起点字段。
+  static void bootstrapStart({AppLogContext? context}) {
+    log(
+      event: 'APP_BOOTSTRAP_START',
+      message: '应用启动流程开始',
+      result: AppLogResult.pending,
+      context: context,
+    );
+  }
+
+  /// 记录应用启动成功事件，便于回放初始化流程何时完成。
+  static void bootstrapSuccess({AppLogContext? context}) {
+    log(
+      event: 'APP_BOOTSTRAP_SUCCESS',
+      message: '应用启动流程完成',
+      result: AppLogResult.success,
+      context: context,
+    );
+  }
+
+  /// 记录应用启动失败事件，并保留排障所需的错误上下文。
+  static void bootstrapFail({
+    required Object error,
+    StackTrace? stackTrace,
+    AppLogContext? context,
+  }) {
+    log(
+      event: 'APP_BOOTSTRAP_FAIL',
+      message: '应用启动流程失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      context: context,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 /// 路由日志门面：负责页面进入、退出和重定向等事件。
@@ -138,6 +175,28 @@ class RouteLog {
       },
     );
   }
+
+  /// 记录已生效的路由重定向，突出原始地址、目标地址和触发原因。
+  static void redirectApplied({
+    required String from,
+    required String to,
+    required String reason,
+    AppLogLevel level = AppLogLevel.warn,
+    AppLogContext? context,
+  }) {
+    log(
+      event: 'ROUTE_REDIRECT_APPLIED',
+      message: '路由重定向已生效',
+      level: level,
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        'from': from,
+        'to': to,
+        'reason': reason,
+        if (context != null) ...context,
+      },
+    );
+  }
 }
 
 /// 交互日志门面：为后续页面动作和用户操作补点提供统一入口。
@@ -179,11 +238,7 @@ class ActionLog {
       traceId: resolvedTraceId,
       fields: fields ?? const <String, Object?>{},
       action: () {
-        log(
-          event: event,
-          message: message,
-          result: AppLogResult.pending,
-        );
+        log(event: event, message: message, result: AppLogResult.pending);
         return action();
       },
     );
@@ -228,8 +283,9 @@ class StateLog {
       message: 'Provider 状态已变化',
       context: <String, Object?>{
         'provider': provider,
-        if (previousValue != null) 'previous': previousValue.toString(),
-        if (newValue != null) 'next': newValue.toString(),
+        // 统一把原始快照交给日志出口做脱敏与裁剪，避免这里过早退化成纯文本。
+        if (previousValue != null) 'previous': previousValue,
+        if (newValue != null) 'next': newValue,
         if (context != null) ...context,
       },
     );
@@ -249,6 +305,33 @@ class StateLog {
       result: AppLogResult.fail,
       context: <String, Object?>{
         'provider': provider,
+        if (context != null) ...context,
+      },
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// 记录状态链路中的关键阶段切换，便于按事件名回放开始、成功和失败过程。
+  static void transition({
+    required String event,
+    required String message,
+    String? from,
+    String? to,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
         if (context != null) ...context,
       },
       error: error,
@@ -280,6 +363,81 @@ class HttpFlowLog {
       context: context,
       error: error,
       stackTrace: stackTrace,
+    );
+  }
+
+  /// 记录 HTTP 请求发起事件，并串联请求基础信息与链路字段。
+  static void requestStart({
+    required String requestId,
+    required String method,
+    required String uri,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_START',
+      message: '发起请求',
+      result: AppLogResult.pending,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录 HTTP 请求成功事件，便于和请求开始、失败日志完整回放。
+  static void requestSuccess({
+    required String requestId,
+    required String method,
+    required String uri,
+    int? statusCode,
+    int? durationMs,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_SUCCESS',
+      message: '请求成功',
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (statusCode != null) 'statusCode': statusCode,
+        if (durationMs != null) 'durationMs': durationMs,
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录 HTTP 请求失败事件，统一沉淀异常类型、状态码和链路上下文。
+  static void requestFail({
+    required String requestId,
+    required String method,
+    required String uri,
+    required Object error,
+    StackTrace? stackTrace,
+    String? errorType,
+    int? statusCode,
+    int? durationMs,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_FAIL',
+      message: '请求失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (errorType != null) 'type': errorType,
+        if (statusCode != null) 'statusCode': statusCode,
+        if (durationMs != null) 'durationMs': durationMs,
+        if (context != null) ...context,
+      },
     );
   }
 }
