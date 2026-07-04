@@ -1,11 +1,47 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../shared/ui/app_colors.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+typedef AgreementLinkOpener = Future<bool> Function(Uri uri);
+
+final Uri _userTermsUri = Uri.parse('https://yunhezp.vip/app/terms.html');
+final Uri _crossBorderTermsUri = Uri.parse(
+  'https://yunhezp.vip/app/cross-terms.html',
+);
+final Uri _privacyPolicyUri = Uri.parse(
+  'https://yunhezp.vip/app/privacy-policy.html',
+);
+
+Future<bool> _openAgreementLink(BuildContext context, Uri uri) async {
+  try {
+    final bool openedInApp = await launchUrl(
+      uri,
+      mode: LaunchMode.inAppWebView,
+    );
+    if (openedInApp) {
+      return true;
+    }
+
+    final bool opened = await launchUrl(uri);
+    if (!opened) {
+      await AppToast.show('认证.协议打开失败'.tr());
+    }
+    return opened;
+  } catch (_) {
+    await AppToast.show('认证.协议打开失败'.tr());
+    return false;
+  }
+}
+
 class LoginRegionOption {
   const LoginRegionOption({required this.label, required this.code});
 
@@ -33,6 +69,7 @@ class LoginPhoneView extends StatelessWidget {
     required this.onTestServiceProviderLogin,
     required this.onTestEmployerLogin,
     required this.onAgreementChanged,
+    this.onOpenAgreementLink,
   });
 
   final LoginFormState state;
@@ -52,6 +89,7 @@ class LoginPhoneView extends StatelessWidget {
   final VoidCallback onTestServiceProviderLogin;
   final VoidCallback onTestEmployerLogin;
   final ValueChanged<bool> onAgreementChanged;
+  final AgreementLinkOpener? onOpenAgreementLink;
 
   @override
   /// 构建登录视图，并根据当前全局语言实时切换页面文案。
@@ -76,7 +114,10 @@ class LoginPhoneView extends StatelessWidget {
                   const SizedBox(height: 50),
                   Text(
                     '认证.注册登录'.tr(),
-                    style: TestStyle.pingFangSemibold(fontSize: 26, color: const Color(0xFF262626)),
+                    style: TestStyle.pingFangSemibold(
+                      fontSize: 26,
+                      color: const Color(0xFF262626),
+                    ),
                   ),
                   const SizedBox(height: 41),
                   _LoginModeTabs(
@@ -134,38 +175,12 @@ class LoginPhoneView extends StatelessWidget {
                     onPressed: onLogin,
                   ),
                   const SizedBox(height: 20),
-                  InkWell(
-                    onTap: () => onAgreementChanged(!state.agreed),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _AgreementCheckbox(
-                          value: state.agreed,
-                          onChanged: onAgreementChanged,
-                        ),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    height: 22 / 12,
-                                    color: const Color(0xFF171A1D),
-                                    fontSize: 12,
-                                  ),
-                              children: <InlineSpan>[
-                                TextSpan(text: '认证.协议前缀'.tr()),
-                                TextSpan(
-                                  text:
-                                      '${'认证.用户服务协议'.tr()}${'认证.用户隐私政策'.tr()}',
-                                  style: TestStyle.pingFangRegular(color: AppColors.brand),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _AgreementSection(
+                    agreed: state.agreed,
+                    onAgreementChanged: onAgreementChanged,
+                    onOpenLink: (uri) =>
+                        (onOpenAgreementLink ??
+                        (value) => _openAgreementLink(context, value))(uri),
                   ),
                   const Spacer(),
                   // const SizedBox(height: 24),
@@ -176,6 +191,118 @@ class LoginPhoneView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _AgreementSection extends StatefulWidget {
+  const _AgreementSection({
+    required this.agreed,
+    required this.onAgreementChanged,
+    required this.onOpenLink,
+  });
+
+  final bool agreed;
+  final ValueChanged<bool> onAgreementChanged;
+  final AgreementLinkOpener onOpenLink;
+
+  @override
+  State<_AgreementSection> createState() => _AgreementSectionState();
+}
+
+class _AgreementSectionState extends State<_AgreementSection> {
+  late final TapGestureRecognizer _toggleAgreementRecognizer;
+  late final TapGestureRecognizer _userTermsRecognizer;
+  late final TapGestureRecognizer _crossTermsRecognizer;
+  late final TapGestureRecognizer _privacyPolicyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _toggleAgreementRecognizer = TapGestureRecognizer();
+    _userTermsRecognizer = TapGestureRecognizer();
+    _crossTermsRecognizer = TapGestureRecognizer();
+    _privacyPolicyRecognizer = TapGestureRecognizer();
+  }
+
+  @override
+  void dispose() {
+    _toggleAgreementRecognizer.dispose();
+    _userTermsRecognizer.dispose();
+    _crossTermsRecognizer.dispose();
+    _privacyPolicyRecognizer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _toggleAgreementRecognizer.onTap = () =>
+        widget.onAgreementChanged(!widget.agreed);
+    _userTermsRecognizer.onTap = () => widget.onOpenLink(_userTermsUri);
+    _crossTermsRecognizer.onTap = () => widget.onOpenLink(_crossBorderTermsUri);
+    _privacyPolicyRecognizer.onTap = () => widget.onOpenLink(_privacyPolicyUri);
+
+    final String languageCode =
+        Localizations.maybeLocaleOf(context)?.languageCode.toLowerCase() ??
+        'zh';
+    final bool isChinese = languageCode == 'zh';
+    final TextStyle plainStyle = Theme.of(context).textTheme.bodySmall!
+        .copyWith(
+          height: 22 / 12,
+          color: const Color(0xFF171A1D),
+          fontSize: 12,
+        );
+    final TextStyle linkStyle =
+        TestStyle.pingFangRegular(color: AppColors.brand).copyWith(
+          height: 22 / 12,
+          fontSize: 12,
+          decoration: TextDecoration.underline,
+          decorationColor: AppColors.brand,
+        );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _AgreementCheckbox(
+          value: widget.agreed,
+          onChanged: widget.onAgreementChanged,
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: RichText(
+              key: const Key('login_agreement_rich_text'),
+              text: TextSpan(
+                style: plainStyle,
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: '认证.协议前缀'.tr(),
+                    recognizer: _toggleAgreementRecognizer,
+                  ),
+                  TextSpan(
+                    text: '认证.用户服务协议'.tr(),
+                    style: linkStyle,
+                    recognizer: _userTermsRecognizer,
+                  ),
+                  TextSpan(text: isChinese ? '、' : ', '),
+                  TextSpan(
+                    text: '认证.个人信息跨境流动用户协议'.tr(),
+                    style: linkStyle,
+                    recognizer: _crossTermsRecognizer,
+                  ),
+                  TextSpan(text: isChinese ? '和' : ', and '),
+                  TextSpan(
+                    text: '认证.用户隐私政策'.tr(),
+                    style: linkStyle,
+                    recognizer: _privacyPolicyRecognizer,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -242,7 +369,10 @@ class _ModeTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Text(
           label,
-          style: TestStyle.medium(fontSize: 14, color: selected ? AppColors.brand : const Color(0xFF8C8C8C)),
+          style: TestStyle.medium(
+            fontSize: 14,
+            color: selected ? AppColors.brand : const Color(0xFF8C8C8C),
+          ),
         ),
       ),
     );
@@ -278,7 +408,10 @@ class _PhoneInputRow extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       regionCode,
-                      style: TestStyle.regular(fontSize: 16, color: const Color(0xFF262626)),
+                      style: TestStyle.regular(
+                        fontSize: 16,
+                        color: const Color(0xFF262626),
+                      ),
                     ),
                     const SizedBox(width: 6),
                     const Icon(
@@ -299,9 +432,15 @@ class _PhoneInputRow extends StatelessWidget {
                   hintText: '认证.请输入手机号'.tr(),
                   isDense: true,
                   border: InputBorder.none,
-                  hintStyle: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFFBFBFBF)),
+                  hintStyle: TestStyle.pingFangRegular(
+                    fontSize: 16,
+                    color: Color(0xFFBFBFBF),
+                  ),
                 ),
-                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                style: TestStyle.regular(
+                  fontSize: 16,
+                  color: Color(0xFF262626),
+                ),
                 onChanged: onChanged,
               ),
             ),
@@ -339,7 +478,10 @@ class _TextInputRow extends StatelessWidget {
             hintText: hintText,
             isDense: true,
             border: InputBorder.none,
-            hintStyle: TestStyle.regular(fontSize: 16, color: Color(0xFFBFBFBF)),
+            hintStyle: TestStyle.regular(
+              fontSize: 16,
+              color: Color(0xFFBFBFBF),
+            ),
           ),
           style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
           onChanged: onChanged,
@@ -402,13 +544,23 @@ class _CodeInputRow extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
                 decoration: InputDecoration(
                   hintText: hintText,
                   isDense: true,
                   border: InputBorder.none,
-                  hintStyle: TestStyle.regular(fontSize: 16, color: Color(0xFFBFBFBF)),
+                  hintStyle: TestStyle.regular(
+                    fontSize: 16,
+                    color: Color(0xFFBFBFBF),
+                  ),
                 ),
-                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                style: TestStyle.regular(
+                  fontSize: 16,
+                  color: Color(0xFF262626),
+                ),
                 onChanged: onChanged,
               ),
             ),
@@ -496,25 +648,6 @@ class _AgreementCheckbox extends StatelessWidget {
   }
 }
 
-class _SocialLoginSection extends StatelessWidget {
-  const _SocialLoginSection();
-
-  @override
-  /// 构建底部第三方登录图标区，目前保留为纯展示入口。
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        _SocialIcon(Icons.g_mobiledata, size: 24),
-        SizedBox(width: 22),
-        _SocialIcon(Icons.apple, size: 21),
-        SizedBox(width: 22),
-        _SocialIcon(Icons.wechat, size: 24),
-      ],
-    );
-  }
-}
-
 class RegionPickerSheet extends StatelessWidget {
   const RegionPickerSheet({
     super.key,
@@ -553,7 +686,10 @@ class RegionPickerSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '认证.选择地区'.tr(),
-              style: TestStyle.pingFangSemibold(fontSize: 16, color: const Color(0xFF262626)),
+              style: TestStyle.pingFangSemibold(
+                fontSize: 16,
+                color: const Color(0xFF262626),
+              ),
             ),
             const SizedBox(height: 8),
             ...options.map((option) {
@@ -570,29 +706,6 @@ class RegionPickerSheet extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SocialIcon extends StatelessWidget {
-  const _SocialIcon(this.icon, {required this.size});
-
-  final IconData icon;
-  final double size;
-
-  @override
-  /// 构建单个社交登录图标容器，统一圆形边框与居中布局。
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFBFBFBF)),
-      ),
-      alignment: Alignment.center,
-      child: Icon(icon, size: size, color: AppColors.textSecondary),
     );
   }
 }
