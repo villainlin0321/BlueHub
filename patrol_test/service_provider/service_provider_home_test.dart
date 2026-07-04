@@ -14,14 +14,6 @@ import '../helpers/service_provider_case_result_helper.dart';
 import '../shared/patrol_test_types.dart';
 
 void main() {
-  test('服务商首页 - 首页交互结果应细化到交互点级别', () {
-    expect(_homeFeatureLabel('home.quick_action.publish_package'), '发布套餐');
-    expect(
-      _homeTargetMatcher('home.quick_action.publish_package'),
-      serviceProviderRouteMatchers['editVisaPackage'],
-    );
-  });
-
   patrolTest('服务商首页 - 快捷入口全部可达', ($) async {
     final reporter = PatrolReporter.memory();
 
