@@ -10,6 +10,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
@@ -1605,7 +1607,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
     });
 
     try {
-      await _persistResume();
+      await AppLogScope.run<Future<void>>(
+        traceId: buildAppTraceId('resume_save'),
+        fields: _buildResumeSaveLogContext(),
+        action: () async {
+          // 保存点击日志必须先于保存请求发出，后续网络日志才能自动继承同一条链路。
+          ActionLog.tap(
+            event: 'RESUME_SAVE_TAP',
+            message: '用户点击保存简历',
+          );
+          await _persistResume();
+        },
+      );
       if (!mounted) {
         return;
       }
@@ -1660,6 +1673,28 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       return;
     }
     await service.saveResume(request: request);
+  }
+
+  /// 构建保存简历的安全日志上下文，只保留排障所需摘要字段。
+  Map<String, Object?> _buildResumeSaveLogContext() {
+    return <String, Object?>{
+      'route': RoutePaths.myResumeEditor,
+      'module': 'me',
+      'feature': 'resume_editor',
+      'mode': _isCreateMode ? 'create' : 'edit',
+      'hasResumeId': (_targetResumeId ?? 0) > 0,
+      'completionRate': _completionRate,
+      'jobTagCount': _jobTags.length,
+      'countryTagCount': _countryTags.length,
+      'languageCount': _languages.length,
+      'experienceCount': _experiences.length,
+      'certificateCount': _certificates.length,
+      'educationCount': _educations.length,
+      'hasSelfEvaluation': _selfEvaluation.trim().isNotEmpty,
+      'salaryMinFilled': _salaryValue.isNotEmpty,
+      'salaryMaxFilled': _salaryMaxValue.isNotEmpty,
+      'isPublic': _draft.isPublic,
+    };
   }
 
   /// 组装保存简历所需的全量请求。

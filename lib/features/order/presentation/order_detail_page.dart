@@ -18,6 +18,8 @@ import '../../../features/files/data/file_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../shell/application/shell_role_provider.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -564,6 +566,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
   void _noopAction() {}
 
+  /// 构建订单详情页支付交互的统一日志上下文，避免点击事件缺少关键订单定位字段。
+  Map<String, Object?> _buildPaymentInteractionLogContext(VisaOrderVO detail) {
+    return <String, Object?>{
+      'route': RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'order_detail',
+      'source': 'order_detail_pay_now',
+      'orderId': detail.orderId,
+      'paymentMethod': _selectedPaymentMethod.apiValue,
+      if (detail.status.trim().isNotEmpty) 'orderStatus': detail.status.trim(),
+      if (detail.currentStep > 0) 'currentStep': detail.currentStep,
+    };
+  }
+
   Future<void> _handlePayNow() async {
     if (_isSubmitting) {
       return;
@@ -575,36 +591,47 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     setState(() => _isSubmitting = true);
     try {
-      if (_selectedPaymentMethod == AppPaymentMethod.wechat) {
-        await ref
-            .read(visaOrderServiceProvider)
-            .payOrder(orderId: detail.orderId);
-        if (!mounted) {
-          return;
-        }
-        await _handlePaymentSuccess();
-        return;
-      }
-      final PaymentFlowResult result = await ref
-          .read(paymentFlowCoordinatorProvider)
-          .startPayment(
-            orderId: detail.orderId,
-            method: _selectedPaymentMethod,
+      await AppLogScope.run<Future<void>>(
+        traceId: buildAppTraceId('order_detail_payment'),
+        fields: _buildPaymentInteractionLogContext(detail),
+        action: () async {
+          // 订单详情页直接支付没有二次弹层，因此点击日志必须落在真正发起支付前。
+          ActionLog.tap(
+            event: 'ORDER_PAYMENT_CONFIRM_TAP',
+            message: '用户在订单详情页点击立即支付',
           );
-      if (!mounted) {
-        return;
-      }
-      switch (result.status) {
-        case PaymentFlowStatus.success:
-          await _handlePaymentSuccess();
-          return;
-        case PaymentFlowStatus.cancel:
-        case PaymentFlowStatus.failed:
-        case PaymentFlowStatus.pending:
-          setState(() => _isSubmitting = false);
-          _showMessage(result.message);
-          return;
-      }
+          if (_selectedPaymentMethod == AppPaymentMethod.wechat) {
+            await ref
+                .read(visaOrderServiceProvider)
+                .payOrder(orderId: detail.orderId);
+            if (!mounted) {
+              return;
+            }
+            await _handlePaymentSuccess();
+            return;
+          }
+          final PaymentFlowResult result = await ref
+              .read(paymentFlowCoordinatorProvider)
+              .startPayment(
+                orderId: detail.orderId,
+                method: _selectedPaymentMethod,
+              );
+          if (!mounted) {
+            return;
+          }
+          switch (result.status) {
+            case PaymentFlowStatus.success:
+              await _handlePaymentSuccess();
+              return;
+            case PaymentFlowStatus.cancel:
+            case PaymentFlowStatus.failed:
+            case PaymentFlowStatus.pending:
+              setState(() => _isSubmitting = false);
+              _showMessage(result.message);
+              return;
+          }
+        },
+      );
     } catch (error) {
       if (!mounted) {
         return;

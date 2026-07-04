@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
+import '../../../shared/logging/app_route_tracker.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../data/visa_order_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
@@ -25,22 +28,57 @@ class OrderPaymentBottomSheet {
     required BuildContext parentContext,
     Future<void> Function()? onFlowCompleted,
   }) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _OrderPaymentBottomSheetContent(
-          amount: amount,
-          currency: currency,
-          orderId: orderId,
-          packageName: packageName,
-          parentContext: parentContext,
-          onFlowCompleted: onFlowCompleted,
+    await AppLogScope.run<Future<void>>(
+      traceId: buildAppTraceId('order_payment_sheet'),
+      fields: _buildSheetLogContext(
+        amount: amount,
+        currency: currency,
+        orderId: orderId,
+        packageName: packageName,
+      ),
+      action: () async {
+        // 弹层打开日志要早于底部按钮点击，后续整条支付交互链路才能复用同一条 traceId。
+        ActionLog.sheetOpen(
+          event: 'ORDER_PAYMENT_SHEET_OPEN',
+          message: '打开订单支付弹层',
+        );
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: false,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) {
+            return _OrderPaymentBottomSheetContent(
+              amount: amount,
+              currency: currency,
+              orderId: orderId,
+              packageName: packageName,
+              parentContext: parentContext,
+              onFlowCompleted: onFlowCompleted,
+            );
+          },
         );
       },
     );
+  }
+
+  /// 构建支付弹层的统一日志上下文，只保留安全摘要与订单定位字段。
+  static Map<String, Object?> _buildSheetLogContext({
+    required double amount,
+    required String? currency,
+    required int orderId,
+    required String packageName,
+  }) {
+    return <String, Object?>{
+      'route': AppRouteTracker.instance.currentRoute ?? RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'payment_bottom_sheet',
+      'source': 'order_payment_bottom_sheet',
+      'orderId': orderId,
+      'amount': amount,
+      if (currency != null && currency.trim().isNotEmpty) 'currency': currency,
+      'hasPackageName': packageName.trim().isNotEmpty,
+    };
   }
 }
 
@@ -191,7 +229,7 @@ class _OrderPaymentBottomSheetContentState
               shadowColor: Colors.transparent,
             ),
             child: Text(
-              _isPaying ? '服务详情.支付中'.tr() : '服务详情.立即支付'.tr(),
+              _isPaying ? '服务详情.支付中'.tr() : '服务详情.确认支付'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -211,34 +249,44 @@ class _OrderPaymentBottomSheetContentState
     }
     setState(() => _isPaying = true);
     try {
-      if (_selectedMethod == AppPaymentMethod.wechat) {
-        // Temporary fallback: backend directly marks the order as paid for WeChat.
-        await ref
-            .read(visaOrderServiceProvider)
-            .payOrder(orderId: widget.orderId);
-        if (!mounted) {
-          return;
-        }
-        _handlePaymentSuccess();
-        return;
-      }
-      final PaymentFlowResult result = await ref
-          .read(paymentFlowCoordinatorProvider)
-          .startPayment(orderId: widget.orderId, method: _selectedMethod);
-      if (!mounted) {
-        return;
-      }
-      switch (result.status) {
-        case PaymentFlowStatus.success:
-          _handlePaymentSuccess();
-          return;
-        case PaymentFlowStatus.cancel:
-        case PaymentFlowStatus.failed:
-        case PaymentFlowStatus.pending:
-          setState(() => _isPaying = false);
-          _showMessage(result.message);
-          return;
-      }
+      await AppLogScope.run<Future<void>>(
+        fields: _buildConfirmPayLogContext(),
+        action: () async {
+          // 确认支付点击日志必须贴近按钮触发点，保证和真实点击顺序一致。
+          ActionLog.tap(
+            event: 'ORDER_PAYMENT_CONFIRM_TAP',
+            message: '用户确认订单支付',
+          );
+          if (_selectedMethod == AppPaymentMethod.wechat) {
+            // Temporary fallback: backend directly marks the order as paid for WeChat.
+            await ref
+                .read(visaOrderServiceProvider)
+                .payOrder(orderId: widget.orderId);
+            if (!mounted) {
+              return;
+            }
+            _handlePaymentSuccess();
+            return;
+          }
+          final PaymentFlowResult result = await ref
+              .read(paymentFlowCoordinatorProvider)
+              .startPayment(orderId: widget.orderId, method: _selectedMethod);
+          if (!mounted) {
+            return;
+          }
+          switch (result.status) {
+            case PaymentFlowStatus.success:
+              _handlePaymentSuccess();
+              return;
+            case PaymentFlowStatus.cancel:
+            case PaymentFlowStatus.failed:
+            case PaymentFlowStatus.pending:
+              setState(() => _isPaying = false);
+              _showMessage(result.message);
+              return;
+          }
+        },
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -246,6 +294,18 @@ class _OrderPaymentBottomSheetContentState
       setState(() => _isPaying = false);
       _showMessage(resolveOrderPaymentErrorMessage(error));
     }
+  }
+
+  /// 构建确认支付点击日志上下文，补齐支付方式与弹层来源。
+  Map<String, Object?> _buildConfirmPayLogContext() {
+    return <String, Object?>{
+      'route': AppRouteTracker.instance.currentRoute ?? RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'payment_bottom_sheet',
+      'source': 'order_payment_bottom_sheet',
+      'orderId': widget.orderId,
+      'paymentMethod': _selectedMethod.apiValue,
+    };
   }
 
   void _handlePaymentSuccess() {
