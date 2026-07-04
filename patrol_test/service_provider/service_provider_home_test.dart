@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../fixtures/service_provider_expectations.dart';
 import '../fixtures/service_provider_test_account.dart';
@@ -9,9 +10,18 @@ import '../helpers/auth_test_helper.dart';
 import '../helpers/patrol_reporter.dart';
 import '../helpers/patrol_route_matcher.dart';
 import '../helpers/patrol_wait_helper.dart';
+import '../helpers/service_provider_case_result_helper.dart';
 import '../shared/patrol_test_types.dart';
 
 void main() {
+  test('服务商首页 - 首页交互结果应细化到交互点级别', () {
+    expect(_homeFeatureLabel('home.quick_action.publish_package'), '发布套餐');
+    expect(
+      _homeTargetMatcher('home.quick_action.publish_package'),
+      serviceProviderRouteMatchers['editVisaPackage'],
+    );
+  });
+
   patrolTest('服务商首页 - 快捷入口全部可达', ($) async {
     final reporter = PatrolReporter.memory();
 
@@ -34,12 +44,27 @@ void main() {
       );
 
       if (index < serviceProviderHomeCases.length - 1) {
-        await $.native.pressBack();
+        await _returnToHome($, feature: definition.feature);
         // 每次返回后重新等待首页根节点稳定，避免后续点击命中旧页面动画。
         await waitForPageReady($, page: 'serviceProviderHome');
       }
     }
   });
+}
+
+/// 按功能点选择最稳定的返回方式，避免 iOS 自定义导航页卡在原生返回手势上。
+Future<void> _returnToHome(
+  PatrolIntegrationTester $, {
+  required String feature,
+}) async {
+  switch (feature) {
+    case 'home.quick_action.publish_package':
+      // 编辑套餐页使用自定义返回按钮，优先点击业务返回键避免原生返回手势不稳定。
+      await $(find.byKey(AppTestKeys.actionEditVisaPackageBack)).tap();
+      return;
+    default:
+      await $.native.pressBack();
+  }
 }
 
 /// 执行单个首页快捷入口用例，并把跳转结果转换为统一的报告结构。
@@ -67,18 +92,12 @@ Future<PatrolCaseResult> _runHomeCase(
       endedAt: DateTime.now(),
     );
   } catch (error) {
-    return PatrolCaseResult(
-      module: definition.module,
-      page: definition.page,
-      feature: definition.feature,
-      description: definition.description,
-      precondition: definition.precondition,
-      expected: definition.expected,
-      actual: '点击后未达到预期页面：$error',
-      status: PatrolCaseStatus.fail,
-      reason: 'route_mismatch',
+    return buildServiceProviderFailureResult(
+      definition: definition,
       startedAt: startedAt,
-      endedAt: DateTime.now(),
+      error: error,
+      reason: 'route_mismatch',
+      actualPrefix: '点击后未达到预期页面',
     );
   }
 }
@@ -86,13 +105,13 @@ Future<PatrolCaseResult> _runHomeCase(
 /// 根据首页功能点返回对应的点击文案，保持测试定义与页面文案解耦。
 String _homeFeatureLabel(String feature) {
   switch (feature) {
-    case 'publish_package':
+    case 'home.quick_action.publish_package':
       return '发布套餐';
-    case 'order_management':
+    case 'home.quick_action.order_management':
       return '订单处理';
-    case 'talent_center':
+    case 'home.quick_action.talent_center':
       return '人才中心';
-    case 'finance_settlement':
+    case 'home.quick_action.finance_settlement':
       return '财务结算';
   }
   throw ArgumentError.value(feature, 'feature', '未注册的服务商首页功能点');
@@ -101,13 +120,13 @@ String _homeFeatureLabel(String feature) {
 /// 根据首页功能点返回目标页面 matcher，统一复用夹具中的路由定义。
 PatrolRouteMatcher _homeTargetMatcher(String feature) {
   switch (feature) {
-    case 'publish_package':
+    case 'home.quick_action.publish_package':
       return serviceProviderRouteMatchers['editVisaPackage']!;
-    case 'order_management':
+    case 'home.quick_action.order_management':
       return serviceProviderRouteMatchers['orderManagement']!;
-    case 'talent_center':
+    case 'home.quick_action.talent_center':
       return serviceProviderRouteMatchers['talentCenter']!;
-    case 'finance_settlement':
+    case 'home.quick_action.finance_settlement':
       return serviceProviderRouteMatchers['financeSettlement']!;
   }
   throw ArgumentError.value(feature, 'feature', '未注册的服务商首页目标页面');
