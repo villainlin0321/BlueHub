@@ -8,7 +8,8 @@ import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
-import '../../../shared/logging/app_logger.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../application/post_job/post_job_controller.dart';
@@ -75,21 +76,19 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   @override
   void initState() {
     super.initState();
-    final PostJobState currentState = ref.read(postJobControllerProvider);
-    AppLogger.instance.info(
-      'POST_JOB',
-      'PostJobPage initState 触发标签加载',
-      context: <String, Object?>{
-        'isLoadingRequirementTags': currentState.isLoadingRequirementTags,
-        'hasLoadedRequirementTags': currentState.hasLoadedRequirementTags,
-        'tagCount': currentState.requirementTags.length,
-      },
+    _logPageEvent(
+      event: 'POST_JOB_PAGE_ENTER',
+      message: '进入岗位发布页面',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      AppLogger.instance.info('POST_JOB', '首帧完成，开始触发标签加载');
+      // 首帧日志要早于后续异步加载，便于区分渲染慢还是接口慢。
+      _logPageEvent(
+        event: 'POST_JOB_FIRST_FRAME',
+        message: '岗位发布页面首帧完成',
+      );
       _bootstrapPage();
     });
   }
@@ -204,12 +203,52 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     );
   }
 
+  /// 统一生成页面级日志上下文，避免页面进入、首帧和点击发布的字段不一致。
+  Map<String, Object?> _buildPageLogContext() {
+    return <String, Object?>{
+      'route': RoutePaths.postJob,
+      'module': 'jobs',
+      'feature': 'post_job',
+      'mode': widget.args.isEdit ? 'edit' : 'create',
+      'isEdit': widget.args.isEdit,
+      if (widget.args.jobId != null) 'editingJobId': widget.args.jobId,
+    };
+  }
+
+  /// 记录页面级关键事件，统一输出岗位发布页进入和首帧日志。
+  void _logPageEvent({
+    required String event,
+    required String message,
+  }) {
+    ActionLog.log(
+      event: event,
+      message: message,
+      context: _buildPageLogContext(),
+    );
+  }
+
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
     _submitCustomTag();
-    await ref
-        .read(postJobControllerProvider.notifier)
-        .publish(_buildFormDraft(), editingJobId: widget.args.jobId);
+    final PostJobFormDraft draft = _buildFormDraft();
+    final Map<String, Object?> logContext = <String, Object?>{
+      ..._buildPageLogContext(),
+      'action': 'POST_JOB_SUBMIT_TAP',
+    };
+    await AppLogScope.run<Future<void>>(
+      traceId: buildAppTraceId('post_job_submit'),
+      fields: logContext,
+      action: () async {
+        // 点击日志必须早于控制器调用，后续请求与失败日志才能自动继承同一条链路。
+        ActionLog.log(
+          event: 'POST_JOB_SUBMIT_TAP',
+          message: '用户点击发布岗位',
+        );
+        await ref
+            .read(postJobControllerProvider.notifier)
+            .publish(draft, editingJobId: widget.args.jobId);
+      },
+    );
   }
 
   @override
