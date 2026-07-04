@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../me/data/user_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
+import '../../../shared/auth/token_store.dart';
+import '../../../shared/logging/app_log_event.dart';
+import '../../../shared/logging/app_log_facade.dart';
 import '../../../shared/logging/app_logger.dart';
 import '../../../shared/network/providers.dart';
 import '../data/auth_models.dart';
@@ -31,7 +34,12 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
 
     if (!_restoreScheduled) {
       _restoreScheduled = true;
-      AppLogger.instance.info('AUTH', '检测到本地 token，准备恢复会话');
+      // 关键日志：记录恢复链路已被调度，便于解释启动阶段为什么进入 hydrating。
+      AppLogger.instance.info(
+        'AUTH',
+        '检测到本地 token，准备恢复会话',
+        context: _buildTokenPresenceContext(tokenStore),
+      );
       unawaited(Future<void>.microtask(restoreSession));
     }
 
@@ -45,12 +53,27 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
     if (!hasToken) {
       state = const AuthSessionState();
       _restoreScheduled = false;
-      AppLogger.instance.warn('AUTH', '恢复会话时发现 token 已为空');
+      StateLog.transition(
+        event: 'AUTH_RESTORE_FAIL',
+        message: '恢复会话失败，未发现可用 token',
+        level: AppLogLevel.warn,
+        result: AppLogResult.fail,
+        context: _buildTokenPresenceContext(tokenStore),
+      );
       return;
     }
 
+    final previousState = state;
     state = state.copyWith(isHydrating: true);
-    AppLogger.instance.info('AUTH', '开始恢复会话');
+    final hydratingState = state;
+    StateLog.transition(
+      event: 'AUTH_RESTORE_START',
+      message: '开始恢复会话',
+      from: _describeState(previousState),
+      to: _describeState(hydratingState),
+      result: AppLogResult.pending,
+      context: _buildTokenPresenceContext(tokenStore),
+    );
 
     try {
       final profile = await ref.read(userServiceProvider).getMe();
@@ -63,19 +86,32 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
         needSelectRole: needSelectRole,
       );
       _syncShellRole(user.role, needSelectRole: needSelectRole);
-      AppLogger.instance.info(
-        'AUTH',
-        '恢复会话成功',
-        context: <String, Object?>{
-          'userId': user.userId,
-          'role': user.role,
-          'needSelectRole': needSelectRole,
-        },
+      StateLog.transition(
+        event: 'AUTH_RESTORE_SUCCESS',
+        message: '恢复会话成功',
+        // 成功事件必须承接启动中的 hydrating 态，才能真实回放完整迁移链路。
+        from: _describeState(hydratingState),
+        to: _describeState(state),
+        result: AppLogResult.success,
+        context: _buildUserContext(
+          user: user,
+          needSelectRole: needSelectRole,
+          tokenStore: tokenStore,
+        ),
       );
     } catch (error, stackTrace) {
-      AppLogger.instance.error(
-        'AUTH',
-        '恢复会话失败，准备清理登录态',
+      StateLog.transition(
+        event: 'AUTH_RESTORE_FAIL',
+        message: '恢复会话失败，准备清理登录态',
+        // 失败事件同样要从 hydrating 出发，避免看起来像是直接从旧态跳到终态。
+        from: _describeState(hydratingState),
+        to: _describeState(const AuthSessionState()),
+        level: AppLogLevel.error,
+        result: AppLogResult.fail,
+        context: <String, Object?>{
+          ..._buildTokenPresenceContext(tokenStore),
+          'clearReason': 'restore_session_failed',
+        },
         error: error,
         stackTrace: stackTrace,
       );
@@ -116,8 +152,21 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
     AuthUser? fallbackUser,
     bool? preferredNeedSelectRole,
   }) async {
+    final tokenStore = ref.read(tokenStoreProvider);
+    final previousState = state;
     state = state.copyWith(isHydrating: true);
-    AppLogger.instance.info('AUTH', '开始刷新当前用户信息');
+    final hydratingState = state;
+    StateLog.transition(
+      event: 'AUTH_REFRESH_START',
+      message: '开始刷新当前用户信息',
+      from: _describeState(previousState),
+      to: _describeState(hydratingState),
+      result: AppLogResult.pending,
+      context: <String, Object?>{
+        ..._buildTokenPresenceContext(tokenStore),
+        'hasFallbackUser': fallbackUser != null,
+      },
+    );
 
     try {
       final profile = await ref.read(userServiceProvider).getMe();
@@ -132,23 +181,36 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
         needSelectRole: needSelectRole,
       );
       _syncShellRole(user.role, needSelectRole: needSelectRole);
-      AppLogger.instance.info(
-        'AUTH',
-        '刷新当前用户信息成功',
-        context: <String, Object?>{
-          'userId': user.userId,
-          'role': user.role,
-          'needSelectRole': needSelectRole,
-        },
+      StateLog.transition(
+        event: 'AUTH_REFRESH_SUCCESS',
+        message: '刷新当前用户信息成功',
+        // 成功事件需要基于当前 hydrating 态记录，避免丢失中间过渡节点。
+        from: _describeState(hydratingState),
+        to: _describeState(state),
+        result: AppLogResult.success,
+        context: _buildUserContext(
+          user: user,
+          needSelectRole: needSelectRole,
+          tokenStore: tokenStore,
+        ),
       );
     } catch (error, stackTrace) {
-      AppLogger.instance.error(
-        'AUTH',
-        '刷新当前用户信息失败',
-        error: error,
-        stackTrace: stackTrace,
-      );
       if (fallbackUser == null) {
+        StateLog.transition(
+          event: 'AUTH_REFRESH_FAIL',
+          message: '刷新当前用户信息失败，准备清理登录态',
+          from: _describeState(hydratingState),
+          to: _describeState(const AuthSessionState()),
+          level: AppLogLevel.error,
+          result: AppLogResult.fail,
+          context: <String, Object?>{
+            ..._buildTokenPresenceContext(tokenStore),
+            'hasFallbackUser': false,
+            'clearReason': 'refresh_current_user_failed',
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
         await clearSession(reason: 'refresh_current_user_failed');
         return;
       }
@@ -162,14 +224,24 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
         needSelectRole: needSelectRole,
       );
       _syncShellRole(fallbackUser.role, needSelectRole: needSelectRole);
-      AppLogger.instance.warn(
-        'AUTH',
-        '刷新失败，已回退到登录返回的用户快照',
+      StateLog.transition(
+        event: 'AUTH_REFRESH_FAIL',
+        message: '刷新失败，已回退到登录返回的用户快照',
+        from: _describeState(hydratingState),
+        to: _describeState(state),
+        level: AppLogLevel.error,
+        result: AppLogResult.fail,
         context: <String, Object?>{
-          'userId': fallbackUser.userId,
-          'role': fallbackUser.role,
-          'needSelectRole': needSelectRole,
+          ..._buildUserContext(
+            user: fallbackUser,
+            needSelectRole: needSelectRole,
+            tokenStore: tokenStore,
+          ),
+          'hasFallbackUser': true,
+          'fallbackApplied': true,
         },
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
@@ -200,5 +272,42 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
     }
 
     ref.read(shellRoleProvider.notifier).setRole(shellRoleFromApiRole(role));
+  }
+
+  /// 构建鉴权日志的 token 存在性上下文，只记录布尔值避免泄露敏感内容。
+  Map<String, Object?> _buildTokenPresenceContext(TokenStore tokenStore) {
+    return <String, Object?>{
+      'hasSessionCredential': (tokenStore.accessToken ?? '').isNotEmpty,
+      'hasRefreshCredential': (tokenStore.refreshToken ?? '').isNotEmpty,
+    };
+  }
+
+  /// 构建鉴权成功或失败后的关键用户上下文，供日志回放时快速定位身份状态。
+  Map<String, Object?> _buildUserContext({
+    required AuthUser user,
+    required bool needSelectRole,
+    required TokenStore tokenStore,
+  }) {
+    return <String, Object?>{
+      ..._buildTokenPresenceContext(tokenStore),
+      'userId': user.userId,
+      'role': user.role,
+      'needSelectRole': needSelectRole,
+      'isVerified': user.isVerified,
+    };
+  }
+
+  /// 将当前鉴权状态压缩成稳定标签，便于在日志里回放状态切换方向。
+  String _describeState(AuthSessionState currentState) {
+    if (currentState.isHydrating) {
+      return 'hydrating';
+    }
+    if (!currentState.isAuthenticated) {
+      return 'anonymous';
+    }
+    if (currentState.needSelectRole) {
+      return 'authenticated_role_pending';
+    }
+    return 'authenticated_ready';
   }
 }

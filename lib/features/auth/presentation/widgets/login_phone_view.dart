@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../application/login/login_form_state.dart';
@@ -158,6 +159,7 @@ class LoginPhoneView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _LoginButton(
+                    key: AppTestKeys.loginTestServiceProviderButton,
                     label: '认证.测试登录服务商'.tr(),
                     enabled: !state.isSendingCode && !state.isSubmitting,
                     onPressed: onTestServiceProviderLogin,
@@ -581,6 +583,7 @@ class _CodeInputRow extends StatelessWidget {
 
 class _LoginButton extends StatelessWidget {
   const _LoginButton({
+    super.key,
     required this.label,
     required this.enabled,
     required this.onPressed,
