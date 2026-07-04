@@ -21,6 +21,16 @@ import 'shared/payment/payment_launcher.dart';
 const MethodChannel _nativeDebugChannel = MethodChannel('bluehub/app_icon');
 const String _nativeProbeUrl = 'http://39.101.190.245:8090';
 
+/// 供正式启动与 Patrol 测试共用的应用初始化入口。
+Future<void> bootstrapApplication() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+  await AppLogger.instance.init();
+  await PaymentLauncher.instance.initialize(
+    config: PaymentChannelConfig.fromEnvironment(),
+  );
+}
+
 /// 应用入口：初始化依赖、挂接全局异常处理，并启动 Riverpod 根节点。
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
@@ -31,12 +41,7 @@ Future<void> main() async {
         fields: const <String, Object?>{'module': 'app'},
         action: () async {
           // 关键点：Binding 初始化与 runApp 必须处于同一个 Zone，避免 Zone mismatch。
-          WidgetsFlutterBinding.ensureInitialized();
-          await EasyLocalization.ensureInitialized();
-          await AppLogger.instance.init();
-          await PaymentLauncher.instance.initialize(
-            config: PaymentChannelConfig.fromEnvironment(),
-          );
+          await bootstrapApplication();
           _registerGlobalErrorHandlers();
 
           final prefs = await SharedPreferences.getInstance();

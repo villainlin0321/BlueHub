@@ -24,6 +24,7 @@ class App extends ConsumerWidget {
     return _AppIconInitialSync(
       child: AppLifecycleLogger(
         child: MaterialApp.router(
+          key: const Key('app-root'),
           title: title,
           debugShowCheckedModeBanner: false,
           locale: context.locale,
