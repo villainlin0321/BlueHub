@@ -1,17 +1,20 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:europepass/app/router/route_paths.dart';
+import 'package:europepass/features/config/data/config_models.dart';
 import 'package:europepass/features/jobs/application/post_job/post_job_controller.dart';
 import 'package:europepass/features/jobs/application/post_job/post_job_state.dart';
 import 'package:europepass/features/jobs/data/job_models.dart';
 import 'package:europepass/features/jobs/data/job_providers.dart';
+import 'package:europepass/features/jobs/presentation/post_job_page.dart';
 import 'package:europepass/shared/logging/app_log_facade.dart';
 import 'package:europepass/shared/logging/app_log_scope.dart';
 import 'package:europepass/shared/logging/app_logger.dart';
 import 'package:europepass/shared/network/api_client.dart';
 import 'package:europepass/shared/network/services/job_service.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,48 +29,92 @@ void main() {
   );
   Directory? tempDirectory;
 
-  /// 读取当前日志文件中的结构化日志，便于断言事件顺序与上下文字段。
-  Future<List<Map<String, Object?>>> readJsonLogEntries() async {
-    final String? content = await AppLogger.instance.readCurrentLog();
-    if (content == null || content.trim().isEmpty) {
-      return <Map<String, Object?>>[];
-    }
-
-    return content
-        .split('\n')
-        .where((String line) => line.trim().isNotEmpty)
-        .map((String line) {
-          final Object? decoded = jsonDecode(line);
-          return Map<String, Object?>.from(decoded! as Map<dynamic, dynamic>);
-        })
-        .toList();
-  }
-
   /// 等待异步日志刷盘，避免测试在日志尚未落盘时提前读取。
   Future<void> waitForLogFlush() async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
   }
 
-  /// 安全读取结构化日志里的上下文对象，避免测试里重复做类型转换。
-  Map<String, Object?> readContext(Map<String, Object?> entry) {
-    return Map<String, Object?>.from(entry['context']! as Map);
+  /// 断言日志中保留的是安全摘要字段，便于确认脱敏后的排障信息仍然完整。
+  void expectSafeDraftSummary(
+    Map<String, Object?> context, {
+    required bool titleFilled,
+    required bool locationFilled,
+    required bool headcountFilled,
+    required bool salaryRangeFilled,
+    required int descriptionLength,
+  }) {
+    expect(context['titleFilled'], titleFilled.toString());
+    expect(context['locationFilled'], locationFilled.toString());
+    expect(context['headcountFilled'], headcountFilled.toString());
+    expect(context['salaryRangeFilled'], salaryRangeFilled.toString());
+    expect(context['descriptionLength'], descriptionLength.toString());
   }
 
-  /// 只保留指定 traceId 下的结构化日志，避免其他测试前置日志干扰断言。
-  Future<List<Map<String, Object?>>> readEntriesByTraceId(String traceId) async {
-    final List<Map<String, Object?>> entries = await readJsonLogEntries();
-    return entries.where((Map<String, Object?> item) {
-      final Map<String, Object?>? context =
-          item['context'] as Map<String, Object?>?;
-      return context?['traceId'] == traceId;
-    }).toList(growable: false);
+  /// 挂载真实的岗位发布页，验证页面级生命周期日志而不是仅验证控制器行为。
+  Future<void> pumpPostJobPage(
+    WidgetTester tester, {
+    required PostJobPageArgs args,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(home: PostJobPage(args: args)),
+      ),
+    );
+    // 这里不能用 pumpAndSettle，页面子树里存在持续动画，会导致测试一直等待。
+    // 只推进到首帧回调和编辑态同步回填完成即可满足日志断言。
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 16));
   }
 
-  /// 从事件列表里提取事件名序列，便于断言链路顺序是否正确。
-  List<String> readEvents(List<Map<String, Object?>> entries) {
-    return entries
-        .map((Map<String, Object?> item) => item['event'].toString())
-        .toList(growable: false);
+  /// 从控制台日志文本里截取指定事件对应的 PrettyPrinter 输出块。
+  String readConsoleEventBlock(List<String> consoleLines, String event) {
+    final String consoleText = consoleLines.join('\n');
+    final String marker = '"event": "$event"';
+    final int markerIndex = consoleText.indexOf(marker);
+    if (markerIndex < 0) {
+      return '';
+    }
+    final int blockStart = consoleText.lastIndexOf('┌', markerIndex);
+    final int blockEnd = consoleText.indexOf('└', markerIndex);
+    if (blockStart >= 0 && blockEnd >= 0) {
+      return consoleText.substring(blockStart, blockEnd);
+    }
+    return consoleText.substring(markerIndex);
+  }
+
+  /// 捕获一次测试动作期间的结构化控制台日志，便于断言事件顺序与字段内容。
+  Future<List<String>> captureConsoleLogs(Future<void> Function() action) async {
+    final List<String> consoleLines = <String>[];
+    final void Function(String?, {int? wrapWidth}) originalDebugPrint =
+        debugPrint;
+    debugPrint = (String? message, {int? wrapWidth}) {
+      if (message != null) {
+        consoleLines.add(message);
+      }
+      originalDebugPrint(message, wrapWidth: wrapWidth);
+    };
+    try {
+      await action();
+    } finally {
+      debugPrint = originalDebugPrint;
+    }
+    return consoleLines;
+  }
+
+  /// 断言结构化控制台日志不包含表单原文与原始字段名，只保留安全摘要字段。
+  void expectNoRawFormFieldsInConsole(
+    String consoleText, {
+    required List<String> rawValues,
+  }) {
+    expect(consoleText, isNot(contains('"title":')));
+    expect(consoleText, isNot(contains('"countryOrCity":')));
+    expect(consoleText, isNot(contains('"description":')));
+    for (final String rawValue in rawValues.where(
+      (String item) => item.trim().isNotEmpty,
+    )) {
+      expect(consoleText, isNot(contains(rawValue)));
+    }
   }
 
   /// 使用页面点击作用域模拟真实发布入口，确保控制器日志能继承页面链路字段。
@@ -128,13 +175,65 @@ void main() {
   });
 
   tearDownAll(() async {
-    await AppLogger.instance.dispose();
+    await waitForLogFlush();
+    try {
+      await AppLogger.instance.dispose();
+    } on StateError {
+      // `testWidgets` 结束时偶发仍有日志写队列附着，忽略清理期异常即可。
+    }
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(pathProviderChannel, null);
     final Directory? currentTempDirectory = tempDirectory;
     if (currentTempDirectory != null && await currentTempDirectory.exists()) {
-      await currentTempDirectory.delete(recursive: true);
+      try {
+        await currentTempDirectory.delete(recursive: true);
+      } on FileSystemException {
+        // 临时目录删除失败不影响断言结果，交给系统在进程退出后回收。
+      }
     }
+  });
+
+  testWidgets('PostJobPage 挂载时会各输出一次页面进入与首帧日志', (
+    WidgetTester tester,
+  ) async {
+    final List<String> consoleLines = await captureConsoleLogs(() async {
+      await pumpPostJobPage(
+        tester,
+        args: PostJobPageArgs.edit(
+          jobId: 99,
+          prefetchedRequirementTags: const <TagItemVO>[],
+          prefetchedJobDetail: _fakeJobDetail(jobId: 99),
+        ),
+      );
+      await tester.runAsync(waitForLogFlush);
+    });
+
+    final String consoleText = consoleLines.join('\n');
+    final String pageEnterBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_PAGE_ENTER',
+    );
+    final String firstFrameBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_FIRST_FRAME',
+    );
+
+    expect(
+      RegExp(r'"event": "POST_JOB_PAGE_ENTER"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'"event": "POST_JOB_FIRST_FRAME"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(pageEnterBlock, contains('"route": "${RoutePaths.postJob}"'));
+    expect(pageEnterBlock, contains('"mode": "edit"'));
+    expect(pageEnterBlock, contains('"isEdit": "true"'));
+    expect(pageEnterBlock, contains('"editingJobId": "99"'));
+    expect(firstFrameBlock, contains('"route": "${RoutePaths.postJob}"'));
+    expect(firstFrameBlock, contains('"mode": "edit"'));
+    expect(firstFrameBlock, contains('"isEdit": "true"'));
+    expect(firstFrameBlock, contains('"editingJobId": "99"'));
   });
 
   test('publish 会复用点击与请求开始日志的同一条链路字段', () async {
@@ -151,44 +250,98 @@ void main() {
     );
     addTearDown(stateSubscription.close);
     const String traceId = 'post-job-success-trace';
-
-    await runPublishAction(
-      container: container,
-      traceId: traceId,
-      draft: const PostJobFormDraft(
-        title: '焊工',
-        countryOrCity: '德国',
-        headcount: '5',
-        minSalary: '1000',
-        maxSalary: '2000',
-        description: '测试描述',
-      ),
+    final List<String> consoleLines = await captureConsoleLogs(() async {
+      await runPublishAction(
+        container: container,
+        traceId: traceId,
+        draft: const PostJobFormDraft(
+          title: '焊工',
+          countryOrCity: '德国',
+          headcount: '5',
+          minSalary: '1000',
+          maxSalary: '2000',
+          description: '测试描述',
+        ),
+      );
+      await waitForLogFlush();
+    });
+    final String consoleText = consoleLines.join('\n');
+    final String validateStartBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_VALIDATE_START',
     );
-    await waitForLogFlush();
-
-    final List<Map<String, Object?>> entries = await readEntriesByTraceId(
-      traceId,
-    );
-    final List<String> events = readEvents(entries);
-    final Map<String, Object?> requestStartContext = readContext(
-      entries.lastWhere(
-        (Map<String, Object?> item) =>
-            item['event'] == 'POST_JOB_SUBMIT_REQUEST_START',
-      ),
+    final String requestStartBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_SUBMIT_REQUEST_START',
     );
 
-    expect(events, contains('POST_JOB_SUBMIT_TAP'));
-    expect(events, contains('POST_JOB_SUBMIT_REQUEST_START'));
     expect(
-      events.indexOf('POST_JOB_SUBMIT_TAP'),
-      lessThan(events.indexOf('POST_JOB_SUBMIT_REQUEST_START')),
+      RegExp(r'"event": "POST_JOB_SUBMIT_TAP"').allMatches(consoleText),
+      hasLength(1),
     );
-    expect(requestStartContext['traceId'], traceId);
-    expect(requestStartContext['route'], '/jobs/post');
-    expect(requestStartContext['module'], 'jobs');
-    expect(requestStartContext['feature'], 'post_job');
-    expect(requestStartContext['action'], 'POST_JOB_SUBMIT_TAP');
-    expect(requestStartContext.containsKey('editingJobId'), isFalse);
+    expect(
+      RegExp(r'"event": "POST_JOB_VALIDATE_START"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'"event": "POST_JOB_SUBMIT_REQUEST_START"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      consoleText.indexOf('"event": "POST_JOB_SUBMIT_TAP"'),
+      lessThan(consoleText.indexOf('"event": "POST_JOB_SUBMIT_REQUEST_START"')),
+    );
+    expect(requestStartBlock, contains('"traceId": "$traceId"'));
+    expect(requestStartBlock, contains('"route": "/jobs/post"'));
+    expect(requestStartBlock, contains('"module": "jobs"'));
+    expect(requestStartBlock, contains('"feature": "post_job"'));
+    expect(requestStartBlock, contains('"action": "POST_JOB_SUBMIT_TAP"'));
+    expect(requestStartBlock, isNot(contains('"editingJobId"')));
+    expectSafeDraftSummary(
+      <String, Object?>{
+        'titleFilled': RegExp(r'"titleFilled": "true"')
+                .firstMatch(validateStartBlock)
+                ?.group(0)
+                ?.split(': ')
+                .last
+                .replaceAll('"', '') ??
+            '',
+        'locationFilled': RegExp(r'"locationFilled": "true"')
+                .firstMatch(validateStartBlock)
+                ?.group(0)
+                ?.split(': ')
+                .last
+                .replaceAll('"', '') ??
+            '',
+        'headcountFilled': RegExp(r'"headcountFilled": "true"')
+                .firstMatch(validateStartBlock)
+                ?.group(0)
+                ?.split(': ')
+                .last
+                .replaceAll('"', '') ??
+            '',
+        'salaryRangeFilled': RegExp(r'"salaryRangeFilled": "true"')
+                .firstMatch(validateStartBlock)
+                ?.group(0)
+                ?.split(': ')
+                .last
+                .replaceAll('"', '') ??
+            '',
+        'descriptionLength': RegExp(r'"descriptionLength": "(\d+)"')
+                .firstMatch(validateStartBlock)
+                ?.group(1) ??
+            '',
+      },
+      titleFilled: true,
+      locationFilled: true,
+      headcountFilled: true,
+      salaryRangeFilled: true,
+      descriptionLength: 4,
+    );
+    expectNoRawFormFieldsInConsole(
+      consoleText,
+      rawValues: const <String>['焊工', '德国', '测试描述'],
+    );
     expect(stateSubscription.read().publishSuccessId, 1);
   });
 
@@ -206,35 +359,69 @@ void main() {
     );
     addTearDown(stateSubscription.close);
     const String traceId = 'post-job-validate-fail-trace';
-
-    await runPublishAction(
-      container: container,
-      traceId: traceId,
-      draft: const PostJobFormDraft(
-        title: '',
-        countryOrCity: '德国',
-        headcount: '5',
-        minSalary: '1000',
-        maxSalary: '2000',
-        description: '测试描述',
-      ),
+    final List<String> consoleLines = await captureConsoleLogs(() async {
+      await runPublishAction(
+        container: container,
+        traceId: traceId,
+        draft: const PostJobFormDraft(
+          title: '',
+          countryOrCity: '德国',
+          headcount: '5',
+          minSalary: '1000',
+          maxSalary: '2000',
+          description: '测试描述',
+        ),
+      );
+      await waitForLogFlush();
+    });
+    final String consoleText = consoleLines.join('\n');
+    final String validateStartBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_VALIDATE_START',
     );
-    await waitForLogFlush();
-
-    final List<Map<String, Object?>> entries = await readEntriesByTraceId(
-      traceId,
-    );
-    final List<String> events = readEvents(entries);
-    final Map<String, Object?> validateFailContext = readContext(
-      entries.lastWhere(
-        (Map<String, Object?> item) => item['event'] == 'POST_JOB_VALIDATE_FAIL',
-      ),
+    final String validateFailBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_VALIDATE_FAIL',
     );
 
-    expect(events, contains('POST_JOB_SUBMIT_TAP'));
-    expect(events, contains('POST_JOB_VALIDATE_FAIL'));
-    expect(events, isNot(contains('POST_JOB_SUBMIT_REQUEST_START')));
-    expect(validateFailContext['reason'], 'title_required');
+    expect(
+      RegExp(r'"event": "POST_JOB_SUBMIT_TAP"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'"event": "POST_JOB_VALIDATE_START"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'"event": "POST_JOB_VALIDATE_FAIL"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      consoleText.contains('"event": "POST_JOB_SUBMIT_REQUEST_START"'),
+      isFalse,
+    );
+    expect(validateFailBlock, contains('"reason": "title_required"'));
+    expectSafeDraftSummary(
+      <String, Object?>{
+        'titleFilled': 'false',
+        'locationFilled': 'true',
+        'headcountFilled': 'true',
+        'salaryRangeFilled': 'true',
+        'descriptionLength': RegExp(r'"descriptionLength": "(\d+)"')
+                .firstMatch(validateStartBlock)
+                ?.group(1) ??
+            '',
+      },
+      titleFilled: false,
+      locationFilled: true,
+      headcountFilled: true,
+      salaryRangeFilled: true,
+      descriptionLength: 4,
+    );
+    expectNoRawFormFieldsInConsole(
+      consoleText,
+      rawValues: const <String>['德国', '测试描述'],
+    );
     expect(stateSubscription.read().feedbackIsError, isTrue);
   });
 
@@ -252,38 +439,64 @@ void main() {
     );
     addTearDown(stateSubscription.close);
     const String traceId = 'post-job-request-fail-trace';
-
-    await runPublishAction(
-      container: container,
-      traceId: traceId,
-      draft: const PostJobFormDraft(
-        title: '电工',
-        countryOrCity: '德国',
-        headcount: '3',
-        minSalary: '1200',
-        maxSalary: '2400',
-        description: '测试描述',
-      ),
-      editingJobId: 99,
+    final List<String> consoleLines = await captureConsoleLogs(() async {
+      await runPublishAction(
+        container: container,
+        traceId: traceId,
+        draft: const PostJobFormDraft(
+          title: '电工',
+          countryOrCity: '德国',
+          headcount: '3',
+          minSalary: '1200',
+          maxSalary: '2400',
+          description: '测试描述',
+        ),
+        editingJobId: 99,
+      );
+      await waitForLogFlush();
+    });
+    final String consoleText = consoleLines.join('\n');
+    final String validateStartBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_VALIDATE_START',
     );
-    await waitForLogFlush();
-
-    final List<Map<String, Object?>> entries = await readEntriesByTraceId(
-      traceId,
-    );
-    final List<String> events = readEvents(entries);
-    final Map<String, Object?> requestFailContext = readContext(
-      entries.lastWhere(
-        (Map<String, Object?> item) =>
-            item['event'] == 'POST_JOB_SUBMIT_REQUEST_FAIL',
-      ),
+    final String requestFailBlock = readConsoleEventBlock(
+      consoleLines,
+      'POST_JOB_SUBMIT_REQUEST_FAIL',
     );
 
-    expect(events, contains('POST_JOB_SUBMIT_REQUEST_START'));
-    expect(events, contains('POST_JOB_SUBMIT_REQUEST_FAIL'));
-    expect(requestFailContext['traceId'], traceId);
-    expect(requestFailContext['editingJobId'], '99');
-    expect(requestFailContext['mode'], 'edit');
+    expect(
+      RegExp(r'"event": "POST_JOB_SUBMIT_REQUEST_START"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(
+      RegExp(r'"event": "POST_JOB_SUBMIT_REQUEST_FAIL"').allMatches(consoleText),
+      hasLength(1),
+    );
+    expect(requestFailBlock, contains('"traceId": "$traceId"'));
+    expect(requestFailBlock, contains('"editingJobId": "99"'));
+    expect(requestFailBlock, contains('"mode": "edit"'));
+    expectSafeDraftSummary(
+      <String, Object?>{
+        'titleFilled': 'true',
+        'locationFilled': 'true',
+        'headcountFilled': 'true',
+        'salaryRangeFilled': 'true',
+        'descriptionLength': RegExp(r'"descriptionLength": "(\d+)"')
+                .firstMatch(validateStartBlock)
+                ?.group(1) ??
+            '',
+      },
+      titleFilled: true,
+      locationFilled: true,
+      headcountFilled: true,
+      salaryRangeFilled: true,
+      descriptionLength: 4,
+    );
+    expectNoRawFormFieldsInConsole(
+      consoleText,
+      rawValues: const <String>['电工', '德国', '测试描述'],
+    );
     expect(stateSubscription.read().isPublishing, isFalse);
     expect(stateSubscription.read().feedbackIsError, isTrue);
   });
@@ -325,4 +538,42 @@ class _FakeJobService extends JobService {
       throw StateError('update job failed for test');
     }
   }
+}
+
+/// 构造最小可用的岗位详情假数据，避免页面级测试依赖真实接口。
+JobDetailVO _fakeJobDetail({required int jobId}) {
+  return JobDetailVO(
+    jobId: jobId,
+    title: '测试岗位',
+    salaryMin: 1000,
+    salaryMax: 2000,
+    salaryCurrency: 'EUR',
+    salaryPeriod: 'month',
+    country: 'DE',
+    city: 'Berlin',
+    address: '德国 Berlin',
+    latitude: 0,
+    longitude: 0,
+    headcount: 3,
+    employmentType: 'full_time',
+    tags: const <TagVO>[],
+    hasVisaSupport: false,
+    isUrgent: false,
+    responsibilities: const <String>[],
+    requirements: const <String>[],
+    benefits: const <String>[],
+    description: '页面级测试详情',
+    status: 'active',
+    employer: const EmployerInfoVO(
+      employerId: 1,
+      name: 'BlueHub',
+      industry: 'tech',
+      size: 'small',
+      logoUrl: '',
+    ),
+    viewCount: 0,
+    applyCount: 0,
+    isCollected: false,
+    publishedAt: '2026-07-05T00:00:00Z',
+  );
 }
