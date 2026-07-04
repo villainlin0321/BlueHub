@@ -279,6 +279,81 @@ class HttpFlowLog {
       stackTrace: stackTrace,
     );
   }
+
+  /// 记录 HTTP 请求发起事件，并串联请求基础信息与链路字段。
+  static void requestStart({
+    required String requestId,
+    required String method,
+    required String uri,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_START',
+      message: '发起请求',
+      result: AppLogResult.pending,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录 HTTP 请求成功事件，便于和请求开始、失败日志完整回放。
+  static void requestSuccess({
+    required String requestId,
+    required String method,
+    required String uri,
+    int? statusCode,
+    int? durationMs,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_SUCCESS',
+      message: '请求成功',
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (statusCode != null) 'statusCode': statusCode,
+        if (durationMs != null) 'durationMs': durationMs,
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录 HTTP 请求失败事件，统一沉淀异常类型、状态码和链路上下文。
+  static void requestFail({
+    required String requestId,
+    required String method,
+    required String uri,
+    required Object error,
+    StackTrace? stackTrace,
+    String? errorType,
+    int? statusCode,
+    int? durationMs,
+    Map<String, Object?>? context,
+  }) {
+    log(
+      event: 'HTTP_REQUEST_FAIL',
+      message: '请求失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'requestId': requestId,
+        'method': method,
+        'uri': uri,
+        if (errorType != null) 'type': errorType,
+        if (statusCode != null) 'statusCode': statusCode,
+        if (durationMs != null) 'durationMs': durationMs,
+        if (context != null) ...context,
+      },
+    );
+  }
 }
 
 /// 统一补齐当前路由上下文后输出结构化事件，避免各层手工重复拼字段。

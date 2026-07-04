@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../logging/app_log_scope.dart';
 import '../logging/app_logger.dart';
 import 'api_exception.dart';
 import 'api_result.dart';
@@ -150,11 +151,16 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      final requestOptions = _buildRequestOptions(
+        method: method,
+        path: path,
+        options: options,
+      );
       final res = await _dio.request<dynamic>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: (options ?? Options()).copyWith(method: method),
+        options: requestOptions,
       );
       return _unwrap<T>(res.data, decode: decode);
     } on DioException catch (e) {
@@ -175,11 +181,16 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      final requestOptions = _buildRequestOptions(
+        method: method,
+        path: path,
+        options: options,
+      );
       final res = await _dio.request<dynamic>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: (options ?? Options()).copyWith(method: method),
+        options: requestOptions,
       );
       _unwrapVoid(res.data);
     } on DioException catch (e) {
@@ -248,6 +259,48 @@ class ApiClient {
       return ApiException.network(e);
     }
     return ApiException.unknown(e);
+  }
+
+  /// 构建带链路透传信息的请求配置，避免只有拦截器层知道当前请求入口。
+  Options _buildRequestOptions({
+    required String method,
+    required String path,
+    Options? options,
+  }) {
+    final extra = _buildRequestExtra(options?.extra, path: path);
+    return (options ?? Options()).copyWith(method: method, extra: extra);
+  }
+
+  /// 合并调用方 extra 与当前作用域字段，只透传最小必要上下文。
+  Map<String, dynamic> _buildRequestExtra(
+    Map<String, dynamic>? extra, {
+    required String path,
+  }) {
+    final mergedExtra = <String, dynamic>{...?extra};
+    final scope = AppLogScope.current;
+
+    // 关键逻辑：公共请求入口先补齐路径和链路字段，保证后续拦截器与异常映射可复用。
+    mergedExtra.putIfAbsent('httpPath', () => path);
+    _putIfAbsentAndNotEmpty(mergedExtra, 'traceId', scope['traceId']);
+    _putIfAbsentAndNotEmpty(mergedExtra, 'route', scope['route']);
+    _putIfAbsentAndNotEmpty(mergedExtra, 'logAction', scope['action']);
+    return mergedExtra;
+  }
+
+  /// 仅在目标字段缺失且候选值有效时写入 extra，避免覆盖业务层显式传值。
+  void _putIfAbsentAndNotEmpty(
+    Map<String, dynamic> extra,
+    String key,
+    Object? value,
+  ) {
+    if (extra.containsKey(key)) {
+      return;
+    }
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) {
+      return;
+    }
+    extra[key] = text;
   }
 
   /// 当 Dart 网络栈连接失败时，使用 iOS 原生 URLSession 对同一 URL 再探测一次。
