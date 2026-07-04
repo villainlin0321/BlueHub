@@ -49,7 +49,8 @@ class AppLogInterceptor extends Interceptor {
       durationMs: _computeDurationMs(requestOptions),
       context: <String, Object?>{
         ..._buildChainContext(requestOptions),
-        'data': _safeJson(response.data),
+        // 关键逻辑：优先保留结构化响应，交给统一日志出口按键递归脱敏。
+        'data': _prepareLogValue(response.data),
       },
     );
     handler.next(response);
@@ -74,7 +75,8 @@ class AppLogInterceptor extends Interceptor {
         ..._buildChainContext(requestOptions),
         'statusCode': err.response?.statusCode,
         'message': err.message,
-        'response': _safeJson(err.response?.data),
+        // 关键逻辑：失败响应也保留结构，避免敏感字段因预序列化绕过统一脱敏。
+        'response': _prepareLogValue(err.response?.data),
       },
     );
     handler.next(err);
@@ -121,7 +123,8 @@ Map<String, Object?> _buildRequestLogContext(RequestOptions options) {
     ..._buildChainContext(options),
     'headers': headers,
     if (options.queryParameters.isNotEmpty) 'query': options.queryParameters,
-    if (options.data != null) 'body': _safeJson(options.data),
+    // 关键逻辑：请求体优先保留 Map/List 等结构，统一在日志出口做递归脱敏。
+    if (options.data != null) 'body': _prepareLogValue(options.data),
     if (options.extra['httpPath'] != null) 'httpPath': options.extra['httpPath'],
   };
 }
@@ -151,12 +154,39 @@ String? _readExtraString(RequestOptions options, String key) {
   return _firstNonEmptyString(options.extra[key]);
 }
 
-/// 将请求体安全序列化为字符串，避免日志阶段再次抛异常。
-String _safeJson(Object? value) {
+/// 尽量保留可结构化的日志对象，只有无法安全保留结构时才回退成字符串。
+Object? _prepareLogValue(Object? value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value is Map) {
+    return value.map((Object? key, Object? item) {
+      return MapEntry<String, Object?>(
+        key?.toString() ?? 'unknown',
+        _prepareLogValue(item),
+      );
+    });
+  }
+
+  if (value is Iterable) {
+    return value.map(_prepareLogValue).toList();
+  }
+
+  if (value is num || value is bool || value is String) {
+    return value;
+  }
+
+  if (value is DateTime || value is Duration || value is Uri || value is Enum) {
+    return value.toString();
+  }
+
   try {
-    return jsonEncode(value);
+    // 对支持 `toJson` 的对象，先编码再解码回普通 Map/List，继续走统一脱敏出口。
+    final Object? structuredValue = jsonDecode(jsonEncode(value));
+    return _prepareLogValue(structuredValue);
   } catch (_) {
-    return value?.toString() ?? 'null';
+    return value.toString();
   }
 }
 

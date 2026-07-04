@@ -94,3 +94,59 @@ flutter analyze lib/shared/network/interceptors/app_log_interceptor.dart lib/sha
 
 - 当前只补了必需的高价值单测，尚未覆盖 `onResponse` / `onError` 是否带上同一链路字段的回归测试；如后续继续做 Task 4/5，建议补一个失败链路测试，验证异常日志也能完整回放。
 - 当前 `action` 最终来自 `AppLogScope` 或 `Options.extra` 的最小透传；后续若业务层引入统一动作埋点规范，建议明确 `action` 命名约定，避免不同模块出现大小写或语义不一致。
+
+## 本次审查返修（2026-07-04）
+
+### 修复目标
+
+- 审查问题 1：`AppLogInterceptor` 之前会把请求体、响应体先通过 `_safeJson()` 转成字符串，导致统一脱敏出口只能把整段 JSON 当作普通文本处理，无法对 `token`、`password`、`email`、`phone` 等键递归脱敏。
+- 审查问题 2：补充高价值回归测试，至少验证一条 `requestStart -> requestFail` 共享同一 `traceId` / `route` / `action` 的链路，以及一条敏感字段不会明文落日志的断言。
+
+### 实现调整
+
+- 将 `lib/shared/network/interceptors/app_log_interceptor.dart` 中请求体、成功响应和失败响应的日志字段由 `_safeJson()` 改为 `_prepareLogValue()`。
+- `_prepareLogValue()` 会优先保留 `Map`、`List`、基础标量，以及可通过 `jsonEncode/jsonDecode` 安全还原的结构化对象；仅在无法安全保留结构时才回退为字符串。
+- 这样 `HttpFlowLog` 继续把原始结构交给 `AppLogEvent.toJson()` 的统一脱敏出口处理，控制台输出与本地文件落盘都能复用同一套递归脱敏、裁剪和频控策略。
+- 保持 Task 3 范围不变，本次未扩展到业务模块，也未新增依赖。
+
+### 测试补强
+
+- 扩展 `test/shared/network/app_log_interceptor_test.dart`，保留原有 `traceId/route/logAction` 写回 `RequestOptions.extra` 的断言。
+- 新增失败链路回归测试：验证 `HTTP_REQUEST_START` 与 `HTTP_REQUEST_FAIL` 两条结构化日志共享同一 `requestId`、`traceId`、`route`、`action`。
+- 新增敏感字段回归测试：通过真实 `AppLogger` 本地日志文件断言，请求体 `body` 和失败响应 `response` 仍保持结构化对象，并确认 `email`、`phone`、`password`、`token/accessToken` 不会以明文写入日志原文。
+- 测试中增加 `_SilentErrorInterceptorHandler`，只用于吞掉测试场景里的 Dio 错误续传，避免 `handler.next(err)` 造成未捕获异步异常干扰日志断言。
+
+### TDD 记录
+
+#### Red
+
+- 先补写失败链路与敏感字段回归测试。
+- 运行 `flutter test test/shared/network/app_log_interceptor_test.dart` 后，敏感字段测试失败，失败现象符合预期：`context['body']` / `context['response']` 仍是字符串，说明日志仍在统一脱敏出口之前被预序列化。
+
+#### Green
+
+- 实现 `_prepareLogValue()`，让请求体和响应体优先以结构化对象进入统一日志出口。
+- 重新运行同一测试后通过，日志中的 `body` / `response` 变为结构化对象且敏感键值已脱敏为 `***`。
+
+### 验证结果
+
+#### 测试
+
+```bash
+flutter test test/shared/network/app_log_interceptor_test.dart
+```
+
+- 结果：通过。
+
+#### 静态检查
+
+```bash
+flutter analyze lib/shared/network/interceptors/app_log_interceptor.dart test/shared/network/app_log_interceptor_test.dart
+```
+
+- 结果：`No issues found!`
+
+#### 编辑器诊断
+
+- `lib/shared/network/interceptors/app_log_interceptor.dart`：无诊断问题。
+- `test/shared/network/app_log_interceptor_test.dart`：无诊断问题。
