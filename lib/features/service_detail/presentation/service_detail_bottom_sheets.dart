@@ -84,42 +84,52 @@ class _ApplyBottomSheetContent extends ConsumerStatefulWidget {
 }
 
 class _ApplyBottomSheetContentState
-    extends ConsumerState<_ApplyBottomSheetContent> {
+    extends ConsumerState<_ApplyBottomSheetContent> with WidgetsBindingObserver {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final FocusNode _nameFocusNode;
   late final FocusNode _phoneFocusNode;
   bool _isSubmitting = false;
-  bool _isAnyInputFocused = false;
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
-    _nameFocusNode = FocusNode()..addListener(_handleInputFocusChanged);
-    _phoneFocusNode = FocusNode()..addListener(_handleInputFocusChanged);
+    _nameFocusNode = FocusNode();
+    _phoneFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _phoneController.dispose();
-    _nameFocusNode
-      ..removeListener(_handleInputFocusChanged)
-      ..dispose();
-    _phoneFocusNode
-      ..removeListener(_handleInputFocusChanged)
-      ..dispose();
+    _nameFocusNode.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
-  void _handleInputFocusChanged() {
-    final isAnyInputFocused = _nameFocusNode.hasFocus || _phoneFocusNode.hasFocus;
-    if (_isAnyInputFocused == isAnyInputFocused || !mounted) {
-      return;
-    }
-    setState(() => _isAnyInputFocused = isAnyInputFocused);
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+      final bool keyboardJustClosed =
+          _lastKeyboardInset > 0 && keyboardInset == 0;
+      _lastKeyboardInset = keyboardInset;
+      if (!keyboardJustClosed) {
+        return;
+      }
+      if (_nameFocusNode.hasFocus || _phoneFocusNode.hasFocus) {
+        FocusScope.of(context).unfocus();
+      }
+    });
   }
 
   @override
@@ -141,7 +151,7 @@ class _ApplyBottomSheetContentState
               Flexible(
                 child: SingleChildScrollView(
                   keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
@@ -218,43 +228,42 @@ class _ApplyBottomSheetContentState
                             phoneFocusNode: _phoneFocusNode,
                           ),
                         ),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
+                            ),
+                          ),
+                          child: FilledButton(
+                            onPressed: _isSubmitting ? null : _handleGoPay,
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(44),
+                              backgroundColor: const Color(0xFF096DD9),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: Text(
+                              _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                                height: 22 / 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-              if (!_isAnyInputFocused)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
-                    ),
-                  ),
-                  child: FilledButton(
-                    onPressed: _isSubmitting ? null : _handleGoPay,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      backgroundColor: const Color(0xFF096DD9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: Text(
-                      _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 22 / 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
