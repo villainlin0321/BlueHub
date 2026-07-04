@@ -15,6 +15,14 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
         routePath: RoutePaths.home,
         readyKey: AppTestKeys.pageServiceProviderHome,
       ),
+      'me': PatrolRouteMatcher(
+        routePath: RoutePaths.me,
+        readyKey: AppTestKeys.pageServiceProviderMe,
+      ),
+      'serviceProviderMe': PatrolRouteMatcher(
+        routePath: RoutePaths.me,
+        readyKey: AppTestKeys.pageServiceProviderMe,
+      ),
     };
 
 /// 按页面别名等待目标页面完成渲染，避免在测试里直接写固定休眠。
