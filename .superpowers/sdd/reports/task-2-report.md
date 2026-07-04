@@ -159,3 +159,38 @@
 ### 本轮顾虑
 
 - 当前“可回放快照”仍是显式白名单策略：已优先覆盖 `AuthSessionState/AuthUser` 这类高价值状态，但其他复杂对象若无通用集合结构、也未加入识别分支，仍会回退到 `runtimeType#identityHashCode`；这是本轮为避免过度设计而保留的边界。
+
+## 审查修复记录（2026-07-04 第三轮）
+
+### 修复范围
+
+- 仅修复 Task 2 当前最后一个问题：`AppProviderObserver` 的结构化快照虽然已可回放，但 `AuthUser.phone` 和 `AuthUser.email` 仍以明文写入日志。
+- 继续保留工作区内现有 `Patrol` 相关改动，未做清理。
+
+### 修复项：将 phone/email 纳入统一敏感字段脱敏规则
+
+- 问题根因：`StateLog.providerChanged()` 已把结构化快照原样交给 `sanitizeAppLogValue()` 统一出口处理，但 `isSensitiveAppLogKey()` 之前只覆盖 `token/authorization/password/secret`，导致 `phone` 与 `email` 在嵌套快照中不会被识别为敏感字段。
+- 修复策略：直接扩展统一敏感字段规则，把 `phone` 与 `email` 纳入和 `token/password/secret` 同一条递归脱敏链路，让所有日志出口在序列化 Map/Iterable 时自动替换为 `***`。
+- 一致性保持：未改动 Provider 快照结构，也未新增额外分支脱敏逻辑；`AuthSessionState/AuthUser` 仍保留 `userId/role/isAuthenticated` 等关键字段用于状态回放，仅对手机号和邮箱做统一屏蔽。
+- 兼容性保持：原有 `token/authorization/password/secret` 规则不变，裁剪逻辑与其他日志门面行为不变。
+
+### 测试补强
+
+- 更新 `test/shared/logging/app_log_scope_test.dart`，验证统一日志出口会同时脱敏 `token/phone/email`，避免本轮修复只在 Provider 场景生效。
+- 更新 `test/shared/logging/app_provider_observer_test.dart`，验证 `AuthSessionState` 的结构化快照中 `user.phone` 与 `user.email` 为 `***`，同时原始日志文件不包含对应明文。
+- 保留现有高价值断言：`AuthSessionState` 仍能输出结构化 `previous/next` 快照，并继续对同值更新做去噪。
+
+### 本轮验证
+
+- 失败验证：`flutter test test/shared/logging/app_log_scope_test.dart test/shared/logging/app_provider_observer_test.dart`
+  - 初始失败原因为 `sanitizeAppLogValue()` 尚未把 `phone/email` 识别为敏感键，测试观察到明文手机号和邮箱，符合预期。
+- 通过验证：`flutter test test/shared/logging/app_log_scope_test.dart test/shared/logging/app_provider_observer_test.dart`
+  - 结果：通过，`phone/email` 已统一脱敏为 `***`。
+- 回归验证：`flutter test test/shared/logging test/app/router`
+  - 结果：通过。
+- 静态检查：`flutter analyze lib/main.dart lib/app/app.dart lib/app/router/app_router.dart lib/shared/logging test/shared/logging/app_provider_observer_test.dart test/app/router/app_router_test.dart`
+  - 结果：`No issues found!`
+
+### 本轮顾虑
+
+- 当前统一敏感键规则采用字段名匹配策略，能稳定覆盖 `phone/email/token/password/secret` 这类常见敏感字段；若后续业务引入语义不同但同样敏感的新键名，仍需继续在统一规则中补充，而不应回退到各业务快照里单独脱敏。

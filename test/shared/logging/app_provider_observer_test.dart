@@ -35,6 +35,11 @@ void main() {
         .toList();
   }
 
+  /// 直接读取日志原文，确保敏感值没有以明文形式落盘。
+  Future<String> readRawLogContent() async {
+    return await AppLogger.instance.readCurrentLog() ?? '';
+  }
+
   /// 等待异步日志写入落盘，避免读取过早导致断言抖动。
   Future<void> waitForLogFlush() async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
@@ -68,7 +73,7 @@ void main() {
     }
   });
 
-  test('AppProviderObserver 会为 AuthSessionState 输出可回放的结构化快照', () async {
+  test('AppProviderObserver 会为 AuthSessionState 输出可回放且已脱敏的结构化快照', () async {
     final container = ProviderContainer(
       observers: const <ProviderObserver>[AppProviderObserver()],
     );
@@ -110,6 +115,7 @@ void main() {
     );
     await waitForLogFlush();
 
+    final String rawLogContent = await readRawLogContent();
     final List<Map<String, Object?>> entries = await readJsonLogEntries();
     final List<Map<String, Object?>> matchedEntries = entries
         .where(
@@ -144,9 +150,11 @@ void main() {
     expect(nextSnapshot['isHydrating'], 'false');
     expect(nextSnapshot['needSelectRole'], 'true');
     expect(nextUserSnapshot['userId'], '42');
-    expect(nextUserSnapshot['phone'], '+8613800138000');
-    expect(nextUserSnapshot['email'], 'debugger@example.com');
+    expect(nextUserSnapshot['phone'], '***');
+    expect(nextUserSnapshot['email'], '***');
     expect(nextUserSnapshot['role'], 'worker');
+    expect(rawLogContent, isNot(contains('+8613800138000')));
+    expect(rawLogContent, isNot(contains('debugger@example.com')));
   });
 }
 
