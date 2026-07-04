@@ -14,11 +14,16 @@ class AppLogger {
   static final AppLogger instance = AppLogger._();
 
   static const int _maxLogFiles = 7;
+  static const Duration _structuredEventWindow = Duration(seconds: 2);
+  static const int _maxStructuredEventWritesPerWindow = 3;
+  static const int _maxStructuredEventWindowEntries = 128;
 
   IOSink? _sink;
   File? _currentLogFile;
   Future<void>? _initTask;
   Future<void> _writeQueue = Future<void>.value();
+  final Map<String, _StructuredEventWindowState> _structuredEventWindows =
+      <String, _StructuredEventWindowState>{};
   late final logger.Logger _logger = logger.Logger(
     printer: logger.PrettyPrinter(
       methodCount: 0,
@@ -125,6 +130,7 @@ class AppLogger {
   Future<void> dispose() async {
     final sink = _sink;
     _sink = null;
+    _structuredEventWindows.clear();
     if (sink == null) {
       return;
     }
@@ -278,7 +284,84 @@ class AppLogger {
 
   /// 统一将结构化载荷编码后串行写入文件，后续频控可在这里插入。
   void _writeStructuredPayload(Map<String, Object?> payload) {
+    if (!_shouldWriteStructuredPayload(payload)) {
+      return;
+    }
     _writeFileLine(jsonEncode(payload));
+  }
+
+  /// 判断当前结构化事件是否需要落盘，对高频重复事件做最小窗口去重。
+  bool _shouldWriteStructuredPayload(Map<String, Object?> payload) {
+    if (!_isStructuredEventPayload(payload)) {
+      return true;
+    }
+
+    final DateTime now = DateTime.now();
+    _pruneStructuredEventWindows(now);
+    final String fingerprint = _buildStructuredEventFingerprint(payload);
+    final _StructuredEventWindowState? state = _structuredEventWindows[fingerprint];
+    if (state == null || now.difference(state.windowStartedAt) > _structuredEventWindow) {
+      _structuredEventWindows[fingerprint] = _StructuredEventWindowState(
+        windowStartedAt: now,
+        lastSeenAt: now,
+        writtenCount: 1,
+      );
+      return true;
+    }
+
+    state.lastSeenAt = now;
+    if (state.writtenCount >= _maxStructuredEventWritesPerWindow) {
+      return false;
+    }
+
+    state.writtenCount += 1;
+    return true;
+  }
+
+  /// 判断是否为 `logEvent()` 产生的结构化事件，避免影响普通文本日志落盘。
+  bool _isStructuredEventPayload(Map<String, Object?> payload) {
+    return payload.containsKey('layer') && payload.containsKey('event');
+  }
+
+  /// 构建重复事件指纹，刻意排除时间字段，确保同一窗口内可稳定去重。
+  String _buildStructuredEventFingerprint(Map<String, Object?> payload) {
+    final Map<String, Object?> fingerprintPayload = <String, Object?>{
+      'level': payload['level'],
+      'layer': payload['layer'],
+      'event': payload['event'],
+      'message': payload['message'],
+      if (payload['result'] != null) 'result': payload['result'],
+      if (payload['context'] != null) 'context': payload['context'],
+      if (payload['error'] != null) 'error': payload['error'],
+      if (payload['stackTrace'] != null) 'stackTrace': payload['stackTrace'],
+    };
+    return jsonEncode(fingerprintPayload);
+  }
+
+  /// 清理过期窗口并限制内存占用，避免频控状态在长会话中持续增长。
+  void _pruneStructuredEventWindows(DateTime now) {
+    _structuredEventWindows.removeWhere(
+      (_, _StructuredEventWindowState state) =>
+          now.difference(state.lastSeenAt) > _structuredEventWindow,
+    );
+    if (_structuredEventWindows.length <= _maxStructuredEventWindowEntries) {
+      return;
+    }
+
+    final List<MapEntry<String, _StructuredEventWindowState>> entries =
+        _structuredEventWindows.entries.toList()
+          ..sort(
+            (
+              MapEntry<String, _StructuredEventWindowState> left,
+              MapEntry<String, _StructuredEventWindowState> right,
+            ) => left.value.lastSeenAt.compareTo(right.value.lastSeenAt),
+          );
+
+    final int overflowCount =
+        _structuredEventWindows.length - _maxStructuredEventWindowEntries;
+    for (int index = 0; index < overflowCount; index++) {
+      _structuredEventWindows.remove(entries[index].key);
+    }
   }
 
   /// 串行写入日志文件，避免并发场景下输出顺序错乱。
@@ -331,4 +414,17 @@ class _DebugPrintOutput extends logger.LogOutput {
 class _AllowAllLogFilter extends logger.LogFilter {
   @override
   bool shouldLog(logger.LogEvent event) => true;
+}
+
+/// 单个结构化事件在频控窗口内的写入状态。
+class _StructuredEventWindowState {
+  _StructuredEventWindowState({
+    required this.windowStartedAt,
+    required this.lastSeenAt,
+    required this.writtenCount,
+  });
+
+  DateTime windowStartedAt;
+  DateTime lastSeenAt;
+  int writtenCount;
 }
