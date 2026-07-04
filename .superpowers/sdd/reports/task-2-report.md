@@ -122,3 +122,40 @@
 
 - `AppProviderObserver` 现在采取“可稳定比较的简单值继续去噪，复杂对象默认保留更新”的策略，已经避免误吞关键状态变化；代价是复杂对象更新日志会偏保守一些，但这比漏掉关键会话切换更安全。
 - `RouteLogCoordinator` 解决了首条伪造进入事件问题；如果后续需要记录更细粒度的页面实例生命周期，仍建议在后续任务中追加页面级埋点，而不是再次依赖初始化回退值推断。
+
+## 审查修复记录（2026-07-04 第二轮）
+
+### 修复范围
+
+- 仅修复 Task 2 当前剩余的最后一个问题：`AppProviderObserver` 对复杂对象日志仍退化成 `runtimeType#identityHashCode`，无法回放关键字段变化。
+- 继续保留工作区内现有 `Patrol` 相关改动，未做清理。
+
+### 修复项：为高价值复杂状态输出受控结构化快照
+
+- 问题根因：上一轮修复只把“是否跳过更新”的判定从 `toString()` 改成了“可比较快照优先、复杂对象默认保留”，因此虽然不再误吞 `AuthSessionState` 这类更新，但真正写日志时仍走 `_stringifyValue()` 回退分支，最终只留下 `AuthSessionState#123456789` 这种不可回放文本。
+- 修复策略：把“日志展示快照”和“去噪比较快照”统一到同一条受控结构化快照链路；对基础类型、集合、`DateTime`、`Uri` 继续递归构建稳定快照，对可识别的核心业务对象显式抽取 getter 字段。
+- 首批覆盖：为 `AuthSessionState` 输出 `isAuthenticated`、`isHydrating`、`needSelectRole`、`user` 等核心字段；为嵌套 `AuthUser` 输出 `userId`、`phone`、`countryCode`、`email`、`nickname`、`avatarUrl`、`role`、`gender`、`birthday`、`currentLocation`、`isVerified` 等关键字段。
+- 统一出口：`StateLog.providerChanged()` 不再提前把前后值转成字符串，而是把原始快照对象交给现有 `sanitizeAppLogValue()` 和 `truncateAppLogText()` 链路，继续复用既有脱敏与裁剪能力。
+- 去噪保持：对于已经能抽出稳定结构化快照的复杂对象，继续使用 JSON 快照比较避免同值重复写入；对于仍不可识别的复杂对象，依旧保守保留更新日志，避免再次误吞真实状态变化。
+
+### 测试补强
+
+- 将 `test/shared/logging/app_provider_observer_test.dart` 升级为真实覆盖 `AuthSessionState`，不再使用假状态对象。
+- 新断言同时覆盖两件事：
+  - `PROVIDER_UPDATED` 中的 `previous`/`next` 已变为可回放的结构化字段快照，而不是纯文本对象地址。
+  - 相同字段值的第二次 `AuthSessionState` 写入仍会被正确去噪，不会产生重复更新日志。
+
+### 本轮验证
+
+- 失败验证：`flutter test test/shared/logging/app_provider_observer_test.dart`
+  - 初始失败原因为日志上下文中的 `previous` / `next` 仍是字符串，测试在按 Map 读取结构化快照时抛出类型错误，符合预期。
+- 通过验证：`flutter test test/shared/logging/app_provider_observer_test.dart`
+  - 结果：通过，可见 `AuthSessionState` 与嵌套 `AuthUser` 字段快照已正确写入日志。
+- 回归验证：`flutter test test/shared/logging test/app/router`
+  - 结果：通过。
+- 静态检查：`flutter analyze lib/main.dart lib/app/app.dart lib/app/router/app_router.dart lib/shared/logging test/shared/logging/app_provider_observer_test.dart test/app/router/app_router_test.dart`
+  - 结果：`No issues found!`
+
+### 本轮顾虑
+
+- 当前“可回放快照”仍是显式白名单策略：已优先覆盖 `AuthSessionState/AuthUser` 这类高价值状态，但其他复杂对象若无通用集合结构、也未加入识别分支，仍会回退到 `runtimeType#identityHashCode`；这是本轮为避免过度设计而保留的边界。

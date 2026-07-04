@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:europepass/features/auth/application/auth_session_state.dart';
+import 'package:europepass/features/auth/application/auth_user.dart';
 import 'package:europepass/shared/logging/app_log_facade.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,7 +30,7 @@ final class AppProviderObserver extends ProviderObserver {
       message: 'Provider 已创建',
       context: <String, Object?>{
         'provider': _describeProvider(context),
-        if (value != null) 'value': value.toString(),
+        if (value != null) 'value': _buildLogValue(value),
       },
     );
   }
@@ -44,8 +46,8 @@ final class AppProviderObserver extends ProviderObserver {
       return;
     }
 
-    final previousSnapshot = _stringifyValue(previousValue);
-    final nextSnapshot = _stringifyValue(newValue);
+    final previousSnapshot = _buildLogValue(previousValue);
+    final nextSnapshot = _buildLogValue(newValue);
     if (_shouldSkipUpdate(previousValue, newValue)) {
       return;
     }
@@ -113,18 +115,15 @@ final class AppProviderObserver extends ProviderObserver {
         jsonEncode(nextComparableSnapshot);
   }
 
-  /// 将 Provider 值压成文本快照，避免复杂对象直接写日志时再次抛错。
-  String? _stringifyValue(Object? value) {
+  /// 为日志输出构建受控快照，让高价值复杂对象也能保留关键字段变化。
+  Object? _buildLogValue(Object? value) {
     if (value == null) {
       return null;
     }
 
-    final comparableSnapshot = _buildComparableSnapshot(value);
-    if (comparableSnapshot != null) {
-      if (comparableSnapshot is String) {
-        return comparableSnapshot;
-      }
-      return jsonEncode(comparableSnapshot);
+    final structuredSnapshot = _buildComparableSnapshot(value);
+    if (structuredSnapshot != null) {
+      return structuredSnapshot;
     }
 
     final valueText = value.toString();
@@ -134,7 +133,7 @@ final class AppProviderObserver extends ProviderObserver {
     return valueText;
   }
 
-  /// 为基础类型和集合生成稳定快照，只在这些可判等对象上做去噪。
+  /// 为可判等的 Provider 值生成稳定快照，既用于去噪，也复用于结构化日志输出。
   Object? _buildComparableSnapshot(Object? value) {
     if (value == null ||
         value is num ||
@@ -149,29 +148,76 @@ final class AppProviderObserver extends ProviderObserver {
     if (value is Uri) {
       return value.toString();
     }
-    if (value is Iterable<Object?>) {
-      return value.map<Object?>((Object? item) => _buildComparableSnapshot(item)).toList();
+    final domainSnapshot = _buildDomainSnapshot(value);
+    if (domainSnapshot != null) {
+      return domainSnapshot;
     }
-    if (value is Map<Object?, Object?>) {
-      final List<MapEntry<String, Object?>> entries = value.entries
-          .map(
-            (MapEntry<Object?, Object?> entry) => MapEntry<String, Object?>(
-              entry.key?.toString() ?? 'null',
-              _buildComparableSnapshot(entry.value),
-            ),
-          )
-          .toList()
-        ..sort(
-          (
-            MapEntry<String, Object?> left,
-            MapEntry<String, Object?> right,
-          ) => left.key.compareTo(right.key),
-        );
+    if (value is Iterable) {
+      return value
+          .map<Object?>((Object? item) => _buildComparableSnapshot(item))
+          .toList();
+    }
+    if (value is Map) {
+      final List<MapEntry<String, Object?>> entries =
+          value.entries
+              .map(
+                (MapEntry<Object?, Object?> entry) => MapEntry<String, Object?>(
+                  entry.key?.toString() ?? 'null',
+                  _buildComparableSnapshot(entry.value),
+                ),
+              )
+              .toList()
+            ..sort(
+              (
+                MapEntry<String, Object?> left,
+                MapEntry<String, Object?> right,
+              ) => left.key.compareTo(right.key),
+            );
       return <String, Object?>{
         for (final entry in entries) entry.key: entry.value,
       };
     }
     return null;
+  }
+
+  /// 针对无稳定 `toString()` 的关键业务对象做显式字段提取，避免日志退化成对象地址。
+  Map<String, Object?>? _buildDomainSnapshot(Object value) {
+    if (value is AuthSessionState) {
+      return _buildAuthSessionStateSnapshot(value);
+    }
+    if (value is AuthUser) {
+      return _buildAuthUserSnapshot(value);
+    }
+    return null;
+  }
+
+  /// 提取鉴权会话的核心字段，确保登录态变化可以直接从日志中回放。
+  Map<String, Object?> _buildAuthSessionStateSnapshot(AuthSessionState value) {
+    return <String, Object?>{
+      '_type': 'AuthSessionState',
+      'isAuthenticated': value.isAuthenticated,
+      'isHydrating': value.isHydrating,
+      'needSelectRole': value.needSelectRole,
+      'user': _buildComparableSnapshot(value.user),
+    };
+  }
+
+  /// 提取当前登录用户的关键字段，便于排查角色切换与会话恢复问题。
+  Map<String, Object?> _buildAuthUserSnapshot(AuthUser value) {
+    return <String, Object?>{
+      '_type': 'AuthUser',
+      'userId': value.userId,
+      'phone': value.phone,
+      'countryCode': value.countryCode,
+      'email': value.email,
+      'nickname': value.nickname,
+      'avatarUrl': value.avatarUrl,
+      'role': value.role,
+      'gender': value.gender,
+      'birthday': value.birthday,
+      'currentLocation': value.currentLocation,
+      'isVerified': value.isVerified,
+    };
   }
 
   /// 识别默认 `Object.toString()` 这类无信息量文本，避免日志里前后值看起来完全相同。

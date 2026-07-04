@@ -179,11 +179,7 @@ class ActionLog {
       traceId: resolvedTraceId,
       fields: fields ?? const <String, Object?>{},
       action: () {
-        log(
-          event: event,
-          message: message,
-          result: AppLogResult.pending,
-        );
+        log(event: event, message: message, result: AppLogResult.pending);
         return action();
       },
     );
@@ -228,8 +224,9 @@ class StateLog {
       message: 'Provider 状态已变化',
       context: <String, Object?>{
         'provider': provider,
-        if (previousValue != null) 'previous': previousValue.toString(),
-        if (newValue != null) 'next': newValue.toString(),
+        // 统一把原始快照交给日志出口做脱敏与裁剪，避免这里过早退化成纯文本。
+        if (previousValue != null) 'previous': previousValue,
+        if (newValue != null) 'next': newValue,
         if (context != null) ...context,
       },
     );

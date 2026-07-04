@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:europepass/features/auth/application/auth_session_state.dart';
+import 'package:europepass/features/auth/application/auth_user.dart';
 import 'package:europepass/shared/logging/app_logger.dart';
 import 'package:europepass/shared/logging/app_provider_observer.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 验证 Provider 观察器不会因为相同的 `toString()` 文本而吞掉关键状态更新。
+/// 验证 Provider 观察器既不会吞掉关键状态更新，也会输出可回放的字段快照。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -43,7 +45,9 @@ void main() {
       'bluehub_provider_observer_test_',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(pathProviderChannel, (MethodCall methodCall) async {
+        .setMockMethodCallHandler(pathProviderChannel, (
+          MethodCall methodCall,
+        ) async {
           switch (methodCall.method) {
             case 'getApplicationSupportDirectory':
             case 'getApplicationDocumentsDirectory':
@@ -64,24 +68,46 @@ void main() {
     }
   });
 
-  test('AppProviderObserver 不会把同文本快照的鉴权状态更新当成噪音丢弃', () async {
+  test('AppProviderObserver 会为 AuthSessionState 输出可回放的结构化快照', () async {
     final container = ProviderContainer(
       observers: const <ProviderObserver>[AppProviderObserver()],
     );
     addTearDown(container.dispose);
 
-    final listener = container.listen<_FakeAuthSessionState>(
+    final listener = container.listen<AuthSessionState>(
       authSessionObserverTestProvider,
       (_, _) {},
       fireImmediately: true,
     );
     addTearDown(listener.close);
 
-    container.read(authSessionObserverTestProvider.notifier).state =
-        const _FakeAuthSessionState(
-          isAuthenticated: true,
-          isHydrating: false,
-        );
+    final nextState = AuthSessionState(
+      user: const AuthUser(
+        userId: 42,
+        phone: '+8613800138000',
+        countryCode: '86',
+        email: 'debugger@example.com',
+        nickname: 'BlueHub Tester',
+        avatarUrl: 'https://example.com/avatar.png',
+        role: 'worker',
+        gender: 'female',
+        birthday: '1990-01-01',
+        currentLocation: 'Shanghai',
+        isVerified: true,
+      ),
+      isAuthenticated: true,
+      isHydrating: false,
+      needSelectRole: true,
+    );
+    container.read(authSessionObserverTestProvider.notifier).state = nextState;
+    container
+        .read(authSessionObserverTestProvider.notifier)
+        .state = AuthSessionState(
+      user: nextState.user,
+      isAuthenticated: nextState.isAuthenticated,
+      isHydrating: nextState.isHydrating,
+      needSelectRole: nextState.needSelectRole,
+    );
     await waitForLogFlush();
 
     final List<Map<String, Object?>> entries = await readJsonLogEntries();
@@ -97,31 +123,44 @@ void main() {
         .toList();
 
     expect(matchedEntries, hasLength(1));
+    final Map<String, Object?> context = Map<String, Object?>.from(
+      matchedEntries.single['context']! as Map,
+    );
+    final Map<String, Object?> previousSnapshot = Map<String, Object?>.from(
+      context['previous']! as Map,
+    );
+    final Map<String, Object?> nextSnapshot = Map<String, Object?>.from(
+      context['next']! as Map,
+    );
+    final Map<String, Object?> nextUserSnapshot = Map<String, Object?>.from(
+      nextSnapshot['user']! as Map,
+    );
+
+    expect(previousSnapshot['isAuthenticated'], 'false');
+    expect(previousSnapshot['isHydrating'], 'true');
+    expect(previousSnapshot['needSelectRole'], 'false');
+    expect(previousSnapshot['user'], isNull);
+    expect(nextSnapshot['isAuthenticated'], 'true');
+    expect(nextSnapshot['isHydrating'], 'false');
+    expect(nextSnapshot['needSelectRole'], 'true');
+    expect(nextUserSnapshot['userId'], '42');
+    expect(nextUserSnapshot['phone'], '+8613800138000');
+    expect(nextUserSnapshot['email'], 'debugger@example.com');
+    expect(nextUserSnapshot['role'], 'worker');
   });
 }
 
 final authSessionObserverTestProvider =
-    NotifierProvider<_FakeAuthSessionNotifier, _FakeAuthSessionState>(
-      _FakeAuthSessionNotifier.new,
+    NotifierProvider<_AuthSessionNotifier, AuthSessionState>(
+      _AuthSessionNotifier.new,
       name: 'authSessionObserverTestProvider',
     );
 
-/// 构造一个与 `AuthSessionState` 一样缺少自定义 `toString()` 的状态对象，用于复现误吞日志问题。
-class _FakeAuthSessionState {
-  const _FakeAuthSessionState({
-    this.isAuthenticated = false,
-    this.isHydrating = false,
-  });
-
-  final bool isAuthenticated;
-  final bool isHydrating;
-}
-
-/// 提供可控状态更新入口，便于在测试里稳定复现观察器回调。
-class _FakeAuthSessionNotifier extends Notifier<_FakeAuthSessionState> {
+/// 提供真实 `AuthSessionState` 的可控更新入口，便于稳定验证日志快照内容。
+class _AuthSessionNotifier extends Notifier<AuthSessionState> {
   @override
   /// 构建一份初始登录态，模拟应用启动时的会话恢复中场景。
-  _FakeAuthSessionState build() {
-    return const _FakeAuthSessionState(isHydrating: true);
+  AuthSessionState build() {
+    return const AuthSessionState(isHydrating: true);
   }
 }
