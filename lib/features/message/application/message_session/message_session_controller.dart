@@ -52,6 +52,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       return;
     }
     _syncCurrentUserId();
+    final int previousCount = state.conversations.length;
     _updateState(
       (MessageSessionState current) => current.copyWith(
         conversations: const <ConversationVO>[],
@@ -60,8 +61,17 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         loadErrorMessage: null,
       ),
     );
+    _logSessionStart(previousCount: previousCount);
     _subscribeConversationSse();
     await refreshConversations();
+    if (state.loadErrorMessage == null) {
+      _logSessionSuccess(latestCount: state.conversations.length);
+      return;
+    }
+    _logSessionFail(
+      previousCount: previousCount,
+      reason: state.loadErrorMessage!,
+    );
   }
 
   Future<void> stopSession({bool clearState = false}) async {
@@ -145,12 +155,12 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     try {
       await _messageService.markRead(conversationId: conversationId);
     } catch (error, stackTrace) {
-      AppLogger.instance.error(
-        'MESSAGE_SESSION',
-        '同步单个会话已读失败',
+      _logReadSyncFail(
+        conversationId: conversationId,
+        unreadCountBefore: previous.unreadCount,
+        mode: 'single',
         error: error,
         stackTrace: stackTrace,
-        context: <String, Object?>{'conversationId': conversationId},
       );
       _replaceConversation(previous, moveToFront: false);
     }
@@ -185,12 +195,12 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       try {
         await _messageService.markRead(conversationId: conversationId);
       } catch (error, stackTrace) {
-        AppLogger.instance.error(
-          'MESSAGE_SESSION',
-          '批量同步已读失败',
+        _logReadSyncFail(
+          conversationId: conversationId,
+          unreadCountBefore: previousById[conversationId]?.unreadCount ?? 0,
+          mode: 'batch',
           error: error,
           stackTrace: stackTrace,
-          context: <String, Object?>{'conversationId': conversationId},
         );
         final ConversationVO? previous = previousById[conversationId];
         if (previous != null) {
@@ -205,11 +215,10 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     _sseSubscription = _messageService.connectConversationStream().listen(
       _handleConversationEvent,
       onError: (Object error, StackTrace stackTrace) {
-        AppLogger.instance.error(
-          'MESSAGE_SESSION',
-          '会话 SSE 连接异常',
+        _logSseStreamFail(
           error: error,
           stackTrace: stackTrace,
+          phase: 'stream',
         );
       },
     );
@@ -274,9 +283,8 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       );
       _replaceConversation(updated);
     } catch (error, stackTrace) {
-      AppLogger.instance.error(
-        'MESSAGE_SESSION',
-        '解析会话 SSE 事件失败',
+      _logSseParseFail(
+        event: event,
         error: error,
         stackTrace: stackTrace,
       );
@@ -495,7 +503,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
   /// 记录会话刷新开始事件，补齐当前分页和现有会话数量上下文。
   void _logRefreshStart({required int previousCount}) {
     StateLog.transition(
-      event: 'MESSAGE_SESSION_START',
+      event: 'MESSAGE_REFRESH_START',
       message: '开始刷新会话列表',
       result: AppLogResult.pending,
       context: _buildRefreshLogContext(previousCount: previousCount),
@@ -508,7 +516,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     required int latestCount,
   }) {
     StateLog.transition(
-      event: 'MESSAGE_SESSION_SUCCESS',
+      event: 'MESSAGE_REFRESH_SUCCESS',
       message: '会话列表刷新成功',
       result: AppLogResult.success,
       context: _buildRefreshLogContext(
@@ -547,5 +555,114 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       if (latestCount != null) 'conversationCountAfter': latestCount,
       if (_currentUserId > 0) 'currentUserId': _currentUserId,
     };
+  }
+
+  /// 记录消息会话启动开始事件，便于把订阅启动和刷新列表串成同一段会话链路。
+  void _logSessionStart({required int previousCount}) {
+    StateLog.transition(
+      event: 'MESSAGE_SESSION_START',
+      message: '开始启动消息会话',
+      result: AppLogResult.pending,
+      context: <String, Object?>{
+        'conversationCountBefore': previousCount,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录消息会话启动成功事件，明确当前会话订阅已经可用。
+  void _logSessionSuccess({required int latestCount}) {
+    StateLog.transition(
+      event: 'MESSAGE_SESSION_SUCCESS',
+      message: '消息会话启动成功',
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        'conversationCountAfter': latestCount,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录消息会话启动失败事件，保留失败原因帮助区分是订阅失败还是列表刷新失败。
+  void _logSessionFail({
+    required int previousCount,
+    required String reason,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_SESSION_FAIL',
+      message: '消息会话启动失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      context: <String, Object?>{
+        'conversationCountBefore': previousCount,
+        'reason': reason,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录已读同步失败事件，统一沉淀单条和批量同步的失败上下文。
+  void _logReadSyncFail({
+    required int conversationId,
+    required int unreadCountBefore,
+    required String mode,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_READ_SYNC_FAIL',
+      message: mode == 'batch' ? '批量同步会话已读失败' : '同步单个会话已读失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'conversationId': conversationId,
+        'mode': mode,
+        'unreadCountBefore': unreadCountBefore,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录 SSE 收包阶段异常，帮助区分流断开、网络错误和业务解析失败。
+  void _logSseStreamFail({
+    required Object error,
+    required StackTrace stackTrace,
+    required String phase,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_SSE_STREAM_FAIL',
+      message: '会话 SSE 收包异常',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'phase': phase,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录 SSE 解析失败事件，保留事件类型和数据摘要便于快速回放异常包。
+  void _logSseParseFail({
+    required SseEvent event,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_SSE_PARSE_FAIL',
+      message: '解析会话 SSE 事件失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        if ((event.id ?? '').trim().isNotEmpty) 'sseId': event.id,
+        if ((event.event ?? '').trim().isNotEmpty) 'sseEvent': event.event,
+        if (event.data.trim().isNotEmpty) 'sseDataLength': event.data.length,
+      },
+    );
   }
 }

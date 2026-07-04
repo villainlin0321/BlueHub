@@ -9,7 +9,6 @@ import '../../../shared/logging/app_log_facade.dart';
 import '../../../shared/logging/app_log_scope.dart';
 import '../../../shared/logging/app_route_tracker.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../data/visa_order_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import '../data/payment_providers.dart';
@@ -43,7 +42,8 @@ class OrderPaymentBottomSheet {
           event: 'ORDER_PAYMENT_SHEET_OPEN',
           message: '打开订单支付弹层',
         );
-        await showModalBottomSheet<void>(
+        final Map<String, Object?>? closePayload =
+            await showModalBottomSheet<Map<String, Object?>>(
           context: context,
           isScrollControlled: true,
           useSafeArea: false,
@@ -58,6 +58,19 @@ class OrderPaymentBottomSheet {
               traceId: traceId,
               onFlowCompleted: onFlowCompleted,
             );
+          },
+        );
+        // 无论是主动关闭、支付成功还是手势/遮罩 dismiss，都统一在这里补齐关闭事件。
+        ActionLog.sheetClose(
+          event: 'ORDER_PAYMENT_SHEET_CLOSE',
+          message: '关闭订单支付弹层',
+          context: <String, Object?>{
+            'closeReason':
+                closePayload?['closeReason']?.toString() ?? 'system_dismiss',
+            if (closePayload?['paymentMethod'] != null)
+              'paymentMethod': closePayload!['paymentMethod'],
+            if (closePayload?['isPaying'] != null)
+              'isPaying': closePayload!['isPaying'],
           },
         );
       },
@@ -176,7 +189,7 @@ class _OrderPaymentBottomSheetContentState
                       top: 16,
                       right: 16,
                       child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
+                        onTap: _handleCloseButtonTap,
                         behavior: HitTestBehavior.opaque,
                         child: const SizedBox(
                           width: 20,
@@ -205,7 +218,15 @@ class _OrderPaymentBottomSheetContentState
                 child: OrderPaymentMethodCard(
                   selectedMethod: _selectedMethod,
                   onSelected: (AppPaymentMethod method) {
+                    if (_selectedMethod == method) {
+                      return;
+                    }
+                    final AppPaymentMethod previousMethod = _selectedMethod;
                     setState(() => _selectedMethod = method);
+                    _logPaymentMethodSwitch(
+                      previousMethod: previousMethod,
+                      nextMethod: method,
+                    );
                   },
                 ),
               ),
@@ -263,17 +284,6 @@ class _OrderPaymentBottomSheetContentState
             event: 'ORDER_PAYMENT_CONFIRM_TAP',
             message: '用户确认订单支付',
           );
-          if (_selectedMethod == AppPaymentMethod.wechat) {
-            // Temporary fallback: backend directly marks the order as paid for WeChat.
-            await ref
-                .read(visaOrderServiceProvider)
-                .payOrder(orderId: widget.orderId);
-            if (!mounted) {
-              return;
-            }
-            _handlePaymentSuccess();
-            return;
-          }
           final PaymentFlowResult result = await ref
               .read(paymentFlowCoordinatorProvider)
               .startPayment(orderId: widget.orderId, method: _selectedMethod);
@@ -313,19 +323,57 @@ class _OrderPaymentBottomSheetContentState
   }
 
   /// 构建确认支付点击日志上下文，补齐支付方式与弹层来源。
-  Map<String, Object?> _buildConfirmPayLogContext() {
+  Map<String, Object?> _buildConfirmPayLogContext({
+    AppPaymentMethod? paymentMethod,
+  }) {
     return <String, Object?>{
       'route': AppRouteTracker.instance.currentRoute ?? RoutePaths.orderDetail,
       'module': 'order',
       'feature': 'payment_bottom_sheet',
       'source': 'order_payment_bottom_sheet',
       'orderId': widget.orderId,
+      'paymentMethod': (paymentMethod ?? _selectedMethod).apiValue,
+    };
+  }
+
+  /// 记录支付方式切换事件，明确前后方式并复用当前弹层 traceId。
+  void _logPaymentMethodSwitch({
+    required AppPaymentMethod previousMethod,
+    required AppPaymentMethod nextMethod,
+  }) {
+    AppLogScope.run<void>(
+      traceId: widget.traceId,
+      fields: <String, Object?>{
+        ..._buildConfirmPayLogContext(paymentMethod: nextMethod),
+        'previousPaymentMethod': previousMethod.apiValue,
+      },
+      action: () {
+        ActionLog.selectionChange(
+          event: 'ORDER_PAYMENT_METHOD_SWITCH',
+          message: '切换订单支付方式',
+        );
+      },
+    );
+  }
+
+  /// 处理关闭按钮点击，显式返回关闭原因，避免弹层关闭日志缺少上下文。
+  void _handleCloseButtonTap() {
+    Navigator.of(context).pop(_buildClosePayload(closeReason: 'close_button'));
+  }
+
+  /// 构建弹层关闭结果，供 show() 侧统一记录关闭事件时复用。
+  Map<String, Object?> _buildClosePayload({required String closeReason}) {
+    return <String, Object?>{
+      'closeReason': closeReason,
       'paymentMethod': _selectedMethod.apiValue,
+      'isPaying': _isPaying,
     };
   }
 
   void _handlePaymentSuccess() {
-    Navigator.of(context).pop();
+    Navigator.of(
+      context,
+    ).pop(_buildClosePayload(closeReason: 'payment_success'));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!widget.parentContext.mounted) {
         return;

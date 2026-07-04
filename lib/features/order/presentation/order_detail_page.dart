@@ -600,16 +600,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             event: 'ORDER_PAYMENT_CONFIRM_TAP',
             message: '用户在订单详情页点击立即支付',
           );
-          if (_selectedPaymentMethod == AppPaymentMethod.wechat) {
-            await ref
-                .read(visaOrderServiceProvider)
-                .payOrder(orderId: detail.orderId);
-            if (!mounted) {
-              return;
-            }
-            await _handlePaymentSuccess();
-            return;
-          }
           final PaymentFlowResult result = await ref
               .read(paymentFlowCoordinatorProvider)
               .startPayment(

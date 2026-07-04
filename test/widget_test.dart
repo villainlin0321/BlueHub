@@ -15,18 +15,21 @@ import 'package:europepass/shared/localization/app_locales.dart';
 import 'package:europepass/shared/network/api_client.dart';
 import 'package:europepass/shared/network/services/payment_service.dart';
 
-/// Widget 测试入口
+/// Widget 测试入口。
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('支付弹层打开和确认支付会复用同一条 traceId 且展示已翻译文案', (WidgetTester tester) async {
+  testWidgets('支付弹层切换支付方式并关闭时会输出结构化事件', (WidgetTester tester) async {
     final FakeStructuredLogRecorder recorder = FakeStructuredLogRecorder();
+    final _FakePaymentFlowCoordinator coordinator = _FakePaymentFlowCoordinator();
     recorder.attach();
     try {
-      await tester.pumpWidget(const TestOrderPaymentHost(orderId: 9001));
+      await tester.pumpWidget(
+        TestOrderPaymentHost(orderId: 9001, coordinator: coordinator),
+      );
       await tester.pumpAndSettle();
       await tester.state<_TestOrderPaymentHostState>(
         find.byType(TestOrderPaymentHost),
@@ -38,9 +41,9 @@ void main() {
       expect(find.text('订单支付.确认支付'), findsNothing);
       expect(find.text('服务详情.确认支付'), findsNothing);
 
-      await tester.tap(find.text('确认支付').last);
+      await tester.tap(find.text('微信支付').last);
       await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 3));
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
       final List<Map<String, Object?>> matchedEntries = recorder.events.where((
@@ -52,7 +55,8 @@ void main() {
                 : Map<String, Object?>.from(item['context']! as Map);
         return context?['orderId'] == '9001' &&
             (item['event'] == 'ORDER_PAYMENT_SHEET_OPEN' ||
-                item['event'] == 'ORDER_PAYMENT_CONFIRM_TAP');
+                item['event'] == 'ORDER_PAYMENT_METHOD_SWITCH' ||
+                item['event'] == 'ORDER_PAYMENT_SHEET_CLOSE');
       }).toList();
 
       final Map<String, Object?> openContext = Map<String, Object?>.from(
@@ -61,16 +65,84 @@ void main() {
               item['event'] == 'ORDER_PAYMENT_SHEET_OPEN',
         )['context']! as Map,
       );
+      final Map<String, Object?> switchContext = Map<String, Object?>.from(
+        matchedEntries.firstWhere(
+          (Map<String, Object?> item) =>
+              item['event'] == 'ORDER_PAYMENT_METHOD_SWITCH',
+        )['context']! as Map,
+      );
+      final Map<String, Object?> closeContext = Map<String, Object?>.from(
+        matchedEntries.firstWhere(
+          (Map<String, Object?> item) =>
+              item['event'] == 'ORDER_PAYMENT_SHEET_CLOSE',
+        )['context']! as Map,
+      );
+
+      // 打开、切换和关闭必须落在同一条链路，方便回放整段用户交互。
+      expect(openContext['traceId'], isNotEmpty);
+      expect(openContext['traceId'], switchContext['traceId']);
+      expect(openContext['traceId'], closeContext['traceId']);
+      expect(switchContext['paymentMethod'], 'wechat_pay');
+      expect(switchContext['previousPaymentMethod'], 'alipay');
+      expect(closeContext['closeReason'], 'close_button');
+      expect(coordinator.calls, isEmpty);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      recorder.dispose();
+    }
+  });
+
+  testWidgets('微信支付确认支付必须走协调器以保持日志链路完整', (WidgetTester tester) async {
+    final FakeStructuredLogRecorder recorder = FakeStructuredLogRecorder();
+    final _FakePaymentFlowCoordinator coordinator = _FakePaymentFlowCoordinator();
+    recorder.attach();
+    try {
+      await tester.pumpWidget(
+        TestOrderPaymentHost(orderId: 9002, coordinator: coordinator),
+      );
+      await tester.pumpAndSettle();
+      await tester.state<_TestOrderPaymentHostState>(
+        find.byType(TestOrderPaymentHost),
+      ).showPaymentSheet();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('微信支付').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('确认支付').last);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      expect(coordinator.calls, hasLength(1));
+      expect(coordinator.calls.single.orderId, 9002);
+      expect(coordinator.calls.single.method, AppPaymentMethod.wechat);
+
+      final List<Map<String, Object?>> matchedEntries = recorder.events.where((
+        Map<String, Object?> item,
+      ) {
+        final Map<String, Object?>? context =
+            item['context'] == null
+                ? null
+                : Map<String, Object?>.from(item['context']! as Map);
+        return context?['orderId'] == '9002' &&
+            (item['event'] == 'ORDER_PAYMENT_METHOD_SWITCH' ||
+                item['event'] == 'ORDER_PAYMENT_CONFIRM_TAP');
+      }).toList();
+      final Map<String, Object?> switchContext = Map<String, Object?>.from(
+        matchedEntries.firstWhere(
+          (Map<String, Object?> item) =>
+              item['event'] == 'ORDER_PAYMENT_METHOD_SWITCH',
+        )['context']! as Map,
+      );
       final Map<String, Object?> confirmContext = Map<String, Object?>.from(
         matchedEntries.firstWhere(
           (Map<String, Object?> item) =>
               item['event'] == 'ORDER_PAYMENT_CONFIRM_TAP',
         )['context']! as Map,
       );
-
-      // 打开弹层和确认支付必须落在同一条链路，方便回放整段用户交互。
-      expect(openContext['traceId'], isNotEmpty);
-      expect(openContext['traceId'], confirmContext['traceId']);
+      expect(confirmContext['traceId'], switchContext['traceId']);
+      expect(confirmContext['paymentMethod'], 'wechat_pay');
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -81,9 +153,14 @@ void main() {
 
 /// 支付弹层测试宿主：提供最小可点击入口，并注入可控的支付流程替身。
 class TestOrderPaymentHost extends StatefulWidget {
-  const TestOrderPaymentHost({super.key, required this.orderId});
+  const TestOrderPaymentHost({
+    super.key,
+    required this.orderId,
+    required this.coordinator,
+  });
 
   final int orderId;
+  final PaymentFlowCoordinator coordinator;
 
   @override
   State<TestOrderPaymentHost> createState() => _TestOrderPaymentHostState();
@@ -113,7 +190,7 @@ class _TestOrderPaymentHostState extends State<TestOrderPaymentHost> {
     return ProviderScope(
       overrides: [
         paymentFlowCoordinatorProvider.overrideWithValue(
-          _FakePaymentFlowCoordinator(),
+          widget.coordinator,
         ),
       ],
       child: MaterialApp(
@@ -216,21 +293,33 @@ class FakeStructuredLogRecorder {
   }
 }
 
-/// 支付流程替身：阻断真实网络与跳转，仅保留交互日志触发所需的最小行为。
+/// 支付流程替身：记录调用参数并阻断真实网络与跳转。
 class _FakePaymentFlowCoordinator extends PaymentFlowCoordinator {
   _FakePaymentFlowCoordinator()
     : super(paymentService: _UnusedPaymentService());
 
+  final List<_PaymentCall> calls = <_PaymentCall>[];
+
   @override
+  /// 记录调用参数，供测试断言不同支付方式是否统一收口到协调器。
   Future<PaymentFlowResult> startPayment({
     required int orderId,
     required AppPaymentMethod method,
   }) async {
+    calls.add(_PaymentCall(orderId: orderId, method: method));
     return const PaymentFlowResult(
       status: PaymentFlowStatus.failed,
       message: '测试支付已拦截',
     );
   }
+}
+
+/// 记录单次支付协调器调用参数，便于断言是否真的走了统一入口。
+class _PaymentCall {
+  const _PaymentCall({required this.orderId, required this.method});
+
+  final int orderId;
+  final AppPaymentMethod method;
 }
 
 /// 未被实际调用的支付服务占位实现，仅用于满足父类构造函数依赖。

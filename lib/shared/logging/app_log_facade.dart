@@ -284,6 +284,46 @@ class ActionLog {
     );
   }
 
+  /// 记录弹层关闭事件，统一补齐交互类型和关闭原因上下文。
+  static void sheetClose({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'sheet_close',
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录选择切换事件，适合支付方式、筛选项等单选状态的切换场景。
+  static void selectionChange({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'selection_change',
+        if (context != null) ...context,
+      },
+    );
+  }
+
   /// 记录列表滚动到底的交互事件，统一补齐交互类型与页面滚动语义。
   static void scrollReachEnd({
     required String event,
