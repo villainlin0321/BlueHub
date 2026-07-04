@@ -30,45 +30,67 @@ Future<void> main() async {
         sessionId: sessionId,
         fields: const <String, Object?>{'module': 'app'},
         action: () async {
-          // 关键点：Binding 初始化与 runApp 必须处于同一个 Zone，避免 Zone mismatch。
-          WidgetsFlutterBinding.ensureInitialized();
-          await EasyLocalization.ensureInitialized();
-          await AppLogger.instance.init();
-          await PaymentLauncher.instance.initialize(
-            config: PaymentChannelConfig.fromEnvironment(),
-          );
-          _registerGlobalErrorHandlers();
+          try {
+            // 关键点：Binding 初始化与 runApp 必须处于同一个 Zone，避免 Zone mismatch。
+            WidgetsFlutterBinding.ensureInitialized();
+            await EasyLocalization.ensureInitialized();
+            await AppLogger.instance.init();
+            AppFlowLog.bootstrapStart(
+              context: <String, Object?>{
+                'sessionId': sessionId,
+                'phase': 'binding_initialized',
+                'logFilePath': AppLogger.instance.currentLogFilePath,
+              },
+            );
+            await PaymentLauncher.instance.initialize(
+              config: PaymentChannelConfig.fromEnvironment(),
+            );
+            _registerGlobalErrorHandlers();
 
-          final prefs = await SharedPreferences.getInstance();
-          final tokenStore = TokenStore.sharedPreferences(prefs);
-          AppFlowLog.log(
-            event: 'APP_BOOTSTRAP',
-            message: '应用启动',
-            context: <String, Object?>{
-              'sessionId': sessionId,
-              'hasPersistedToken': (tokenStore.accessToken ?? '').isNotEmpty,
-              'logFilePath': AppLogger.instance.currentLogFilePath,
-            },
-          );
-          await _runNativeHttpProbe();
+            final prefs = await SharedPreferences.getInstance();
+            final tokenStore = TokenStore.sharedPreferences(prefs);
+            // 关键日志：在 runApp 前补齐启动成功前的上下文，便于回放初始化依赖是否齐备。
+            AppFlowLog.bootstrapSuccess(
+              context: <String, Object?>{
+                'sessionId': sessionId,
+                'phase': 'run_app',
+                'hasPersistedSession':
+                    (tokenStore.accessToken ?? '').isNotEmpty,
+                'hasPersistedRefreshCredential':
+                    (tokenStore.refreshToken ?? '').isNotEmpty,
+                'logFilePath': AppLogger.instance.currentLogFilePath,
+              },
+            );
+            await _runNativeHttpProbe();
 
-          runApp(
-            EasyLocalization(
-              supportedLocales: AppLocales.supported,
-              path: 'assets/translations',
-              fallbackLocale: AppLocales.english,
-              saveLocale: true,
-              useOnlyLangCode: true,
-              child: ProviderScope(
-                observers: const <ProviderObserver>[AppProviderObserver()],
-                overrides: [
-                  sharedPreferencesProvider.overrideWithValue(prefs),
-                  tokenStoreProvider.overrideWithValue(tokenStore),
-                ],
-                child: const App(),
+            runApp(
+              EasyLocalization(
+                supportedLocales: AppLocales.supported,
+                path: 'assets/translations',
+                fallbackLocale: AppLocales.english,
+                saveLocale: true,
+                useOnlyLangCode: true,
+                child: ProviderScope(
+                  observers: const <ProviderObserver>[AppProviderObserver()],
+                  overrides: [
+                    sharedPreferencesProvider.overrideWithValue(prefs),
+                    tokenStoreProvider.overrideWithValue(tokenStore),
+                  ],
+                  child: const App(),
+                ),
               ),
-            ),
-          );
+            );
+          } catch (error, stackTrace) {
+            AppFlowLog.bootstrapFail(
+              error: error,
+              stackTrace: stackTrace,
+              context: <String, Object?>{
+                'sessionId': sessionId,
+                'logFilePath': AppLogger.instance.currentLogFilePath,
+              },
+            );
+            rethrow;
+          }
         },
       );
     },

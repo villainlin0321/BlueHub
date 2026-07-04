@@ -55,6 +55,43 @@ class AppFlowLog {
       },
     );
   }
+
+  /// 记录应用启动开始事件，统一补齐启动链路的起点字段。
+  static void bootstrapStart({AppLogContext? context}) {
+    log(
+      event: 'APP_BOOTSTRAP_START',
+      message: '应用启动流程开始',
+      result: AppLogResult.pending,
+      context: context,
+    );
+  }
+
+  /// 记录应用启动成功事件，便于回放初始化流程何时完成。
+  static void bootstrapSuccess({AppLogContext? context}) {
+    log(
+      event: 'APP_BOOTSTRAP_SUCCESS',
+      message: '应用启动流程完成',
+      result: AppLogResult.success,
+      context: context,
+    );
+  }
+
+  /// 记录应用启动失败事件，并保留排障所需的错误上下文。
+  static void bootstrapFail({
+    required Object error,
+    StackTrace? stackTrace,
+    AppLogContext? context,
+  }) {
+    log(
+      event: 'APP_BOOTSTRAP_FAIL',
+      message: '应用启动流程失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      context: context,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 /// 路由日志门面：负责页面进入、退出和重定向等事件。
@@ -128,6 +165,28 @@ class RouteLog {
     log(
       event: 'ROUTE_REDIRECT',
       message: '路由已重定向',
+      level: level,
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        'from': from,
+        'to': to,
+        'reason': reason,
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录已生效的路由重定向，突出原始地址、目标地址和触发原因。
+  static void redirectApplied({
+    required String from,
+    required String to,
+    required String reason,
+    AppLogLevel level = AppLogLevel.warn,
+    AppLogContext? context,
+  }) {
+    log(
+      event: 'ROUTE_REDIRECT_APPLIED',
+      message: '路由重定向已生效',
       level: level,
       result: AppLogResult.success,
       context: <String, Object?>{
@@ -246,6 +305,33 @@ class StateLog {
       result: AppLogResult.fail,
       context: <String, Object?>{
         'provider': provider,
+        if (context != null) ...context,
+      },
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// 记录状态链路中的关键阶段切换，便于按事件名回放开始、成功和失败过程。
+  static void transition({
+    required String event,
+    required String message,
+    String? from,
+    String? to,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
         if (context != null) ...context,
       },
       error: error,

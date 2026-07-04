@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_session_provider.dart';
+import '../../features/auth/application/auth_session_state.dart';
 import '../../features/auth/presentation/login_phone_page.dart';
 import '../../features/auth/presentation/qualification_certification_flow.dart';
 import '../../features/auth/presentation/qualification_certification_page.dart';
@@ -103,13 +104,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           RoutePaths.loginPhone,
           redirectTarget,
         );
-        RouteLog.redirect(
+        RouteLog.redirectApplied(
           from: location,
           to: authEntryLocation,
           reason: 'unauthenticated',
-          context: <String, Object?>{
-            if (redirectTarget != null) 'redirectTarget': redirectTarget,
-          },
+          context: _buildRedirectLogContext(
+            redirectTarget: redirectTarget,
+            authSession: authSession,
+          ),
         );
         return authEntryLocation;
       }
@@ -124,24 +126,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           RoutePaths.selectRole,
           redirectTarget,
         );
-        RouteLog.redirect(
+        RouteLog.redirectApplied(
           from: location,
           to: selectRoleLocation,
           reason: 'role_not_selected',
-          context: <String, Object?>{
-            if (redirectTarget != null) 'redirectTarget': redirectTarget,
-          },
+          context: _buildRedirectLogContext(
+            redirectTarget: redirectTarget,
+            authSession: authSession,
+          ),
         );
         return selectRoleLocation;
       }
 
       if (location == RoutePaths.root || isAuthRoute) {
         final target = pendingRedirect;
-        RouteLog.redirect(
+        RouteLog.redirectApplied(
           from: location,
           to: target ?? RoutePaths.home,
           reason: target == null ? 'auth_ready_default_home' : 'auth_ready_resume_target',
           level: AppLogLevel.info,
+          context: _buildRedirectLogContext(
+            redirectTarget: target,
+            authSession: authSession,
+          ),
         );
         return target ?? RoutePaths.home;
       }
@@ -699,6 +706,20 @@ String? _buildRedirectTargetFromStateUri(Uri uri) {
 /// 判断当前路径是否属于鉴权入口页，避免在登录页和选角色页之间产生循环跳转。
 bool _isAuthPath(String path) {
   return path == RoutePaths.loginPhone || path == RoutePaths.selectRole;
+}
+
+/// 统一补齐重定向日志上下文，明确当前会话状态和目标恢复地址。
+Map<String, Object?> _buildRedirectLogContext({
+  required AuthSessionState authSession,
+  String? redirectTarget,
+}) {
+  return <String, Object?>{
+    'isAuthenticated': authSession.isAuthenticated,
+    'isHydrating': authSession.isHydrating,
+    'needSelectRole': authSession.needSelectRole,
+    if (authSession.user != null) 'userId': authSession.user!.userId,
+    if (redirectTarget != null) 'redirectTarget': redirectTarget,
+  };
 }
 
 /// 解析岗位详情链接参数，支持 Universal Link 直接使用 `jobId` 查询参数打开页面。
