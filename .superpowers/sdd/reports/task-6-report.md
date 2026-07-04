@@ -97,3 +97,37 @@ flutter analyze lib/features/message/application/message_session/message_session
 ## 顾虑
 
 - 支付成功分支在测试环境下仍会看到 `easy_localization` 对 `服务详情.支付成功` 的缺失 key 警告；这来自测试环境未完整挂载应用翻译资源，不影响日志事件、上下文串联和脱敏断言。
+
+## 本次追加修复
+
+### 审查问题
+
+- `payment_flow_coordinator.dart` 中 `AppPaymentLaunchStatus.pending` 分支此前直接返回 `PaymentFlowStatus.pending`，没有进入 `_queryFinalStatus()`。
+- 在高频待确认场景下，这会导致 `PAYMENT_STATUS_POLL_PENDING / PAYMENT_STATUS_POLL_SUCCESS / PAYMENT_STATUS_POLL_FAIL` 轮询日志链路缺口，无法完整回放同一条 `traceId` 下的创建、拉起与最终状态确认过程。
+
+### 修复内容
+
+- 调整 `PaymentFlowCoordinator.startPayment()`：当支付 SDK 返回 `AppPaymentLaunchStatus.pending` 时，不再直接返回，而是与 `success` 分支一样进入 `_queryFinalStatus()`。
+- 保持既有本地排障模式、控制台与本地文件落盘、发布版详细日志、脱敏裁剪与频控策略不变，未新增依赖，也未扩散到 Task 6 之外的任务文件。
+- 在关键分支添加中文注释，明确说明待确认场景必须复用最终状态轮询链路，保证 `pending/success/fail` 日志可回放。
+
+### 测试补强
+
+- 扩展 `test/features/order/payment_flow_logging_test.dart`，新增“拉起待确认后继续轮询”的高价值测试。
+- 测试使用先返回 `processing`、再返回 `success` 的假支付状态序列，验证以下断言：
+  - 存在 `PAYMENT_LAUNCH_PENDING`
+  - 存在 `PAYMENT_STATUS_POLL_PENDING`
+  - 存在 `PAYMENT_STATUS_POLL_SUCCESS`
+  - 三段日志与创建事件复用同一条 `traceId`
+  - 轮询日志保留 `attempt` 与 `paymentStatus`
+  - 原始支付宝敏感串不会明文落盘
+- 同时收紧日志筛选条件到当前 `orderId`，避免多用例共用同一日志文件时出现旧事件串台，保证待确认场景断言稳定可复现。
+
+### 本次验证
+
+```bash
+flutter test test/features/order/payment_flow_logging_test.dart
+flutter analyze lib/features/order/application/payment/payment_flow_coordinator.dart test/features/order/payment_flow_logging_test.dart
+```
+
+- 结果：均通过，`flutter analyze` 输出 `No issues found!`

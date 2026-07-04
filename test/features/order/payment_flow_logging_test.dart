@@ -104,10 +104,13 @@ void main() {
     final List<Map<String, Object?>> matchedEntries = entries.where((
       Map<String, Object?> item,
     ) {
-      return item['event'] == 'PAYMENT_CREATE_START' ||
-          item['event'] == 'PAYMENT_CREATE_SUCCESS' ||
-          item['event'] == 'PAYMENT_LAUNCH_SUCCESS' ||
-          item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS';
+      final Map<String, Object?>? context =
+          item['context'] == null ? null : readContext(item);
+      return context?['orderId'] == '1001' &&
+          (item['event'] == 'PAYMENT_CREATE_START' ||
+              item['event'] == 'PAYMENT_CREATE_SUCCESS' ||
+              item['event'] == 'PAYMENT_LAUNCH_SUCCESS' ||
+              item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS');
     }).toList();
 
     expect(
@@ -157,6 +160,90 @@ void main() {
     final String rawLogContent = await readRawLogContent();
     expect(rawLogContent, isNot(contains('alipay-order-sensitive-token')));
   });
+
+  test('startPayment 在拉起待确认时也会进入轮询并串联 traceId 日志', () async {
+    final PaymentFlowCoordinator coordinator = PaymentFlowCoordinator(
+      paymentService: _FakePaymentService.pendingThenSuccess(),
+      paymentLauncher: const _FakePaymentLauncher.pending(),
+    );
+
+    final PaymentFlowResult result = await coordinator.startPayment(
+      orderId: 1002,
+      method: AppPaymentMethod.alipay,
+    );
+    await waitForLogFlush();
+
+    expect(result.status, PaymentFlowStatus.success);
+
+    final List<Map<String, Object?>> entries = await readJsonLogEntries();
+    final List<Map<String, Object?>> matchedEntries = entries.where((
+      Map<String, Object?> item,
+    ) {
+      final Map<String, Object?>? context =
+          item['context'] == null ? null : readContext(item);
+      return context?['orderId'] == '1002' &&
+          (item['event'] == 'PAYMENT_CREATE_START' ||
+              item['event'] == 'PAYMENT_LAUNCH_PENDING' ||
+              item['event'] == 'PAYMENT_STATUS_POLL_PENDING' ||
+              item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS');
+    }).toList();
+
+    expect(
+      matchedEntries.any((Map<String, Object?> item) {
+        return item['event'] == 'PAYMENT_LAUNCH_PENDING';
+      }),
+      isTrue,
+    );
+    expect(
+      matchedEntries.any((Map<String, Object?> item) {
+        return item['event'] == 'PAYMENT_STATUS_POLL_PENDING';
+      }),
+      isTrue,
+    );
+    expect(
+      matchedEntries.any((Map<String, Object?> item) {
+        return item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS';
+      }),
+      isTrue,
+    );
+
+    final Map<String, Object?> createContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) => item['event'] == 'PAYMENT_CREATE_START',
+      ),
+    );
+    final Map<String, Object?> launchPendingContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) => item['event'] == 'PAYMENT_LAUNCH_PENDING',
+      ),
+    );
+    final Map<String, Object?> pollPendingContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) =>
+            item['event'] == 'PAYMENT_STATUS_POLL_PENDING',
+      ),
+    );
+    final Map<String, Object?> pollSuccessContext = readContext(
+      matchedEntries.firstWhere(
+        (Map<String, Object?> item) =>
+            item['event'] == 'PAYMENT_STATUS_POLL_SUCCESS',
+      ),
+    );
+
+    // 关键断言：待确认分支也必须完整串起创建、拉起、轮询的同一条 traceId。
+    expect(createContext['traceId'], isNotEmpty);
+    expect(createContext['traceId'], launchPendingContext['traceId']);
+    expect(createContext['traceId'], pollPendingContext['traceId']);
+    expect(createContext['traceId'], pollSuccessContext['traceId']);
+    expect(launchPendingContext['launchStatus'], 'pending');
+    expect(pollPendingContext['paymentStatus'], 'processing');
+    expect(pollPendingContext['attempt'], '1');
+    expect(pollSuccessContext['paymentStatus'], 'success');
+    expect(pollSuccessContext['attempt'], '2');
+
+    final String rawLogContent = await readRawLogContent();
+    expect(rawLogContent, isNot(contains('alipay-order-sensitive-token')));
+  });
 }
 
 /// 提供可控的支付服务替身，避免测试依赖真实网络与接口返回。
@@ -198,6 +285,42 @@ class _FakePaymentService extends PaymentService {
     );
   }
 
+  /// 构造一个先返回处理中、再返回成功的支付服务替身，覆盖待确认轮询链路。
+  factory _FakePaymentService.pendingThenSuccess() {
+    return _FakePaymentService._(
+      paymentResult: const PaymentResultVO(
+        paymentId: 92,
+        paymentMethod: 'alipay',
+        outTradeNo: 'TRADE202607050002',
+        wxPartnerId: null,
+        wxPrepayId: null,
+        wxPackageValue: null,
+        wxNonceStr: null,
+        wxTimestamp: null,
+        wxSign: null,
+        alipayOrderString: 'alipay-order-sensitive-token',
+      ),
+      paymentStatuses: const <PaymentStatusVO>[
+        PaymentStatusVO(
+          paymentId: 92,
+          orderId: 1002,
+          paymentMethod: 'alipay',
+          amount: 199.0,
+          status: 'processing',
+          paidAt: null,
+        ),
+        PaymentStatusVO(
+          paymentId: 92,
+          orderId: 1002,
+          paymentMethod: 'alipay',
+          amount: 199.0,
+          status: 'success',
+          paidAt: '2026-07-05T00:05:00Z',
+        ),
+      ],
+    );
+  }
+
   @override
   /// 返回预设的支付创建结果，模拟支付单创建成功。
   Future<PaymentResultVO> createPayment({
@@ -224,6 +347,12 @@ class _FakePaymentLauncher implements PaymentLauncher {
     : _result = const AppPaymentLaunchResult(
         status: AppPaymentLaunchStatus.success,
         message: '支付宝拉起成功',
+      );
+
+  const _FakePaymentLauncher.pending()
+    : _result = const AppPaymentLaunchResult(
+        status: AppPaymentLaunchStatus.pending,
+        message: '支付宝结果待确认',
       );
 
   final AppPaymentLaunchResult _result;

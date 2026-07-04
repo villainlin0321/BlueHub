@@ -92,10 +92,8 @@ class PaymentFlowCoordinator {
               message: launchResult.message,
             );
           case AppPaymentLaunchStatus.pending:
-            return PaymentFlowResult(
-              status: PaymentFlowStatus.pending,
-              message: '支付.支付结果确认中请稍后刷新订单状态'.tr(),
-            );
+            // SDK 返回待确认时，继续复用最终状态轮询链路，补齐可回放的 pending/success/fail 日志。
+            return _queryFinalStatus(orderId: orderId, payment: payment);
           case AppPaymentLaunchStatus.failed:
           case AppPaymentLaunchStatus.unknown:
             return PaymentFlowResult(
