@@ -9,11 +9,13 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
 class ServiceProviderJobsPage extends ConsumerStatefulWidget {
   const ServiceProviderJobsPage({super.key});
@@ -58,15 +60,14 @@ class _ServiceProviderJobsPageState
     final double topPadding = MediaQuery.paddingOf(context).top;
 
     return Column(
+      key: AppTestKeys.pageServiceProviderJobs,
       children: <Widget>[
         _PageHeader(
           topPadding: topPadding,
           onPublishTap: () => context.push(RoutePaths.editVisaPackage),
         ),
         _PageTabBar(
-          tabs: _PackageTab.values
-              .map((tab) => tab.label.tr())
-              .toList(growable: false),
+          tabs: _PackageTab.values,
           selectedIndex: _selectedTabIndex,
           onTap: (int index) {
             _tabController.animateTo(index);
@@ -410,21 +411,26 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
         final bool isDeleting = _deletingPackageIds.contains(package.packageId);
         return _PackageCard(
           data: _PackageCardData.fromVisaPackage(package, widget.tab),
+          tabStatus: widget.tab.status,
+          itemIndex: index,
           onDeleteAction: isDeleting ? null : () => _deletePackage(package),
-          onSecondaryAction: widget.tab.secondaryActionStatus == null || isDeleting
+          onSecondaryAction:
+              widget.tab.secondaryActionStatus == null || isDeleting
               ? null
               : () => _handleSecondaryAction(package),
           onPrimaryAction: isDeleting
               ? null
               : () {
-                  context.push(
-                    '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
-                  ).then((_) {
-                    if (!mounted) {
-                      return;
-                    }
-                    _refreshPackages();
-                  });
+                  context
+                      .push(
+                        '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
+                      )
+                      .then((_) {
+                        if (!mounted) {
+                          return;
+                        }
+                        _refreshPackages();
+                      });
                 },
           isDeleteActionLoading: isDeleting,
           isSecondaryActionLoading: _updatingPackageIds.contains(
@@ -439,6 +445,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
     return EasyRefresh(
+      key: AppTestKeys.sectionServiceProviderJobsPanel(widget.tab.status),
       header: const ClassicHeader(),
       footer: const ClassicFooter(),
       onRefresh: _refreshPackages,
@@ -487,17 +494,24 @@ class _PageHeader extends StatelessWidget {
           Expanded(
             child: Text(
               '套餐管理.标题'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: Color(0xE6000000),
+              ),
             ),
           ),
           InkWell(
+            key: AppTestKeys.actionServiceProviderJobsPublish,
             onTap: onPublishTap,
             borderRadius: BorderRadius.circular(4),
             child: Padding(
               padding: EdgeInsets.only(top: 2),
               child: Text(
                 '套餐管理.发布'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
           ),
@@ -514,7 +528,7 @@ class _PageTabBar extends StatelessWidget {
     required this.onTap,
   });
 
-  final List<String> tabs;
+  final List<_PackageTab> tabs;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
@@ -525,8 +539,10 @@ class _PageTabBar extends StatelessWidget {
       child: Row(
         children: List<Widget>.generate(tabs.length, (int index) {
           final bool selected = index == selectedIndex;
+          final _PackageTab tab = tabs[index];
           return Expanded(
             child: InkWell(
+              key: AppTestKeys.tabServiceProviderJobs(tab.status),
               onTap: () => onTap(index),
               child: Padding(
                 padding: EdgeInsets.only(top: 11, bottom: selected ? 0 : 11),
@@ -534,11 +550,14 @@ class _PageTabBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      tabs[index],
+                      tab.label.tr(),
                       textAlign: TextAlign.center,
-                      style: TestStyle.medium(fontSize: 14, color: selected
+                      style: TestStyle.medium(
+                        fontSize: 14,
+                        color: selected
                             ? const Color(0xFF096DD9)
-                            : const Color(0xFF262626)),
+                            : const Color(0xFF262626),
+                      ),
                     ),
                     if (selected) ...<Widget>[
                       const SizedBox(height: 9),
@@ -562,6 +581,8 @@ class _PageTabBar extends StatelessWidget {
 class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.data,
+    required this.tabStatus,
+    required this.itemIndex,
     this.onDeleteAction,
     this.onSecondaryAction,
     this.onPrimaryAction,
@@ -570,6 +591,8 @@ class _PackageCard extends StatelessWidget {
   });
 
   final _PackageCardData data;
+  final String tabStatus;
+  final int itemIndex;
   final VoidCallback? onDeleteAction;
   final VoidCallback? onSecondaryAction;
   final VoidCallback? onPrimaryAction;
@@ -601,7 +624,10 @@ class _PackageCard extends StatelessWidget {
                             data.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                            style: TestStyle.medium(
+                              fontSize: 16,
+                              color: Color(0xFF262626),
+                            ),
                           ),
                         ),
                       ],
@@ -623,7 +649,10 @@ class _PackageCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     data.metaText,
-                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                    style: TestStyle.regular(
+                      fontSize: 12,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ],
               ),
@@ -644,19 +673,35 @@ class _PackageCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   _DeleteButton(
+                    buttonKey: AppTestKeys.actionServiceProviderJobsDelete(
+                      tabStatus,
+                      itemIndex,
+                    ),
                     onTap: onDeleteAction,
                     isLoading: isDeleteActionLoading,
                   ),
                   const Spacer(),
                   if (data.secondaryActionLabel != null) ...<Widget>[
                     _GhostButton(
+                      buttonKey:
+                          AppTestKeys.actionServiceProviderJobsStatusToggle(
+                            tabStatus,
+                            itemIndex,
+                          ),
                       label: data.secondaryActionLabel!.tr(),
                       onTap: onSecondaryAction,
                       isLoading: isSecondaryActionLoading,
                     ),
                     const SizedBox(width: 8),
                   ],
-                  _PrimaryButton(label: '企业岗位.编辑'.tr(), onTap: onPrimaryAction),
+                  _PrimaryButton(
+                    buttonKey: AppTestKeys.actionServiceProviderJobsEdit(
+                      tabStatus,
+                      itemIndex,
+                    ),
+                    label: '企业岗位.编辑'.tr(),
+                    onTap: onPrimaryAction,
+                  ),
                 ],
               ),
             ],
@@ -695,7 +740,10 @@ class _PackagePriceRow extends StatelessWidget {
           const Spacer(),
           RichText(
             text: TextSpan(
-              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 12,
+                color: Color(0xFF8C8C8C),
+              ),
               children: <InlineSpan>[
                 TextSpan(
                   text: '套餐管理.已售'.tr(
@@ -748,7 +796,10 @@ class _EmptyTierState extends StatelessWidget {
       ),
       child: Text(
         '套餐管理.暂无套餐档位'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+        style: TestStyle.pingFangRegular(
+          fontSize: 12,
+          color: Color(0xFF8C8C8C),
+        ),
       ),
     );
   }
@@ -774,14 +825,20 @@ class _MoreIcon extends StatelessWidget {
 }
 
 class _DeleteButton extends StatelessWidget {
-  const _DeleteButton({this.onTap, this.isLoading = false});
+  const _DeleteButton({
+    required this.buttonKey,
+    this.onTap,
+    this.isLoading = false,
+  });
 
+  final Key buttonKey;
   final VoidCallback? onTap;
   final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: buttonKey,
       onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -815,8 +872,14 @@ class _DeleteButton extends StatelessWidget {
 }
 
 class _GhostButton extends StatelessWidget {
-  const _GhostButton({required this.label, this.onTap, this.isLoading = false});
+  const _GhostButton({
+    required this.buttonKey,
+    required this.label,
+    this.onTap,
+    this.isLoading = false,
+  });
 
+  final Key buttonKey;
   final String label;
   final VoidCallback? onTap;
   final bool isLoading;
@@ -824,6 +887,7 @@ class _GhostButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: buttonKey,
       onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -842,7 +906,11 @@ class _GhostButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: TestStyle.regular(fontSize: 12, color: Color(0xFF262626), letterSpacing: 0.2),
+                style: TestStyle.regular(
+                  fontSize: 12,
+                  color: Color(0xFF262626),
+                  letterSpacing: 0.2,
+                ),
               ),
       ),
     );
@@ -850,14 +918,20 @@ class _GhostButton extends StatelessWidget {
 }
 
 class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, this.onTap});
+  const _PrimaryButton({
+    required this.buttonKey,
+    required this.label,
+    this.onTap,
+  });
 
+  final Key buttonKey;
   final String label;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: buttonKey,
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -870,7 +944,11 @@ class _PrimaryButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
+          style: TestStyle.regular(
+            fontSize: 12,
+            color: Colors.white,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
     );
@@ -1025,7 +1103,10 @@ class _PackageLoadError extends StatelessWidget {
         Text(
           '套餐管理.套餐列表加载失败'.tr(),
           textAlign: TextAlign.center,
-          style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+          style: TestStyle.pingFangMedium(
+            fontSize: 16,
+            color: Color(0xFF262626),
+          ),
         ),
         const SizedBox(height: 8),
         Text(

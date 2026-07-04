@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../shared/ui/app_colors.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../config/data/config_models.dart';
@@ -85,6 +86,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: AppTestKeys.pageEditVisaPackage,
       backgroundColor: EditVisaPackageStyles.pageBackground,
       appBar: EditVisaPackageHeader(
         onBackTap: onBackTap,
