@@ -65,11 +65,12 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
 
     final previousState = state;
     state = state.copyWith(isHydrating: true);
+    final hydratingState = state;
     StateLog.transition(
       event: 'AUTH_RESTORE_START',
       message: '开始恢复会话',
       from: _describeState(previousState),
-      to: _describeState(state),
+      to: _describeState(hydratingState),
       result: AppLogResult.pending,
       context: _buildTokenPresenceContext(tokenStore),
     );
@@ -88,7 +89,8 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
       StateLog.transition(
         event: 'AUTH_RESTORE_SUCCESS',
         message: '恢复会话成功',
-        from: _describeState(previousState),
+        // 成功事件必须承接启动中的 hydrating 态，才能真实回放完整迁移链路。
+        from: _describeState(hydratingState),
         to: _describeState(state),
         result: AppLogResult.success,
         context: _buildUserContext(
@@ -101,7 +103,8 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
       StateLog.transition(
         event: 'AUTH_RESTORE_FAIL',
         message: '恢复会话失败，准备清理登录态',
-        from: _describeState(previousState),
+        // 失败事件同样要从 hydrating 出发，避免看起来像是直接从旧态跳到终态。
+        from: _describeState(hydratingState),
         to: _describeState(const AuthSessionState()),
         level: AppLogLevel.error,
         result: AppLogResult.fail,
@@ -152,11 +155,12 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
     final tokenStore = ref.read(tokenStoreProvider);
     final previousState = state;
     state = state.copyWith(isHydrating: true);
+    final hydratingState = state;
     StateLog.transition(
       event: 'AUTH_REFRESH_START',
       message: '开始刷新当前用户信息',
       from: _describeState(previousState),
-      to: _describeState(state),
+      to: _describeState(hydratingState),
       result: AppLogResult.pending,
       context: <String, Object?>{
         ..._buildTokenPresenceContext(tokenStore),
@@ -180,7 +184,8 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
       StateLog.transition(
         event: 'AUTH_REFRESH_SUCCESS',
         message: '刷新当前用户信息成功',
-        from: _describeState(previousState),
+        // 成功事件需要基于当前 hydrating 态记录，避免丢失中间过渡节点。
+        from: _describeState(hydratingState),
         to: _describeState(state),
         result: AppLogResult.success,
         context: _buildUserContext(
@@ -194,7 +199,7 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
         StateLog.transition(
           event: 'AUTH_REFRESH_FAIL',
           message: '刷新当前用户信息失败，准备清理登录态',
-          from: _describeState(previousState),
+          from: _describeState(hydratingState),
           to: _describeState(const AuthSessionState()),
           level: AppLogLevel.error,
           result: AppLogResult.fail,
@@ -222,7 +227,7 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
       StateLog.transition(
         event: 'AUTH_REFRESH_FAIL',
         message: '刷新失败，已回退到登录返回的用户快照',
-        from: _describeState(previousState),
+        from: _describeState(hydratingState),
         to: _describeState(state),
         level: AppLogLevel.error,
         result: AppLogResult.fail,

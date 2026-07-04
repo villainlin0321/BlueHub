@@ -35,6 +35,7 @@ Future<void> main() async {
             WidgetsFlutterBinding.ensureInitialized();
             await EasyLocalization.ensureInitialized();
             await AppLogger.instance.init();
+            final bootstrapErrorTracker = _BootstrapErrorTracker();
             AppFlowLog.bootstrapStart(
               context: <String, Object?>{
                 'sessionId': sessionId,
@@ -45,22 +46,12 @@ Future<void> main() async {
             await PaymentLauncher.instance.initialize(
               config: PaymentChannelConfig.fromEnvironment(),
             );
-            _registerGlobalErrorHandlers();
+            _registerGlobalErrorHandlers(
+              bootstrapErrorTracker: bootstrapErrorTracker,
+            );
 
             final prefs = await SharedPreferences.getInstance();
             final tokenStore = TokenStore.sharedPreferences(prefs);
-            // 关键日志：在 runApp 前补齐启动成功前的上下文，便于回放初始化依赖是否齐备。
-            AppFlowLog.bootstrapSuccess(
-              context: <String, Object?>{
-                'sessionId': sessionId,
-                'phase': 'run_app',
-                'hasPersistedSession':
-                    (tokenStore.accessToken ?? '').isNotEmpty,
-                'hasPersistedRefreshCredential':
-                    (tokenStore.refreshToken ?? '').isNotEmpty,
-                'logFilePath': AppLogger.instance.currentLogFilePath,
-              },
-            );
             await _runNativeHttpProbe();
 
             runApp(
@@ -79,6 +70,20 @@ Future<void> main() async {
                   child: const App(),
                 ),
               ),
+            );
+            // 关键日志：只有首帧完成且启动阶段未记录全局异常时，才算真正启动成功。
+            await _waitForFirstFrame();
+            bootstrapErrorTracker.throwIfRecorded();
+            AppFlowLog.bootstrapSuccess(
+              context: <String, Object?>{
+                'sessionId': sessionId,
+                'phase': 'first_frame_rendered',
+                'hasPersistedSession':
+                    (tokenStore.accessToken ?? '').isNotEmpty,
+                'hasPersistedRefreshCredential':
+                    (tokenStore.refreshToken ?? '').isNotEmpty,
+                'logFilePath': AppLogger.instance.currentLogFilePath,
+              },
             );
           } catch (error, stackTrace) {
             AppFlowLog.bootstrapFail(
@@ -145,9 +150,15 @@ Future<void> _runNativeHttpProbe() async {
 }
 
 /// 注册 Flutter、平台层和异步 Zone 的全局异常日志。
-void _registerGlobalErrorHandlers() {
+void _registerGlobalErrorHandlers({
+  _BootstrapErrorTracker? bootstrapErrorTracker,
+}) {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
+    bootstrapErrorTracker?.record(
+      details.exception,
+      details.stack ?? StackTrace.current,
+    );
     AppLogger.instance.error(
       'FLUTTER',
       'FlutterError.onError 捕获到异常',
@@ -161,6 +172,7 @@ void _registerGlobalErrorHandlers() {
   };
 
   PlatformDispatcher.instance.onError = (Object error, StackTrace stackTrace) {
+    bootstrapErrorTracker?.record(error, stackTrace);
     AppLogger.instance.fatal(
       'PLATFORM',
       'PlatformDispatcher 捕获到未处理异常',
@@ -169,6 +181,41 @@ void _registerGlobalErrorHandlers() {
     );
     return true;
   };
+}
+
+/// 等待应用首帧完成，确保启动成功日志不会早于真正可见的界面渲染。
+Future<void> _waitForFirstFrame() {
+  final completer = Completer<void>();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+  });
+  return completer.future;
+}
+
+/// 记录启动阶段捕获到的首个全局异常，并在首帧后决定是否阻断成功日志。
+class _BootstrapErrorTracker {
+  Object? _error;
+  StackTrace? _stackTrace;
+
+  /// 仅保留首个异常，避免同一次失败场景被后续连锁错误覆盖根因。
+  void record(Object error, StackTrace stackTrace) {
+    if (_error != null) {
+      return;
+    }
+    _error = error;
+    _stackTrace = stackTrace;
+  }
+
+  /// 在启动阶段发现全局异常时抛出，统一走 `main()` 的失败日志分支。
+  void throwIfRecorded() {
+    final recordedError = _error;
+    if (recordedError == null) {
+      return;
+    }
+    Error.throwWithStackTrace(recordedError, _stackTrace ?? StackTrace.current);
+  }
 }
 
 /// 生成应用启动会话 ID，让同一次运行中的日志天然具备统一会话上下文。

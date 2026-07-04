@@ -135,6 +135,8 @@ void main() {
         (Map<String, Object?> item) => item['event'] == 'AUTH_RESTORE_SUCCESS',
       ),
     );
+    expect(successContext['from'], 'hydrating');
+    expect(successContext['to'], 'authenticated_ready');
     expect(successContext['userId'], '42');
     expect(successContext['role'], 'worker');
     expect(successContext['needSelectRole'], 'false');
@@ -221,6 +223,13 @@ void main() {
             7,
           ),
     );
+    final Map<String, Object?> refreshFailContext = readContext(
+      matchedEntries.lastWhere(
+        (Map<String, Object?> item) => item['event'] == 'AUTH_REFRESH_FAIL',
+      ),
+    );
+    expect(refreshFailContext['from'], 'hydrating');
+    expect(refreshFailContext['to'], 'authenticated_ready');
     expect(await readRawLogContent(), isNot(contains('fallback@example.com')));
     expect(await readRawLogContent(), isNot(contains('+8613800138000')));
   });
