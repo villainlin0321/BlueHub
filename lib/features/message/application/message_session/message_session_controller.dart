@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/logging/app_log_event.dart';
+import '../../../../shared/logging/app_log_facade.dart';
 import '../../../../shared/logging/app_logger.dart';
 import '../../../../shared/network/api_decoders.dart';
 import '../../../../shared/network/api_exception.dart';
@@ -81,15 +83,21 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     if (!state.hasStarted) {
       return;
     }
+    final int previousCount = state.conversations.length;
     _syncCurrentUserId();
     _updateState(
       (MessageSessionState current) =>
           current.copyWith(isInitializing: true, loadErrorMessage: null),
     );
+    _logRefreshStart(previousCount: previousCount);
 
     try {
       final PageResult<ConversationVO> response = await _messageService
           .listConversations(page: 1, pageSize: _pageSize);
+      _logRefreshSuccess(
+        previousCount: previousCount,
+        latestCount: response.list.length,
+      );
       _updateState(
         (MessageSessionState current) => current.copyWith(
           conversations: response.list,
@@ -98,6 +106,11 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         ),
       );
     } catch (error, stackTrace) {
+      _logRefreshFail(
+        previousCount: previousCount,
+        error: error,
+        stackTrace: stackTrace,
+      );
       AppLogger.instance.error(
         'MESSAGE_SESSION',
         '刷新会话列表失败',
@@ -477,5 +490,62 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       return;
     }
     state = updater(state);
+  }
+
+  /// 记录会话刷新开始事件，补齐当前分页和现有会话数量上下文。
+  void _logRefreshStart({required int previousCount}) {
+    StateLog.transition(
+      event: 'MESSAGE_SESSION_START',
+      message: '开始刷新会话列表',
+      result: AppLogResult.pending,
+      context: _buildRefreshLogContext(previousCount: previousCount),
+    );
+  }
+
+  /// 记录会话刷新成功事件，便于回放本次刷新拉回了多少条会话。
+  void _logRefreshSuccess({
+    required int previousCount,
+    required int latestCount,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_SESSION_SUCCESS',
+      message: '会话列表刷新成功',
+      result: AppLogResult.success,
+      context: _buildRefreshLogContext(
+        previousCount: previousCount,
+        latestCount: latestCount,
+      ),
+    );
+  }
+
+  /// 记录会话刷新失败事件，并保留错误对象与分页上下文用于排障。
+  void _logRefreshFail({
+    required int previousCount,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'MESSAGE_REFRESH_FAIL',
+      message: '会话列表刷新失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: _buildRefreshLogContext(previousCount: previousCount),
+    );
+  }
+
+  /// 构建会话刷新日志上下文，统一补齐分页和数量摘要字段。
+  Map<String, Object?> _buildRefreshLogContext({
+    required int previousCount,
+    int? latestCount,
+  }) {
+    return <String, Object?>{
+      'page': 1,
+      'pageSize': _pageSize,
+      'conversationCountBefore': previousCount,
+      if (latestCount != null) 'conversationCountAfter': latestCount,
+      if (_currentUserId > 0) 'currentUserId': _currentUserId,
+    };
   }
 }
