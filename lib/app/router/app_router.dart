@@ -56,12 +56,15 @@ import '../../features/visa/presentation/company_visa_service_page.dart';
 import '../../features/visa/presentation/edit_visa_package_page.dart';
 import '../../features/visa/presentation/visa_provider_search_page.dart';
 import '../../features/visa/presentation/visa_page.dart';
-import '../../shared/logging/app_logger.dart';
+import '../../shared/logging/app_log_event.dart';
+import '../../shared/logging/app_log_facade.dart';
+import '../../shared/logging/app_route_tracker.dart';
 import 'route_paths.dart';
 
 /// 提供全局 `GoRouter` 实例，并在关键路由变化时输出日志。
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier();
+  final routeTracker = AppRouteTracker.instance;
   ref.onDispose(refreshNotifier.dispose);
   ref.listen(authSessionProvider, (_, __) {
     refreshNotifier.refresh();
@@ -79,9 +82,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = isLoginRoute || isSelectRoleRoute;
 
       if (authSession.isHydrating) {
-        AppLogger.instance.debug(
-          'ROUTE',
-          '会话恢复中，暂不拦截路由',
+        RouteLog.log(
+          event: 'ROUTE_GUARD_SKIPPED',
+          message: '会话恢复中，暂不拦截路由',
+          level: AppLogLevel.debug,
+          result: AppLogResult.skip,
           context: <String, Object?>{'location': location},
         );
         return null;
@@ -93,18 +98,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         final redirectTarget =
             pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
-        AppLogger.instance.warn(
-          'ROUTE',
-          '未登录，跳转到登录页',
+        final authEntryLocation = _buildAuthEntryLocation(
+          RoutePaths.loginPhone,
+          redirectTarget,
+        );
+        RouteLog.redirect(
+          from: location,
+          to: authEntryLocation,
+          reason: 'unauthenticated',
           context: <String, Object?>{
-            'from': location,
-            'to': _buildAuthEntryLocation(
-              RoutePaths.loginPhone,
-              redirectTarget,
-            ),
+            if (redirectTarget != null) 'redirectTarget': redirectTarget,
           },
         );
-        return _buildAuthEntryLocation(RoutePaths.loginPhone, redirectTarget);
+        return authEntryLocation;
       }
 
       if (authSession.needSelectRole) {
@@ -113,29 +119,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         final redirectTarget =
             pendingRedirect ?? _buildRedirectTargetFromStateUri(state.uri);
-        AppLogger.instance.warn(
-          'ROUTE',
-          '角色未选择，跳转到角色选择页',
+        final selectRoleLocation = _buildAuthEntryLocation(
+          RoutePaths.selectRole,
+          redirectTarget,
+        );
+        RouteLog.redirect(
+          from: location,
+          to: selectRoleLocation,
+          reason: 'role_not_selected',
           context: <String, Object?>{
-            'from': location,
-            'to': _buildAuthEntryLocation(
-              RoutePaths.selectRole,
-              redirectTarget,
-            ),
+            if (redirectTarget != null) 'redirectTarget': redirectTarget,
           },
         );
-        return _buildAuthEntryLocation(RoutePaths.selectRole, redirectTarget);
+        return selectRoleLocation;
       }
 
       if (location == RoutePaths.root || isAuthRoute) {
         final target = pendingRedirect;
-        AppLogger.instance.info(
-          'ROUTE',
-          target == null ? '登录态已就绪，跳转到首页' : '登录态已就绪，恢复目标路由',
-          context: <String, Object?>{
-            'from': location,
-            'to': target ?? RoutePaths.home,
-          },
+        RouteLog.redirect(
+          from: location,
+          to: target ?? RoutePaths.home,
+          reason: target == null ? 'auth_ready_default_home' : 'auth_ready_resume_target',
+          level: AppLogLevel.info,
         );
         return target ?? RoutePaths.home;
       }
@@ -500,10 +505,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     router,
     fallbackLocation: RoutePaths.loginPhone,
   );
-  AppLogger.instance.info(
-    'ROUTE',
-    '路由器初始化完成',
-    context: <String, Object?>{'location': previousLocation},
+  routeTracker.track(previousLocation);
+  RouteLog.enter(
+    route: previousLocation,
+    context: const <String, Object?>{'source': 'router_init'},
   );
 
   /// 监听 go_router 当前地址变化，记录真实跳转结果。
@@ -515,12 +520,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     if (currentLocation == previousLocation) {
       return;
     }
-    AppLogger.instance.info(
-      'ROUTE',
-      '路由已切换',
+    RouteLog.exit(
+      route: previousLocation,
+      to: currentLocation,
+      context: const <String, Object?>{'source': 'router_delegate'},
+    );
+    routeTracker.track(currentLocation);
+    RouteLog.enter(
+      route: currentLocation,
+      from: previousLocation,
       context: <String, Object?>{
-        'from': previousLocation,
-        'to': currentLocation,
+        'source': 'router_delegate',
+        if (routeTracker.previousRoute != null)
+          'trackerPreviousRoute': routeTracker.previousRoute,
       },
     );
     previousLocation = currentLocation;
