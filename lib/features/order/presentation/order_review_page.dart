@@ -13,7 +13,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class OrderReviewPageArgs {
   const OrderReviewPageArgs({
     required this.orderId,

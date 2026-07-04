@@ -15,7 +15,7 @@ import '../application/my_applications/my_application_lists_controller.dart';
 import '../data/my_applications_models.dart';
 import 'widgets/my_application_card.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class MyApplicationsPage extends ConsumerStatefulWidget {
   const MyApplicationsPage({super.key});
 

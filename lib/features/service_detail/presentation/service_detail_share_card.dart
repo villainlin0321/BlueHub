@@ -11,7 +11,7 @@ import '../../visa/data/provider_models.dart'
 import '../../visa/data/visa_package_models.dart';
 import 'service_detail_package_tab.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ServiceDetailShareCard extends StatelessWidget {
   const ServiceDetailShareCard({
     super.key,

@@ -16,7 +16,7 @@ import 'company_application_management_styles.dart';
 import 'widgets/company_application_job_filter_bottom_sheet.dart';
 import 'widgets/company_application_management_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
   const CompanyApplicationManagementPage({super.key});
 

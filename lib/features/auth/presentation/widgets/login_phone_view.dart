@@ -5,7 +5,7 @@ import '../../../../shared/ui/app_colors.dart';
 import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class LoginRegionOption {
   const LoginRegionOption({required this.label, required this.code});
 

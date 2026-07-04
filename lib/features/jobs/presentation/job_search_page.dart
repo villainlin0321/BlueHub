@@ -13,7 +13,7 @@ import 'job_apply_helper.dart';
 import 'job_detail_page.dart';
 import 'widgets/job_search_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class JobSearchPage extends ConsumerStatefulWidget {
   const JobSearchPage({super.key});
 

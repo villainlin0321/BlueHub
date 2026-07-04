@@ -36,7 +36,7 @@ import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import 'order_payment_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class OrderDetailPageArgs {
   const OrderDetailPageArgs({required this.orderId});

@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/models/dictionary_models.dart';
+import 'package:europepass/shared/network/models/dictionary_models.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +8,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../data/dictionary_providers.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class AddEducationSchoolPage extends ConsumerStatefulWidget {
   const AddEducationSchoolPage({super.key, this.initialSchool});
 

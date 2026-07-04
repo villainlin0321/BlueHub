@@ -1,6 +1,6 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'package:bluehub_app/shared/auth/token_store.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
+import 'package:europepass/shared/auth/token_store.dart';
 import '../../../features/auth/data/auth_models.dart';
 
 class AuthService {

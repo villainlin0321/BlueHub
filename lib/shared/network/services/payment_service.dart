@@ -1,6 +1,6 @@
-import 'package:bluehub_app/features/order/data/payment_models.dart';
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/features/order/data/payment_models.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class PaymentService {
   PaymentService({required ApiClient apiClient}) : _apiClient = apiClient;

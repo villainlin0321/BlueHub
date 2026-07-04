@@ -31,7 +31,7 @@ import '../application/chat/chat_page_args.dart';
 import '../application/chat/chat_page_controller.dart';
 import '../application/chat/chat_page_state.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key, required this.args});
 

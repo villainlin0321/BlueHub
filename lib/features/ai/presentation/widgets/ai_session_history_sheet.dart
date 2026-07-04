@@ -9,7 +9,7 @@ import '../../../../shared/widgets/app_text_input_dialog.dart';
 import '../../data/ai_models.dart';
 import '../../data/ai_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 const String _kAiHistoryEditIconAsset = 'assets/images/ai_history_edit.svg';
 const String _kAiHistoryDeleteIconAsset = 'assets/images/ai_history_delete.svg';
 Future<void> showAiSessionHistorySheet(

@@ -16,7 +16,7 @@ import '../../data/application_providers.dart';
 import '../../data/talent_providers.dart';
 import '../widgets/invite_job_picker_sheet.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 企业招聘页：按 Figma「人才中心」实现。
 class CompanyJobsPage extends ConsumerStatefulWidget {
   const CompanyJobsPage({super.key});

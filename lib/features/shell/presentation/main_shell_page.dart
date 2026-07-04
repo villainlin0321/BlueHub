@@ -16,7 +16,7 @@ import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../application/shell_role_provider.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 主框架页：承载底部 5 个 Tab（go_router 的 StatefulShellRoute）。
 class MainShellPage extends ConsumerStatefulWidget {
   const MainShellPage({super.key, required this.navigationShell, this.role});

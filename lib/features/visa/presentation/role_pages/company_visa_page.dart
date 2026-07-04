@@ -18,7 +18,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
   const CompanyVisaPage({super.key});

@@ -15,7 +15,7 @@ import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/provider_models.dart';
 import '../../data/provider_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者签证页。
 class JobSeekerVisaPage extends ConsumerStatefulWidget {
   const JobSeekerVisaPage({super.key});

@@ -9,7 +9,7 @@ import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'filter_bottom_sheet_chip.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class CompanyApplicationJobFilterResult {
   const CompanyApplicationJobFilterResult({
     required this.jobId,

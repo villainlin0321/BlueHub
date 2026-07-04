@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 const double _kAppDialogMaxWidth = 276;
 const double _kAppDialogRadius = 8;
 const double _kAppDialogActionRadius = 6;

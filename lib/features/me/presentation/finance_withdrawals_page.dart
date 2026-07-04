@@ -8,7 +8,7 @@ import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 import 'finance_page_shared.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class FinanceWithdrawalsPage extends ConsumerStatefulWidget {
   const FinanceWithdrawalsPage({super.key});
 

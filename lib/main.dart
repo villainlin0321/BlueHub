@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bluehub_app/app/app.dart';
+import 'package:europepass/app/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'shared/localization/app_locales.dart';

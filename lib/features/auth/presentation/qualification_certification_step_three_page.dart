@@ -15,7 +15,7 @@ import '../../visa/data/provider_providers.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
   const QualificationCertificationStepThreePage({

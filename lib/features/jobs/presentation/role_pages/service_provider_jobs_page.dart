@@ -13,7 +13,7 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 服务商套餐管理页：按 Figma「套餐管理-已上架」实现。
 class ServiceProviderJobsPage extends ConsumerStatefulWidget {
   const ServiceProviderJobsPage({super.key});

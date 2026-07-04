@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/payment/payment_flow_coordinator.dart';

@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 关于我们页：用于展示应用名称、版本信息以及公司主体信息，便于留存合规截图。
 class AboutAppPage extends StatefulWidget {
   const AboutAppPage({super.key});

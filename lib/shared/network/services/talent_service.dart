@@ -1,7 +1,7 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'package:bluehub_app/shared/network/models/talent_models.dart';
-import 'package:bluehub_app/shared/network/page_result.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/models/talent_models.dart';
+import 'package:europepass/shared/network/page_result.dart';
 
 class TalentService {
   TalentService({required ApiClient apiClient}) : _apiClient = apiClient;

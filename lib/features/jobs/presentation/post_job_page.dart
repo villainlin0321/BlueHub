@@ -15,7 +15,7 @@ import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 enum PostJobPageMode { create, edit }
 
 class PostJobPageArgs {

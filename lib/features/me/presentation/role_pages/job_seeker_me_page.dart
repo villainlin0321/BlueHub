@@ -15,7 +15,7 @@ import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({super.key});

@@ -3,7 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../shared/widgets/app_svg_icon.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class FilterBottomSheetOption {
   const FilterBottomSheetOption({required this.value, required this.label});
 

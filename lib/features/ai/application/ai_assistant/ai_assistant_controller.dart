@@ -27,6 +27,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   Timer? _voiceTimer;
   bool _isDisposed = false;
   bool _hasBootstrapped = false;
+  int _voiceSessionId = 0;
+  String _latestRecognizedText = '';
+  Completer<String>? _finalVoiceResultCompleter;
   final Map<int, List<JobListVO>> _pendingEmbeddedJobs =
       <int, List<JobListVO>>{};
 
@@ -182,10 +185,26 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return;
     }
 
+    final int voiceSessionId = ++_voiceSessionId;
+    _latestRecognizedText = '';
+    _finalVoiceResultCompleter = Completer<String>();
     final bool initialized = await _speechToText.initialize(
-      onStatus: (_) {},
+      onStatus: (String status) {
+        if (_isDisposed || voiceSessionId != _voiceSessionId) {
+          return;
+        }
+        if (status == 'done' || status == 'notListening') {
+          final Completer<String>? completer = _finalVoiceResultCompleter;
+          if (completer != null && !completer.isCompleted) {
+            completer.complete(_latestRecognizedText);
+          }
+        }
+      },
       onError: (error) {
         if (_isDisposed) {
+          return;
+        }
+        if (voiceSessionId != _voiceSessionId) {
           return;
         }
         if (state.voiceInputState == AiAssistantVoiceInputState.idle) {
@@ -232,14 +251,22 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     try {
       await _speechToText.listen(
         onResult: (result) {
-          if (_isDisposed) {
+          if (_isDisposed || voiceSessionId != _voiceSessionId) {
             return;
           }
-          _updateState((AiAssistantState current) {
-            return current.copyWith(
-              recognizedText: result.recognizedWords.trim(),
-            );
-          });
+          final String nextRecognizedText = result.recognizedWords.trim();
+          if (nextRecognizedText.isNotEmpty) {
+            _latestRecognizedText = nextRecognizedText;
+            _updateState((AiAssistantState current) {
+              return current.copyWith(recognizedText: nextRecognizedText);
+            });
+          }
+          if (result.finalResult) {
+            final Completer<String>? completer = _finalVoiceResultCompleter;
+            if (completer != null && !completer.isCompleted) {
+              completer.complete(_latestRecognizedText);
+            }
+          }
         },
         listenOptions: stt.SpeechListenOptions(
           listenFor: const Duration(seconds: 30),
@@ -253,6 +280,33 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     } catch (error) {
       _resetVoiceInputState();
       _emitFeedback(error.toString(), isError: true);
+    }
+  }
+
+  Future<String> _resolveRecognizedTextAfterStop({
+    required int voiceSessionId,
+  }) async {
+    final String immediateText = state.recognizedText.trim();
+    if (immediateText.isNotEmpty) {
+      return immediateText;
+    }
+
+    final Completer<String>? completer = _finalVoiceResultCompleter;
+    if (completer == null) {
+      return _latestRecognizedText.trim();
+    }
+
+    try {
+      final String finalText = await completer.future.timeout(
+        const Duration(milliseconds: 400),
+        onTimeout: () => _latestRecognizedText,
+      );
+      if (voiceSessionId != _voiceSessionId) {
+        return _latestRecognizedText.trim();
+      }
+      return finalText.trim();
+    } catch (_) {
+      return _latestRecognizedText.trim();
     }
   }
 
@@ -278,6 +332,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return;
     }
 
+    final int voiceSessionId = _voiceSessionId;
     final bool shouldCancel =
         state.voiceInputState == AiAssistantVoiceInputState.cancel;
     try {
@@ -286,7 +341,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       // ignore stop errors when the recognizer already stopped itself
     }
 
-    final String recognizedText = state.recognizedText.trim();
+    final String recognizedText = await _resolveRecognizedTextAfterStop(
+      voiceSessionId: voiceSessionId,
+    );
     _resetVoiceInputState();
 
     if (shouldCancel) {
@@ -674,6 +731,13 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   /// 重置语音输入状态，并停止录音计时。
   void _resetVoiceInputState() {
     _voiceTimer?.cancel();
+    _voiceSessionId++;
+    final Completer<String>? completer = _finalVoiceResultCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(_latestRecognizedText);
+    }
+    _finalVoiceResultCompleter = null;
+    _latestRecognizedText = '';
     _updateState((AiAssistantState current) {
       return current.copyWith(
         voiceInputState: AiAssistantVoiceInputState.idle,

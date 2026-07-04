@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 发布岗位页样式常量，尽量对齐 Figma 导出值。
 class PostJobPageStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);

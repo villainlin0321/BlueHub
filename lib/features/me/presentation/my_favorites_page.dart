@@ -17,7 +17,7 @@ import '../../service_detail/presentation/service_detail_page.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 

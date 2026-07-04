@@ -15,7 +15,7 @@ import '../../auth/data/auth_providers.dart';
 import '../data/user_providers.dart';
 import '../../shell/application/shell_role_provider.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 /// 设置页：承接企业端“我的”页右上角设置入口，并提供基础账号操作。
 class SettingsPage extends ConsumerStatefulWidget {

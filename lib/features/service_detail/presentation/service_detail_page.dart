@@ -40,7 +40,7 @@ import 'service_detail_report_page.dart';
 import 'service_detail_review_tab.dart';
 import 'service_detail_share_card.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ServiceDetailPageArgs {
   const ServiceDetailPageArgs({
     required this.packageId,

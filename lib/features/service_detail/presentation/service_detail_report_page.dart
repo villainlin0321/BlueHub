@@ -15,7 +15,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ServiceDetailReportPageArgs {
   const ServiceDetailReportPageArgs({
     required this.targetType,

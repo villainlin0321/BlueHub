@@ -8,7 +8,7 @@ import '../data/finance_providers.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import 'finance_page_shared.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class FinanceBankCardsPage extends ConsumerStatefulWidget {
   const FinanceBankCardsPage({super.key});
 

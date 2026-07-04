@@ -13,7 +13,7 @@ import '../../../../shared/widgets/tag_chip.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../application/ai_assistant/ai_assistant_state.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class AiAssistantPageView extends StatelessWidget {
   const AiAssistantPageView({
     super.key,

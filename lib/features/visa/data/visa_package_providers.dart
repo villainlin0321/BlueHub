@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/shared/network/providers.dart';
 
 import '../../../shared/network/page_result.dart';
 import 'visa_package_models.dart';

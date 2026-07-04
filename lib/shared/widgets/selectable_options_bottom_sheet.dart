@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'resume_time_picker_bottom_sheet.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class SelectableSheetOption<T> {
   const SelectableSheetOption({required this.value, required this.label});
 

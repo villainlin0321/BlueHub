@@ -13,7 +13,7 @@ import '../application/chat/chat_page_args.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 消息中心页，按 Figma 设计稿还原顶部导航、Tab 及系统通知列表。
 class MessageCenterPage extends ConsumerStatefulWidget {
   const MessageCenterPage({super.key});

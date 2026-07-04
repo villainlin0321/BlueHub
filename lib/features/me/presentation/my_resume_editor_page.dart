@@ -31,7 +31,7 @@ import 'country_options_bottom_sheet.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 编辑页的进入模式。
 enum ResumeEditorMode { create, edit }
 

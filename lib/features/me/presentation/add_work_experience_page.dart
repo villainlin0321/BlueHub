@@ -6,7 +6,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class AddWorkExperiencePage extends StatefulWidget {
   const AddWorkExperiencePage({super.key, this.args});

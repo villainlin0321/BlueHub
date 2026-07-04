@@ -1,7 +1,7 @@
 import 'dart:io';
 
 const String _testStyleImport =
-    "import 'package:bluehub_app/shared/ui/test_style.dart';";
+    "import 'package:europepass/shared/ui/test_style.dart';";
 
 const Set<String> _supportedKeys = <String>{
   'fontSize',

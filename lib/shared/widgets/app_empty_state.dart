@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 全局通用空态，统一插画与文案排版，外层容器由页面自行决定。
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({

@@ -17,7 +17,7 @@ import '../../../../shared/network/models/dictionary_models.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 /// 服务商签证页。
 class ServiceProviderVisaPage extends ConsumerStatefulWidget {

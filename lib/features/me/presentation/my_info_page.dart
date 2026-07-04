@@ -21,7 +21,7 @@ import '../../me/data/user_models.dart';
 import '../../me/data/user_providers.dart';
 import 'current_user_view_data.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 我的信息页：展示当前登录用户的基础资料，并支持基础信息编辑。
 class MyInfoPage extends ConsumerStatefulWidget {
   const MyInfoPage({super.key});

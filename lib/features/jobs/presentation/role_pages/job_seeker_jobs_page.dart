@@ -24,7 +24,7 @@ import '../job_detail_page.dart';
 import '../widgets/filter_bottom_sheet_chip.dart';
 import '../widgets/job_list_cards.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
 class JobSeekerJobsPage extends ConsumerWidget {
   const JobSeekerJobsPage({super.key});

@@ -10,7 +10,7 @@ import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({

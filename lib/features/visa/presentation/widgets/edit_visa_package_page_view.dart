@@ -13,7 +13,7 @@ import '../../application/edit_visa_package/edit_visa_package_state.dart';
 import '../edit_visa_package_styles.dart';
 import 'edit_visa_package_form_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class EditVisaPackagePageView extends StatelessWidget {
   const EditVisaPackagePageView({
     super.key,

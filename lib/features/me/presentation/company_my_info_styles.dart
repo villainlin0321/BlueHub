@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 企业端“我的信息”页的样式常量，统一管理颜色、间距与尺寸。
 abstract final class CompanyMyInfoStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);

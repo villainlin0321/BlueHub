@@ -13,7 +13,7 @@ import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 简历预览页，仅展示编辑页传入的真实数据快照。
 class MyResumePreviewPage extends ConsumerStatefulWidget {
   const MyResumePreviewPage({

@@ -1,8 +1,8 @@
-import 'package:bluehub_app/features/jobs/data/job_models.dart';
-import 'package:bluehub_app/features/order/data/visa_order_models.dart';
-import 'package:bluehub_app/features/order/data/visa_order_providers.dart';
-import 'package:bluehub_app/features/shell/application/shell_role_provider.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/features/jobs/data/job_models.dart';
+import 'package:europepass/features/order/data/visa_order_models.dart';
+import 'package:europepass/features/order/data/visa_order_providers.dart';
+import 'package:europepass/features/shell/application/shell_role_provider.dart';
+import 'package:europepass/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'home_models.dart';

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../ui/app_colors.dart';
 import '../ui/app_spacing.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 主按钮（支持禁用态）。
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({

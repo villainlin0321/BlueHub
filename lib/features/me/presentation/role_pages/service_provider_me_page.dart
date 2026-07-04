@@ -18,7 +18,7 @@ import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/provider_models.dart';
 import '../../../visa/data/provider_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class BlacklistPageStyles {
   static const Color pageBackground = Color(0xFFF5F7FA);
   static const Color navBackground = Colors.white;

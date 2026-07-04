@@ -14,7 +14,7 @@ import '../application/qualification_upload_helper.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
   const QualificationCertificationStepTwoPage({super.key, required this.args});

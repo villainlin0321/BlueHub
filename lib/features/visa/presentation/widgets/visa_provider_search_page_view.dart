@@ -10,7 +10,7 @@ import '../../../../shared/widgets/visa_service_card.dart';
 import '../../application/search_page/visa_provider_search_state.dart';
 import '../../data/provider_models.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class VisaProviderSearchPageView extends StatelessWidget {
   const VisaProviderSearchPageView({

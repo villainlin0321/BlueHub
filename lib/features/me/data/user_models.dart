@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class BlacklistBO {
   const BlacklistBO({required this.targetUserId, required this.action});

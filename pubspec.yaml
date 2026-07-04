@@ -1,4 +1,4 @@
-name: bluehub_app
+name: europepass
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -78,6 +78,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 dependency_overrides:
+  audio_session:
+    path: third_party/audio_session
   file_picker:
     path: third_party/file_picker
   tobias:

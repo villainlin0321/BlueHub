@@ -24,7 +24,7 @@ import '../../../service_detail/presentation/service_detail_page.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者首页：独立页面文件，后续该角色的业务逻辑统一放在这里处理。
 class JobSeekerHomePage extends ConsumerWidget {
   const JobSeekerHomePage({super.key});

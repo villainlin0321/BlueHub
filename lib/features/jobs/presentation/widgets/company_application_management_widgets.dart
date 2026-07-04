@@ -7,7 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_application_management_styles.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class CompanyApplicationCardData {
   const CompanyApplicationCardData({
     required this.positionTitle,

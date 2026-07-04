@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../post_job_page_styles.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class PostJobSectionCard extends StatelessWidget {
   const PostJobSectionCard({

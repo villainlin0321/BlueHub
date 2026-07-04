@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'app_svg_icon.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class VisaServiceCardData {
   const VisaServiceCardData({
     required this.title,

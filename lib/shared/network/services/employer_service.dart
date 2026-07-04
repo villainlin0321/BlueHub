@@ -1,5 +1,5 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 import '../../../features/employer/data/employer_models.dart';
 import '../../../features/visa/data/provider_models.dart';
 

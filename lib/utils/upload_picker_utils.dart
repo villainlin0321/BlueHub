@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'permission_utils.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 enum UploadSourceType { camera, gallery, file }
 
 enum UploadItemState { uploading, success, failure }

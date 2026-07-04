@@ -11,7 +11,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/complaint_models.dart';
 import '../data/complaint_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ComplaintDetailPageArgs {
   const ComplaintDetailPageArgs({required this.complaintId});
 

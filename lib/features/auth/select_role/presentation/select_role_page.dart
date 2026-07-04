@@ -14,7 +14,7 @@ import '../../../../shared/ui/app_colors.dart';
 import '../../../../shared/ui/app_spacing.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class SelectRolePage extends ConsumerStatefulWidget {
   const SelectRolePage({super.key});
 

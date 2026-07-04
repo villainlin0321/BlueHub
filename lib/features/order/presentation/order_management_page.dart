@@ -18,7 +18,7 @@ import 'order_detail_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
   const OrderManagementPage({super.key});

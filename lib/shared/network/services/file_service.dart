@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 import 'package:dio/dio.dart';
 
 import '../../../shared/network/api_exception.dart';

@@ -29,7 +29,7 @@ import '../data/visa_package_providers.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class EditVisaPackagePage extends ConsumerStatefulWidget {
   const EditVisaPackagePage({super.key, this.packageId});
 

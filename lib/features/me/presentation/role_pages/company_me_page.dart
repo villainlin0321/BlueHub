@@ -16,7 +16,7 @@ import '../../../home/data/home_models.dart';
 import '../../../home/data/home_providers.dart';
 import '../country_options_bottom_sheet.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
