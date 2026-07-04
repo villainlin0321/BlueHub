@@ -3,11 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:europepass/shared/logging/app_log_event.dart';
 import 'package:logger/logger.dart' as logger;
 import 'package:path_provider/path_provider.dart';
-
-/// 日志级别：用于区分常规信息、告警和异常。
-enum AppLogLevel { debug, info, warn, error, fatal }
 
 /// 全局日志类：统一负责控制台输出、本地文件落盘和日志文件读取。
 class AppLogger {
@@ -16,7 +14,6 @@ class AppLogger {
   static final AppLogger instance = AppLogger._();
 
   static const int _maxLogFiles = 7;
-  static const int _maxFieldLength = 1500;
 
   IOSink? _sink;
   File? _currentLogFile;
@@ -93,6 +90,26 @@ class AppLogger {
       stackTrace: stackTrace,
       context: context,
     );
+  }
+
+  /// 记录结构化日志事件，供后续路由、HTTP 和业务日志统一接入。
+  void logEvent(AppLogEvent event) {
+    final Map<String, Object?> payload = event.toJson();
+    final Map<String, Object?> consolePayload = <String, Object?>{
+      'tag': payload['layer'] ?? 'APP',
+      'event': payload['event'],
+      'message': payload['message'],
+      if (payload['result'] != null) 'result': payload['result'],
+      if (payload['context'] != null) 'context': payload['context'],
+    };
+
+    _emitConsole(
+      event.level,
+      consolePayload,
+      error: event.error,
+      stackTrace: event.stackTrace,
+    );
+    _writeStructuredPayload(payload);
   }
 
   /// 读取当前运行会话的完整日志文本，便于后续复制粘贴问题现场。
@@ -174,9 +191,12 @@ class AppLogger {
     StackTrace? stackTrace,
     Map<String, Object?>? context,
   }) {
-    final payload = _buildConsolePayload(tag, message, context: context);
-
-    final structuredLine = _buildStructuredLine(
+    final Map<String, Object?> payload = _buildConsolePayload(
+      tag,
+      message,
+      context: context,
+    );
+    final Map<String, Object?> structuredPayload = _buildStructuredPayload(
       level: level,
       tag: tag,
       message: message,
@@ -185,6 +205,53 @@ class AppLogger {
       stackTrace: stackTrace,
     );
 
+    _emitConsole(level, payload, error: error, stackTrace: stackTrace);
+    _writeStructuredPayload(structuredPayload);
+  }
+
+  /// 构建控制台输出载荷，并统一复用上下文脱敏逻辑。
+  Map<String, Object?> _buildConsolePayload(
+    String tag,
+    String message, {
+    Map<String, Object?>? context,
+  }) {
+    return <String, Object?>{
+      'tag': tag,
+      'message': message,
+      if (context != null && context.isNotEmpty)
+        'context': sanitizeAppLogValue(context),
+    };
+  }
+
+  /// 构建文件落盘使用的结构化载荷，保留详细字段便于本地排障。
+  Map<String, Object?> _buildStructuredPayload({
+    required AppLogLevel level,
+    required String tag,
+    required String message,
+    Map<String, Object?>? context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    return <String, Object?>{
+      'time': DateTime.now().toIso8601String(),
+      'level': level.name.toUpperCase(),
+      'tag': tag,
+      'message': message,
+      if (context != null && context.isNotEmpty)
+        'context': sanitizeAppLogValue(context),
+      if (error != null) 'error': truncateAppLogText(error.toString()),
+      if (stackTrace != null)
+        'stackTrace': truncateAppLogText(stackTrace.toString()),
+    };
+  }
+
+  /// 按日志级别输出到控制台，保证结构化事件与传统日志共用同一通道。
+  void _emitConsole(
+    AppLogLevel level,
+    Object payload, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     switch (level) {
       case AppLogLevel.debug:
         _logger.t(payload);
@@ -202,46 +269,16 @@ class AppLogger {
         _logger.f(payload, error: error, stackTrace: stackTrace);
         break;
     }
-
-    _writeFileLine(structuredLine);
-  }
-
-  Map<String, Object?> _buildConsolePayload(
-    String tag,
-    String message, {
-    Map<String, Object?>? context,
-  }) {
-    return <String, Object?>{
-      'tag': tag,
-      'message': message,
-      if (context != null && context.isNotEmpty)
-        'context': _sanitizeValue(context),
-    };
-  }
-
-  String _buildStructuredLine({
-    required AppLogLevel level,
-    required String tag,
-    required String message,
-    Map<String, Object?>? context,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    return jsonEncode(<String, Object?>{
-      'time': DateTime.now().toIso8601String(),
-      'level': level.name.toUpperCase(),
-      'tag': tag,
-      'message': message,
-      if (context != null && context.isNotEmpty)
-        'context': _sanitizeValue(context),
-      if (error != null) 'error': _truncate(error.toString()),
-      if (stackTrace != null) 'stackTrace': _truncate(stackTrace.toString()),
-    });
   }
 
   /// 控制台输出改用逐行 `debugPrint`，避免长行被截断。
   void _writeConsoleLine(String line) {
     debugPrint(line);
+  }
+
+  /// 统一将结构化载荷编码后串行写入文件，后续频控可在这里插入。
+  void _writeStructuredPayload(Map<String, Object?> payload) {
+    _writeFileLine(jsonEncode(payload));
   }
 
   /// 串行写入日志文件，避免并发场景下输出顺序错乱。
@@ -261,53 +298,6 @@ class AppLogger {
             '[LOGGER][ERROR] 日志写入失败 error=$writeError stack=$writeStack',
           );
         });
-  }
-
-  /// 对上下文字段做脱敏和长度裁剪，避免 token、密码等敏感信息泄露。
-  Object? _sanitizeValue(Object? value, {String? key}) {
-    if (value == null) {
-      return null;
-    }
-
-    if (value is Map) {
-      return value.map((Object? currentKey, Object? currentValue) {
-        final normalizedKey = currentKey?.toString() ?? 'unknown';
-        return MapEntry<String, Object?>(
-          normalizedKey,
-          _sanitizeValue(currentValue, key: normalizedKey),
-        );
-      });
-    }
-
-    if (value is Iterable) {
-      return value.map((Object? item) => _sanitizeValue(item)).toList();
-    }
-
-    final text = _truncate(value.toString());
-    if (_isSensitiveKey(key)) {
-      return '***';
-    }
-    return text;
-  }
-
-  /// 判断字段名是否包含敏感信息关键字。
-  bool _isSensitiveKey(String? key) {
-    if (key == null) {
-      return false;
-    }
-    final normalized = key.toLowerCase();
-    return normalized.contains('token') ||
-        normalized.contains('authorization') ||
-        normalized.contains('password') ||
-        normalized.contains('secret');
-  }
-
-  /// 防止超长文本撑爆日志文件，保留前缀便于快速定位问题。
-  String _truncate(String text) {
-    if (text.length <= _maxFieldLength) {
-      return text;
-    }
-    return '${text.substring(0, _maxFieldLength)}...(truncated)';
   }
 
   /// 生成紧凑时间戳，便于用文件名区分不同启动会话。
