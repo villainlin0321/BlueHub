@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:europepass/app/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,9 @@ import 'shared/logging/app_logger.dart';
 import 'shared/network/providers.dart';
 import 'shared/payment/payment_channel_config.dart';
 import 'shared/payment/payment_launcher.dart';
+
+const MethodChannel _nativeDebugChannel = MethodChannel('bluehub/app_icon');
+const String _nativeProbeUrl = 'http://39.101.190.245:8090';
 
 /// 应用入口：初始化依赖、挂接全局异常处理，并启动 Riverpod 根节点。
 Future<void> main() async {
@@ -37,6 +41,7 @@ Future<void> main() async {
           'logFilePath': AppLogger.instance.currentLogFilePath,
         },
       );
+      await _runNativeHttpProbe();
 
       runApp(
         EasyLocalization(
@@ -64,6 +69,45 @@ Future<void> main() async {
       );
     },
   );
+}
+
+/// 调用 iOS 原生 URLSession 探针，并把结果打进统一日志，便于与 Dio 请求结果直接对比。
+Future<void> _runNativeHttpProbe() async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+    return;
+  }
+
+  try {
+    // #region debug-point B:native-probe-via-channel
+    final Map<Object?, Object?>? result =
+        await _nativeDebugChannel.invokeMapMethod<Object?, Object?>(
+          'probeHttp',
+          <String, Object?>{'url': _nativeProbeUrl},
+        );
+    AppLogger.instance.info(
+      'NATIVE_HTTP',
+      'iOS 原生 URLSession 探针完成',
+      context: <String, Object?>{
+        'target': _nativeProbeUrl,
+        'result': result?.map(
+              (Object? key, Object? value) =>
+                  MapEntry(key.toString(), value),
+            ) ??
+            <String, Object?>{},
+      },
+    );
+    // #endregion
+  } on PlatformException catch (error, stackTrace) {
+    // #region debug-point B:native-probe-channel-error
+    AppLogger.instance.error(
+      'NATIVE_HTTP',
+      'iOS 原生 URLSession 探针调用失败',
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{'target': _nativeProbeUrl},
+    );
+    // #endregion
+  }
 }
 
 /// 注册 Flutter、平台层和异步 Zone 的全局异常日志。
