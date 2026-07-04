@@ -97,6 +97,8 @@ patrol:
 
 # The following section is specific to Flutter packages.
 flutter:
+  config:
+    enable-swift-package-manager: true
   generate: true
 
   # The following line ensures that the Material Icons font is

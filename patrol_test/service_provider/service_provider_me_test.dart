@@ -10,6 +10,7 @@ import '../helpers/auth_test_helper.dart';
 import '../helpers/patrol_reporter.dart';
 import '../helpers/patrol_route_matcher.dart';
 import '../helpers/patrol_wait_helper.dart';
+import '../helpers/service_provider_case_result_helper.dart';
 import '../shared/patrol_test_types.dart';
 
 void main() {
@@ -45,7 +46,7 @@ void main() {
   });
 }
 
-/// 执行服务商“我的”页单个用例，资质管理按用户要求允许记为阻塞。
+/// 执行服务商“我的”页单个用例，资质管理仅在明确前置条件不足时记为阻塞。
 Future<PatrolCaseResult> _runMeCase(
   PatrolIntegrationTester $,
   PatrolCaseDefinition definition,
@@ -98,18 +99,10 @@ Future<PatrolCaseResult> _runMeCase(
     );
   } catch (error) {
     if (definition.feature == 'qualification_management') {
-      return PatrolCaseResult(
-        module: definition.module,
-        page: definition.page,
-        feature: definition.feature,
-        description: definition.description,
-        precondition: definition.precondition,
-        expected: definition.expected,
-        actual: '未进入资质认证流程，按资料或接口阻塞处理：$error',
-        status: PatrolCaseStatus.blocked,
-        reason: 'profile_or_api_blocked',
+      return buildQualificationManagementFailureResult(
+        definition: definition,
         startedAt: startedAt,
-        endedAt: DateTime.now(),
+        error: error,
       );
     }
 
