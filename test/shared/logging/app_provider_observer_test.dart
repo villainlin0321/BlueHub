@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:europepass/features/auth/application/auth_session_state.dart';
 import 'package:europepass/features/auth/application/auth_user.dart';
+import 'package:europepass/features/shell/application/shell_role_provider.dart';
 import 'package:europepass/shared/logging/app_logger.dart';
 import 'package:europepass/shared/logging/app_provider_observer.dart';
 import 'package:flutter/services.dart';
@@ -155,6 +156,44 @@ void main() {
     expect(nextUserSnapshot['role'], 'worker');
     expect(rawLogContent, isNot(contains('+8613800138000')));
     expect(rawLogContent, isNot(contains('debugger@example.com')));
+  });
+
+  test('AppProviderObserver 记录 ShellRole 更新时不会因 Enum 序列化抛出异常', () async {
+    final container = ProviderContainer(
+      observers: const <ProviderObserver>[AppProviderObserver()],
+    );
+    addTearDown(container.dispose);
+
+    final listener = container.listen<ShellRole>(
+      shellRoleProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(listener.close);
+
+    container
+        .read(shellRoleProvider.notifier)
+        .setRole(ShellRole.serviceProvider);
+    await waitForLogFlush();
+
+    final List<Map<String, Object?>> entries = await readJsonLogEntries();
+    final List<Map<String, Object?>> matchedEntries = entries
+        .where(
+          (Map<String, Object?> item) =>
+              item['event'] == 'PROVIDER_UPDATED' &&
+              (item['context'] as Map<String, Object?>?)?['provider']
+                      ?.toString()
+                      .contains('ShellRoleNotifier') ==
+                  true,
+        )
+        .toList();
+
+    expect(matchedEntries, hasLength(1));
+    final Map<String, Object?> context = Map<String, Object?>.from(
+      matchedEntries.single['context']! as Map,
+    );
+    expect(context['previous'], 'ShellRole.jobSeeker');
+    expect(context['next'], 'ShellRole.serviceProvider');
   });
 }
 

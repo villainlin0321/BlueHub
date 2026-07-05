@@ -46,21 +46,23 @@ class AppTestKeys {
     return Key('section-jobs-service-provider-panel-$tabStatus');
   }
 
-  /// 返回服务商套餐管理页列表首项编辑按钮的稳定定位 Key。
-  static Key actionServiceProviderJobsEdit(String tabStatus, int index) {
-    return Key('action-jobs-service-provider-edit-$tabStatus-$index');
+  /// 返回服务商套餐管理页指定套餐编辑按钮的稳定定位 Key。
+  static Key actionServiceProviderJobsEdit(String tabStatus, int packageId) {
+    return Key('action-jobs-service-provider-edit-$tabStatus-$packageId');
   }
 
-  /// 返回服务商套餐管理页列表首项删除按钮的稳定定位 Key。
-  static Key actionServiceProviderJobsDelete(String tabStatus, int index) {
-    return Key('action-jobs-service-provider-delete-$tabStatus-$index');
+  /// 返回服务商套餐管理页指定套餐删除按钮的稳定定位 Key。
+  static Key actionServiceProviderJobsDelete(String tabStatus, int packageId) {
+    return Key('action-jobs-service-provider-delete-$tabStatus-$packageId');
   }
 
-  /// 返回服务商套餐管理页列表首项上下架按钮的稳定定位 Key。
+  /// 返回服务商套餐管理页指定套餐上下架按钮的稳定定位 Key。
   static Key actionServiceProviderJobsStatusToggle(
     String tabStatus,
-    int index,
+    int packageId,
   ) {
-    return Key('action-jobs-service-provider-status-toggle-$tabStatus-$index');
+    return Key(
+      'action-jobs-service-provider-status-toggle-$tabStatus-$packageId',
+    );
   }
 }

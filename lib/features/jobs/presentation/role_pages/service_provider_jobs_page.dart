@@ -412,7 +412,6 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
         return _PackageCard(
           data: _PackageCardData.fromVisaPackage(package, widget.tab),
           tabStatus: widget.tab.status,
-          itemIndex: index,
           onDeleteAction: isDeleting ? null : () => _deletePackage(package),
           onSecondaryAction:
               widget.tab.secondaryActionStatus == null || isDeleting
@@ -582,7 +581,6 @@ class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.data,
     required this.tabStatus,
-    required this.itemIndex,
     this.onDeleteAction,
     this.onSecondaryAction,
     this.onPrimaryAction,
@@ -592,7 +590,6 @@ class _PackageCard extends StatelessWidget {
 
   final _PackageCardData data;
   final String tabStatus;
-  final int itemIndex;
   final VoidCallback? onDeleteAction;
   final VoidCallback? onSecondaryAction;
   final VoidCallback? onPrimaryAction;
@@ -675,7 +672,7 @@ class _PackageCard extends StatelessWidget {
                   _DeleteButton(
                     buttonKey: AppTestKeys.actionServiceProviderJobsDelete(
                       tabStatus,
-                      itemIndex,
+                      data.packageId,
                     ),
                     onTap: onDeleteAction,
                     isLoading: isDeleteActionLoading,
@@ -686,7 +683,7 @@ class _PackageCard extends StatelessWidget {
                       buttonKey:
                           AppTestKeys.actionServiceProviderJobsStatusToggle(
                             tabStatus,
-                            itemIndex,
+                            data.packageId,
                           ),
                       label: data.secondaryActionLabel!.tr(),
                       onTap: onSecondaryAction,
@@ -697,7 +694,7 @@ class _PackageCard extends StatelessWidget {
                   _PrimaryButton(
                     buttonKey: AppTestKeys.actionServiceProviderJobsEdit(
                       tabStatus,
-                      itemIndex,
+                      data.packageId,
                     ),
                     label: '企业岗位.编辑'.tr(),
                     onTap: onPrimaryAction,
@@ -957,6 +954,7 @@ class _PrimaryButton extends StatelessWidget {
 
 class _PackageCardData {
   const _PackageCardData({
+    required this.packageId,
     required this.title,
     required this.metaText,
     required this.tags,
@@ -974,6 +972,7 @@ class _PackageCardData {
     ].where((String value) => value.isNotEmpty).toList(growable: false);
 
     return _PackageCardData(
+      packageId: package.packageId,
       title: package.name,
       metaText: package.estimatedDays > 0
           ? '套餐管理.预计天数'.tr(
@@ -995,6 +994,7 @@ class _PackageCardData {
     );
   }
 
+  final int packageId;
   final String title;
   final String metaText;
   final List<String> tags;

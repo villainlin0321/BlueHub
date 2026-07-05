@@ -23,7 +23,8 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   static const String _workerTestEmail = 'zhangwei@example.com';
   static const String _employerTestEmail = 'berlin.food@example.de';
   static const String _serviceProviderTestEmail = 'oulu@example.com';
-  static const String _testCode = '1234';
+  /// 统一测试账号验证码，便于本地直登和联调时保持一致。
+  static const String _testCode = '123456';
 
   final _phoneController = TextEditingController();
 

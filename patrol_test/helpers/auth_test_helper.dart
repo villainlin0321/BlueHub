@@ -17,7 +17,7 @@ Future<void> ensureServiceProviderAuthenticated(
   PatrolIntegrationTester $,
   ServiceProviderTestAccount account,
 ) async {
-  final container = _readProviderContainer($);
+  final container = readAppProviderContainer($);
   final authSession = container.read(authSessionProvider);
   if (isServiceProviderAuthenticatedSession(authSession)) {
     return;
@@ -35,7 +35,9 @@ Future<void> ensureServiceProviderAuthenticated(
     throw StateError('当前不在登录页，无法执行服务商登录前置：$currentRoute');
   }
 
-  final quickLoginButton = $(find.byKey(AppTestKeys.loginTestServiceProviderButton));
+  final quickLoginButton = $(
+    find.byKey(AppTestKeys.loginTestServiceProviderButton),
+  );
   if (quickLoginButton.visible) {
     // 优先走稳定 Key 对应的测试快捷登录入口，避免依赖中文文案。
     await quickLoginButton.tap();
@@ -56,7 +58,7 @@ Future<void> ensureServiceProviderAuthenticated(
 }
 
 /// 读取应用根节点对应的 Riverpod 容器，供 Patrol helper 访问共享状态。
-ProviderContainer _readProviderContainer(PatrolIntegrationTester $) {
+ProviderContainer readAppProviderContainer(PatrolIntegrationTester $) {
   final context = $.tester.element(find.byKey(const Key('app-root')));
   return ProviderScope.containerOf(context, listen: false);
 }
