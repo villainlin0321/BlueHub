@@ -147,8 +147,8 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
     );
   }
 
-  /// 刷新当前用户资料，优先使用服务端最新返回，失败时回退到登录态快照。
-  Future<void> refreshCurrentUser({
+  /// 刷新当前用户资料，优先使用服务端最新返回，并返回本次刷新是否真正成功。
+  Future<bool> refreshCurrentUser({
     AuthUser? fallbackUser,
     bool? preferredNeedSelectRole,
   }) async {
@@ -194,6 +194,7 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
           tokenStore: tokenStore,
         ),
       );
+      return true;
     } catch (error, stackTrace) {
       if (fallbackUser == null) {
         StateLog.transition(
@@ -212,7 +213,7 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
           stackTrace: stackTrace,
         );
         await clearSession(reason: 'refresh_current_user_failed');
-        return;
+        return false;
       }
 
       final needSelectRole =
@@ -243,6 +244,7 @@ class AuthSessionNotifier extends Notifier<AuthSessionState> {
         error: error,
         stackTrace: stackTrace,
       );
+      return false;
     }
   }
 

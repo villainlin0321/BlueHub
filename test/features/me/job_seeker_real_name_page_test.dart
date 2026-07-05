@@ -8,12 +8,16 @@ import 'package:europepass/features/auth/application/auth_session_state.dart';
 import 'package:europepass/features/auth/application/auth_user.dart';
 import 'package:europepass/features/home/data/home_models.dart';
 import 'package:europepass/features/home/data/home_providers.dart';
+import 'package:europepass/features/files/data/file_models.dart';
+import 'package:europepass/features/files/data/file_providers.dart';
 import 'package:europepass/features/me/data/user_models.dart';
 import 'package:europepass/features/me/data/user_providers.dart';
 import 'package:europepass/features/me/presentation/job_seeker_real_name_verification_page.dart';
 import 'package:europepass/features/me/presentation/role_pages/job_seeker_me_page.dart';
 import 'package:europepass/shared/localization/app_locales.dart';
 import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_exception.dart';
+import 'package:europepass/shared/network/services/file_service.dart';
 import 'package:europepass/shared/network/services/user_service.dart';
 import 'package:europepass/shared/widgets/app_toast.dart';
 import 'package:europepass/utils/upload_picker_utils.dart';
@@ -121,22 +125,20 @@ void main() {
     expect(find.text('请上传身份证人像面'), findsOneWidget);
   });
 
-  testWidgets('实名表单完整提交后会调用接口并刷新我的页实名状态', (
+  testWidgets('实名表单完整提交时会先上传本地身份证图片再调用实名接口', (
     WidgetTester tester,
   ) async {
     final _FakeRealNameUserService userService = _FakeRealNameUserService();
+    final _FakeRealNameFileService fileService = _FakeRealNameFileService(
+      uploadedUrlsByPath: <String, String>{
+        '/tmp/front.png': 'https://example.com/front-uploaded.png',
+        '/tmp/back.png': 'https://example.com/back-uploaded.png',
+      },
+    );
     final _FakeImagePicker imagePicker = _FakeImagePicker(
       files: <PickedUploadFile>[
-        _buildPickedUploadFile(
-          name: 'front.png',
-          path: '/tmp/front.png',
-          uploadedFileUrl: 'https://example.com/front.png',
-        ),
-        _buildPickedUploadFile(
-          name: 'back.png',
-          path: '/tmp/back.png',
-          uploadedFileUrl: 'https://example.com/back.png',
-        ),
+        _buildPickedUploadFile(name: 'front.png', path: '/tmp/front.png'),
+        _buildPickedUploadFile(name: 'back.png', path: '/tmp/back.png'),
       ],
     );
     final ProviderContainer container = ProviderContainer(
@@ -148,6 +150,7 @@ void main() {
           ),
         ),
         userServiceProvider.overrideWithValue(userService),
+        fileServiceProvider.overrideWithValue(fileService),
       ],
     );
     container.read(authSessionProvider.notifier).state = AuthSessionState(
@@ -204,14 +207,104 @@ void main() {
     );
     expect(
       userService.lastRealNameRequest?.idCardFrontUrl,
-      'https://example.com/front.png',
+      'https://example.com/front-uploaded.png',
     );
     expect(
       userService.lastRealNameRequest?.idCardBackUrl,
-      'https://example.com/back.png',
+      'https://example.com/back-uploaded.png',
     );
+    expect(fileService.uploadedPaths, <String>['/tmp/front.png', '/tmp/back.png']);
     expect(container.read(authSessionProvider).user?.isVerified, isTrue);
     expect(find.text('已完成实名认证'), findsOneWidget);
+  });
+
+  testWidgets('实名提交后刷新 `/users/me` 失败时不会清空登录态也不会按成功路径返回', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRealNameUserService userService = _FakeRealNameUserService(
+      failGetMeAfterRealNameVerify: true,
+    );
+    final _FakeRealNameFileService fileService = _FakeRealNameFileService(
+      uploadedUrlsByPath: <String, String>{
+        '/tmp/front.png': 'https://example.com/front-uploaded.png',
+        '/tmp/back.png': 'https://example.com/back-uploaded.png',
+      },
+    );
+    final _FakeImagePicker imagePicker = _FakeImagePicker(
+      files: <PickedUploadFile>[
+        _buildPickedUploadFile(name: 'front.png', path: '/tmp/front.png'),
+        _buildPickedUploadFile(name: 'back.png', path: '/tmp/back.png'),
+      ],
+    );
+    final List<String> toastMessages = <String>[];
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        homeDashboardStatsProvider.overrideWith(
+          (Ref ref) => const HomeDashboardStatsVO(
+            monthlyIncome: '0',
+            incomeCurrency: 'CNY',
+          ),
+        ),
+        userServiceProvider.overrideWithValue(userService),
+        fileServiceProvider.overrideWithValue(fileService),
+      ],
+    );
+    container.read(authSessionProvider.notifier).state = AuthSessionState(
+      user: const AuthUser(
+        userId: 1001,
+        phone: '13812345678',
+        countryCode: '+86',
+        email: 'jobseeker@example.com',
+        nickname: '测试求职者',
+        avatarUrl: '',
+        role: 'job_seeker',
+        gender: 'male',
+        birthday: '1990-01-01',
+        currentLocation: 'Shanghai',
+        isVerified: false,
+      ),
+      isAuthenticated: true,
+      isHydrating: false,
+      needSelectRole: false,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+        verificationPageBuilder: () => JobSeekerRealNameVerificationPage(
+          pickImages:
+              (BuildContext context) async => imagePicker.pickImages(context),
+          showToast: (String message) async {
+            toastMessages.add(message);
+          },
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('real-name-input')), '张三');
+    await tester.enterText(find.byKey(const Key('id-card-input')), '110101199003047777');
+    await tester.tap(find.byKey(const Key('id-card-front-upload')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('id-card-back-upload')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('real-name-submit-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(container.read(authSessionProvider).isAuthenticated, isTrue);
+    expect(container.read(authSessionProvider).user?.isVerified, isFalse);
+    expect(find.byKey(const Key('real-name-submit-button')), findsOneWidget);
+    expect(find.text('已完成实名认证'), findsNothing);
+    expect(toastMessages, isNotEmpty);
+    expect(toastMessages.last, contains('实名认证提交失败'));
+    expect(toastMessages, isNot(contains('实名认证提交成功')));
   });
 
   testWidgets('实名页在长屏下会把说明文案压到固定提交区上方', (WidgetTester tester) async {
@@ -367,7 +460,7 @@ class _RealNameTestApp extends StatelessWidget {
 PickedUploadFile _buildPickedUploadFile({
   required String name,
   required String path,
-  required String uploadedFileUrl,
+  String? uploadedFileUrl,
 }) {
   return PickedUploadFile(
     id: name,
@@ -382,24 +475,62 @@ PickedUploadFile _buildPickedUploadFile({
 
 /// 实名提交测试替身：记录请求体，并在提交成功后让 `getMe()` 返回已实名资料。
 class _FakeRealNameUserService extends UserService {
-  _FakeRealNameUserService()
+  _FakeRealNameUserService({
+    this.failGetMeAfterRealNameVerify = false,
+  })
     : _profile = _buildFakeUserProfile(isVerified: false),
       super(apiClient: ApiClient(Dio()));
 
   UserVO _profile;
+  final bool failGetMeAfterRealNameVerify;
+  bool _hasSubmittedRealName = false;
   RealNameVerifyBO? lastRealNameRequest;
 
   @override
   /// 返回当前模拟的 `/users/me` 数据，供实名成功后的会话刷新读取。
   Future<UserVO> getMe() async {
+    if (failGetMeAfterRealNameVerify && _hasSubmittedRealName) {
+      throw ApiException.unknown('get me failed');
+    }
     return _profile;
   }
 
   @override
   /// 记录实名请求，并把后续 `getMe()` 结果切换为已实名状态。
   Future<void> realNameVerify({required RealNameVerifyBO request}) async {
+    _hasSubmittedRealName = true;
     lastRealNameRequest = request;
     _profile = _buildFakeUserProfile(isVerified: true);
+  }
+}
+
+/// 文件上传测试替身：记录上传路径，并返回预置的远端文件地址。
+class _FakeRealNameFileService extends FileService {
+  _FakeRealNameFileService({
+    required this.uploadedUrlsByPath,
+  }) : super(apiClient: ApiClient(Dio()));
+
+  final Map<String, String> uploadedUrlsByPath;
+  final List<String> uploadedPaths = <String>[];
+
+  @override
+  /// 模拟身份证图片上传，确保测试覆盖“先上传再提交”的真实生产分支。
+  Future<FilePresignVO> uploadFile({
+    required String path,
+    required FileScene scene,
+    String accessType = 'PUBLIC',
+    String errorMessage = '',
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    uploadedPaths.add(path);
+    onSendProgress?.call(1, 1);
+    return FilePresignVO(
+      uploadUrl: 'https://upload.example.com/${uploadedPaths.length}',
+      fileUrl: uploadedUrlsByPath[path] ?? 'https://example.com/unknown.png',
+      expireIn: 3600,
+      objectKey: 'object-${uploadedPaths.length}',
+      fileId: uploadedPaths.length,
+    );
   }
 }
 

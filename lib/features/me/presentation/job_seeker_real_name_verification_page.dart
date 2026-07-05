@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/application/auth_session_provider.dart';
+import '../../files/data/file_models.dart';
+import '../../files/data/file_providers.dart';
 import '../data/user_models.dart';
 import '../data/user_providers.dart';
 import '../../../shared/network/api_exception.dart';
@@ -122,19 +124,35 @@ class _JobSeekerRealNameVerificationPageState
       _isSubmitting = true;
     });
     try {
+      final PickedUploadFile uploadedFrontImage = await _uploadIdCardImageIfNeeded(
+        isFrontSide: true,
+      );
+      final PickedUploadFile uploadedBackImage = await _uploadIdCardImageIfNeeded(
+        isFrontSide: false,
+      );
+
       // 关键提交：只使用当前表单与已上传图片地址组装真实请求体。
       await ref.read(userServiceProvider).realNameVerify(
         request: RealNameVerifyBO(
           realName: _nameController.text.trim(),
           idCardNumber: _idCardController.text.trim(),
-          idCardFrontUrl: (_frontImage!.uploadedFileUrl ?? _frontImage!.path)
-              .trim(),
-          idCardBackUrl: (_backImage!.uploadedFileUrl ?? _backImage!.path)
-              .trim(),
+          idCardFrontUrl: uploadedFrontImage.uploadedFileUrl!.trim(),
+          idCardBackUrl: uploadedBackImage.uploadedFileUrl!.trim(),
         ),
       );
-      await ref.read(authSessionProvider.notifier).refreshCurrentUser();
+      final authSession = ref.read(authSessionProvider);
+      final bool refreshed = await ref
+          .read(authSessionProvider.notifier)
+          .refreshCurrentUser(
+            // 刷新失败时保留当前登录态，避免实名成功后被误清会话。
+            fallbackUser: authSession.user,
+            preferredNeedSelectRole: authSession.needSelectRole,
+          );
       if (!mounted) {
+        return;
+      }
+      if (!refreshed) {
+        await _showToast('我的.实名认证提交失败'.tr());
         return;
       }
       final NavigatorState navigator = Navigator.of(context);
@@ -152,6 +170,40 @@ class _JobSeekerRealNameVerificationPageState
         });
       }
     }
+  }
+
+  /// 确保身份证图片在实名提交前已经上传到文件服务，并把远端地址回写到当前页面状态。
+  Future<PickedUploadFile> _uploadIdCardImageIfNeeded({
+    required bool isFrontSide,
+  }) async {
+    final PickedUploadFile targetFile = isFrontSide ? _frontImage! : _backImage!;
+    final String remoteUrl = (targetFile.uploadedFileUrl ?? '').trim();
+    if (remoteUrl.isNotEmpty) {
+      return targetFile;
+    }
+
+    final FilePresignVO uploaded = await ref.read(fileServiceProvider).uploadFile(
+      path: targetFile.path,
+      scene: FileScene.idCard,
+      errorMessage: '上传.文件上传失败'.tr(),
+    );
+    final PickedUploadFile uploadedFile = targetFile.copyWith(
+      state: UploadItemState.success,
+      progress: 1,
+      errorMessage: null,
+      uploadedFileId: uploaded.fileId,
+      uploadedFileUrl: uploaded.fileUrl,
+    );
+    if (mounted) {
+      setState(() {
+        if (isFrontSide) {
+          _frontImage = uploadedFile;
+        } else {
+          _backImage = uploadedFile;
+        }
+      });
+    }
+    return uploadedFile;
   }
 
   /// 选择身份证图片并更新本地展示状态，默认沿用现有上传工具，也允许测试注入替身。
