@@ -11,6 +11,7 @@ import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/compact_publish_button.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../me/data/dictionary_providers.dart';
@@ -117,7 +118,7 @@ enum _PackageTab {
     secondaryActionLabel: '套餐管理.上架',
     secondaryActionStatus: 'active',
   ),
-  draft(label: '套餐管理.已驳回', status: 'draft', emptyText: '套餐管理.暂无已驳回套餐');
+  draft(label: '套餐管理.草稿箱', status: 'draft', emptyText: '套餐管理.暂无草稿箱套餐');
 
   const _PackageTab({
     required this.label,
@@ -535,20 +536,10 @@ class _PageHeader extends StatelessWidget {
               ),
             ),
           ),
-          InkWell(
+          CompactPublishButton(
             key: AppTestKeys.actionServiceProviderJobsPublish,
-            onTap: onPublishTap,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Text(
-                '套餐管理.发布'.tr(),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 14,
-                  color: Color(0xFF262626),
-                ),
-              ),
-            ),
+            label: '套餐管理.发布'.tr(),
+            onPressed: onPublishTap,
           ),
         ],
       ),

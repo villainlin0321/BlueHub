@@ -15,6 +15,7 @@ import '../../../utils/upload_picker_utils.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
 import 'qualification_preview_resolver.dart';
+import 'widgets/qualification_preview_image.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -1000,33 +1001,12 @@ class _UploadCard extends StatelessWidget {
   }
 
   Widget _buildPreview() {
-    final ImageProvider<Object>? previewImage =
-        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path);
-    if (previewImage == null) {
-      return Image.asset(
-        imageAsset,
-        width: 159,
-        height: 116,
-        fit: BoxFit.contain,
-      );
-    }
-
-    return ClipRRect(
+    return QualificationPreviewImage(
+      previewPath: pickedFile?.path,
+      placeholderAsset: imageAsset,
+      fit: BoxFit.cover,
+      placeholderFit: BoxFit.contain,
       borderRadius: BorderRadius.circular(8),
-      child: Image(
-        image: previewImage,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
-          return Image.asset(
-            imageAsset,
-            width: 159,
-            height: 116,
-            fit: BoxFit.contain,
-          );
-        },
-      ),
     );
   }
 }

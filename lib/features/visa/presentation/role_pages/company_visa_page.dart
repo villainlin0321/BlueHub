@@ -8,17 +8,20 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
+import '../../../jobs/presentation/job_requirement_tag_label_resolver.dart';
 import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/widgets/compact_publish_button.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
   const CompanyVisaPage({super.key});
@@ -61,7 +64,8 @@ class _CompanyVisaPageState extends ConsumerState<CompanyVisaPage> {
 
 enum _CompanyJobTab {
   recruiting(labelKey: '企业岗位.招聘中', status: 'active'),
-  offline(labelKey: '企业岗位.已下线', status: 'inactive');
+  offline(labelKey: '企业岗位.已下线', status: 'inactive'),
+  draft(labelKey: '企业岗位.草稿箱', status: 'draft');
 
   const _CompanyJobTab({required this.labelKey, required this.status});
 
@@ -69,11 +73,21 @@ enum _CompanyJobTab {
   final String status;
 
   bool get isOffline => this == _CompanyJobTab.offline;
+  bool get isDraft => this == _CompanyJobTab.draft;
 
-  String get emptyText => isOffline ? tr('企业岗位.暂无已下线岗位') : tr('企业岗位.暂无招聘中的岗位');
+  String get emptyText {
+    if (isOffline) {
+      return tr('企业岗位.暂无已下线岗位');
+    }
+    if (isDraft) {
+      return tr('企业岗位.暂无草稿箱岗位');
+    }
+    return tr('企业岗位.暂无招聘中的岗位');
+  }
 }
 
-class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget {
+class _CompanyVisaAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const _CompanyVisaAppBar({required this.onPublishTap});
 
   final VoidCallback onPublishTap;
@@ -95,16 +109,12 @@ class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget 
         style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black),
       ),
       actions: <Widget>[
-        GestureDetector(
-          onTap: onPublishTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
-            child: Center(
-              child: Text(
-                '企业岗位.发布'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
-              ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+          child: Center(
+            child: CompactPublishButton(
+              label: '企业岗位.发布'.tr(),
+              onPressed: onPublishTap,
             ),
           ),
         ),
@@ -358,12 +368,15 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       return;
     }
 
-    final JobManageStatus nextStatus = widget.tab.isOffline
-        ? JobManageStatus.active
-        : JobManageStatus.inactive;
-    final String successMessage = widget.tab.isOffline
-        ? '企业岗位.岗位已发布'.tr()
-        : '企业岗位.岗位已下线'.tr();
+    final JobManageStatus nextStatus;
+    final String successMessage;
+    if (widget.tab.isOffline || widget.tab.isDraft) {
+      nextStatus = JobManageStatus.active;
+      successMessage = '企业岗位.岗位已发布'.tr();
+    } else {
+      nextStatus = JobManageStatus.inactive;
+      successMessage = '企业岗位.岗位已下线'.tr();
+    }
 
     setState(() {
       _updatingStatusJobIds.add(job.jobId);
@@ -439,6 +452,14 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       }
       _loadInitial();
     });
+    final Map<String, TagItemVO> requirementTagLookup =
+        buildRequirementTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
 
     if (_isInitialLoading && !_hasLoadedOnce) {
       return const Center(child: CircularProgressIndicator());
@@ -470,7 +491,9 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
                 final JobDetailVO job = _jobs[index];
                 return _JobManageCard(
                   job: job,
+                  requirementTagLookup: requirementTagLookup,
                   isOffline: widget.tab.isOffline,
+                  isDraft: widget.tab.isDraft,
                   isDeleting: _deletingJobIds.contains(job.jobId),
                   isUpdatingStatus: _updatingStatusJobIds.contains(job.jobId),
                   onDeleteTap: () => _deleteJob(job),
@@ -532,7 +555,9 @@ class _CompanyJobEmptyState extends StatelessWidget {
 class _JobManageCard extends StatelessWidget {
   const _JobManageCard({
     required this.job,
+    required this.requirementTagLookup,
     required this.isOffline,
+    required this.isDraft,
     required this.isDeleting,
     required this.isUpdatingStatus,
     required this.onDeleteTap,
@@ -541,7 +566,9 @@ class _JobManageCard extends StatelessWidget {
   });
 
   final JobDetailVO job;
+  final Map<String, TagItemVO> requirementTagLookup;
   final bool isOffline;
+  final bool isDraft;
   final bool isDeleting;
   final bool isUpdatingStatus;
   final VoidCallback onDeleteTap;
@@ -565,7 +592,10 @@ class _JobManageCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                    style: TestStyle.medium(
+                      fontSize: 16,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const _MoreActionIcon(),
@@ -575,7 +605,7 @@ class _JobManageCard extends StatelessWidget {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _buildTags(job)
+                children: _buildTags(context, job)
                     .map(
                       (String tag) => Padding(
                         padding: const EdgeInsets.only(right: 4),
@@ -590,7 +620,10 @@ class _JobManageCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   _formatSalary(job),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFFFE5815)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Color(0xFFFE5815),
+                  ),
                 ),
                 const Spacer(),
                 Text(
@@ -599,7 +632,10 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.viewCount.toString(),
                     },
                   ),
-                  style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 12,
+                    color: Color(0xFF8C8C8C),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Text(
@@ -608,7 +644,10 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.applyCount.toString(),
                     },
                   ),
-                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF096DD9)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: Color(0xFF096DD9),
+                  ),
                 ),
               ],
             ),
@@ -618,7 +657,10 @@ class _JobManageCard extends StatelessWidget {
                 '企业岗位.发布时间'.tr(
                   namedArgs: <String, String>{'time': job.publishedAt},
                 ),
-                style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 12,
+                  color: Color(0xFF8C8C8C),
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -629,14 +671,16 @@ class _JobManageCard extends StatelessWidget {
                   isLoading: isDeleting,
                 ),
                 const Spacer(),
-                _BorderActionButton(
-                  label: isOffline ? '企业岗位.发布'.tr() : '企业岗位.下线'.tr(),
-                  onTap: isDeleting || isUpdatingStatus
-                      ? null
-                      : onToggleStatusTap,
-                  isLoading: isUpdatingStatus,
-                ),
-                const SizedBox(width: 8),
+                if (!isDraft) ...<Widget>[
+                  _BorderActionButton(
+                    label: isOffline ? '企业岗位.发布'.tr() : '企业岗位.下线'.tr(),
+                    onTap: isDeleting || isUpdatingStatus
+                        ? null
+                        : onToggleStatusTap,
+                    isLoading: isUpdatingStatus,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _PrimaryActionButton(label: '企业岗位.编辑'.tr(), onTap: onEditTap),
               ],
             ),
@@ -646,7 +690,7 @@ class _JobManageCard extends StatelessWidget {
     );
   }
 
-  List<String> _buildTags(JobDetailVO job) {
+  List<String> _buildTags(BuildContext context, JobDetailVO job) {
     final List<String> tags = <String>[];
 
     void addTag(String value) {
@@ -657,32 +701,17 @@ class _JobManageCard extends StatelessWidget {
       tags.add(tag);
     }
 
-    addTag(job.employmentType);
-    addTag(_formatLocation(job));
     if (job.hasVisaSupport) {
       addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
-      addTag(tag.label);
+      addTag(resolveRequirementTagLabel(context, tag, requirementTagLookup));
       if (tags.length >= 4) {
         break;
       }
     }
 
     return tags;
-  }
-
-  String _formatLocation(JobDetailVO job) {
-    if (job.country.isEmpty && job.city.isEmpty) {
-      return '';
-    }
-    if (job.country.isEmpty) {
-      return job.city;
-    }
-    if (job.city.isEmpty) {
-      return job.country;
-    }
-    return '${job.country}·${job.city}';
   }
 
   String _formatSalary(JobDetailVO job) {
@@ -827,7 +856,11 @@ class _BorderActionChip extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: TestStyle.regular(fontSize: 12, color: textColor, letterSpacing: 0.2),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: textColor,
+                    letterSpacing: 0.2,
+                  ),
                 ),
         ),
       ),
@@ -858,7 +891,11 @@ class _PrimaryActionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
       ),

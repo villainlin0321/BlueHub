@@ -27,14 +27,16 @@ class QualificationPreviewResolver {
     if (normalizedPath == null || normalizedPath.isEmpty) {
       return null;
     }
-    if (_isNetworkPath(normalizedPath)) {
+    if (isNetworkPath(normalizedPath)) {
       return NetworkImage(normalizedPath);
     }
     return FileImage(File(normalizedPath));
   }
 
   /// 判断当前路径是否为可直接展示的网络图片地址。
-  static bool _isNetworkPath(String path) {
-    return path.startsWith('http://') || path.startsWith('https://');
+  static bool isNetworkPath(String? path) {
+    final String normalizedPath = path?.trim() ?? '';
+    return normalizedPath.startsWith('http://') ||
+        normalizedPath.startsWith('https://');
   }
 }

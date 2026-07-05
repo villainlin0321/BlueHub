@@ -11,7 +11,7 @@ class ServiceProviderTalentCenterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: AppColors.background,
-      body: CompanyJobsPage(),
+      body: CompanyJobsPage(mode: TalentCenterMode.serviceProvider),
     );
   }
 }

@@ -133,6 +133,13 @@
     "图片上传中": "Images are uploading. Please wait.",
     "最多上传": "You can upload up to {count} images"
   },
+  "附件预览": {
+    "标题": "Attachment Preview",
+    "文件地址无效": "Invalid file address",
+    "暂不支持该文件类型": "Preview is not supported for this file type",
+    "图片加载失败": "Failed to load image",
+    "PDF加载失败": "Failed to load PDF"
+  },
   "首页": {
     "AI招聘": "AI Jobs",
     "欧洲招聘": "Europe Jobs",
@@ -399,7 +406,9 @@
   "企业岗位": {
     "招聘中": "Recruiting",
     "已下线": "Offline",
+    "草稿箱": "Drafts",
     "暂无已下线岗位": "No offline positions yet",
+    "暂无草稿箱岗位": "No draft positions yet",
     "暂无招聘中的岗位": "No recruiting positions yet",
     "岗位": "Positions",
     "发布": "Publish",
@@ -828,10 +837,10 @@
     "确认删除套餐": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "已上架": "Published",
     "已下架": "Offline",
-    "已驳回": "Rejected",
+    "草稿箱": "Drafts",
     "暂无已上架套餐": "No published packages yet",
     "暂无已下架套餐": "No offline packages yet",
-    "暂无已驳回套餐": "No rejected packages yet",
+    "暂无草稿箱套餐": "No draft packages yet",
     "上架": "Publish",
     "下架": "Take Offline",
     "套餐已删除": "Package deleted",
