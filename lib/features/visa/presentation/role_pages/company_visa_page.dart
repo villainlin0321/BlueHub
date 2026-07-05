@@ -64,7 +64,8 @@ class _CompanyVisaPageState extends ConsumerState<CompanyVisaPage> {
 
 enum _CompanyJobTab {
   recruiting(labelKey: '企业岗位.招聘中', status: 'active'),
-  offline(labelKey: '企业岗位.已下线', status: 'inactive');
+  offline(labelKey: '企业岗位.已下线', status: 'inactive'),
+  draft(labelKey: '企业岗位.草稿箱', status: 'draft');
 
   const _CompanyJobTab({required this.labelKey, required this.status});
 
@@ -72,8 +73,17 @@ enum _CompanyJobTab {
   final String status;
 
   bool get isOffline => this == _CompanyJobTab.offline;
+  bool get isDraft => this == _CompanyJobTab.draft;
 
-  String get emptyText => isOffline ? tr('企业岗位.暂无已下线岗位') : tr('企业岗位.暂无招聘中的岗位');
+  String get emptyText {
+    if (isOffline) {
+      return tr('企业岗位.暂无已下线岗位');
+    }
+    if (isDraft) {
+      return tr('企业岗位.暂无草稿箱岗位');
+    }
+    return tr('企业岗位.暂无招聘中的岗位');
+  }
 }
 
 class _CompanyVisaAppBar extends StatelessWidget
@@ -358,12 +368,15 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       return;
     }
 
-    final JobManageStatus nextStatus = widget.tab.isOffline
-        ? JobManageStatus.active
-        : JobManageStatus.inactive;
-    final String successMessage = widget.tab.isOffline
-        ? '企业岗位.岗位已发布'.tr()
-        : '企业岗位.岗位已下线'.tr();
+    final JobManageStatus nextStatus;
+    final String successMessage;
+    if (widget.tab.isOffline || widget.tab.isDraft) {
+      nextStatus = JobManageStatus.active;
+      successMessage = '企业岗位.岗位已发布'.tr();
+    } else {
+      nextStatus = JobManageStatus.inactive;
+      successMessage = '企业岗位.岗位已下线'.tr();
+    }
 
     setState(() {
       _updatingStatusJobIds.add(job.jobId);
@@ -480,6 +493,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
                   job: job,
                   requirementTagLookup: requirementTagLookup,
                   isOffline: widget.tab.isOffline,
+                  isDraft: widget.tab.isDraft,
                   isDeleting: _deletingJobIds.contains(job.jobId),
                   isUpdatingStatus: _updatingStatusJobIds.contains(job.jobId),
                   onDeleteTap: () => _deleteJob(job),
@@ -543,6 +557,7 @@ class _JobManageCard extends StatelessWidget {
     required this.job,
     required this.requirementTagLookup,
     required this.isOffline,
+    required this.isDraft,
     required this.isDeleting,
     required this.isUpdatingStatus,
     required this.onDeleteTap,
@@ -553,6 +568,7 @@ class _JobManageCard extends StatelessWidget {
   final JobDetailVO job;
   final Map<String, TagItemVO> requirementTagLookup;
   final bool isOffline;
+  final bool isDraft;
   final bool isDeleting;
   final bool isUpdatingStatus;
   final VoidCallback onDeleteTap;
@@ -655,14 +671,16 @@ class _JobManageCard extends StatelessWidget {
                   isLoading: isDeleting,
                 ),
                 const Spacer(),
-                _BorderActionButton(
-                  label: isOffline ? '企业岗位.发布'.tr() : '企业岗位.下线'.tr(),
-                  onTap: isDeleting || isUpdatingStatus
-                      ? null
-                      : onToggleStatusTap,
-                  isLoading: isUpdatingStatus,
-                ),
-                const SizedBox(width: 8),
+                if (!isDraft) ...<Widget>[
+                  _BorderActionButton(
+                    label: isOffline ? '企业岗位.发布'.tr() : '企业岗位.下线'.tr(),
+                    onTap: isDeleting || isUpdatingStatus
+                        ? null
+                        : onToggleStatusTap,
+                    isLoading: isUpdatingStatus,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _PrimaryActionButton(label: '企业岗位.编辑'.tr(), onTap: onEditTap),
               ],
             ),
@@ -694,19 +712,6 @@ class _JobManageCard extends StatelessWidget {
     }
 
     return tags;
-  }
-
-  String _formatLocation(JobDetailVO job) {
-    if (job.country.isEmpty && job.city.isEmpty) {
-      return '';
-    }
-    if (job.country.isEmpty) {
-      return job.city;
-    }
-    if (job.city.isEmpty) {
-      return job.country;
-    }
-    return '${job.country}·${job.city}';
   }
 
   String _formatSalary(JobDetailVO job) {
