@@ -231,3 +231,8 @@ Relevant output:
 ### any concerns
 
 - 当前白名单按 MIME subtype 判定；如果调用方未来传入错误 MIME 但文件后缀正确，服务会保守地跳过压缩。这与本次 review 要求一致，但依赖上游 MIME 传递准确。
+
+### commit note
+
+- Task 1 fix commit: `aca75db fix: tighten image upload compression rules`
+- No additional code changes were needed after that commit; this follow-up only records the commit SHA.
