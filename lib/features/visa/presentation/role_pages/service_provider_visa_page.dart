@@ -14,6 +14,7 @@ import '../../../../features/order/data/visa_order_providers.dart';
 import '../../../../features/order/presentation/order_detail_page.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/models/dictionary_models.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 
@@ -309,6 +310,7 @@ class _ServiceProviderVisaPageState
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return ColoredBox(
+      key: AppTestKeys.pageServiceProviderVisa,
       color: const Color(0xFFF5F7FA),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -317,6 +319,8 @@ class _ServiceProviderVisaPageState
           _FilterBar(
             countryLabel: _selectedCountry.label,
             statusLabel: _selectedStatus.label.tr(),
+            countryButtonKey: AppTestKeys.actionServiceProviderVisaCountryFilter,
+            statusButtonKey: AppTestKeys.actionServiceProviderVisaStatusFilter,
             onCountryTap: _selectCountry,
             onStatusTap: _selectStatus,
           ),
@@ -413,12 +417,16 @@ class _FilterBar extends StatelessWidget {
   const _FilterBar({
     required this.countryLabel,
     required this.statusLabel,
+    required this.countryButtonKey,
+    required this.statusButtonKey,
     required this.onCountryTap,
     required this.onStatusTap,
   });
 
   final String countryLabel;
   final String statusLabel;
+  final Key countryButtonKey;
+  final Key statusButtonKey;
   final VoidCallback onCountryTap;
   final VoidCallback onStatusTap;
 
@@ -435,9 +443,17 @@ class _FilterBar extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          _FilterButton(label: countryLabel, onTap: onCountryTap),
+          _FilterButton(
+            buttonKey: countryButtonKey,
+            label: countryLabel,
+            onTap: onCountryTap,
+          ),
           const SizedBox(width: 12),
-          _FilterButton(label: statusLabel, onTap: onStatusTap),
+          _FilterButton(
+            buttonKey: statusButtonKey,
+            label: statusLabel,
+            onTap: onStatusTap,
+          ),
         ],
       ),
     );
@@ -445,14 +461,20 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.label, required this.onTap});
+  const _FilterButton({
+    required this.buttonKey,
+    required this.label,
+    required this.onTap,
+  });
 
+  final Key buttonKey;
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: buttonKey,
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
@@ -493,6 +515,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
+      key: AppTestKeys.cardServiceProviderVisaOrder(order.orderId),
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -614,12 +637,18 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                     _ActionButton(
+                      buttonKey: AppTestKeys.actionServiceProviderVisaOrderContact(
+                        order.orderId,
+                      ),
                       label: '订单.联系客户'.tr(),
                       outlined: true,
                       onTap: onContactTap,
                     ),
                     const SizedBox(width: 8),
                     _ActionButton(
+                      buttonKey: AppTestKeys.actionServiceProviderVisaOrderProcess(
+                        order.orderId,
+                      ),
                       label: '订单.处理订单'.tr(),
                       outlined: false,
                       onTap: onProcessTap,
@@ -681,8 +710,13 @@ class _StatusTag extends StatelessWidget {
 }
 
 class _GhostActionButton extends StatelessWidget {
-  const _GhostActionButton({required this.label, required this.onTap});
+  const _GhostActionButton({
+    required this.buttonKey,
+    required this.label,
+    required this.onTap,
+  });
 
+  final Key buttonKey;
   final String label;
   final VoidCallback onTap;
 
@@ -691,6 +725,7 @@ class _GhostActionButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: buttonKey,
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -716,8 +751,13 @@ class _GhostActionButton extends StatelessWidget {
 }
 
 class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({required this.label, required this.onTap});
+  const _PrimaryActionButton({
+    required this.buttonKey,
+    required this.label,
+    required this.onTap,
+  });
 
+  final Key buttonKey;
   final String label;
   final VoidCallback onTap;
 
@@ -726,6 +766,7 @@ class _PrimaryActionButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: buttonKey,
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -752,11 +793,13 @@ class _PrimaryActionButton extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
+    required this.buttonKey,
     required this.label,
     required this.outlined,
     required this.onTap,
   });
 
+  final Key buttonKey;
   final String label;
   final bool outlined;
   final VoidCallback onTap;
@@ -764,8 +807,12 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return outlined
-        ? _GhostActionButton(label: label, onTap: onTap)
-        : _PrimaryActionButton(label: label, onTap: onTap);
+        ? _GhostActionButton(buttonKey: buttonKey, label: label, onTap: onTap)
+        : _PrimaryActionButton(
+            buttonKey: buttonKey,
+            label: label,
+            onTap: onTap,
+          );
   }
 }
 

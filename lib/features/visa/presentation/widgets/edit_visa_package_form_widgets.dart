@@ -13,6 +13,19 @@ import '../edit_visa_package_styles.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
 
+/// 收起当前页面输入焦点，避免切换到其他交互后键盘继续占用页面。
+void dismissEditVisaPackageKeyboard(BuildContext context) {
+  FocusManager.instance.primaryFocus?.unfocus();
+}
+
+/// 先收起键盘，再执行后续点击回调。
+VoidCallback dismissKeyboardThen(BuildContext context, VoidCallback onTap) {
+  return () {
+    dismissEditVisaPackageKeyboard(context);
+    onTap();
+  };
+}
+
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({
     required this.tierId,
@@ -110,6 +123,7 @@ class _EditVisaPackageCustomServiceDialogState
       title: '签证编辑.添加自定义服务'.tr(),
       content: TextField(
         controller: _controller,
+        onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
         maxLines: 1,
         maxLength: 12,
         inputFormatters: <TextInputFormatter>[
@@ -179,7 +193,7 @@ class EditVisaPackageHeader extends StatelessWidget
         color: Colors.transparent,
         child: InkWell(
           key: AppTestKeys.actionEditVisaPackageBack,
-          onTap: onBackTap,
+          onTap: dismissKeyboardThen(context, onBackTap),
           child: Center(
             child: SvgPicture.asset(
               'assets/images/visa_package_back.svg',
@@ -194,7 +208,10 @@ class EditVisaPackageHeader extends StatelessWidget
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: TextButton(
-            onPressed: actionsEnabled ? onSaveDraftTap : null,
+            key: AppTestKeys.actionEditVisaPackageSaveDraft,
+            onPressed: actionsEnabled
+                ? dismissKeyboardThen(context, onSaveDraftTap)
+                : null,
             style: TextButton.styleFrom(
               foregroundColor: EditVisaPackageStyles.textPrimary,
               padding: EdgeInsets.zero,
@@ -263,7 +280,9 @@ class EditVisaPackageSectionTitle extends StatelessWidget {
         const Spacer(),
         if (showAction)
           TextButton(
-            onPressed: onActionTap,
+            onPressed: onActionTap == null
+                ? null
+                : dismissKeyboardThen(context, onActionTap!),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF096DD9),
               padding: EdgeInsets.zero,
@@ -293,7 +312,7 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (file == null) {
       return InkWell(
-        onTap: onUploadTap,
+        onTap: dismissKeyboardThen(context, onUploadTap),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           width: double.infinity,
@@ -390,7 +409,10 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           TextButton(
-                            onPressed: onUploadTap,
+                            onPressed: dismissKeyboardThen(
+                              context,
+                              onUploadTap,
+                            ),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
                               minimumSize: Size.zero,
@@ -410,7 +432,7 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: InkWell(
-                        onTap: onDeleteTap,
+                        onTap: dismissKeyboardThen(context, onDeleteTap!),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           width: 20,
@@ -446,7 +468,7 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 TextButton(
-                  onPressed: onUploadTap,
+                  onPressed: dismissKeyboardThen(context, onUploadTap),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF096DD9),
                     minimumSize: Size.zero,
@@ -568,7 +590,9 @@ class EditVisaPackageTierHeader extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: onDeleteTap,
+                onTap: onDeleteTap == null
+                    ? null
+                    : dismissKeyboardThen(context, onDeleteTap!),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
@@ -644,6 +668,7 @@ class EditVisaPackageInputField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
+    this.fieldKey,
     this.trailing,
     this.readOnly = false,
     this.onTap,
@@ -653,6 +678,7 @@ class EditVisaPackageInputField extends StatelessWidget {
 
   final TextEditingController controller;
   final String hintText;
+  final Key? fieldKey;
   final Widget? trailing;
   final bool readOnly;
   final VoidCallback? onTap;
@@ -662,7 +688,9 @@ class EditVisaPackageInputField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      key: fieldKey,
       controller: controller,
+      onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
       readOnly: readOnly,
       onTap: onTap,
       keyboardType: keyboardType,
@@ -705,11 +733,13 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     required this.text,
     required this.hintText,
     required this.onTap,
+    this.buttonKey,
   });
 
   final String? text;
   final String hintText;
   final VoidCallback onTap;
+  final Key? buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -717,7 +747,8 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        key: buttonKey,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.fieldRadius,
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 14, 8, 14),
@@ -761,6 +792,7 @@ class EditVisaPackageMultilineField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
       maxLength: maxLength,
       minLines: 3,
       maxLines: 3,
@@ -916,7 +948,7 @@ class EditVisaPackageServiceChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null ? null : dismissKeyboardThen(context, onTap!),
         borderRadius: EditVisaPackageStyles.chipRadius,
         hoverColor: selected
             ? EditVisaPackageStyles.primarySoft.withValues(alpha: 0.8)
@@ -982,7 +1014,7 @@ class EditVisaPackageCustomTagChip extends StatelessWidget {
           const SizedBox(width: 6),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: onRemove,
+            onTap: dismissKeyboardThen(context, onRemove),
             child: const Icon(
               Icons.close,
               size: 16,
@@ -1005,7 +1037,7 @@ class EditVisaPackageAddCustomServiceChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.chipRadius,
         child: Container(
           height: 34,
@@ -1079,7 +1111,7 @@ class EditVisaPackageRadioOption extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1125,7 +1157,11 @@ class EditVisaPackageSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onChanged(!value),
+      onTap: () {
+        // 开关切换前先收起键盘，避免输入框在 rebuild 后重新抢焦点。
+        dismissEditVisaPackageKeyboard(context);
+        onChanged(!value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: 34,
@@ -1167,7 +1203,7 @@ class EditVisaPackageAddMaterialButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.chipRadius,
         child: Container(
           width: double.infinity,
@@ -1209,7 +1245,7 @@ class EditVisaPackageSecondaryButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: BorderRadius.circular(6),
         child: Container(
           width: double.infinity,
@@ -1274,6 +1310,7 @@ class EditVisaPackageBottomBar extends StatelessWidget {
                   width: double.infinity,
                   height: 44,
                   child: ElevatedButton(
+                    key: AppTestKeys.actionEditVisaPackagePublish,
                     onPressed: enabled ? onTap : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EditVisaPackageStyles.primary,
