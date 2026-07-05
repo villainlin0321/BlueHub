@@ -86,6 +86,62 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('实名页缺少必填项时会提示并阻止提交', (WidgetTester tester) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('同意并提交'));
+    await tester.pump();
+
+    expect(find.text('请填写姓名'), findsOneWidget);
+    expect(find.text('请填写身份证号'), findsOneWidget);
+    expect(find.text('请上传身份证国徽面'), findsOneWidget);
+    expect(find.text('请上传身份证人像面'), findsOneWidget);
+  });
+
+  testWidgets('实名页会展示 Figma 对齐的说明文案和上传标签', (WidgetTester tester) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('姓名'), findsOneWidget);
+    expect(find.text('身份证号'), findsOneWidget);
+    expect(find.text('身份证验证'), findsOneWidget);
+    expect(find.text('上传国徽面'), findsOneWidget);
+    expect(find.text('上传人像面'), findsOneWidget);
+    expect(
+      find.text(
+        '本平台将采集和保存您的身份证照片，并将身份证照片提供至实名核验服务商，用于对您进行身份核验和资质审核',
+      ),
+      findsOneWidget,
+    );
+  });
 }
 
 /// 创建已登录的求职者测试容器，确保“我的”页读取到真实入口所需的用户态。
