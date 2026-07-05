@@ -4,14 +4,29 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_session_provider.dart';
+import '../data/user_models.dart';
+import '../data/user_providers.dart';
+import '../../../shared/network/api_exception.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../utils/upload_picker_utils.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
 
+typedef RealNameImagePicker =
+    Future<List<PickedUploadFile>> Function(BuildContext context);
+typedef RealNameToastPresenter = Future<void> Function(String message);
+
 /// 求职者实名认证页：按 Figma 结构展示行式表单、身份证示意图上传区和本地校验。
 class JobSeekerRealNameVerificationPage extends ConsumerStatefulWidget {
-  const JobSeekerRealNameVerificationPage({super.key});
+  const JobSeekerRealNameVerificationPage({
+    super.key,
+    this.pickImages,
+    this.showToast,
+  });
+
+  final RealNameImagePicker? pickImages;
+  final RealNameToastPresenter? showToast;
 
   @override
   ConsumerState<JobSeekerRealNameVerificationPage> createState() =>
@@ -97,7 +112,7 @@ class _JobSeekerRealNameVerificationPageState
         nextBackImageError == null;
   }
 
-  /// 处理提交点击：Task 2 只做本地校验，通过后先保留轻量反馈。
+  /// 提交实名认证信息，并在成功后刷新当前登录用户资料。
   Future<void> _handleSubmit() async {
     if (_isSubmitting || !_validateForm()) {
       return;
@@ -107,7 +122,29 @@ class _JobSeekerRealNameVerificationPageState
       _isSubmitting = true;
     });
     try {
-      await AppToast.show('我的.实名认证'.tr());
+      // 关键提交：只使用当前表单与已上传图片地址组装真实请求体。
+      await ref.read(userServiceProvider).realNameVerify(
+        request: RealNameVerifyBO(
+          realName: _nameController.text.trim(),
+          idCardNumber: _idCardController.text.trim(),
+          idCardFrontUrl: (_frontImage!.uploadedFileUrl ?? _frontImage!.path)
+              .trim(),
+          idCardBackUrl: (_backImage!.uploadedFileUrl ?? _backImage!.path)
+              .trim(),
+        ),
+      );
+      await ref.read(authSessionProvider.notifier).refreshCurrentUser();
+      if (!mounted) {
+        return;
+      }
+      final NavigatorState navigator = Navigator.of(context);
+      await _showToast('我的.实名认证提交成功'.tr());
+      navigator.pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      await _showToast(_resolveSubmitErrorMessage(error));
     } finally {
       if (mounted) {
         setState(() {
@@ -117,10 +154,14 @@ class _JobSeekerRealNameVerificationPageState
     }
   }
 
-  /// 选择身份证图片并更新本地展示状态，不触发真实上传。
+  /// 选择身份证图片并更新本地展示状态，默认沿用现有上传工具，也允许测试注入替身。
   Future<void> _pickImage({required bool isFrontSide}) async {
+    final RealNameImagePicker picker =
+        widget.pickImages ??
+        (BuildContext context) =>
+            UploadPickerUtils.pickImagesWithSourceSheet(context: context);
     final List<PickedUploadFile> images =
-        await UploadPickerUtils.pickImagesWithSourceSheet(context: context);
+        await picker(context);
     if (!mounted || images.isEmpty) {
       return;
     }
@@ -138,6 +179,20 @@ class _JobSeekerRealNameVerificationPageState
         _backImageError = null;
       }
     });
+  }
+
+  /// 统一分发页面提示，生产默认走全局 Toast，测试可注入空实现避免动画干扰。
+  Future<void> _showToast(String message) {
+    final RealNameToastPresenter presenter = widget.showToast ?? AppToast.show;
+    return presenter(message);
+  }
+
+  /// 统一提取实名提交失败提示，优先展示接口返回文案。
+  String _resolveSubmitErrorMessage(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '我的.实名认证提交失败'.tr();
   }
 
   @override
