@@ -208,6 +208,7 @@ class EditVisaPackageHeader extends StatelessWidget
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: TextButton(
+            key: AppTestKeys.actionEditVisaPackageSaveDraft,
             onPressed: actionsEnabled
                 ? dismissKeyboardThen(context, onSaveDraftTap)
                 : null,
@@ -667,6 +668,7 @@ class EditVisaPackageInputField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
+    this.fieldKey,
     this.trailing,
     this.readOnly = false,
     this.onTap,
@@ -676,6 +678,7 @@ class EditVisaPackageInputField extends StatelessWidget {
 
   final TextEditingController controller;
   final String hintText;
+  final Key? fieldKey;
   final Widget? trailing;
   final bool readOnly;
   final VoidCallback? onTap;
@@ -685,6 +688,7 @@ class EditVisaPackageInputField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      key: fieldKey,
       controller: controller,
       onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
       readOnly: readOnly,
@@ -729,11 +733,13 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     required this.text,
     required this.hintText,
     required this.onTap,
+    this.buttonKey,
   });
 
   final String? text;
   final String hintText;
   final VoidCallback onTap;
+  final Key? buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -741,6 +747,7 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: buttonKey,
         onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.fieldRadius,
         child: Container(
@@ -1303,6 +1310,7 @@ class EditVisaPackageBottomBar extends StatelessWidget {
                   width: double.infinity,
                   height: 44,
                   child: ElevatedButton(
+                    key: AppTestKeys.actionEditVisaPackagePublish,
                     onPressed: enabled ? onTap : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EditVisaPackageStyles.primary,

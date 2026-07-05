@@ -137,7 +137,7 @@ class AppLogger {
     await logDirectory.create(recursive: true);
     await _cleanupExpiredLogs(logDirectory);
 
-    final fileName = 'bluehub_${_compactTimestamp(DateTime.now())}.log';
+    final fileName = 'bluehub_${_compactDate(DateTime.now())}.log';
     final file = File('${logDirectory.path}/$fileName');
     _currentLogFile = file;
     _sink = file.openWrite(mode: FileMode.append);
@@ -299,16 +299,13 @@ class AppLogger {
         });
   }
 
-  /// 生成紧凑时间戳，便于用文件名区分不同启动会话。
-  String _compactTimestamp(DateTime time) {
+  /// 生成按天归档的紧凑日期，确保同一天内的日志持续追加到同一文件。
+  String _compactDate(DateTime time) {
     String twoDigits(int value) => value.toString().padLeft(2, '0');
 
     return '${time.year}'
         '${twoDigits(time.month)}'
-        '${twoDigits(time.day)}_'
-        '${twoDigits(time.hour)}'
-        '${twoDigits(time.minute)}'
-        '${twoDigits(time.second)}';
+        '${twoDigits(time.day)}';
   }
 }
 
