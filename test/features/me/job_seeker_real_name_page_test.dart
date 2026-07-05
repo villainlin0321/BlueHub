@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:europepass/app/router/app_router.dart';
 import 'package:europepass/app/router/route_paths.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -101,24 +102,27 @@ void main() {
     );
   });
 
-  testWidgets('未实名用户点击实名认证入口会通过真实 GoRouter 进入已注册实名页', (
+  testWidgets('未实名用户点击实名认证入口会通过生产 routerProvider 进入已注册实名页', (
     WidgetTester tester,
   ) async {
     final ProviderContainer container = _createAuthenticatedContainer(
       isVerified: false,
     );
-    final GoRouter router = _buildRealNameTestRouter();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
+    final GoRouter router = container.read(routerProvider);
+    final GoRoute registeredRoute = _findProductionRealNameRoute(router);
+    addTearDown(() {
       router.dispose();
       container.dispose();
     });
 
     await tester.pumpWidget(
-      _buildGoRouterRealNameTestHost(
+      _buildRealNameTestHost(
         container: container,
-        router: router,
+        verificationPageBuilder: (BuildContext context) =>
+            registeredRoute.builder!(
+              context,
+              _buildRegisteredRouteState(route: registeredRoute, router: router),
+            ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
@@ -137,10 +141,8 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      router.state.uri.toString(),
-      RoutePaths.jobSeekerRealNameVerification,
-    );
+    expect(registeredRoute.path, RoutePaths.jobSeekerRealNameVerification);
+    expect(registeredRoute.builder, isNotNull);
   });
 
   testWidgets('实名页缺少必填项时会提示并阻止提交', (WidgetTester tester) async {
@@ -220,7 +222,8 @@ void main() {
     await tester.pumpWidget(
       _buildRealNameTestHost(
         container: container,
-        verificationPageBuilder: () => JobSeekerRealNameVerificationPage(
+        verificationPageBuilder: (BuildContext context) =>
+            JobSeekerRealNameVerificationPage(
           pickImages:
               (BuildContext context) async => imagePicker.pickImages(context),
           showToast: (String message) async {},
@@ -316,7 +319,8 @@ void main() {
     await tester.pumpWidget(
       _buildRealNameTestHost(
         container: container,
-        verificationPageBuilder: () => JobSeekerRealNameVerificationPage(
+        verificationPageBuilder: (BuildContext context) =>
+            JobSeekerRealNameVerificationPage(
           pickImages:
               (BuildContext context) async => imagePicker.pickImages(context),
           showToast: (String message) async {
@@ -435,7 +439,7 @@ ProviderContainer _createAuthenticatedContainer({required bool isVerified}) {
 /// 构建带 EasyLocalization、Riverpod 与真实页面跳转的测试宿主。
 Widget _buildRealNameTestHost({
   required ProviderContainer container,
-  Widget Function()? verificationPageBuilder,
+  Widget Function(BuildContext context)? verificationPageBuilder,
 }) {
   return UncontrolledProviderScope(
     container: container,
@@ -453,45 +457,6 @@ Widget _buildRealNameTestHost({
   );
 }
 
-/// 构建使用真实 `GoRouter` 的测试宿主，覆盖入口点击到路由注册的完整链路。
-Widget _buildGoRouterRealNameTestHost({
-  required ProviderContainer container,
-  required GoRouter router,
-}) {
-  return UncontrolledProviderScope(
-    container: container,
-    child: EasyLocalization(
-      supportedLocales: AppLocales.supported,
-      path: 'assets/translations',
-      assetLoader: const _TestJsonFileAssetLoader(),
-      fallbackLocale: AppLocales.chinese,
-      startLocale: AppLocales.chinese,
-      saveLocale: false,
-      child: _GoRouterRealNameTestApp(router: router),
-    ),
-  );
-}
-
-/// 构建测试专用 GoRouter，避免手动 push 绕过求职者“我的”页到实名页的真实跳转链。
-GoRouter _buildRealNameTestRouter() {
-  return GoRouter(
-    initialLocation: RoutePaths.me,
-    routes: <RouteBase>[
-      GoRoute(
-        path: RoutePaths.me,
-        builder: (BuildContext context, GoRouterState state) => const Scaffold(
-          body: JobSeekerMePage(),
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.jobSeekerRealNameVerification,
-        builder: (BuildContext context, GoRouterState state) =>
-            const JobSeekerRealNameVerificationPage(),
-      ),
-    ],
-  );
-}
-
 /// 测试环境直接从仓库读取翻译文件，避免 widget test 里资源 Bundle 未挂起导致空白页。
 class _TestJsonFileAssetLoader extends AssetLoader {
   const _TestJsonFileAssetLoader();
@@ -504,33 +469,11 @@ class _TestJsonFileAssetLoader extends AssetLoader {
   }
 }
 
-/// 通过真实 `GoRouter` 渲染应用外壳，避免测试宿主手动 push 绕过路由注册链。
-class _GoRouterRealNameTestApp extends StatelessWidget {
-  const _GoRouterRealNameTestApp({required this.router});
-
-  final GoRouter router;
-
-  @override
-  Widget build(BuildContext context) {
-    AppToast.configure();
-    return MaterialApp.router(
-      locale: context.locale,
-      supportedLocales: context.supportedLocales,
-      localizationsDelegates: context.localizationDelegates,
-      routerConfig: router,
-      builder: (BuildContext context, Widget? child) {
-        final TransitionBuilder easyLoadingBuilder = EasyLoading.init();
-        return easyLoadingBuilder(context, child ?? const SizedBox.shrink());
-      },
-    );
-  }
-}
-
 /// 提供最小可运行的页面宿主，覆盖“我的”页入口到实名认证占位页的真实跳转链路。
 class _RealNameTestApp extends StatelessWidget {
   const _RealNameTestApp({this.verificationPageBuilder});
 
-  final Widget Function()? verificationPageBuilder;
+  final Widget Function(BuildContext context)? verificationPageBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -549,8 +492,8 @@ class _RealNameTestApp extends StatelessWidget {
             // 关键路径：测试中使用真实 Navigator 承接页面跳转，稳定验证落页标题。
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    verificationPageBuilder?.call() ??
+                builder: (BuildContext routeContext) =>
+                    verificationPageBuilder?.call(routeContext) ??
                     const JobSeekerRealNameVerificationPage(),
               ),
             );
@@ -559,6 +502,39 @@ class _RealNameTestApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 从生产 `routerProvider` 中定位实名认证注册路由，避免测试再维护一份自建路由表。
+GoRoute _findProductionRealNameRoute(GoRouter router) {
+  final RouteMatchList matchList = router.configuration.findMatch(
+    Uri.parse(RoutePaths.jobSeekerRealNameVerification),
+  );
+  final Iterable<GoRoute> matchedRoutes = matchList.routes.whereType<GoRoute>();
+  final GoRoute? registeredRoute = matchedRoutes.cast<GoRoute?>().lastWhere(
+    (GoRoute? route) => route?.path == RoutePaths.jobSeekerRealNameVerification,
+    orElse: () => null,
+  );
+  expect(matchList.isError, isFalse);
+  expect(registeredRoute, isNotNull);
+  return registeredRoute!;
+}
+
+/// 为生产注册路由构造最小 `GoRouterState`，让测试宿主复用真实页面 builder。
+GoRouterState _buildRegisteredRouteState({
+  required GoRoute route,
+  required GoRouter router,
+}) {
+  return GoRouterState(
+    router.configuration,
+    uri: Uri.parse(RoutePaths.jobSeekerRealNameVerification),
+    matchedLocation: RoutePaths.jobSeekerRealNameVerification,
+    name: route.name,
+    path: route.path,
+    fullPath: route.path,
+    pathParameters: const <String, String>{},
+    pageKey: ValueKey<String>(RoutePaths.jobSeekerRealNameVerification),
+    topRoute: route,
+  );
 }
 
 /// 生成测试用上传文件，统一复用实名成功场景中的本地/远端图片数据。

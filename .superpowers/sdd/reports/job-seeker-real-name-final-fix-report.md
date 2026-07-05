@@ -76,6 +76,20 @@
   - GoRouter 真正切到实名页；
   - 不再依赖手动 push 绕过链路。
 
+### 问题 5：实名认证入口测试未绑定生产路由注册
+
+#### 根因
+
+- 现有 GoRouter 测试虽然覆盖了“我的”页入口点击，但使用的是测试文件内自建 `_buildRealNameTestRouter()`。
+- 如果生产 `lib/app/router/app_router.dart` 中删掉 `RoutePaths.jobSeekerRealNameVerification` 的真实注册，测试仍可能继续通过，无法拦住路由表回退。
+
+#### 修复
+
+- 将 `test/features/me/job_seeker_real_name_page_test.dart` 中的相关跳转测试改为通过 `ProviderContainer.read(routerProvider)` 读取生产 `GoRouter`，再用 `router.configuration.findMatch(...)` 定位生产注册的实名 `GoRoute`。
+- 保持从“我的”页真实入口点击的交互链路不变，但测试宿主不再自建一套路由表，而是复用生产注册的实名页 builder 打开落页。
+- 断言生产注册中确实存在 `RoutePaths.jobSeekerRealNameVerification`，并在点击后验证页面标题为“实名认证”，确保入口落到生产注册对应的页面。
+- 删除测试文件中的自建 `_buildRealNameTestRouter()`，避免测试再维护一份与生产实现脱节的路由副本。
+
 ### 变更文件
 
 - `lib/features/me/presentation/job_seeker_real_name_verification_page.dart`
@@ -89,7 +103,7 @@
 
 ```bash
 flutter test test/features/me/job_seeker_real_name_page_test.dart test/shared/network/app_log_interceptor_test.dart
-flutter analyze lib/features/me/presentation/job_seeker_real_name_verification_page.dart lib/shared/logging/app_log_event.dart test/features/me/job_seeker_real_name_page_test.dart test/shared/network/app_log_interceptor_test.dart
+flutter analyze lib/app/router/app_router.dart lib/features/me/presentation/job_seeker_real_name_verification_page.dart lib/shared/logging/app_log_event.dart test/features/me/job_seeker_real_name_page_test.dart test/shared/network/app_log_interceptor_test.dart
 ```
 
 ### 验证结果
