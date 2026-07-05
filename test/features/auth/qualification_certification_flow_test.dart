@@ -1,13 +1,30 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:europepass/features/auth/presentation/qualification_certification_flow.dart';
+import 'package:europepass/features/auth/presentation/qualification_certification_page.dart';
+import 'package:europepass/features/auth/presentation/qualification_certification_step_two_page.dart';
 import 'package:europepass/features/auth/presentation/qualification_preview_resolver.dart';
 import 'package:europepass/features/employer/data/employer_models.dart'
     as employer_models;
 import 'package:europepass/features/visa/data/provider_models.dart';
-import 'package:flutter/painting.dart';
+import 'package:europepass/shared/localization/app_locales.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 验证资质认证流程在编辑历史资料时，能够正确回填证件图与预览来源。
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await EasyLocalization.ensureInitialized();
+  });
+
   test('服务商资料会回填已有资质图片与身份证正反面', () {
     final QualificationCertificationDraft draft =
         QualificationCertificationDraft();
@@ -138,10 +155,104 @@ void main() {
     final String? previewPath = QualificationPreviewResolver.resolvePreviewPath(
       document,
     );
-    final ImageProvider<Object>? imageProvider =
-        QualificationPreviewResolver.resolveImageProvider(previewPath);
 
     expect(previewPath, 'https://example.com/id-emblem.png');
-    expect(imageProvider, isA<NetworkImage>());
+    expect(QualificationPreviewResolver.isNetworkPath(previewPath), isTrue);
   });
+
+  testWidgets('第一页身份证远端图片使用 CachedNetworkImage 预览', (
+    WidgetTester tester,
+  ) async {
+    final QualificationCertificationDraft draft =
+        QualificationCertificationDraft()
+          ..idCardEmblemDoc = const UploadedQualificationDoc(
+            docType: QualificationDocType.idCard,
+            docName: '法人身份证国徽面',
+            fileId: 301,
+            fileUrl: 'https://example.com/id-emblem.png',
+            localPath: '',
+          );
+
+    await _pumpQualificationTestHost(
+      tester,
+      child: QualificationCertificationPage(
+        args: QualificationCertificationPageArgs(draft: draft),
+      ),
+    );
+    await tester.pump();
+
+    final CachedNetworkImage preview = tester.widget<CachedNetworkImage>(
+      find.byType(CachedNetworkImage),
+    );
+    expect(preview.imageUrl, 'https://example.com/id-emblem.png');
+  });
+
+  testWidgets('第二页营业执照远端图片使用 CachedNetworkImage 预览', (
+    WidgetTester tester,
+  ) async {
+    final QualificationCertificationDraft draft =
+        QualificationCertificationDraft()
+          ..businessLicenseDoc = const UploadedQualificationDoc(
+            docType: QualificationDocType.businessLicense,
+            docName: '营业执照',
+            fileId: 302,
+            fileUrl: 'https://example.com/business-license.png',
+            localPath: '',
+          );
+
+    await _pumpQualificationTestHost(
+      tester,
+      child: QualificationCertificationStepTwoPage(
+        args: QualificationCertificationPageArgs(draft: draft),
+      ),
+    );
+    await tester.pump();
+
+    final CachedNetworkImage preview = tester.widget<CachedNetworkImage>(
+      find.byType(CachedNetworkImage),
+    );
+    expect(preview.imageUrl, 'https://example.com/business-license.png');
+  });
+}
+
+/// 挂载资质认证测试页面，并补齐本地化与 Riverpod 运行环境。
+Future<void> _pumpQualificationTestHost(
+  WidgetTester tester, {
+  required Widget child,
+}) async {
+  await tester.pumpWidget(
+    EasyLocalization(
+      supportedLocales: AppLocales.supported,
+      path: 'assets/translations',
+      assetLoader: const _TestJsonFileAssetLoader(),
+      fallbackLocale: AppLocales.chinese,
+      startLocale: AppLocales.chinese,
+      saveLocale: false,
+      child: ProviderScope(
+        child: Builder(
+          builder: (BuildContext context) {
+            return MaterialApp(
+              locale: context.locale,
+              supportedLocales: context.supportedLocales,
+              localizationsDelegates: context.localizationDelegates,
+              home: child,
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+/// 测试环境直接从仓库读取翻译文件，避免 widget test 无法加载 assets。
+class _TestJsonFileAssetLoader extends AssetLoader {
+  const _TestJsonFileAssetLoader();
+
+  @override
+  /// 读取指定语言的翻译 JSON，给测试宿主提供真实文案。
+  Future<Map<String, dynamic>> load(String path, Locale locale) async {
+    final File file = File('${Directory.current.path}/$path/${locale.languageCode}.json');
+    final String content = file.readAsStringSync();
+    return jsonDecode(content) as Map<String, dynamic>;
+  }
 }

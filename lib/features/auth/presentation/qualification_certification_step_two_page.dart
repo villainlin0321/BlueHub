@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import '../../../shared/widgets/app_toast.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +45,7 @@ class _QualificationCertificationStepTwoPageState
   ];
 
   @override
+  /// 初始化第二页历史上传文件，确保编辑场景能直接回显本地或远端图片。
   void initState() {
     super.initState();
     if (_draft.businessLicenseDoc != null) {
@@ -49,15 +53,15 @@ class _QualificationCertificationStepTwoPageState
         _draft.businessLicenseDoc,
       );
       if (previewPath != null) {
-      _businessLicenseImage = PickedUploadFile(
-        id: 'qualification-business-license',
-        name: _draft.businessLicenseDoc!.docName,
-        path: previewPath,
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-        isImage: true,
-        sizeLabel: '',
-      );
+        _businessLicenseImage = PickedUploadFile(
+          id: 'qualification-business-license',
+          name: _draft.businessLicenseDoc!.docName,
+          path: previewPath,
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+          isImage: true,
+          sizeLabel: '',
+        );
       }
     }
     if (_draft.specialPermitDoc != null) {
@@ -66,15 +70,15 @@ class _QualificationCertificationStepTwoPageState
             _draft.specialPermitDoc,
           );
       if (previewPath != null) {
-      _specialPermitImage = PickedUploadFile(
-        id: 'qualification-special-permit',
-        name: _draft.specialPermitDoc!.docName,
-        path: previewPath,
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-        isImage: true,
-        sizeLabel: '',
-      );
+        _specialPermitImage = PickedUploadFile(
+          id: 'qualification-special-permit',
+          name: _draft.specialPermitDoc!.docName,
+          path: previewPath,
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+          isImage: true,
+          sizeLabel: '',
+        );
       }
     }
   }
@@ -419,9 +423,6 @@ class _UploadPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider<Object> imageProvider =
-        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path) ??
-        const AssetImage('assets/images/qualification_license_placeholder.png');
     return InkWell(
       onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
@@ -441,29 +442,29 @@ class _UploadPlaceholder extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: Color(0x80000000),
-                    shape: BoxShape.circle,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  _buildPreviewImage(),
+                  Center(
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(
+                        color: Color(0x80000000),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: SvgPicture.asset(
+                        'assets/images/qualification_camera.svg',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: SvgPicture.asset(
-                    'assets/images/qualification_camera.svg',
-                    width: 24,
-                    height: 24,
-                  ),
-                ),
+                ],
               ),
             ),
             if (isUploading)
@@ -484,6 +485,60 @@ class _UploadPlaceholder extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 根据当前文件路径构建占位图、本地图片或缓存网络图片。
+  Widget _buildPreviewImage() {
+    final String? path = pickedFile?.path.trim();
+    if (path == null || path.isEmpty) {
+      return const _QualificationPlaceholderImage();
+    }
+    if (QualificationPreviewResolver.isNetworkPath(path)) {
+      return CachedNetworkImage(
+        imageUrl: path,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => const _QualificationPlaceholderImage(),
+      );
+    }
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const _QualificationPlaceholderImage(),
+    );
+  }
+}
+
+/// 渲染第二页上传区域的默认占位图，供空态和加载失败场景复用。
+class _QualificationPlaceholderImage extends StatelessWidget {
+  const _QualificationPlaceholderImage();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/qualification_license_placeholder.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(
+            color: Color(0x80000000),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: SvgPicture.asset(
+            'assets/images/qualification_camera.svg',
+            width: 24,
+            height: 24,
+          ),
         ),
       ),
     );

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import '../../../shared/widgets/app_toast.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,6 +87,7 @@ class _QualificationCertificationPageState
   }
 
   @override
+  /// 初始化第一页表单，并将历史资质图片转换为页面可直接预览的路径。
   void initState() {
     super.initState();
     _serviceProviderCompanyNameController.text =
@@ -114,15 +118,15 @@ class _QualificationCertificationPageState
         _draft.idCardEmblemDoc,
       );
       if (previewPath != null) {
-      _idCardEmblemImage = PickedUploadFile(
-        id: 'qualification-id-emblem',
-        path: previewPath,
-        name: _draft.idCardEmblemDoc!.docName,
-        isImage: true,
-        sizeLabel: '',
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-      );
+        _idCardEmblemImage = PickedUploadFile(
+          id: 'qualification-id-emblem',
+          path: previewPath,
+          name: _draft.idCardEmblemDoc!.docName,
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
       }
     }
     if (_draft.idCardPortraitDoc != null) {
@@ -131,15 +135,15 @@ class _QualificationCertificationPageState
             _draft.idCardPortraitDoc,
           );
       if (previewPath != null) {
-      _idCardPortraitImage = PickedUploadFile(
-        id: 'qualification-id-portrait',
-        path: previewPath,
-        name: _draft.idCardPortraitDoc!.docName,
-        isImage: true,
-        sizeLabel: '',
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-      );
+        _idCardPortraitImage = PickedUploadFile(
+          id: 'qualification-id-portrait',
+          path: previewPath,
+          name: _draft.idCardPortraitDoc!.docName,
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
       }
     }
     _companyNameController.addListener(_handleCompanyFormChanged);
@@ -902,10 +906,10 @@ class _UploadCard extends StatelessWidget {
     );
   }
 
+  /// 根据预览路径类型切换本地文件图或缓存网络图，避免远端图片重复直连加载。
   Widget _buildPreview() {
-    final ImageProvider<Object>? previewImage =
-        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path);
-    if (previewImage == null) {
+    final String? path = pickedFile?.path.trim();
+    if (path == null || path.isEmpty) {
       return Image.asset(
         imageAsset,
         width: 159,
@@ -914,10 +918,27 @@ class _UploadCard extends StatelessWidget {
       );
     }
 
+    // 远端图片改走缓存组件，减少回填场景中的重复网络请求。
+    if (QualificationPreviewResolver.isNetworkPath(path)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: path,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => Image.asset(
+            imageAsset,
+            width: 159,
+            height: 116,
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image(
-        image: previewImage,
+      child: Image.file(
+        File(path),
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
