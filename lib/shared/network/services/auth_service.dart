@@ -34,7 +34,12 @@ class AuthService {
     return response;
   }
 
-  /// 向指定邮箱发送登录验证码。
+  /// 向指定邮箱发送验证码。
+  ///
+  /// `scene` 支持 `login`、`register`、`bind`：
+  /// - `login`：邮箱验证码登录
+  /// - `register`：注册流程发码
+  /// - `bind`：绑定或修改邮箱时给新邮箱发码
   ///
   /// 返回值通常包含发送结果或冷却时间等整数字段。
   Future<Map<String, int>> sendEmailCode({required SendEmailBO request}) async {
@@ -104,6 +109,11 @@ class AuthService {
   }
 
   /// 向指定手机号发送短信验证码。
+  ///
+  /// `scene` 支持 `login`、`register`、`bind`：
+  /// - `login`：手机号验证码登录
+  /// - `register`：注册流程发码
+  /// - `bind`：绑定或修改手机号时给新手机号发码
   ///
   /// 返回值通常包含发送结果或剩余冷却时间等整数字段。
   Future<Map<String, int>> sendSms({required SendSmsBO request}) async {

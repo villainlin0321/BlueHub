@@ -38,6 +38,9 @@ class RoutePaths {
   /// 我的信息页。
   static const myInfo = '/me/info';
 
+  /// 我的信息联系方式编辑页。
+  static const myInfoContactEdit = '/me/info/contact-edit';
+
   /// 求职者实名认证页。
   static const jobSeekerRealNameVerification = '/me/real-name-verification';
 

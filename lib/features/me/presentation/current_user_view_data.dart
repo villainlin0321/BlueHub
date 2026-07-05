@@ -9,6 +9,8 @@ class CurrentUserViewData {
     required this.avatarUrl,
     required this.phone,
     required this.maskedPhone,
+    required this.email,
+    required this.emailText,
     required this.genderText,
     required this.birthdayText,
     required this.isVerified,
@@ -18,6 +20,8 @@ class CurrentUserViewData {
   final String avatarUrl;
   final String phone;
   final String maskedPhone;
+  final String email;
+  final String emailText;
   final String genderText;
   final String birthdayText;
   final bool isVerified;
@@ -26,11 +30,14 @@ class CurrentUserViewData {
   factory CurrentUserViewData.fromAuthUser(AuthUser? user) {
     final String phone = user?.phone.trim() ?? '';
     final String nickname = user?.nickname.trim() ?? '';
+    final String email = user?.email.trim() ?? '';
     return CurrentUserViewData(
-      nickname: nickname.isEmpty ? '我的.未设置昵称'.tr() : nickname,
+      nickname: nickname.isEmpty ? '我的.点击修改昵称'.tr() : nickname,
       avatarUrl: user?.avatarUrl.trim() ?? '',
       phone: phone,
       maskedPhone: _maskPhone(phone),
+      email: email,
+      emailText: email.isEmpty ? '我的.未绑定邮箱'.tr() : email,
       genderText: _formatGender(user?.gender ?? ''),
       birthdayText: _formatBirthday(user?.birthday ?? ''),
       isVerified: user?.isVerified ?? false,

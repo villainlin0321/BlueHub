@@ -36,6 +36,52 @@ class DeviceTokenBO {
   }
 }
 
+class BindPhoneBO {
+  const BindPhoneBO({
+    required this.phone,
+    required this.countryCode,
+    required this.code,
+  });
+
+  final String phone;
+  final String countryCode;
+  final String code;
+
+  factory BindPhoneBO.fromJson(JsonMap json) {
+    return BindPhoneBO(
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      code: readString(json, 'code'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'phone': phone,
+      'countryCode': countryCode,
+      'code': code,
+    };
+  }
+}
+
+class BindEmailBO {
+  const BindEmailBO({required this.email, required this.code});
+
+  final String email;
+  final String code;
+
+  factory BindEmailBO.fromJson(JsonMap json) {
+    return BindEmailBO(
+      email: readString(json, 'email'),
+      code: readString(json, 'code'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{'email': email, 'code': code};
+  }
+}
+
 class RealNameVerifyBO {
   const RealNameVerifyBO({
     required this.realName,
