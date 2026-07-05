@@ -10,6 +10,8 @@ import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../application/auth_session_provider.dart';
 import '../application/login/login_form_controller.dart';
+import '../data/auth_providers.dart';
+import '../data/login_account_store.dart';
 import 'widgets/login_phone_view.dart';
 
 class LoginPhonePage extends ConsumerStatefulWidget {
@@ -23,6 +25,7 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   static const String _workerTestEmail = 'zhangwei@example.com';
   static const String _employerTestEmail = 'berlin.food@example.de';
   static const String _serviceProviderTestEmail = 'oulu@example.com';
+
   /// 统一测试账号验证码，便于本地直登和联调时保持一致。
   static const String _testCode = '123456';
 
@@ -40,6 +43,38 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   // final _emailController = TextEditingController();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_restoreLastLoginAccount);
+  }
+
+  Future<void> _restoreLastLoginAccount() async {
+    final CachedLoginAccount? cachedAccount = ref
+        .read(loginAccountStoreProvider)
+        .load();
+    if (!mounted || cachedAccount == null) {
+      return;
+    }
+
+    final notifier = ref.read(loginFormControllerProvider.notifier);
+    final bool isPhoneLogin = cachedAccount.mode == LoginAccountMode.phone;
+    notifier.setLoginMode(isPhoneLogin);
+
+    if (isPhoneLogin) {
+      _phoneController.text = cachedAccount.account;
+      _emailController.clear();
+      notifier.updatePhone(cachedAccount.account);
+      notifier.updateEmail('');
+      return;
+    }
+
+    _emailController.text = cachedAccount.account;
+    _phoneController.clear();
+    notifier.updateEmail(cachedAccount.account);
+    notifier.updatePhone('');
+  }
 
   @override
   void dispose() {
