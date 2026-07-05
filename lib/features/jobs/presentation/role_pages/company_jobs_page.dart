@@ -10,6 +10,9 @@ import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../message/application/chat/chat_page_args.dart';
+import '../../../messages/data/message_models.dart';
+import '../../../messages/data/message_providers.dart';
 import '../../data/application_models.dart';
 import '../../data/job_models.dart';
 import '../../data/application_providers.dart';
@@ -17,9 +20,20 @@ import '../../data/talent_providers.dart';
 import '../widgets/invite_job_picker_sheet.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+enum TalentCenterMode {
+  employer,
+  serviceProvider,
+}
+
 /// 企业招聘页：按 Figma「人才中心」实现。
 class CompanyJobsPage extends ConsumerStatefulWidget {
-  const CompanyJobsPage({super.key});
+  const CompanyJobsPage({
+    super.key,
+    this.mode = TalentCenterMode.employer,
+  });
+
+  final TalentCenterMode mode;
 
   @override
   ConsumerState<CompanyJobsPage> createState() => _CompanyJobsPageState();
@@ -27,7 +41,7 @@ class CompanyJobsPage extends ConsumerStatefulWidget {
 
 class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   int _selectedTabIndex = 0;
-  final Set<int> _processingInviteUserIds = <int>{};
+  final Set<int> _processingPrimaryActionUserIds = <int>{};
 
   late final TextEditingController _searchController = TextEditingController()
     ..addListener(_handleSearchChanged);
@@ -54,6 +68,9 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   );
 
   TalentListQuery get _query => _buildQueryForTab(_selectedTabIndex);
+
+  bool get _isServiceProviderMode =>
+      widget.mode == TalentCenterMode.serviceProvider;
 
   void _handleSearchChanged() {
     setState(() {});
@@ -88,7 +105,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   }
 
   Future<void> _handleInviteInterview(_CandidateCardData data) async {
-    if (_processingInviteUserIds.contains(data.userId)) {
+    if (_processingPrimaryActionUserIds.contains(data.userId)) {
       return;
     }
 
@@ -104,7 +121,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     }
 
     setState(() {
-      _processingInviteUserIds.add(data.userId);
+      _processingPrimaryActionUserIds.add(data.userId);
     });
 
     try {
@@ -127,10 +144,101 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _processingInviteUserIds.remove(data.userId);
+          _processingPrimaryActionUserIds.remove(data.userId);
         });
       }
     }
+  }
+
+  /// 服务商在人才中心点击“打招呼”后，直接创建会话并跳转聊天页。
+  Future<void> _handleSayHello(_CandidateCardData data) async {
+    if (_processingPrimaryActionUserIds.contains(data.userId)) {
+      return;
+    }
+    if (data.userId <= 0) {
+      _showMessage('招聘.用户信息缺失'.tr(), isError: true);
+      return;
+    }
+
+    setState(() {
+      _processingPrimaryActionUserIds.add(data.userId);
+    });
+
+    try {
+      final Map<String, dynamic> response = await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: data.userId,
+              targetUserRole: 'job_seeker',
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      final int conversationId = _readConversationId(response);
+      await context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: data.userId,
+          targetUserRole: 'job_seeker',
+          nickname: data.name,
+          avatarUrl: data.avatarUrl,
+          conversationId: conversationId,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingPrimaryActionUserIds.remove(data.userId);
+        });
+      }
+    }
+  }
+
+  /// 根据当前页面模式分发卡片主按钮动作，避免服务商端误走邀约流程。
+  Future<void> _handlePrimaryAction(_CandidateCardData data) async {
+    if (_isServiceProviderMode) {
+      await _handleSayHello(data);
+      return;
+    }
+    await _handleInviteInterview(data);
+  }
+
+  /// 兼容不同接口响应格式，提取聊天会话 ID。
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
+    }
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
   }
 
   @override
@@ -178,13 +286,17 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
                     ),
                     onViewResumeTap: () =>
                         _openResumePreview(pageResult.list[index].userId),
-                    onInviteTap: () => _handleInviteInterview(
+                    primaryActionLabel: _isServiceProviderMode
+                        ? '通用.打招呼'.tr()
+                        : '招聘.邀约面试'.tr(),
+                    onPrimaryActionTap: () => _handlePrimaryAction(
                       _CandidateCardData.fromTalent(
                         pageResult.list[index],
                         sort: _selectedSort,
                       ),
                     ),
-                    isInviteLoading: _processingInviteUserIds.contains(
+                    isPrimaryActionLoading:
+                        _processingPrimaryActionUserIds.contains(
                       pageResult.list[index].userId,
                     ),
                   );
@@ -494,14 +606,16 @@ class _CandidateCard extends StatelessWidget {
   const _CandidateCard({
     required this.data,
     required this.onViewResumeTap,
-    required this.onInviteTap,
-    this.isInviteLoading = false,
+    required this.primaryActionLabel,
+    required this.onPrimaryActionTap,
+    required this.isPrimaryActionLoading,
   });
 
   final _CandidateCardData data;
   final VoidCallback onViewResumeTap;
-  final VoidCallback onInviteTap;
-  final bool isInviteLoading;
+  final String primaryActionLabel;
+  final VoidCallback onPrimaryActionTap;
+  final bool isPrimaryActionLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -584,10 +698,10 @@ class _CandidateCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _ResumeActionButton(
-                  label: '招聘.邀约面试'.tr(),
+                  label: primaryActionLabel,
                   primary: true,
-                  onTap: isInviteLoading ? null : onInviteTap,
-                  isLoading: isInviteLoading,
+                  onTap: isPrimaryActionLoading ? null : onPrimaryActionTap,
+                  isLoading: isPrimaryActionLoading,
                 ),
               ],
             ),
