@@ -9,6 +9,22 @@ class AppTestKeys {
     'login-test-service-provider',
   );
 
+  /// 求职者测试登录按钮的稳定定位 Key。
+  static const Key loginTestJobSeekerButton = Key(
+    'login-test-job-seeker',
+  );
+
+  /// 求职者首页根节点的稳定定位 Key。
+  static const Key pageJobSeekerHome = Key('page-home-job-seeker');
+
+  /// 求职者“我的”页根节点的稳定定位 Key。
+  static const Key pageJobSeekerMe = Key('page-me-job-seeker');
+
+  /// 求职者实名认证页根节点的稳定定位 Key。
+  static const Key pageJobSeekerRealNameVerification = Key(
+    'page-real-name-job-seeker',
+  );
+
   /// 服务商首页根节点的稳定定位 Key。
   static const Key pageServiceProviderHome = Key('page-home-service-provider');
 
@@ -34,6 +50,24 @@ class AppTestKeys {
   /// 服务商签证套餐编辑页返回按钮的稳定定位 Key。
   static const Key actionEditVisaPackageBack = Key(
     'action-edit-visa-package-back',
+  );
+
+  /// 自我评价页根节点的稳定定位 Key。
+  static const Key pageSelfEvaluation = Key('page-self-evaluation');
+
+  /// 自我评价输入框的稳定定位 Key。
+  static const Key fieldSelfEvaluationInput = Key(
+    'field-self-evaluation-input',
+  );
+
+  /// 自我评价保存按钮的稳定定位 Key。
+  static const Key actionSelfEvaluationSave = Key(
+    'action-self-evaluation-save',
+  );
+
+  /// 自我评价完成按钮的稳定定位 Key。
+  static const Key actionSelfEvaluationDone = Key(
+    'action-self-evaluation-done',
   );
 
   /// 编辑套餐页套餐总名称输入框的稳定定位 Key。

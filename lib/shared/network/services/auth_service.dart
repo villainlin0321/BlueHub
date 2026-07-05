@@ -13,9 +13,16 @@ class AuthService {
 
   /// 使用邮箱登录信息换取登录态，并在成功后写入本地令牌。
   Future<LoginVO> emailLogin({required EmailLoginBO request}) async {
+    final Map<String, dynamic> payload = Map<String, dynamic>.from(
+      request.toJson(),
+    );
+    final String? password = payload['password'] as String?;
+    if (password == null || password.isEmpty) {
+      payload.remove('password');
+    }
     final response = await _apiClient.post<LoginVO>(
       '/auth/email/login',
-      data: request.toJson(),
+      data: payload,
       decode: (data) => LoginVO.fromJson(asJsonMap(data)),
     );
     if (response.accessToken.isNotEmpty) {

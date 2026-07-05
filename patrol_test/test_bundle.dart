@@ -9,6 +9,7 @@ import 'package:patrol/src/platform/contracts/contracts.dart';
 import 'package:test_api/src/backend/invoker.dart';
 
 // START: GENERATED TEST IMPORTS
+import 'job_seeker/job_seeker_real_name_test.dart' as job_seeker__job_seeker_real_name_test;
 import 'service_provider/service_provider_me_test.dart' as service_provider__service_provider_me_test;
 // END: GENERATED TEST IMPORTS
 
@@ -72,6 +73,7 @@ Future<void> main() async {
   });
 
 // START: GENERATED TEST GROUPS
+  group('job_seeker.job_seeker_real_name_test', job_seeker__job_seeker_real_name_test.main);
   group('service_provider.service_provider_me_test', service_provider__service_provider_me_test.main);
 // END: GENERATED TEST GROUPS
 

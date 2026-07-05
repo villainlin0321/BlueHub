@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:europepass/shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:europepass/patrol_test/helpers/job_seeker_real_name_patrol_support.dart';
 
 import '../../auth/application/auth_session_provider.dart';
 import '../../files/data/file_models.dart';
@@ -10,6 +13,7 @@ import '../../files/data/file_providers.dart';
 import '../data/user_models.dart';
 import '../data/user_providers.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/ui/test_keys.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../utils/upload_picker_utils.dart';
 
@@ -49,6 +53,14 @@ class _JobSeekerRealNameVerificationPageState
   String? _emblemImageError;
   String? _portraitImageError;
 
+  bool get _hasRequiredFieldsFilled =>
+      _nameController.text.trim().isNotEmpty &&
+      _idCardController.text.trim().isNotEmpty &&
+      _emblemImage != null &&
+      _portraitImage != null;
+
+  bool get _canSubmit => !_isSubmitting && _hasRequiredFieldsFilled;
+
   @override
   /// 初始化输入监听：用户开始修正内容后，及时清理对应的错误提示。
   void initState() {
@@ -69,21 +81,19 @@ class _JobSeekerRealNameVerificationPageState
 
   /// 姓名输入变化时清除对应错误，避免用户修正后仍显示旧提示。
   void _handleNameChanged() {
-    if (_nameError == null || _nameController.text.trim().isEmpty) {
-      return;
-    }
     setState(() {
-      _nameError = null;
+      if (_nameController.text.trim().isNotEmpty) {
+        _nameError = null;
+      }
     });
   }
 
   /// 身份证号输入变化时清除对应错误，保持表单反馈及时更新。
   void _handleIdCardChanged() {
-    if (_idCardError == null || _idCardController.text.trim().isEmpty) {
-      return;
-    }
     setState(() {
-      _idCardError = null;
+      if (_idCardController.text.trim().isNotEmpty) {
+        _idCardError = null;
+      }
     });
   }
 
@@ -95,10 +105,12 @@ class _JobSeekerRealNameVerificationPageState
     final String? nextIdCardError = _idCardController.text.trim().isEmpty
         ? '我的.请填写身份证号'.tr()
         : null;
-    final String? nextEmblemImageError =
-        _emblemImage == null ? '我的.请上传身份证国徽面'.tr() : null;
-    final String? nextPortraitImageError =
-        _portraitImage == null ? '我的.请上传身份证人像面'.tr() : null;
+    final String? nextEmblemImageError = _emblemImage == null
+        ? '我的.请上传身份证国徽面'.tr()
+        : null;
+    final String? nextPortraitImageError = _portraitImage == null
+        ? '我的.请上传身份证人像面'.tr()
+        : null;
 
     // 点击提交后统一刷新所有错误状态，确保用户和测试都能看到稳定反馈。
     setState(() {
@@ -120,25 +132,27 @@ class _JobSeekerRealNameVerificationPageState
       return;
     }
 
+    bool didShowSubmittingLoading = false;
     setState(() {
       _isSubmitting = true;
     });
     try {
-      final PickedUploadFile uploadedEmblemImage = await _uploadIdCardImageIfNeeded(
-        isEmblemSide: true,
-      );
+      await EasyLoading.show(maskType: EasyLoadingMaskType.black);
+      didShowSubmittingLoading = true;
+      final PickedUploadFile uploadedEmblemImage =
+          await _uploadIdCardImageIfNeeded(isEmblemSide: true);
       final PickedUploadFile uploadedPortraitImage =
-          await _uploadIdCardImageIfNeeded(
-        isEmblemSide: false,
-      );
+          await _uploadIdCardImageIfNeeded(isEmblemSide: false);
 
       // 关键提交：沿用现有接口契约，不改字段名，只修正页面语义与 front/back 的映射关系。
-      await ref.read(userServiceProvider).realNameVerify(
-        request: _buildRealNameVerifyRequest(
-          uploadedEmblemImage: uploadedEmblemImage,
-          uploadedPortraitImage: uploadedPortraitImage,
-        ),
-      );
+      await ref
+          .read(userServiceProvider)
+          .realNameVerify(
+            request: _buildRealNameVerifyRequest(
+              uploadedEmblemImage: uploadedEmblemImage,
+              uploadedPortraitImage: uploadedPortraitImage,
+            ),
+          );
       final authSession = ref.read(authSessionProvider);
       final bool refreshed = await ref
           .read(authSessionProvider.notifier)
@@ -150,13 +164,24 @@ class _JobSeekerRealNameVerificationPageState
       if (!mounted) {
         return;
       }
+      if (didShowSubmittingLoading) {
+        await EasyLoading.dismiss();
+        didShowSubmittingLoading = false;
+      }
       await _handleSubmitSuccess(refreshed: refreshed);
     } catch (error) {
+      if (didShowSubmittingLoading) {
+        await EasyLoading.dismiss();
+        didShowSubmittingLoading = false;
+      }
       if (!mounted) {
         return;
       }
       await _showToast(_resolveSubmitErrorMessage(error));
     } finally {
+      if (didShowSubmittingLoading && EasyLoading.isShow) {
+        await EasyLoading.dismiss();
+      }
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -169,17 +194,21 @@ class _JobSeekerRealNameVerificationPageState
   Future<PickedUploadFile> _uploadIdCardImageIfNeeded({
     required bool isEmblemSide,
   }) async {
-    final PickedUploadFile targetFile = isEmblemSide ? _emblemImage! : _portraitImage!;
+    final PickedUploadFile targetFile = isEmblemSide
+        ? _emblemImage!
+        : _portraitImage!;
     final String remoteUrl = (targetFile.uploadedFileUrl ?? '').trim();
     if (remoteUrl.isNotEmpty) {
       return targetFile;
     }
 
-    final FilePresignVO uploaded = await ref.read(fileServiceProvider).uploadFile(
-      path: targetFile.path,
-      scene: FileScene.idCard,
-      errorMessage: '上传.文件上传失败'.tr(),
-    );
+    final FilePresignVO uploaded = await ref
+        .read(fileServiceProvider)
+        .uploadFile(
+          path: targetFile.path,
+          scene: FileScene.idCard,
+          errorMessage: '上传.文件上传失败'.tr(),
+        );
     final PickedUploadFile uploadedFile = targetFile.copyWith(
       state: UploadItemState.success,
       progress: 1,
@@ -199,14 +228,29 @@ class _JobSeekerRealNameVerificationPageState
     return uploadedFile;
   }
 
+  Future<void> _handleImagePickTap({required bool isEmblemSide}) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await _pickImage(isEmblemSide: isEmblemSide);
+  }
+
   /// 选择身份证图片并更新本地展示状态，默认沿用现有上传工具，也允许测试注入替身。
   Future<void> _pickImage({required bool isEmblemSide}) async {
+    final JobSeekerRealNamePatrolSupport? patrolSupport = ref.read(
+      jobSeekerRealNamePatrolSupportProvider,
+    );
     final RealNameImagePicker picker =
         widget.pickImages ??
-        (BuildContext context) =>
-            UploadPickerUtils.pickImagesWithSourceSheet(context: context);
-    final List<PickedUploadFile> images =
-        await picker(context);
+        (BuildContext context) {
+          if (patrolSupport != null) {
+            // 关键测试缝：Patrol 可直接回填测试图片，避免 iOS 原生相册控件影响自动化稳定性。
+            return patrolSupport.pickImages(
+              context,
+              isEmblemSide: isEmblemSide,
+            );
+          }
+          return UploadPickerUtils.pickImagesWithSourceSheet(context: context);
+        };
+    final List<PickedUploadFile> images = await picker(context);
     if (!mounted || images.isEmpty) {
       return;
     }
@@ -268,83 +312,87 @@ class _JobSeekerRealNameVerificationPageState
   @override
   /// 构建实名认证页，按截图分为顶部标题、单张表单卡片、底部说明和固定提交区。
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-            color: Color(0xE6000000),
+    return TapBlankToDismissKeyboard(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: Color(0xE6000000),
+            ),
+          ),
+          title: Text(
+            '我的.实名认证'.tr(),
+            style: TestStyle.medium(
+              fontSize: 17,
+              color: const Color(0xE6000000),
+            ),
           ),
         ),
-        title: Text(
-          '我的.实名认证'.tr(),
-          style: TestStyle.medium(
-            fontSize: 17,
-            color: const Color(0xE6000000),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _buildFormCard(),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildInstructionText(),
-                      ),
-                    ],
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _buildFormCard(),
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildInstructionText(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+              );
+            },
           ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: SizedBox(
-            height: 44,
-            child: FilledButton(
-              key: const Key('real-name-submit-button'),
-              onPressed: _isSubmitting ? null : _handleSubmit,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFA9C7E6),
-                disabledBackgroundColor: const Color(0xFFA9C7E6),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: SizedBox(
+              height: 44,
+              child: FilledButton(
+                key: const Key('real-name-submit-button'),
+                onPressed: _canSubmit ? _handleSubmit : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _canSubmit
+                      ? const Color(0xFF096DD9)
+                      : const Color(0xFFA9C7E6),
+                  disabledBackgroundColor: const Color(0xFFA9C7E6),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              ),
-              child: Text(
-                '我的.实名认证提交'.tr(),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 16,
-                  color: Colors.white,
+                child: Text(
+                  '我的.实名认证提交'.tr(),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -399,7 +447,7 @@ class _JobSeekerRealNameVerificationPageState
                   placeholderAsset: 'assets/images/qualification_id_emblem.png',
                   pickedFile: _emblemImage,
                   errorText: _emblemImageError,
-                  onTap: () => _pickImage(isEmblemSide: true),
+                  onTap: () => _handleImagePickTap(isEmblemSide: true),
                 ),
               ),
               const SizedBox(width: 9),
@@ -411,7 +459,7 @@ class _JobSeekerRealNameVerificationPageState
                       'assets/images/qualification_id_portrait.png',
                   pickedFile: _portraitImage,
                   errorText: _portraitImageError,
-                  onTap: () => _pickImage(isEmblemSide: false),
+                  onTap: () => _handleImagePickTap(isEmblemSide: false),
                 ),
               ),
             ],
@@ -425,10 +473,7 @@ class _JobSeekerRealNameVerificationPageState
   Widget _buildInstructionText() {
     return Text(
       '我的.实名认证说明文案'.tr(),
-      style: TestStyle.regular(
-        fontSize: 12,
-        color: const Color(0xFF8C8C8C),
-      ),
+      style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
     );
   }
 }
@@ -591,10 +636,7 @@ class _UploadColumn extends StatelessWidget {
 
 /// 上传示意图区域：优先展示用户选择的本地图片，失败时回退到设计稿示意图。
 class _UploadIllustration extends StatelessWidget {
-  const _UploadIllustration({
-    required this.placeholderAsset,
-    this.pickedFile,
-  });
+  const _UploadIllustration({required this.placeholderAsset, this.pickedFile});
 
   final String placeholderAsset;
   final PickedUploadFile? pickedFile;
@@ -603,10 +645,7 @@ class _UploadIllustration extends StatelessWidget {
   /// 构建上传图像内容，保证无论是否已选图都维持稳定的视觉尺寸。
   Widget build(BuildContext context) {
     if (pickedFile == null) {
-      return Image.asset(
-        placeholderAsset,
-        fit: BoxFit.cover,
-      );
+      return Image.asset(placeholderAsset, fit: BoxFit.cover);
     }
 
     // 关键回退：本地文件不可读时仍展示设计稿示意图，避免卡片空白。
@@ -616,16 +655,10 @@ class _UploadIllustration extends StatelessWidget {
         Image.file(
           File(pickedFile!.path),
           fit: BoxFit.cover,
-          errorBuilder: (
-            BuildContext context,
-            Object error,
-            StackTrace? stackTrace,
-          ) {
-            return Image.asset(
-              placeholderAsset,
-              fit: BoxFit.cover,
-            );
-          },
+          errorBuilder:
+              (BuildContext context, Object error, StackTrace? stackTrace) {
+                return Image.asset(placeholderAsset, fit: BoxFit.cover);
+              },
         ),
         Align(
           alignment: Alignment.bottomCenter,
@@ -637,10 +670,7 @@ class _UploadIllustration extends StatelessWidget {
               pickedFile!.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TestStyle.regular(
-                fontSize: 12,
-                color: Colors.white,
-              ),
+              style: TestStyle.regular(fontSize: 12, color: Colors.white),
             ),
           ),
         ),

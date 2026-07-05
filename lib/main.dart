@@ -17,6 +17,9 @@ import 'shared/logging/app_provider_observer.dart';
 import 'shared/network/providers.dart';
 import 'shared/payment/payment_channel_config.dart';
 import 'shared/payment/payment_launcher.dart';
+import 'features/files/data/file_providers.dart';
+import 'features/me/data/user_providers.dart';
+import 'patrol_test/helpers/job_seeker_real_name_patrol_support.dart';
 
 const MethodChannel _nativeDebugChannel = MethodChannel('bluehub/app_icon');
 const String _nativeProbeUrl = 'http://39.101.190.245:8090';
@@ -52,6 +55,9 @@ Future<void> main() async {
 
             final prefs = await SharedPreferences.getInstance();
             final tokenStore = TokenStore.sharedPreferences(prefs);
+            final patrolRealNameSupport = JobSeekerRealNamePatrolSupport.enabled
+                ? JobSeekerRealNamePatrolSupport()
+                : null;
             await _runNativeHttpProbe();
 
             runApp(
@@ -66,6 +72,23 @@ Future<void> main() async {
                   overrides: [
                     sharedPreferencesProvider.overrideWithValue(prefs),
                     tokenStoreProvider.overrideWithValue(tokenStore),
+                    if (patrolRealNameSupport != null)
+                      jobSeekerRealNamePatrolSupportProvider.overrideWithValue(
+                        patrolRealNameSupport,
+                      ),
+                    if (JobSeekerRealNamePatrolSupport.fakeFlowEnabled)
+                      userServiceProvider.overrideWith(
+                        (ref) => PatrolRealNameUserService(
+                          apiClient: ref.watch(apiClientProvider),
+                        ),
+                      ),
+                    if (JobSeekerRealNamePatrolSupport.fakeFlowEnabled)
+                      fileServiceProvider.overrideWith(
+                        (ref) => PatrolRealNameFileService(
+                          apiClient: ref.watch(apiClientProvider),
+                          support: patrolRealNameSupport!,
+                        ),
+                      ),
                   ],
                   child: const App(),
                 ),

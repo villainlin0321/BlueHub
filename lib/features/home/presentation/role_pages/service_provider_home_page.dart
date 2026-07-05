@@ -513,15 +513,15 @@ class _AiAssistantBanner extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 2),
-                        Text(
-                          '首页.德国工签人才提示'.tr(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TestStyle.pingFangRegular(
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
-                        ),
+                        // Text(
+                        //   '首页.德国工签人才提示'.tr(),
+                        //   maxLines: 1,
+                        //   overflow: TextOverflow.ellipsis,
+                        //   style: TestStyle.pingFangRegular(
+                        //     fontSize: 12,
+                        //     color: Colors.white,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
