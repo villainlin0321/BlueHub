@@ -9,6 +9,7 @@ import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import 'qualification_certification_flow.dart';
@@ -52,7 +53,8 @@ class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepTwoPageState
-    extends ConsumerState<QualificationCertificationStepTwoPage> {
+    extends ConsumerState<QualificationCertificationStepTwoPage>
+    with GuardedPopScopeMixin {
   PickedUploadFile? _businessLicenseImage;
   PickedUploadFile? _specialPermitImage;
   String? _debugBusinessLicensePathForTest;
@@ -123,7 +125,8 @@ class _QualificationCertificationStepTwoPageState
     if (!mounted || !canLeave) {
       return;
     }
-    context.go(RoutePaths.me);
+    // 优先执行真实返回；若当前路由栈不可返回，则兜底回到“我的”页。
+    scheduleDirectPop(onCannotPop: () => context.go(RoutePaths.me));
   }
 
   /// 仅供测试注入已选营业执照图片，避免测试依赖真实上传流程。
@@ -204,14 +207,8 @@ class _QualificationCertificationStepTwoPageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: Scaffold(
         key: AppTestKeys.pageQualificationCertificationStepTwo,
         backgroundColor: const Color(0xFFF5F7FA),

@@ -13,8 +13,9 @@ import '../../files/data/file_providers.dart';
 import '../data/user_models.dart';
 import '../data/user_providers.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../../shared/ui/test_keys.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -22,6 +23,53 @@ import 'package:europepass/shared/ui/test_style.dart';
 typedef RealNameImagePicker =
     Future<List<PickedUploadFile>> Function(BuildContext context);
 typedef RealNameToastPresenter = Future<void> Function(String message);
+
+/// 记录实名认证页会进入提交请求的关键字段，用于判断是否存在未保存改动。
+class _RealNameVerificationSnapshot {
+  const _RealNameVerificationSnapshot({
+    required this.name,
+    required this.idCardNumber,
+    required this.emblemImageIdentity,
+    required this.portraitImageIdentity,
+  });
+
+  final String name;
+  final String idCardNumber;
+  final String emblemImageIdentity;
+  final String portraitImageIdentity;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is _RealNameVerificationSnapshot &&
+        other.name == name &&
+        other.idCardNumber == idCardNumber &&
+        other.emblemImageIdentity == emblemImageIdentity &&
+        other.portraitImageIdentity == portraitImageIdentity;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    name,
+    idCardNumber,
+    emblemImageIdentity,
+    portraitImageIdentity,
+  );
+}
+
+/// 统一归一化实名认证图片身份，确保本地已选图和已上传图都能纳入脏数据判断。
+String _buildRealNameImageIdentity(PickedUploadFile? file) {
+  if (file == null) {
+    return '';
+  }
+  final String fileId = file.uploadedFileId?.toString() ?? '';
+  final String remoteUrl = (file.uploadedFileUrl ?? '').trim();
+  final String localPath = file.path.trim();
+  final String fileName = file.name.trim();
+  return '$fileId|$remoteUrl|$localPath|$fileName';
+}
 
 /// 求职者实名认证页：按 Figma 结构展示行式表单、身份证示意图上传区和本地校验。
 class JobSeekerRealNameVerificationPage extends ConsumerStatefulWidget {
@@ -40,12 +88,14 @@ class JobSeekerRealNameVerificationPage extends ConsumerStatefulWidget {
 }
 
 class _JobSeekerRealNameVerificationPageState
-    extends ConsumerState<JobSeekerRealNameVerificationPage> {
+    extends ConsumerState<JobSeekerRealNameVerificationPage>
+    with GuardedPopScopeMixin {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _idCardController = TextEditingController();
 
   PickedUploadFile? _emblemImage;
   PickedUploadFile? _portraitImage;
+  late _RealNameVerificationSnapshot _initialSnapshot;
   bool _isSubmitting = false;
 
   String? _nameError;
@@ -67,6 +117,7 @@ class _JobSeekerRealNameVerificationPageState
     super.initState();
     _nameController.addListener(_handleNameChanged);
     _idCardController.addListener(_handleIdCardChanged);
+    _initialSnapshot = _buildCurrentSnapshot();
   }
 
   @override
@@ -95,6 +146,29 @@ class _JobSeekerRealNameVerificationPageState
         _idCardError = null;
       }
     });
+  }
+
+  /// 汇总会影响实名认证提交结果的字段，作为页面未保存判断的统一基线。
+  _RealNameVerificationSnapshot _buildCurrentSnapshot() {
+    return _RealNameVerificationSnapshot(
+      name: _nameController.text.trim(),
+      idCardNumber: _idCardController.text.trim(),
+      emblemImageIdentity: _buildRealNameImageIdentity(_emblemImage),
+      portraitImageIdentity: _buildRealNameImageIdentity(_portraitImage),
+    );
+  }
+
+  /// 统一处理头部返回和系统返回；存在未保存改动时先弹出二次确认。
+  Future<void> _handleAttemptLeave() async {
+    final bool hasUnsavedChanges = _buildCurrentSnapshot() != _initialSnapshot;
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges: hasUnsavedChanges,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+    scheduleDirectPop();
   }
 
   /// 统一执行页面内的最小校验，并把错误文案直接展示在对应字段下方。
@@ -292,7 +366,8 @@ class _JobSeekerRealNameVerificationPageState
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pop(true);
+    // 提交成功后允许本次返回直接放行，避免被未保存拦截误伤。
+    scheduleDirectPop(result: true);
   }
 
   /// 统一分发页面提示，生产默认走全局 Toast，测试可注入空实现避免动画干扰。
@@ -312,86 +387,90 @@ class _JobSeekerRealNameVerificationPageState
   @override
   /// 构建实名认证页，按截图分为顶部标题、单张表单卡片、底部说明和固定提交区。
   Widget build(BuildContext context) {
-    return TapBlankToDismissKeyboard(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 18,
-              color: Color(0xE6000000),
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
+      child: TapBlankToDismissKeyboard(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F7FA),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              // 统一走页面级返回判断，避免头部按钮绕过未保存拦截。
+              onPressed: _handleAttemptLeave,
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: Color(0xE6000000),
+              ),
+            ),
+            title: Text(
+              '我的.实名认证'.tr(),
+              style: TestStyle.medium(
+                fontSize: 17,
+                color: const Color(0xE6000000),
+              ),
             ),
           ),
-          title: Text(
-            '我的.实名认证'.tr(),
-            style: TestStyle.medium(
-              fontSize: 17,
-              color: const Color(0xE6000000),
-            ),
-          ),
-        ),
-        body: SafeArea(
-          top: false,
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _buildFormCard(),
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildInstructionText(),
-                        ),
-                      ],
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          _buildFormCard(),
+                          const Spacer(),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildInstructionText(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+                );
+              },
             ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: SizedBox(
-              height: 44,
-              child: FilledButton(
-                key: const Key('real-name-submit-button'),
-                onPressed: _canSubmit ? _handleSubmit : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _canSubmit
-                      ? const Color(0xFF096DD9)
-                      : const Color(0xFFA9C7E6),
-                  disabledBackgroundColor: const Color(0xFFA9C7E6),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+          ),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: SizedBox(
+                height: 44,
+                child: FilledButton(
+                  key: const Key('real-name-submit-button'),
+                  onPressed: _canSubmit ? _handleSubmit : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _canSubmit
+                        ? const Color(0xFF096DD9)
+                        : const Color(0xFFA9C7E6),
+                    disabledBackgroundColor: const Color(0xFFA9C7E6),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-                child: Text(
-                  '我的.实名认证提交'.tr(),
-                  style: TestStyle.pingFangRegular(
-                    fontSize: 16,
-                    color: Colors.white,
+                  child: Text(
+                    '我的.实名认证提交'.tr(),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../application/qualification_upload_helper.dart';
@@ -60,7 +61,8 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepThreePageState
-    extends ConsumerState<QualificationCertificationStepThreePage> {
+    extends ConsumerState<QualificationCertificationStepThreePage>
+    with GuardedPopScopeMixin {
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
   late _QualificationStepThreeSnapshot _initialSnapshot;
@@ -110,7 +112,8 @@ class _QualificationCertificationStepThreePageState
     if (!mounted || !canLeave) {
       return;
     }
-    context.go(RoutePaths.me);
+    // 优先执行真实返回；若当前路由栈不可返回，则兜底回到“我的”页。
+    scheduleDirectPop(onCannotPop: () => context.go(RoutePaths.me));
   }
 
   Future<void> _openExpectedCountrySheet() async {
@@ -209,6 +212,8 @@ class _QualificationCertificationStepThreePageState
       if (!mounted) {
         return;
       }
+      // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
+      allowDirectPop();
       if (_skipSuccessNavigationForTest) {
         return;
       }
@@ -249,14 +254,8 @@ class _QualificationCertificationStepThreePageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: Scaffold(
         key: AppTestKeys.pageQualificationCertificationStepThree,
         backgroundColor: const Color(0xFFF5F7FA),
