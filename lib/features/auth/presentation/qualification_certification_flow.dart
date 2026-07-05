@@ -34,22 +34,32 @@ class UploadedQualificationDoc {
   const UploadedQualificationDoc({
     required this.docType,
     required this.docName,
-    required this.fileId,
-    required this.fileUrl,
-    required this.localPath,
+    this.fileId,
+    this.fileUrl = '',
+    this.localPath = '',
   });
 
   final QualificationDocType docType;
   final String docName;
-  final int fileId;
+  final int? fileId;
   final String fileUrl;
   final String localPath;
 
-  DocItemBO toDocItemBO() {
+  /// 标记当前草稿是否已经持有后端可提交的远端文件信息。
+  bool get hasRemoteFile => fileId != null && fileUrl.trim().isNotEmpty;
+
+  /// 标记当前草稿是否仍保留待提交的本地文件路径。
+  bool get hasLocalFile => localPath.trim().isNotEmpty;
+
+  /// 将草稿中的远端资质信息转换为接口请求对象；本地未上传图片不会参与提交。
+  DocItemBO? toDocItemBOOrNull() {
+    if (!hasRemoteFile || fileId == null) {
+      return null;
+    }
     return DocItemBO(
       docType: docType.apiValue,
       docName: docName,
-      fileId: fileId,
+      fileId: fileId!,
       fileUrl: fileUrl,
     );
   }
@@ -125,12 +135,19 @@ class QualificationCertificationDraft {
   }
 
   List<DocItemBO> qualificationDocs() {
-    return <DocItemBO>[
-      if (businessLicenseDoc != null) businessLicenseDoc!.toDocItemBO(),
-      if (specialPermitDoc != null) specialPermitDoc!.toDocItemBO(),
-      if (idCardEmblemDoc != null) idCardEmblemDoc!.toDocItemBO(),
-      if (idCardPortraitDoc != null) idCardPortraitDoc!.toDocItemBO(),
-    ];
+    final List<UploadedQualificationDoc?> documents =
+        <UploadedQualificationDoc?>[
+          businessLicenseDoc,
+          specialPermitDoc,
+          idCardEmblemDoc,
+          idCardPortraitDoc,
+        ];
+    return documents
+        .map(
+          (UploadedQualificationDoc? document) => document?.toDocItemBOOrNull(),
+        )
+        .whereType<DocItemBO>()
+        .toList(growable: false);
   }
 
   UpdateVisaProviderBO toProviderUpdateRequest() {

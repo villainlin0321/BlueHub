@@ -11,7 +11,6 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
-import '../application/qualification_upload_helper.dart';
 import 'qualification_certification_flow.dart';
 import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_progress_stepper.dart';
@@ -58,11 +57,8 @@ class _QualificationCertificationStepTwoPageState
   PickedUploadFile? _specialPermitImage;
   String? _debugBusinessLicensePathForTest;
   late _QualificationStepTwoSnapshot _initialSnapshot;
-  bool _isUploadingBusinessLicense = false;
-  bool _isUploadingSpecialPermit = false;
   bool _allowDirectPop = false;
 
-  QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
   List<String> get _steps => <String>[
     tr('认证流程.基本信息'),
@@ -74,19 +70,20 @@ class _QualificationCertificationStepTwoPageState
   void initState() {
     super.initState();
     if (_draft.businessLicenseDoc != null) {
-      final String? previewPath = QualificationPreviewResolver.resolvePreviewPath(
-        _draft.businessLicenseDoc,
-      );
+      final String? previewPath =
+          QualificationPreviewResolver.resolvePreviewPath(
+            _draft.businessLicenseDoc,
+          );
       if (previewPath != null) {
-      _businessLicenseImage = PickedUploadFile(
-        id: 'qualification-business-license',
-        name: _draft.businessLicenseDoc!.docName,
-        path: previewPath,
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-        isImage: true,
-        sizeLabel: '',
-      );
+        _businessLicenseImage = PickedUploadFile(
+          id: 'qualification-business-license',
+          name: _draft.businessLicenseDoc!.docName,
+          path: previewPath,
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+          isImage: true,
+          sizeLabel: '',
+        );
       }
     }
     if (_draft.specialPermitDoc != null) {
@@ -95,15 +92,15 @@ class _QualificationCertificationStepTwoPageState
             _draft.specialPermitDoc,
           );
       if (previewPath != null) {
-      _specialPermitImage = PickedUploadFile(
-        id: 'qualification-special-permit',
-        name: _draft.specialPermitDoc!.docName,
-        path: previewPath,
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-        isImage: true,
-        sizeLabel: '',
-      );
+        _specialPermitImage = PickedUploadFile(
+          id: 'qualification-special-permit',
+          name: _draft.specialPermitDoc!.docName,
+          path: previewPath,
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+          isImage: true,
+          sizeLabel: '',
+        );
       }
     }
     _initialSnapshot = _buildCurrentSnapshot();
@@ -154,7 +151,40 @@ class _QualificationCertificationStepTwoPageState
     setState(() {
       // 仅让未保存快照感知“已选择文件”，避免测试环境真的去渲染本地图片。
       _debugBusinessLicensePathForTest = imagePath;
+      _draft.businessLicenseDoc = UploadedQualificationDoc(
+        docType: QualificationDocType.businessLicense,
+        docName: tr('认证流程.营业执照'),
+        localPath: imagePath,
+      );
     });
+  }
+
+  /// 仅供测试直接触发第二步必填校验，避免测试依赖真实跳转环境。
+  bool debugValidateRequiredImagesForTest() {
+    return _validateRequiredImages();
+  }
+
+  /// 校验第二步必填图片是否已经选择完成。
+  bool _validateRequiredImages() {
+    if (_businessLicenseImage == null &&
+        (_debugBusinessLicensePathForTest == null ||
+            _debugBusinessLicensePathForTest!.isEmpty)) {
+      AppToast.show('认证流程.请上传营业执照'.tr());
+      return false;
+    }
+    return true;
+  }
+
+  /// 统一处理第二步“下一步”动作，确保营业执照已准备完成后再进入第三步。
+  void _handleNext() {
+    if (!_validateRequiredImages()) {
+      return;
+    }
+
+    context.push(
+      RoutePaths.qualificationCertificationStepThree,
+      extra: widget.args,
+    );
   }
 
   Future<void> _pickQualificationImage({
@@ -175,48 +205,21 @@ class _QualificationCertificationStepTwoPageState
     );
     setState(() {
       if (docType == QualificationDocType.businessLicense) {
-        _isUploadingBusinessLicense = true;
+        _businessLicenseImage = pickedFile;
+        _draft.businessLicenseDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.businessLicense,
+          docName: docType.localizedDefaultDocName,
+          localPath: pickedFile.path,
+        );
       } else {
-        _isUploadingSpecialPermit = true;
+        _specialPermitImage = pickedFile;
+        _draft.specialPermitDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.specialPermit,
+          docName: docType.localizedDefaultDocName,
+          localPath: pickedFile.path,
+        );
       }
     });
-    try {
-      final UploadedQualificationDoc uploadedDoc =
-          await QualificationUploadHelper.uploadQualificationImage(
-            ref: ref,
-            role: _role,
-            file: pickedFile,
-            docType: docType,
-            docName: docType.localizedDefaultDocName,
-          );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        if (docType == QualificationDocType.businessLicense) {
-          _businessLicenseImage = pickedFile;
-          _draft.businessLicenseDoc = uploadedDoc;
-        } else {
-          _specialPermitImage = pickedFile;
-          _draft.specialPermitDoc = uploadedDoc;
-        }
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      AppToast.show('认证流程.上传失败'.tr());
-    } finally {
-      if (mounted) {
-        setState(() {
-          if (docType == QualificationDocType.businessLicense) {
-            _isUploadingBusinessLicense = false;
-          } else {
-            _isUploadingSpecialPermit = false;
-          }
-        });
-      }
-    }
   }
 
   @override
@@ -293,10 +296,10 @@ class _QualificationCertificationStepTwoPageState
                       _LicenseUploadSection(
                         title: '认证流程.营业执照'.tr(),
                         isRequired: true,
-                        uploadKey:
-                            AppTestKeys.actionQualificationBusinessLicenseUpload,
+                        uploadKey: AppTestKeys
+                            .actionQualificationBusinessLicenseUpload,
                         pickedFile: _businessLicenseImage,
-                        isUploading: _isUploadingBusinessLicense,
+                        isUploading: false,
                         onTap: () => _pickQualificationImage(
                           docType: QualificationDocType.businessLicense,
                         ),
@@ -308,7 +311,7 @@ class _QualificationCertificationStepTwoPageState
                         uploadKey:
                             AppTestKeys.actionQualificationSpecialPermitUpload,
                         pickedFile: _specialPermitImage,
-                        isUploading: _isUploadingSpecialPermit,
+                        isUploading: false,
                         onTap: () => _pickQualificationImage(
                           docType: QualificationDocType.specialPermit,
                         ),
@@ -357,10 +360,7 @@ class _QualificationCertificationStepTwoPageState
                     height: 44,
                     child: FilledButton(
                       key: AppTestKeys.actionQualificationStepTwoNext,
-                      onPressed: () => context.push(
-                        RoutePaths.qualificationCertificationStepThree,
-                        extra: widget.args,
-                      ),
+                      onPressed: _handleNext,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF096DD9),
                         shape: RoundedRectangleBorder(
@@ -543,10 +543,7 @@ class _UploadPlaceholder extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                ),
+                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
               ),
               child: Center(
                 child: Container(

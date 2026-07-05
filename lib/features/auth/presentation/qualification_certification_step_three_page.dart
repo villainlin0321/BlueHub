@@ -11,6 +11,7 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../application/qualification_upload_helper.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../employer/data/employer_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
@@ -65,6 +66,7 @@ class _QualificationCertificationStepThreePageState
   late _QualificationStepThreeSnapshot _initialSnapshot;
   bool _isSubmitting = false;
   bool _allowDirectPop = false;
+  bool _skipSuccessNavigationForTest = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
@@ -154,8 +156,30 @@ class _QualificationCertificationStepThreePageState
     });
   }
 
+  /// 在最终提交前兜底校验必填资质图片，避免用户绕过前序步骤直接提交。
+  bool _validateRequiredImagesBeforeSubmit() {
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardEmblemDoc == null) {
+      AppToast.show('请上传身份证国徽面'.tr());
+      return false;
+    }
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardPortraitDoc == null) {
+      AppToast.show('请上传身份证人像面'.tr());
+      return false;
+    }
+    if (_draft.businessLicenseDoc == null) {
+      AppToast.show('认证流程.请上传营业执照'.tr());
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
     if (_isSubmitting) {
+      return;
+    }
+    if (!_validateRequiredImagesBeforeSubmit()) {
       return;
     }
 
@@ -171,6 +195,11 @@ class _QualificationCertificationStepThreePageState
       );
       _draft.yearsOfService =
           int.tryParse(_experienceController.text.trim()) ?? 0;
+      await QualificationUploadHelper.uploadDraftQualifications(
+        ref: ref,
+        role: _role,
+        draft: _draft,
+      );
       if (_role == QualificationCertificationRole.company) {
         await ref
             .read(employerServiceProvider)
@@ -185,6 +214,9 @@ class _QualificationCertificationStepThreePageState
       }
       // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
       _allowDirectPop = true;
+      if (_skipSuccessNavigationForTest) {
+        return;
+      }
       context.push(
         RoutePaths.appResult,
         extra: AppResultPageArgs(
@@ -206,6 +238,16 @@ class _QualificationCertificationStepThreePageState
           _isSubmitting = false;
         });
       }
+    }
+  }
+
+  /// 仅供测试直接触发最终提交，避免测试依赖真实路由跳转。
+  Future<void> debugSubmitForTest() async {
+    _skipSuccessNavigationForTest = true;
+    try {
+      await _handleSubmit();
+    } finally {
+      _skipSuccessNavigationForTest = false;
     }
   }
 
@@ -309,8 +351,8 @@ class _QualificationCertificationStepThreePageState
                             ),
                             const Spacer(),
                             GestureDetector(
-                              key:
-                                  AppTestKeys.actionQualificationServiceCountrySelect,
+                              key: AppTestKeys
+                                  .actionQualificationServiceCountrySelect,
                               onTap: _openExpectedCountrySheet,
                               child: SizedBox(
                                 width: 20,
@@ -375,8 +417,8 @@ class _QualificationCertificationStepThreePageState
                                 ),
                                 alignment: Alignment.center,
                                 child: TextField(
-                                  key:
-                                      AppTestKeys.fieldQualificationYearsOfService,
+                                  key: AppTestKeys
+                                      .fieldQualificationYearsOfService,
                                   controller: _experienceController,
                                   keyboardType: TextInputType.number,
                                   textAlignVertical: TextAlignVertical.center,

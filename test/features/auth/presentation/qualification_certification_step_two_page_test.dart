@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,6 +113,30 @@ void main() {
     );
     expect(navigatorObserver.poppedRouteNames, contains('/step-two'));
   });
+
+  testWidgets('认证第二步未选择营业执照时不能进入下一步', (WidgetTester tester) async {
+    await tester.pumpWidget(buildQualificationStepTwoTestApp());
+    await tester.pumpAndSettle();
+
+    final dynamic state = tester.state(
+      find.byType(QualificationCertificationStepTwoPage),
+    );
+
+    expect(state.debugValidateRequiredImagesForTest(), isFalse);
+  });
+
+  testWidgets('认证第二步选择营业执照后可以进入下一步', (WidgetTester tester) async {
+    await tester.pumpWidget(buildQualificationStepTwoTestApp());
+    await tester.pumpAndSettle();
+
+    final dynamic state = tester.state(
+      find.byType(QualificationCertificationStepTwoPage),
+    );
+    state.debugSetBusinessLicenseForTest('mock-path/business-license.png');
+    await tester.pump();
+
+    expect(state.debugValidateRequiredImagesForTest(), isTrue);
+  });
 }
 
 /// 构建带导航栈的第二步页面测试环境，便于验证返回拦截行为。
@@ -127,15 +152,17 @@ Widget buildQualificationStepTwoTestApp({
     useOnlyLangCode: true,
     child: ProviderScope(
       child: MaterialApp(
+        builder: EasyLoading.init(),
         initialRoute: '/step-two',
         navigatorObservers: navigatorObserver == null
             ? const <NavigatorObserver>[]
             : <NavigatorObserver>[navigatorObserver],
         routes: <String, WidgetBuilder>{
-          '/': (_) => const Scaffold(body: Center(child: Text('test-root-page'))),
+          '/': (_) =>
+              const Scaffold(body: Center(child: Text('test-root-page'))),
           '/step-two': (_) => QualificationCertificationStepTwoPage(
-                args: QualificationCertificationPageArgs(),
-              ),
+            args: QualificationCertificationPageArgs(),
+          ),
         },
       ),
     ),
