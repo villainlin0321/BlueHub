@@ -11,8 +11,14 @@ import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
+import '../../../me/data/dictionary_providers.dart';
+import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
+import '../../../../shared/network/models/dictionary_models.dart';
+import '../../../../shared/network/services/config_service.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
 
@@ -388,6 +394,8 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
     BuildContext context,
     double bottomPadding,
     List<VisaPackageVO> packages,
+    Map<String, String> countryLabelMap,
+    Map<String, String> visaTypeLabelMap,
   ) {
     if (packages.isEmpty) {
       return _PackageEmptyState(
@@ -410,7 +418,12 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
         final VisaPackageVO package = packages[index];
         final bool isDeleting = _deletingPackageIds.contains(package.packageId);
         return _PackageCard(
-          data: _PackageCardData.fromVisaPackage(package, widget.tab),
+          data: _PackageCardData.fromVisaPackage(
+            package,
+            widget.tab,
+            countryLabelMap: countryLabelMap,
+            visaTypeLabelMap: visaTypeLabelMap,
+          ),
           tabStatus: widget.tab.status,
           onDeleteAction: isDeleting ? null : () => _deletePackage(package),
           onSecondaryAction:
@@ -443,6 +456,23 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   @override
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final Map<String, String> countryLabelMap = ref
+        .watch(
+          countrySearchProvider(
+            const CountrySearchQuery(page: 1, pageSize: 200),
+          ),
+        )
+        .maybeWhen(
+          data: (PageResult<CountryVO> result) =>
+              buildCountryLabelMap(result.list),
+          orElse: () => const <String, String>{},
+        );
+    final Map<String, String> visaTypeLabelMap = ref
+        .watch(tagDictionaryProvider(TagCategory.visaType))
+        .maybeWhen(
+          data: _buildVisaTypeLabelMap,
+          orElse: () => const <String, String>{},
+        );
     return EasyRefresh(
       key: AppTestKeys.sectionServiceProviderJobsPanel(widget.tab.status),
       header: const ClassicHeader(),
@@ -470,7 +500,13 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
               bottomPadding: bottomPadding,
             );
           }
-          return _buildPackageList(context, bottomPadding, _packages);
+          return _buildPackageList(
+            context,
+            bottomPadding,
+            _packages,
+            countryLabelMap,
+            visaTypeLabelMap,
+          );
         },
       ),
     );
@@ -964,11 +1000,13 @@ class _PackageCardData {
 
   factory _PackageCardData.fromVisaPackage(
     VisaPackageVO package,
-    _PackageTab tab,
-  ) {
+    _PackageTab tab, {
+    required Map<String, String> countryLabelMap,
+    required Map<String, String> visaTypeLabelMap,
+  }) {
     final List<String> tags = <String>[
-      _resolveCountryLabel(package.targetCountry),
-      _resolveVisaTypeLabel(package.visaType),
+      _resolveCountryLabel(package.targetCountry, countryLabelMap),
+      _resolveVisaTypeLabel(package.visaType, visaTypeLabelMap),
     ].where((String value) => value.isNotEmpty).toList(growable: false);
 
     return _PackageCardData(
@@ -1130,39 +1168,31 @@ class _PackageLoadError extends StatelessWidget {
   }
 }
 
-const Map<String, String> _countryLabelMap = <String, String>{
-  'DE': '国家.德国',
-  'FR': '国家.法国',
-  'CH': '国家.瑞士',
-  'GB': '国家.英国',
-  'IT': '国家.意大利',
-  'ES': '国家.西班牙',
-};
-
-const Map<String, String> _visaTypeLabelMap = <String, String>{
-  'work': '服务详情.工作签',
-  'travel': '服务详情.旅游签',
-  'tech': '服务详情.技术签',
-  'nursing': '服务详情.护理签',
-  'study': '服务详情.留学签',
-};
-
-String _resolveCountryLabel(String value) {
-  final String normalized = value.trim();
-  if (normalized.isEmpty) {
-    return '';
-  }
-  final String? labelKey = _countryLabelMap[normalized.toUpperCase()];
-  return labelKey == null ? normalized : labelKey.tr();
+Map<String, String> _buildVisaTypeLabelMap(List<TagItemVO> tags) {
+  return <String, String>{
+    for (final TagItemVO item in tags)
+      if (item.tagCode.trim().isNotEmpty && item.tagNameZh.trim().isNotEmpty)
+        item.tagCode.trim().toLowerCase(): item.tagNameZh.trim(),
+  };
 }
 
-String _resolveVisaTypeLabel(String value) {
+String _resolveCountryLabel(String value, Map<String, String> countryLabelMap) {
   final String normalized = value.trim();
   if (normalized.isEmpty) {
     return '';
   }
-  final String? labelKey = _visaTypeLabelMap[normalized.toLowerCase()];
-  return labelKey == null ? normalized : labelKey.tr();
+  return countryLabelMap[normalized.toUpperCase()] ?? normalized;
+}
+
+String _resolveVisaTypeLabel(
+  String value,
+  Map<String, String> visaTypeLabelMap,
+) {
+  final String normalized = value.trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return visaTypeLabelMap[normalized.toLowerCase()] ?? normalized;
 }
 
 String _formatCurrencyAmount(String currency, double amount) {
