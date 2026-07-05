@@ -9,7 +9,7 @@ import '../auth_session_provider.dart';
 import 'login_form_state.dart';
 
 final loginFormControllerProvider =
-    NotifierProvider<LoginFormController, LoginFormState>(
+    NotifierProvider.autoDispose<LoginFormController, LoginFormState>(
       LoginFormController.new,
     );
 
