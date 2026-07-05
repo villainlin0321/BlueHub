@@ -14,6 +14,7 @@ import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import 'qualification_certification_flow.dart';
 import 'qualification_preview_resolver.dart';
+import 'widgets/qualification_preview_image.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -497,9 +498,6 @@ class _UploadPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider<Object> imageProvider =
-        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path) ??
-        const AssetImage('assets/images/qualification_license_placeholder.png');
     return InkWell(
       key: uploadKey,
       onTap: isUploading ? null : onTap,
@@ -520,25 +518,27 @@ class _UploadPlaceholder extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-              ),
-              child: Center(
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: Color(0x80000000),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: SvgPicture.asset(
-                    'assets/images/qualification_camera.svg',
-                    width: 24,
-                    height: 24,
-                  ),
+            QualificationPreviewImage(
+              previewPath: pickedFile?.path,
+              placeholderAsset:
+                  'assets/images/qualification_license_placeholder.png',
+              fit: BoxFit.cover,
+              placeholderFit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            Center(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0x80000000),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: SvgPicture.asset(
+                  'assets/images/qualification_camera.svg',
+                  width: 24,
+                  height: 24,
                 ),
               ),
             ),

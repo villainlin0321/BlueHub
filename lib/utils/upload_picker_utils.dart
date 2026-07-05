@@ -206,6 +206,31 @@ class UploadPickerUtils {
         .toList();
   }
 
+  /// 仅从本地文件中选择 PDF，统一限制业务文件上传类型。
+  static Future<List<PickedUploadFile>> pickPdfFiles() async {
+    final FilePickerResult? result = await FilePicker.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const <String>['pdf'],
+    );
+    if (result == null) {
+      return const <PickedUploadFile>[];
+    }
+
+    return result.files
+        .where((PlatformFile file) => file.path != null)
+        .map(
+          (PlatformFile file) => _buildUploadFile(
+            path: file.path!,
+            sourceType: UploadSourceType.file,
+            name: file.name,
+            sizeBytes: file.size,
+          ),
+        )
+        .where((PickedUploadFile file) => isPdfPath(file.path))
+        .toList(growable: false);
+  }
+
   static PickedUploadFile _buildUploadFile({
     required String path,
     required UploadSourceType sourceType,
@@ -254,6 +279,12 @@ class UploadPickerUtils {
         normalizedPath.endsWith('.gif') ||
         normalizedPath.endsWith('.heic') ||
         normalizedPath.endsWith('.heif');
+  }
+
+  /// 判断当前路径是否指向 PDF 文件，供上传限制和预览分流复用。
+  static bool isPdfPath(String path) {
+    final String normalizedPath = path.toLowerCase();
+    return normalizedPath.endsWith('.pdf');
   }
 
   static String formatFileSize(int bytes) {

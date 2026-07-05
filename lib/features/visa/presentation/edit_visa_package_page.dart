@@ -11,7 +11,9 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -538,6 +540,27 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
     await _pickCoverFromGallery();
   }
 
+  /// 预览当前封面图，优先使用上传后的远程地址，缺失时回退到本地裁剪结果。
+  Future<void> _handleCoverPreviewTap() async {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null) {
+      return;
+    }
+    final String previewPath = (coverImage.uploadedFileUrl ?? coverImage.path)
+        .trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: coverImage.name,
+      isImage: true,
+      isPdf: false,
+    );
+  }
+
   Future<void> _pickCoverFromGallery() async {
     try {
       final List<PickedUploadFile> pickedFiles =
@@ -931,6 +954,50 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
     });
   }
 
+  /// 处理材料删除入口：统一执行“至少保留一个”校验和删除确认弹窗。
+  void _handleDeleteMaterial(int tierIndex, int materialIndex) {
+    _confirmAndDeleteMaterial(tierIndex, materialIndex);
+  }
+
+  /// 删除前先校验最小保留数量，再通过确认弹窗降低误删风险。
+  Future<void> _confirmAndDeleteMaterial(int tierIndex, int materialIndex) async {
+    if (tierIndex < 0 || tierIndex >= _tiers.length) {
+      return;
+    }
+    final List<EditVisaPackageMaterialViewDraft> materials =
+        _tiers[tierIndex].materials;
+    if (materialIndex < 0 || materialIndex >= materials.length) {
+      return;
+    }
+    if (materials.length <= 1) {
+      AppToast.show('至少保留 1 个材料');
+      return;
+    }
+    final bool confirmed = await showAppDeleteConfirmDialog(
+      context: context,
+      title: '确认删除材料',
+      message: '删除后不可恢复，是否继续删除该材料？',
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.删除'.tr(),
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    if (tierIndex < 0 || tierIndex >= _tiers.length) {
+      return;
+    }
+    final List<EditVisaPackageMaterialViewDraft> latestMaterials =
+        _tiers[tierIndex].materials;
+    if (materialIndex < 0 || materialIndex >= latestMaterials.length) {
+      return;
+    }
+    final EditVisaPackageMaterialViewDraft material =
+        latestMaterials.removeAt(materialIndex);
+    // 删除材料时同步释放 controller，避免残留输入状态和资源泄漏。
+    material.dispose();
+    setState(() {});
+  }
+
   void _handleToggleServiceTag(int tierIndex, String tagCode) {
     setState(() {
       final Set<String> selected = _tiers[tierIndex].selectedServiceTagCodes;
@@ -1059,7 +1126,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
   ) async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showToast('订单.未能读取所选文件'.tr());
         return;
@@ -1071,6 +1138,23 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
       }
       _showToast('订单.选择文件失败'.tr());
     }
+  }
+
+  /// 预览材料示例文件，兼容本地已选文件与上传后的远程地址。
+  Future<void> _handlePreviewExampleFile(PickedUploadFile file) async {
+    final String previewPath = (file.uploadedFileUrl ?? file.path).trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: file.name,
+      isImage: file.isImage,
+      isPdf: UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(file.name),
+    );
   }
 
   Future<void> _appendExampleFiles(
@@ -1328,6 +1412,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
         onSaveDraftTap: _handleSaveDraft,
         onPublishTap: _handlePublish,
         onCoverUploadTap: _handleCoverUploadTap,
+        onCoverPreviewTap: _handleCoverPreviewTap,
         onDeleteCoverTap: _handleDeleteCover,
         onCountryTap: _openCountrySheet,
         onVisaTypeTap: _openVisaTypeSheet,
@@ -1336,6 +1421,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
         onAddTier: _handleAddTier,
         onDeleteTier: _handleDeleteTier,
         onAddMaterial: _handleAddMaterial,
+        onDeleteMaterial: _handleDeleteMaterial,
         onAddCustomService: _handleAddCustomService,
         onRemoveCustomService: _handleRemoveCustomService,
         onToggleServiceTag: _handleToggleServiceTag,
@@ -1343,6 +1429,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
         onMaterialRequiredChanged: _handleMaterialRequiredChanged,
         onMaterialTypeTap: _openMaterialTypeSheet,
         onExampleUploadTap: _openExampleUploadSheet,
+        onPreviewExampleFile: _handlePreviewExampleFile,
         onDeleteExampleFile: _handleDeleteExampleFile,
         tagLabelBuilder: controller.tagLabel,
       ),

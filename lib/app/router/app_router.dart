@@ -62,6 +62,7 @@ import '../../features/visa/presentation/visa_page.dart';
 import '../../shared/logging/app_log_event.dart';
 import '../../shared/logging/app_log_facade.dart';
 import '../../shared/logging/app_route_tracker.dart';
+import '../../shared/presentation/attachment_preview_page.dart';
 import 'route_paths.dart';
 
 /// 提供全局 `GoRouter` 实例，并在关键路由变化时输出日志。
@@ -409,6 +410,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             return MyResumePreviewPage(userId: extra, title: '我的.简历详情标题'.tr());
           }
           return const MyResumePreviewPage();
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.attachmentPreview,
+        builder: (context, state) {
+          final AttachmentPreviewArgs? args =
+              state.extra as AttachmentPreviewArgs?;
+          return AttachmentPreviewPage(
+            args:
+                args ??
+                const AttachmentPreviewArgs(
+                  path: '',
+                  title: '',
+                  isImage: false,
+                  isPdf: false,
+                ),
+          );
         },
       ),
       GoRoute(

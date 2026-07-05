@@ -8,6 +8,7 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
+import '../../../jobs/presentation/job_requirement_tag_label_resolver.dart';
 import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/models/app_currency.dart';
@@ -438,6 +439,14 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       }
       _loadInitial();
     });
+    final Map<String, TagItemVO> requirementTagLookup =
+        buildRequirementTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
 
     if (_isInitialLoading && !_hasLoadedOnce) {
       return const Center(child: CircularProgressIndicator());
@@ -469,6 +478,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
                 final JobDetailVO job = _jobs[index];
                 return _JobManageCard(
                   job: job,
+                  requirementTagLookup: requirementTagLookup,
                   isOffline: widget.tab.isOffline,
                   isDeleting: _deletingJobIds.contains(job.jobId),
                   isUpdatingStatus: _updatingStatusJobIds.contains(job.jobId),
@@ -531,6 +541,7 @@ class _CompanyJobEmptyState extends StatelessWidget {
 class _JobManageCard extends StatelessWidget {
   const _JobManageCard({
     required this.job,
+    required this.requirementTagLookup,
     required this.isOffline,
     required this.isDeleting,
     required this.isUpdatingStatus,
@@ -540,6 +551,7 @@ class _JobManageCard extends StatelessWidget {
   });
 
   final JobDetailVO job;
+  final Map<String, TagItemVO> requirementTagLookup;
   final bool isOffline;
   final bool isDeleting;
   final bool isUpdatingStatus;
@@ -577,7 +589,7 @@ class _JobManageCard extends StatelessWidget {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _buildTags(job)
+                children: _buildTags(context, job)
                     .map(
                       (String tag) => Padding(
                         padding: const EdgeInsets.only(right: 4),
@@ -660,7 +672,7 @@ class _JobManageCard extends StatelessWidget {
     );
   }
 
-  List<String> _buildTags(JobDetailVO job) {
+  List<String> _buildTags(BuildContext context, JobDetailVO job) {
     final List<String> tags = <String>[];
 
     void addTag(String value) {
@@ -671,13 +683,11 @@ class _JobManageCard extends StatelessWidget {
       tags.add(tag);
     }
 
-    addTag(job.employmentType);
-    addTag(_formatLocation(job));
     if (job.hasVisaSupport) {
       addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
-      addTag(tag.label);
+      addTag(resolveRequirementTagLabel(context, tag, requirementTagLookup));
       if (tags.length >= 4) {
         break;
       }
