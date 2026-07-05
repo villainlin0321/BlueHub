@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../shared/logging/app_log_event.dart';
 import '../../../../shared/logging/app_log_facade.dart';
 import '../../../../shared/logging/app_log_scope.dart';
+import '../../../../shared/network/services/visa_order_service.dart';
 import '../../../../shared/payment/payment_launcher.dart';
 import '../../../order/data/payment_models.dart';
 import '../../../../shared/network/services/payment_service.dart';
@@ -39,14 +41,20 @@ class PaymentFlowResult {
 class PaymentFlowCoordinator {
   PaymentFlowCoordinator({
     required PaymentService paymentService,
+    VisaOrderService? visaOrderService,
     PaymentLauncher? paymentLauncher,
+    bool enableDebugDirectPay = kDebugMode,
   }) : _paymentService = paymentService,
+       _visaOrderService = visaOrderService,
+       _enableDebugDirectPay = enableDebugDirectPay,
        _paymentLauncher = paymentLauncher ?? PaymentLauncher.instance;
 
   static const Duration _pollDelay = Duration(seconds: 1);
   static const int _maxStatusAttempts = 6;
 
   final PaymentService _paymentService;
+  final VisaOrderService? _visaOrderService;
+  final bool _enableDebugDirectPay;
   final PaymentLauncher _paymentLauncher;
 
   /// 启动支付链路，并在同一条作用域内串联创建、拉起和轮询日志。
@@ -73,10 +81,21 @@ class PaymentFlowCoordinator {
           rethrow;
         }
         _logPaymentCreateSuccess(payment);
+        if (_shouldUseDebugDirectPay) {
+          return _completeDebugDirectPay(
+            orderId: orderId,
+            method: method,
+            payment: payment,
+          );
+        }
 
         final AppPaymentLaunchResult launchResult = switch (method) {
-          AppPaymentMethod.alipay => await _paymentLauncher.payWithAlipay(payment),
-          AppPaymentMethod.wechat => await _paymentLauncher.payWithWeChat(payment),
+          AppPaymentMethod.alipay => await _paymentLauncher.payWithAlipay(
+            payment,
+          ),
+          AppPaymentMethod.wechat => await _paymentLauncher.payWithWeChat(
+            payment,
+          ),
         };
         _logPaymentLaunchResult(
           payment: payment,
@@ -105,6 +124,33 @@ class PaymentFlowCoordinator {
     );
   }
 
+  bool get _shouldUseDebugDirectPay =>
+      _enableDebugDirectPay && _visaOrderService != null;
+
+  /// Debug 模式下绕过支付 SDK，直接调用订单支付接口并按成功处理。
+  Future<PaymentFlowResult> _completeDebugDirectPay({
+    required int orderId,
+    required AppPaymentMethod method,
+    required PaymentResultVO payment,
+  }) async {
+    try {
+      await _visaOrderService!.payOrder(orderId: orderId);
+    } catch (error, stackTrace) {
+      _logDebugDirectPayFail(
+        payment: payment,
+        method: method,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+    _logDebugDirectPaySuccess(payment: payment, method: method);
+    return PaymentFlowResult(
+      status: PaymentFlowStatus.success,
+      message: '服务详情.支付成功'.tr(),
+    );
+  }
+
   /// 优先复用上游交互链路的 traceId，仅在缺失时才为支付流程补建新链路。
   String _resolvePaymentTraceId() {
     final Object? inheritedTraceId = AppLogScope.current['traceId'];
@@ -122,7 +168,9 @@ class PaymentFlowCoordinator {
     PaymentStatusVO? latestStatus;
     for (int attempt = 0; attempt < _maxStatusAttempts; attempt++) {
       try {
-        latestStatus = await _paymentService.queryPaymentStatus(orderId: orderId);
+        latestStatus = await _paymentService.queryPaymentStatus(
+          orderId: orderId,
+        );
       } catch (error, stackTrace) {
         _logPaymentPollException(
           payment: payment,
@@ -227,7 +275,12 @@ class PaymentFlowCoordinator {
     required AppPaymentMethod method,
     required AppPaymentLaunchResult launchResult,
   }) {
-    final ({String event, String message, AppLogLevel level, AppLogResult result})
+    final ({
+      String event,
+      String message,
+      AppLogLevel level,
+      AppLogResult result,
+    })
     logConfig = _mapLaunchLogConfig(launchResult.status);
     StateLog.transition(
       event: logConfig.event,
@@ -368,5 +421,44 @@ class PaymentFlowCoordinator {
       'paymentStatus': status.status,
       if ((status.paidAt ?? '').trim().isNotEmpty) 'paidAt': status.paidAt,
     };
+  }
+
+  /// 记录 Debug 模式下跳过 SDK、直接支付成功的事件。
+  void _logDebugDirectPaySuccess({
+    required PaymentResultVO payment,
+    required AppPaymentMethod method,
+  }) {
+    StateLog.transition(
+      event: 'PAYMENT_DEBUG_DIRECT_PAY_SUCCESS',
+      message: 'Debug 模式直接调用订单支付成功',
+      result: AppLogResult.success,
+      context: <String, Object?>{
+        ...buildPaymentLogContext(payment),
+        'paymentMethod': method.apiValue,
+        'debugDirectPay': true,
+      },
+    );
+  }
+
+  /// 记录 Debug 模式下直接支付失败的事件，保留完整错误上下文。
+  void _logDebugDirectPayFail({
+    required PaymentResultVO payment,
+    required AppPaymentMethod method,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'PAYMENT_DEBUG_DIRECT_PAY_FAIL',
+      message: 'Debug 模式直接调用订单支付失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        ...buildPaymentLogContext(payment),
+        'paymentMethod': method.apiValue,
+        'debugDirectPay': true,
+      },
+    );
   }
 }
