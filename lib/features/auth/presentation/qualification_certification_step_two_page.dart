@@ -8,9 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../application/qualification_upload_helper.dart';
 import 'qualification_certification_flow.dart';
@@ -18,6 +20,30 @@ import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+/// 记录第二步表单的关键字段快照，用于判断当前页面是否存在未保存改动。
+class _QualificationStepTwoSnapshot {
+  const _QualificationStepTwoSnapshot({
+    required this.businessLicensePath,
+    required this.specialPermitPath,
+  });
+
+  final String businessLicensePath;
+  final String specialPermitPath;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is _QualificationStepTwoSnapshot &&
+        other.businessLicensePath == businessLicensePath &&
+        other.specialPermitPath == specialPermitPath;
+  }
+
+  @override
+  int get hashCode => Object.hash(businessLicensePath, specialPermitPath);
+}
 
 class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
   const QualificationCertificationStepTwoPage({super.key, required this.args});
@@ -33,8 +59,11 @@ class _QualificationCertificationStepTwoPageState
     extends ConsumerState<QualificationCertificationStepTwoPage> {
   PickedUploadFile? _businessLicenseImage;
   PickedUploadFile? _specialPermitImage;
+  String? _debugBusinessLicensePathForTest;
+  late _QualificationStepTwoSnapshot _initialSnapshot;
   bool _isUploadingBusinessLicense = false;
   bool _isUploadingSpecialPermit = false;
+  bool _allowDirectPop = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
@@ -81,6 +110,55 @@ class _QualificationCertificationStepTwoPageState
         );
       }
     }
+    _initialSnapshot = _buildCurrentSnapshot();
+  }
+
+  /// 采集当前上传区状态，用于和初始值做快照比对。
+  _QualificationStepTwoSnapshot _buildCurrentSnapshot() {
+    return _QualificationStepTwoSnapshot(
+      businessLicensePath:
+          _debugBusinessLicensePathForTest ?? _businessLicenseImage?.path ?? '',
+      specialPermitPath: _specialPermitImage?.path ?? '',
+    );
+  }
+
+  /// 统一处理离开第二步页面的动作，存在未保存改动时先弹确认框。
+  Future<void> _handleAttemptLeave() async {
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges: _buildCurrentSnapshot() != _initialSnapshot,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+
+    await _leavePageAfterPopScopeUnlocked();
+  }
+
+  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
+  Future<void> _leavePageAfterPopScopeUnlocked() async {
+    if (_allowDirectPop) {
+      return;
+    }
+
+    setState(() {
+      _allowDirectPop = true;
+    });
+
+    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
+  /// 仅供测试注入已选营业执照图片，避免测试依赖真实上传流程。
+  void debugSetBusinessLicenseForTest(String imagePath) {
+    setState(() {
+      // 仅让未保存快照感知“已选择文件”，避免测试环境真的去渲染本地图片。
+      _debugBusinessLicensePathForTest = imagePath;
+    });
   }
 
   Future<void> _pickQualificationImage({
@@ -147,150 +225,165 @@ class _QualificationCertificationStepTwoPageState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const AppSvgIcon(
-            assetPath: 'assets/images/service_detail_back.svg',
-            fallback: Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: Color(0xE6000000),
+    return PopScope(
+      canPop: _allowDirectPop,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop || _allowDirectPop) {
+          return;
+        }
+        await _handleAttemptLeave();
+      },
+      child: Scaffold(
+        key: AppTestKeys.pageQualificationCertificationStepTwo,
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: _handleAttemptLeave,
+            icon: const AppSvgIcon(
+              assetPath: 'assets/images/service_detail_back.svg',
+              fallback: Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Color(0xE6000000),
+            ),
+          ),
+          title: Text(
+            '认证流程.资质认证'.tr(),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: Color(0xE6000000),
+            ),
           ),
         ),
-        title: Text(
-          '认证流程.资质认证'.tr(),
-          style: TestStyle.pingFangMedium(
-            fontSize: 17,
-            color: Color(0xE6000000),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const SizedBox(height: 16),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '认证流程.实名认证提示'.tr(),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 14,
-                  color: Color(0xFF8C8C8C),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: QualificationProgressStepper(
-                labels: _steps,
-                currentStep: 2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _LicenseUploadSection(
-                      title: '认证流程.营业执照'.tr(),
-                      isRequired: true,
-                      pickedFile: _businessLicenseImage,
-                      isUploading: _isUploadingBusinessLicense,
-                      onTap: () => _pickQualificationImage(
-                        docType: QualificationDocType.businessLicense,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _LicenseUploadSection(
-                      title: '认证流程.特许经验许可'.tr(),
-                      optionalLabel: '通用.选填'.tr(),
-                      pickedFile: _specialPermitImage,
-                      isUploading: _isUploadingSpecialPermit,
-                      onTap: () => _pickQualificationImage(
-                        docType: QualificationDocType.specialPermit,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: Row(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFD9D9D9)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      '认证流程.上一步'.tr(),
-                      style: TestStyle.pingFangRegular(
-                        fontSize: 16,
-                        color: Color(0xFF171A1D),
-                      ),
-                    ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '认证流程.实名认证提示'.tr(),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: Color(0xFF8C8C8C),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: FilledButton(
-                    onPressed: () => context.push(
-                      RoutePaths.qualificationCertificationStepThree,
-                      extra: widget.args,
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF096DD9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: QualificationProgressStepper(
+                  labels: _steps,
+                  currentStep: 2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _LicenseUploadSection(
+                        title: '认证流程.营业执照'.tr(),
+                        isRequired: true,
+                        uploadKey:
+                            AppTestKeys.actionQualificationBusinessLicenseUpload,
+                        pickedFile: _businessLicenseImage,
+                        isUploading: _isUploadingBusinessLicense,
+                        onTap: () => _pickQualificationImage(
+                          docType: QualificationDocType.businessLicense,
+                        ),
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      '认证流程.下一步'.tr(),
-                      style: TestStyle.pingFangRegular(
-                        fontSize: 16,
-                        color: Colors.white,
+                      const SizedBox(height: 16),
+                      _LicenseUploadSection(
+                        title: '认证流程.特许经验许可'.tr(),
+                        optionalLabel: '通用.选填'.tr(),
+                        uploadKey:
+                            AppTestKeys.actionQualificationSpecialPermitUpload,
+                        pickedFile: _specialPermitImage,
+                        isUploading: _isUploadingSpecialPermit,
+                        onTap: () => _pickQualificationImage(
+                          docType: QualificationDocType.specialPermit,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: _handleAttemptLeave,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD9D9D9)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        '认证流程.上一步'.tr(),
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: Color(0xFF171A1D),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      key: AppTestKeys.actionQualificationStepTwoNext,
+                      onPressed: () => context.push(
+                        RoutePaths.qualificationCertificationStepThree,
+                        extra: widget.args,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF096DD9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        '认证流程.下一步'.tr(),
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -302,6 +395,7 @@ class _LicenseUploadSection extends StatelessWidget {
   const _LicenseUploadSection({
     required this.title,
     required this.onTap,
+    this.uploadKey,
     this.pickedFile,
     this.isUploading = false,
     this.isRequired = false,
@@ -310,6 +404,7 @@ class _LicenseUploadSection extends StatelessWidget {
 
   final String title;
   final VoidCallback onTap;
+  final Key? uploadKey;
   final PickedUploadFile? pickedFile;
   final bool isUploading;
   final bool isRequired;
@@ -401,6 +496,7 @@ class _LicenseUploadSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _UploadPlaceholder(
+          uploadKey: uploadKey,
           pickedFile: pickedFile,
           isUploading: isUploading,
           onTap: onTap,
@@ -413,17 +509,20 @@ class _LicenseUploadSection extends StatelessWidget {
 class _UploadPlaceholder extends StatelessWidget {
   const _UploadPlaceholder({
     required this.onTap,
+    this.uploadKey,
     this.pickedFile,
     this.isUploading = false,
   });
 
   final VoidCallback onTap;
+  final Key? uploadKey;
   final PickedUploadFile? pickedFile;
   final bool isUploading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: uploadKey,
       onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(

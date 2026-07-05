@@ -1,23 +1,36 @@
-# Task 2 Report
+状态：已完成
 
-- 状态：已修复 Task2 审查问题，相关 Patrol 测试通过
-- 审查项修复：
-  - 已为 `ensureServiceProviderAuthenticated()` 增加服务商角色校验，避免误复用企业/求职者会话
-  - 已移除 Patrol 登录流程对中文文案“测试登录服务商”的硬编码依赖，改为稳定 `Key`
-  - 已改为通过 `readCurrentRouterLocation()` 安全读取当前路由，避免 `go_router` 初始化阶段直接读 `state` 抛错
-- 稳定锚点：
-  - 新增 `AppTestKeys.loginTestServiceProviderButton`
-  - 新增 `AppTestKeys.pageServiceProviderHome`
-- 报告相关文件：
-  - `patrol_test/helpers/auth_test_helper.dart`
-  - `patrol_test/helpers/patrol_wait_helper.dart`
-  - `lib/app/router/app_router.dart`
-  - `lib/features/auth/presentation/widgets/login_phone_view.dart`
-  - `lib/features/home/presentation/role_pages/service_provider_home_page.dart`
-  - `lib/shared/ui/test_keys.dart`
-  - `test/patrol/auth_test_helper_test.dart`
-- 提交：
-  - `fix(patrol): address task2 review findings`
-- 测试：
-  - `flutter test test/patrol`：PASS
-  - `flutter test test/widget_test.dart -r compact`：FAIL，原因为测试文件仍引用已失效的 `package:bluehub_app/...` 路径，属于现有遗留问题，非本次 Task2 改动引入
+修改文件：
+- `lib/features/auth/presentation/qualification_certification_step_three_page.dart`
+- `test/features/auth/presentation/qualification_certification_step_three_page_test.dart`
+- `.superpowers/sdd/task-2-report.md`
+
+测试命令与结果：
+- `flutter test test/features/auth/presentation/qualification_certification_step_three_page_test.dart`
+  - 首次运行失败：测试基座缺少 `SharedPreferences` mock，补齐后重新执行
+  - 最终结果：通过，`All tests passed!`
+
+提交哈希(若有)：
+- 无
+
+concerns：
+- `qualification_certification_step_three_page.dart` 在任务开始前已有本地改动，本次仅在现有文件基础上做最小增量接线，未回退或覆盖无关内容。
+- 该 widget test 运行时会输出若干 `easy_localization` 的缺失 key warning，但不影响本任务新增的返回拦截行为验证；本次未扩展处理翻译资源问题。
+
+---
+
+状态：已完成
+
+修改文件：
+- `lib/features/auth/presentation/qualification_certification_step_three_page.dart`
+- `test/features/auth/presentation/qualification_certification_step_three_page_test.dart`
+- `.superpowers/sdd/task-2-report.md`
+
+测试命令与结果：
+- `flutter test test/features/auth/presentation/qualification_certification_step_three_page_test.dart`
+  - 结果：通过，`3` 个 widget test 全部通过，`All tests passed!`
+
+concerns：
+- 本次对页面逻辑只做了 Task2 相关的最小修复：确认退出后先通过 `setState` 刷新 `PopScope.canPop`，再等待下一帧执行真实 `pop`，避免同一帧被再次拦截。
+- 新增测试已覆盖系统返回触发确认框，以及系统返回后点击“确定”的真实离页链路；但 widget test 仍无法完全替代设备级返回手势/系统导航的端到端验证。
+- 测试运行中依旧会出现若干 `easy_localization` 缺失 key warning，本次未扩展处理翻译资源问题。
