@@ -36,6 +36,24 @@ class AppTestKeys {
     'action-edit-visa-package-back',
   );
 
+  /// 自我评价页根节点的稳定定位 Key。
+  static const Key pageSelfEvaluation = Key('page-self-evaluation');
+
+  /// 自我评价输入框的稳定定位 Key。
+  static const Key fieldSelfEvaluationInput = Key(
+    'field-self-evaluation-input',
+  );
+
+  /// 自我评价保存按钮的稳定定位 Key。
+  static const Key actionSelfEvaluationSave = Key(
+    'action-self-evaluation-save',
+  );
+
+  /// 自我评价完成按钮的稳定定位 Key。
+  static const Key actionSelfEvaluationDone = Key(
+    'action-self-evaluation-done',
+  );
+
   /// 返回服务商套餐管理页指定状态 Tab 的稳定定位 Key。
   static Key tabServiceProviderJobs(String tabStatus) {
     return Key('tab-jobs-service-provider-$tabStatus');

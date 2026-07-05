@@ -441,13 +441,47 @@ class _CompanyMyInfoContent extends StatelessWidget {
   QualificationDocVO? get _specialPermitDoc =>
       _qualificationDocByType(QualificationDocType.specialPermit.apiValue);
 
+  /// 从同类型资质中优先挑选“最新且有可用图片地址”的那条记录，兼容历史重复上传场景。
   QualificationDocVO? _qualificationDocByType(String docType) {
+    QualificationDocVO? fallbackMatch;
+    QualificationDocVO? preferredMatch;
+    DateTime? preferredCreatedAt;
+
     for (final QualificationDocVO doc in profile.qualificationDocs) {
-      if (doc.docType.trim() == docType) {
-        return doc;
+      if (doc.docType.trim() != docType) {
+        continue;
+      }
+      fallbackMatch = doc;
+
+      // 优先使用带有效 URL 的记录，避免命中旧的空壳文档导致页面不回显。
+      if (doc.fileUrl.trim().isEmpty) {
+        continue;
+      }
+
+      final DateTime? createdAt = DateTime.tryParse(doc.createdAt.trim());
+      if (preferredMatch == null) {
+        preferredMatch = doc;
+        preferredCreatedAt = createdAt;
+        continue;
+      }
+
+      if (_isQualificationDocNewer(createdAt, preferredCreatedAt)) {
+        preferredMatch = doc;
+        preferredCreatedAt = createdAt;
       }
     }
-    return null;
+    return preferredMatch ?? fallbackMatch;
+  }
+
+  /// 比较两条资质记录的时间，新记录优先；若时间不可解析，则按遍历顺序让后出现的记录覆盖。
+  bool _isQualificationDocNewer(DateTime? candidate, DateTime? current) {
+    if (candidate == null) {
+      return current == null;
+    }
+    if (current == null) {
+      return true;
+    }
+    return !candidate.isBefore(current);
   }
 
   /// 返回字段展示文本，空值时统一回退到国际化占位文案。

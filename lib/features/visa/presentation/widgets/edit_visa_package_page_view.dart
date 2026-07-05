@@ -105,6 +105,8 @@ class EditVisaPackagePageView extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Center(
                     child: SizedBox(
                       width: contentWidth,
