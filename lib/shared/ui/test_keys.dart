@@ -9,6 +9,22 @@ class AppTestKeys {
     'login-test-service-provider',
   );
 
+  /// 求职者测试登录按钮的稳定定位 Key。
+  static const Key loginTestJobSeekerButton = Key(
+    'login-test-job-seeker',
+  );
+
+  /// 求职者首页根节点的稳定定位 Key。
+  static const Key pageJobSeekerHome = Key('page-home-job-seeker');
+
+  /// 求职者“我的”页根节点的稳定定位 Key。
+  static const Key pageJobSeekerMe = Key('page-me-job-seeker');
+
+  /// 求职者实名认证页根节点的稳定定位 Key。
+  static const Key pageJobSeekerRealNameVerification = Key(
+    'page-real-name-job-seeker',
+  );
+
   /// 服务商首页根节点的稳定定位 Key。
   static const Key pageServiceProviderHome = Key('page-home-service-provider');
 

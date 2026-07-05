@@ -12,6 +12,30 @@ import 'package:patrol/patrol.dart';
 import '../fixtures/service_provider_test_account.dart';
 import 'patrol_wait_helper.dart';
 
+/// 确保当前用例处于求职者登录态，优先复用登录页现有“测试登录求职者”快捷入口。
+Future<void> ensureJobSeekerAuthenticated(PatrolIntegrationTester $) async {
+  final container = readAppProviderContainer($);
+  final authSession = container.read(authSessionProvider);
+  if (isJobSeekerAuthenticatedSession(authSession)) {
+    return;
+  }
+  if (authSession.isAuthenticated && !authSession.needSelectRole) {
+    throw StateError('当前登录态不是求职者角色：${authSession.user?.role ?? 'unknown'}');
+  }
+
+  final currentRoute = safeReadCurrentRoute(
+    fallbackLocation: RoutePaths.loginPhone,
+    readLocation: () => container.read(routerProvider).state.uri.toString(),
+  );
+  if (currentRoute != RoutePaths.loginPhone) {
+    throw StateError('当前不在登录页，无法执行求职者登录前置：$currentRoute');
+  }
+
+  await $(find.byKey(AppTestKeys.loginTestJobSeekerButton)).tap();
+  await waitForPageReady($, page: 'jobSeekerHome');
+  _assertJobSeekerSession(container.read(authSessionProvider));
+}
+
 /// 确保当前用例处于服务商登录态，优先复用登录页现有“测试登录服务商”快捷入口。
 Future<void> ensureServiceProviderAuthenticated(
   PatrolIntegrationTester $,
@@ -71,12 +95,29 @@ bool isServiceProviderAuthenticatedSession(AuthSessionState authSession) {
       role == visaProviderRoleId;
 }
 
+/// 判断当前会话是否已经是可复用的求职者登录态。
+bool isJobSeekerAuthenticatedSession(AuthSessionState authSession) {
+  final role = authSession.user?.role.trim() ?? '';
+  return authSession.isAuthenticated &&
+      !authSession.needSelectRole &&
+      role != visaProviderRoleId &&
+      role != employerRoleId;
+}
+
 /// 在登录流程结束后再次校验角色，避免误复用到企业或求职者会话。
 void _assertServiceProviderSession(AuthSessionState authSession) {
   if (isServiceProviderAuthenticatedSession(authSession)) {
     return;
   }
   throw StateError('服务商登录完成后角色校验失败：${authSession.user?.role ?? 'unknown'}');
+}
+
+/// 在登录流程结束后再次校验角色，避免误复用到企业或服务商会话。
+void _assertJobSeekerSession(AuthSessionState authSession) {
+  if (isJobSeekerAuthenticatedSession(authSession)) {
+    return;
+  }
+  throw StateError('求职者登录完成后角色校验失败：${authSession.user?.role ?? 'unknown'}');
 }
 
 /// 安全读取当前路由；若路由状态尚未就绪，则回退到调用方提供的默认地址。
