@@ -36,6 +36,7 @@ import '../../features/me/presentation/finance_transactions_page.dart';
 import '../../features/me/presentation/finance_withdrawals_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_info_page.dart';
+import '../../features/me/presentation/my_info_contact_edit_page.dart';
 import '../../features/me/presentation/job_seeker_real_name_verification_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
@@ -144,7 +145,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         RouteLog.redirectApplied(
           from: location,
           to: target ?? RoutePaths.home,
-          reason: target == null ? 'auth_ready_default_home' : 'auth_ready_resume_target',
+          reason: target == null
+              ? 'auth_ready_default_home'
+              : 'auth_ready_resume_target',
           level: AppLogLevel.info,
           context: _buildRedirectLogContext(
             redirectTarget: target,
@@ -324,9 +327,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MyInfoPage(),
       ),
       GoRoute(
+        path: RoutePaths.myInfoContactEdit,
+        builder: (context, state) => MyInfoContactEditPage(
+          args:
+              state.extra as MyInfoContactEditPageArgs? ??
+              const MyInfoContactEditPageArgs.email(),
+        ),
+      ),
+      GoRoute(
         path: RoutePaths.jobSeekerRealNameVerification,
-        builder: (context, state) =>
-            const JobSeekerRealNameVerificationPage(),
+        builder: (context, state) => const JobSeekerRealNameVerificationPage(),
       ),
       GoRoute(
         path: RoutePaths.serviceProviderMyInfo,
@@ -612,7 +622,10 @@ class RouteLogCoordinator {
     _currentLocation = normalizedLocation;
     return <RouteLogTransition>[
       RouteLogTransition.exit(route: previousLocation, to: normalizedLocation),
-      RouteLogTransition.enter(route: normalizedLocation, from: previousLocation),
+      RouteLogTransition.enter(
+        route: normalizedLocation,
+        from: previousLocation,
+      ),
     ];
   }
 
@@ -644,10 +657,7 @@ class RouteLogTransition {
   final String? to;
 
   /// 构建页面进入事件。
-  factory RouteLogTransition.enter({
-    required String route,
-    String? from,
-  }) {
+  factory RouteLogTransition.enter({required String route, String? from}) {
     return RouteLogTransition._(
       type: RouteLogTransitionType.enter,
       route: route,
@@ -656,10 +666,7 @@ class RouteLogTransition {
   }
 
   /// 构建页面退出事件。
-  factory RouteLogTransition.exit({
-    required String route,
-    String? to,
-  }) {
+  factory RouteLogTransition.exit({required String route, String? to}) {
     return RouteLogTransition._(
       type: RouteLogTransitionType.exit,
       route: route,

@@ -35,6 +35,16 @@ class UserService {
     return _apiClient.putVoid('/users/me', data: request.toJson());
   }
 
+  /// 绑定或修改当前登录用户的手机号。
+  Future<void> bindPhone({required BindPhoneBO request}) async {
+    return _apiClient.putVoid('/users/me/phone', data: request.toJson());
+  }
+
+  /// 绑定或修改当前登录用户的邮箱。
+  Future<void> bindEmail({required BindEmailBO request}) async {
+    return _apiClient.putVoid('/users/me/email', data: request.toJson());
+  }
+
   /// 分页获取当前用户的黑名单列表。
   Future<PageResult<UserVO>> getBlacklist({int? page, int? pageSize}) async {
     final queryParameters = <String, dynamic>{

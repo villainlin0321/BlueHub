@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_dialog.dart';
@@ -20,8 +21,10 @@ import '../../files/data/file_providers.dart';
 import '../../me/data/user_models.dart';
 import '../../me/data/user_providers.dart';
 import 'current_user_view_data.dart';
+import 'my_info_contact_edit_page.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 我的信息页：展示当前登录用户的基础资料，并支持基础信息编辑。
 class MyInfoPage extends ConsumerStatefulWidget {
   const MyInfoPage({super.key});
@@ -84,6 +87,30 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             color: Color(0xFFF0F0F0),
                           ),
                           _InfoValueRow(
+                            key: const Key('my-info-nickname-row'),
+                            label: '我的.昵称'.tr(),
+                            value: userViewData.nickname,
+                            onTap: _handleNicknameTap,
+                          ),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF0F0F0),
+                          ),
+                          _InfoValueRow(
+                            key: const Key('my-info-real-name-row'),
+                            label: '我的.实名认证'.tr(),
+                            value: userViewData.isVerified
+                                ? '我的.已完成实名认证'.tr()
+                                : '我的.点击去实名认证'.tr(),
+                            onTap: _handleRealNameTap,
+                          ),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF0F0F0),
+                          ),
+                          _InfoValueRow(
                             label: '我的.出生日期'.tr(),
                             value: userViewData.birthdayText,
                             onTap: _handleBirthdayTap,
@@ -106,8 +133,18 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                           _InfoValueRow(
                             label: '我的.手机号'.tr(),
                             value: userViewData.maskedPhone,
-                            // onTap: _handlePhoneTap,
-                            showChevron: false,
+                            onTap: _handlePhoneTap,
+                          ),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF0F0F0),
+                          ),
+                          _InfoValueRow(
+                            key: const Key('my-info-email-row'),
+                            label: '我的.邮箱'.tr(),
+                            value: userViewData.emailText,
+                            onTap: _handleEmailTap,
                           ),
                         ],
                       ),
@@ -171,6 +208,38 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
     );
   }
 
+  /// 弹出昵称编辑框，并在确认后真实更新当前用户昵称。
+  Future<void> _handleNicknameTap() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    final String currentNickname =
+        ref.read(authSessionProvider).user?.nickname.trim() ?? '';
+    final String? nextNickname = await showAppDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (BuildContext dialogContext) {
+        return _EditNicknameDialog(initialNickname: currentNickname);
+      },
+    );
+    if (!mounted || nextNickname == null || nextNickname == currentNickname) {
+      return;
+    }
+
+    await _executeProfileAction(
+      action: () => ref
+          .read(userServiceProvider)
+          .updateMe(request: UpdateUserBO(nickname: nextNickname)),
+      successMessage: '我的.昵称已更新'.tr(),
+    );
+  }
+
+  /// 进入实名认证页面，沿用既有路由。
+  void _handleRealNameTap() {
+    context.push(RoutePaths.jobSeekerRealNameVerification);
+  }
+
   /// 打开生日选择器，并把结果回写到用户资料。
   Future<void> _handleBirthdayTap() async {
     final AuthUser? currentUser = ref.read(authSessionProvider).user;
@@ -224,23 +293,18 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 打开手机号编辑弹窗，当前版本先承载输入与确认交互。
   Future<void> _handlePhoneTap() async {
-    if (_isSubmitting) {
-      return;
-    }
-    final String currentPhone =
-        ref.read(authSessionProvider).user?.phone.trim() ?? '';
-    final String? nextPhone = await showAppDialog<String>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (BuildContext dialogContext) {
-        return _EditPhoneDialog(initialPhone: currentPhone);
-      },
+    context.push(
+      RoutePaths.myInfoContactEdit,
+      extra: const MyInfoContactEditPageArgs.phone(),
     );
-    if (!mounted || nextPhone == null || nextPhone == currentPhone) {
-      return;
-    }
+  }
 
-    _showMessage('我的.暂不支持直接修改手机号'.tr());
+  /// 进入邮箱编辑页，当前复用统一的联系方式编辑页面。
+  Future<void> _handleEmailTap() async {
+    context.push(
+      RoutePaths.myInfoContactEdit,
+      extra: const MyInfoContactEditPageArgs.email(),
+    );
   }
 
   /// 选择头像后完成预签名上传，并把返回的文件 ID 回写到资料接口。
@@ -433,7 +497,10 @@ class _MyInfoHeader extends StatelessWidget {
           ),
           Text(
             '我的.我的信息'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: Color(0xFF262626),
+            ),
           ),
         ],
       ),
@@ -485,6 +552,7 @@ class _InfoAvatarRow extends StatelessWidget {
 
 class _InfoValueRow extends StatelessWidget {
   const _InfoValueRow({
+    super.key,
     required this.label,
     required this.value,
     this.onTap,
@@ -518,10 +586,21 @@ class _InfoValueRow extends StatelessWidget {
               label,
               style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
-            const Spacer(),
-            Text(
-              value,
-              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TestStyle.regular(
+                    fontSize: 16,
+                    color: Color(0xFF8C8C8C),
+                  ),
+                ),
+              ),
             ),
             trailing,
           ],
@@ -612,7 +691,10 @@ class _ImageSourceBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '我的.选择头像'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: Color(0xFF262626),
+              ),
             ),
             const SizedBox(height: 12),
             _BottomSheetActionTile(label: '我的.拍照'.tr(), onTap: onCameraTap),
@@ -651,23 +733,23 @@ class _BottomSheetActionTile extends StatelessWidget {
   }
 }
 
-class _EditPhoneDialog extends StatefulWidget {
-  const _EditPhoneDialog({required this.initialPhone});
+class _EditNicknameDialog extends StatefulWidget {
+  const _EditNicknameDialog({required this.initialNickname});
 
-  final String initialPhone;
+  final String initialNickname;
 
   @override
-  State<_EditPhoneDialog> createState() => _EditPhoneDialogState();
+  State<_EditNicknameDialog> createState() => _EditNicknameDialogState();
 }
 
-class _EditPhoneDialogState extends State<_EditPhoneDialog> {
+class _EditNicknameDialogState extends State<_EditNicknameDialog> {
   late final TextEditingController _controller;
   String? _errorText;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialPhone);
+    _controller = TextEditingController(text: widget.initialNickname);
   }
 
   @override
@@ -677,41 +759,44 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
   }
 
   void _handleConfirm() {
-    final String phone = _controller.text.trim();
-    if (phone.isEmpty) {
+    final String nickname = _controller.text.trim();
+    if (nickname.isEmpty) {
       setState(() {
-        _errorText = '通用.请输入手机号'.tr();
+        _errorText = '我的.请输入昵称'.tr();
       });
       return;
     }
-    if (!RegExp(r'^\d{6,20}$').hasMatch(phone)) {
+    if (nickname.length > 20) {
       setState(() {
-        _errorText = '通用.请输入正确的手机号'.tr();
+        _errorText = '我的.昵称长度限制'.tr();
       });
       return;
     }
-    Navigator.of(context).pop(phone);
+    Navigator.of(context).pop(nickname);
   }
 
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: '我的.修改手机号'.tr(),
+      title: '我的.修改昵称'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            '我的.请输入新的手机号'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+            '我的.请输入昵称'.tr(),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: Color(0xFF8C8C8C),
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
+            key: const Key('my-info-nickname-input'),
             controller: _controller,
-            keyboardType: TextInputType.phone,
+            keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
             inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(20),
             ],
             cursorColor: AppColors.brand,
@@ -725,8 +810,11 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
             },
             onSubmitted: (_) => _handleConfirm(),
             decoration: InputDecoration(
-              hintText: '通用.请输入手机号'.tr(),
-              hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFFBFBFBF)),
+              hintText: '我的.请输入昵称'.tr(),
+              hintStyle: TestStyle.pingFangRegular(
+                fontSize: 15,
+                color: Color(0xFFBFBFBF),
+              ),
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
               errorText: _errorText,
@@ -763,10 +851,7 @@ class _EditPhoneDialogState extends State<_EditPhoneDialog> {
           label: '通用.取消'.tr(),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        AppDialogAction.primary(
-          label: '通用.确定'.tr(),
-          onPressed: _handleConfirm,
-        ),
+        AppDialogAction.primary(label: '通用.确定'.tr(), onPressed: _handleConfirm),
       ],
     );
   }
