@@ -108,6 +108,106 @@ class AppTestKeys {
     'action-visa-service-provider-status-filter',
   );
 
+  /// 服务商资质认证第一步页面根节点的稳定定位 Key。
+  static const Key pageQualificationCertificationStepOne = Key(
+    'page-qualification-certification-step-one',
+  );
+
+  /// 服务商资质认证第二步页面根节点的稳定定位 Key。
+  static const Key pageQualificationCertificationStepTwo = Key(
+    'page-qualification-certification-step-two',
+  );
+
+  /// 服务商资质认证第三步页面根节点的稳定定位 Key。
+  static const Key pageQualificationCertificationStepThree = Key(
+    'page-qualification-certification-step-three',
+  );
+
+  /// 服务商资质认证提交结果页根节点的稳定定位 Key。
+  static const Key pageQualificationCertificationResult = Key(
+    'page-qualification-certification-result',
+  );
+
+  /// 服务商资质认证企业名称输入框的稳定定位 Key。
+  static const Key fieldQualificationCompanyName = Key(
+    'field-qualification-company-name',
+  );
+
+  /// 服务商资质认证统一社会信用代码输入框的稳定定位 Key。
+  static const Key fieldQualificationCreditCode = Key(
+    'field-qualification-credit-code',
+  );
+
+  /// 服务商资质认证法人姓名输入框的稳定定位 Key。
+  static const Key fieldQualificationLegalPerson = Key(
+    'field-qualification-legal-person',
+  );
+
+  /// 服务商资质认证官方联系人输入框的稳定定位 Key。
+  static const Key fieldQualificationContactPerson = Key(
+    'field-qualification-contact-person',
+  );
+
+  /// 服务商资质认证联系电话输入框的稳定定位 Key。
+  static const Key fieldQualificationContactPhone = Key(
+    'field-qualification-contact-phone',
+  );
+
+  /// 服务商资质认证邮箱输入框的稳定定位 Key。
+  static const Key fieldQualificationContactEmail = Key(
+    'field-qualification-contact-email',
+  );
+
+  /// 服务商资质认证公司官网输入框的稳定定位 Key。
+  static const Key fieldQualificationWebsite = Key(
+    'field-qualification-website',
+  );
+
+  /// 服务商资质认证身份证国徽面上传入口的稳定定位 Key。
+  static const Key actionQualificationIdCardEmblemUpload = Key(
+    'action-qualification-id-card-emblem-upload',
+  );
+
+  /// 服务商资质认证身份证人像面上传入口的稳定定位 Key。
+  static const Key actionQualificationIdCardPortraitUpload = Key(
+    'action-qualification-id-card-portrait-upload',
+  );
+
+  /// 服务商资质认证第一步“下一步”按钮的稳定定位 Key。
+  static const Key actionQualificationStepOneNext = Key(
+    'action-qualification-step-one-next',
+  );
+
+  /// 服务商资质认证营业执照上传入口的稳定定位 Key。
+  static const Key actionQualificationBusinessLicenseUpload = Key(
+    'action-qualification-business-license-upload',
+  );
+
+  /// 服务商资质认证特许许可上传入口的稳定定位 Key。
+  static const Key actionQualificationSpecialPermitUpload = Key(
+    'action-qualification-special-permit-upload',
+  );
+
+  /// 服务商资质认证第二步“下一步”按钮的稳定定位 Key。
+  static const Key actionQualificationStepTwoNext = Key(
+    'action-qualification-step-two-next',
+  );
+
+  /// 服务商资质认证服务国家选择入口的稳定定位 Key。
+  static const Key actionQualificationServiceCountrySelect = Key(
+    'action-qualification-service-country-select',
+  );
+
+  /// 服务商资质认证从业年限输入框的稳定定位 Key。
+  static const Key fieldQualificationYearsOfService = Key(
+    'field-qualification-years-of-service',
+  );
+
+  /// 服务商资质认证提交审核按钮的稳定定位 Key。
+  static const Key actionQualificationSubmit = Key(
+    'action-qualification-submit',
+  );
+
   /// 返回服务商套餐管理页指定状态 Tab 的稳定定位 Key。
   static Key tabServiceProviderJobs(String tabStatus) {
     return Key('tab-jobs-service-provider-$tabStatus');
