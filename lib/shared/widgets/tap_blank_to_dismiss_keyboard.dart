@@ -8,12 +8,13 @@ class TapBlankToDismissKeyboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Listener(
       behavior: HitTestBehavior.translucent,
-      onTap: () {
-        final FocusScopeNode focusScope = FocusScope.of(context);
-        if (!focusScope.hasPrimaryFocus) {
-          focusScope.unfocus();
+      // 在指针落下阶段就先收起焦点，避免子组件自己消费点击事件后父层收不到 onTap。
+      onPointerDown: (_) {
+        final FocusNode? primaryFocus = FocusManager.instance.primaryFocus;
+        if (primaryFocus?.hasFocus ?? false) {
+          primaryFocus?.unfocus();
         }
       },
       child: child,

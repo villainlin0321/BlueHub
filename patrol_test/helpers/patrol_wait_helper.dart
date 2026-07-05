@@ -15,6 +15,10 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
         routePath: RoutePaths.home,
         readyKey: AppTestKeys.pageServiceProviderHome,
       ),
+      'jobSeekerHome': PatrolRouteMatcher(
+        routePath: RoutePaths.home,
+        readyKey: AppTestKeys.pageJobSeekerHome,
+      ),
       'me': PatrolRouteMatcher(
         routePath: RoutePaths.me,
         readyKey: AppTestKeys.pageServiceProviderMe,
@@ -22,6 +26,34 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
       'serviceProviderMe': PatrolRouteMatcher(
         routePath: RoutePaths.me,
         readyKey: AppTestKeys.pageServiceProviderMe,
+      ),
+      'jobSeekerMe': PatrolRouteMatcher(
+        routePath: RoutePaths.me,
+        readyKey: AppTestKeys.pageJobSeekerMe,
+      ),
+      'jobSeekerRealNameVerification': PatrolRouteMatcher(
+        routePath: RoutePaths.jobSeekerRealNameVerification,
+        readyKey: AppTestKeys.pageJobSeekerRealNameVerification,
+      ),
+      'jobs': PatrolRouteMatcher(
+        routePath: RoutePaths.jobs,
+        readyKey: AppTestKeys.pageServiceProviderJobs,
+      ),
+      'serviceProviderJobs': PatrolRouteMatcher(
+        routePath: RoutePaths.jobs,
+        readyKey: AppTestKeys.pageServiceProviderJobs,
+      ),
+      'editVisaPackage': PatrolRouteMatcher(
+        routePath: RoutePaths.editVisaPackage,
+        readyKey: AppTestKeys.pageEditVisaPackage,
+      ),
+      'visa': PatrolRouteMatcher(
+        routePath: RoutePaths.visa,
+        readyKey: AppTestKeys.pageServiceProviderVisa,
+      ),
+      'serviceProviderVisa': PatrolRouteMatcher(
+        routePath: RoutePaths.visa,
+        readyKey: AppTestKeys.pageServiceProviderVisa,
       ),
     };
 

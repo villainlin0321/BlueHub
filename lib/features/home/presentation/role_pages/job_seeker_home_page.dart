@@ -14,6 +14,7 @@ import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
 import '../../../jobs/data/job_models.dart';
@@ -71,6 +72,7 @@ class JobSeekerHomePage extends ConsumerWidget {
     );
 
     return Column(
+      key: AppTestKeys.pageJobSeekerHome,
       children: <Widget>[
         const _HomeTopHeader(),
         Expanded(

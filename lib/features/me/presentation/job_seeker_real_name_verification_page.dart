@@ -5,6 +5,7 @@ import 'package:europepass/shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:europepass/patrol_test/helpers/job_seeker_real_name_patrol_support.dart';
 
 import '../../auth/application/auth_session_provider.dart';
 import '../../files/data/file_models.dart';
@@ -12,6 +13,7 @@ import '../../files/data/file_providers.dart';
 import '../data/user_models.dart';
 import '../data/user_providers.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/ui/test_keys.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../utils/upload_picker_utils.dart';
 
@@ -233,10 +235,21 @@ class _JobSeekerRealNameVerificationPageState
 
   /// 选择身份证图片并更新本地展示状态，默认沿用现有上传工具，也允许测试注入替身。
   Future<void> _pickImage({required bool isEmblemSide}) async {
+    final JobSeekerRealNamePatrolSupport? patrolSupport = ref.read(
+      jobSeekerRealNamePatrolSupportProvider,
+    );
     final RealNameImagePicker picker =
         widget.pickImages ??
-        (BuildContext context) =>
-            UploadPickerUtils.pickImagesWithSourceSheet(context: context);
+        (BuildContext context) {
+          if (patrolSupport != null) {
+            // 关键测试缝：Patrol 可直接回填测试图片，避免 iOS 原生相册控件影响自动化稳定性。
+            return patrolSupport.pickImages(
+              context,
+              isEmblemSide: isEmblemSide,
+            );
+          }
+          return UploadPickerUtils.pickImagesWithSourceSheet(context: context);
+        };
     final List<PickedUploadFile> images = await picker(context);
     if (!mounted || images.isEmpty) {
       return;

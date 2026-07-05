@@ -105,6 +105,8 @@ class EditVisaPackagePageView extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Center(
                     child: SizedBox(
                       width: contentWidth,
@@ -211,6 +213,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.套餐总名称'.tr(),
             required: true,
             child: EditVisaPackageInputField(
+              fieldKey: AppTestKeys.fieldEditVisaPackageName,
               controller: serviceNameController,
               hintText: '签证编辑.套餐总名称示例'.tr(),
             ),
@@ -220,6 +223,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.服务国家'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
+              buttonKey: AppTestKeys.actionEditVisaPackageCountry,
               text: selectedCountryLabel,
               hintText: '通用.请选择'.tr(),
               onTap: onCountryTap,
@@ -230,6 +234,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.签证类型'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
+              buttonKey: AppTestKeys.actionEditVisaPackageVisaType,
               text: selectedVisaTypeLabel,
               hintText: '通用.请选择'.tr(),
               onTap: onVisaTypeTap,

@@ -132,6 +132,48 @@ void main() {
     );
   });
 
+  testWidgets('求职者我的页会展示客服中心菜单', (WidgetTester tester) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('客服中心'), findsOneWidget);
+  });
+
+  testWidgets('点击客服中心菜单会触发外部客服链接打开回调', (WidgetTester tester) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    bool didOpenCustomerService = false;
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+        onCustomerServiceTap: () async {
+          didOpenCustomerService = true;
+          return true;
+        },
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('客服中心'));
+    await tester.pumpAndSettle();
+
+    expect(didOpenCustomerService, isTrue);
+  });
+
   testWidgets('未实名用户点击左侧资料区会通过生产 routerProvider 进入已注册实名页', (
     WidgetTester tester,
   ) async {
@@ -471,6 +513,7 @@ Widget _buildRealNameTestHost({
   required ProviderContainer container,
   Widget Function(BuildContext context)? verificationPageBuilder,
   Widget Function(BuildContext context)? profilePageBuilder,
+  Future<bool> Function()? onCustomerServiceTap,
 }) {
   return UncontrolledProviderScope(
     container: container,
@@ -484,6 +527,7 @@ Widget _buildRealNameTestHost({
       child: _RealNameTestApp(
         verificationPageBuilder: verificationPageBuilder,
         profilePageBuilder: profilePageBuilder,
+        onCustomerServiceTap: onCustomerServiceTap,
       ),
     ),
   );
@@ -506,10 +550,12 @@ class _RealNameTestApp extends StatelessWidget {
   const _RealNameTestApp({
     this.verificationPageBuilder,
     this.profilePageBuilder,
+    this.onCustomerServiceTap,
   });
 
   final Widget Function(BuildContext context)? verificationPageBuilder;
   final Widget Function(BuildContext context)? profilePageBuilder;
+  final Future<bool> Function()? onCustomerServiceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -524,6 +570,7 @@ class _RealNameTestApp extends StatelessWidget {
       },
       home: Scaffold(
         body: JobSeekerMePage(
+          onCustomerServiceTapOverride: onCustomerServiceTap,
           onProfileTapOverride: (BuildContext context) {
             // 关键路径：测试中使用真实 Navigator 验证“我的信息”跳转落页。
             Navigator.of(context).push(

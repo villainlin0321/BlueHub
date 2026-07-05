@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -12,6 +11,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../application/qualification_upload_helper.dart';
 import 'qualification_certification_flow.dart';
+import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -45,26 +45,37 @@ class _QualificationCertificationStepTwoPageState
   void initState() {
     super.initState();
     if (_draft.businessLicenseDoc != null) {
+      final String? previewPath = QualificationPreviewResolver.resolvePreviewPath(
+        _draft.businessLicenseDoc,
+      );
+      if (previewPath != null) {
       _businessLicenseImage = PickedUploadFile(
         id: 'qualification-business-license',
         name: _draft.businessLicenseDoc!.docName,
-        path: _draft.businessLicenseDoc!.localPath,
+        path: previewPath,
         sourceType: UploadSourceType.gallery,
         state: UploadItemState.success,
         isImage: true,
         sizeLabel: '',
       );
+      }
     }
     if (_draft.specialPermitDoc != null) {
+      final String? previewPath =
+          QualificationPreviewResolver.resolvePreviewPath(
+            _draft.specialPermitDoc,
+          );
+      if (previewPath != null) {
       _specialPermitImage = PickedUploadFile(
         id: 'qualification-special-permit',
         name: _draft.specialPermitDoc!.docName,
-        path: _draft.specialPermitDoc!.localPath,
+        path: previewPath,
         sourceType: UploadSourceType.gallery,
         state: UploadItemState.success,
         isImage: true,
         sizeLabel: '',
       );
+      }
     }
   }
 
@@ -408,6 +419,9 @@ class _UploadPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ImageProvider<Object> imageProvider =
+        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path) ??
+        const AssetImage('assets/images/qualification_license_placeholder.png');
     return InkWell(
       onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
@@ -431,12 +445,7 @@ class _UploadPlaceholder extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
-                  image: pickedFile == null
-                      ? const AssetImage(
-                              'assets/images/qualification_license_placeholder.png',
-                            )
-                            as ImageProvider
-                      : FileImage(File(pickedFile!.path)),
+                  image: imageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
