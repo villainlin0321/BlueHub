@@ -43,6 +43,22 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
         routePath: RoutePaths.visa,
         readyKey: AppTestKeys.pageServiceProviderVisa,
       ),
+      'qualificationCertificationStepOne': PatrolRouteMatcher(
+        routePath: RoutePaths.qualificationCertification,
+        readyKey: AppTestKeys.pageQualificationCertificationStepOne,
+      ),
+      'qualificationCertificationStepTwo': PatrolRouteMatcher(
+        routePath: RoutePaths.qualificationCertificationStepTwo,
+        readyKey: AppTestKeys.pageQualificationCertificationStepTwo,
+      ),
+      'qualificationCertificationStepThree': PatrolRouteMatcher(
+        routePath: RoutePaths.qualificationCertificationStepThree,
+        readyKey: AppTestKeys.pageQualificationCertificationStepThree,
+      ),
+      'qualificationCertificationResult': PatrolRouteMatcher(
+        routePath: RoutePaths.appResult,
+        readyKey: AppTestKeys.pageQualificationCertificationResult,
+      ),
     };
 
 /// 按页面别名等待目标页面完成渲染，避免在测试里直接写固定休眠。

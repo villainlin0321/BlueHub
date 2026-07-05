@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/models/dictionary_models.dart';
@@ -306,6 +307,7 @@ class _QualificationCertificationPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: AppTestKeys.pageQualificationCertificationStepOne,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -407,6 +409,7 @@ class _QualificationCertificationPageState
           child: SizedBox(
             height: 48,
             child: FilledButton(
+              key: AppTestKeys.actionQualificationStepOneNext,
               onPressed: _isCompany
                   ? (_isCompanyNextEnabled ? _handleNext : null)
                   : _handleNext,
@@ -474,6 +477,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.企业名称'.tr(),
           hintText: '认证流程.营业执照企业全称'.tr(),
           controller: companyNameController,
+          fieldKey: AppTestKeys.fieldQualificationCompanyName,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -481,6 +485,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.统一社会信用代码'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: creditCodeController,
+          fieldKey: AppTestKeys.fieldQualificationCreditCode,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -488,6 +493,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.法人姓名'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: legalPersonController,
+          fieldKey: AppTestKeys.fieldQualificationLegalPerson,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -497,6 +503,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: _UploadCard(
+                cardKey: AppTestKeys.actionQualificationIdCardEmblemUpload,
                 pickedFile: idCardEmblemImage,
                 imageAsset: 'assets/images/qualification_id_emblem.png',
                 label: '认证流程.上传国徽面'.tr(),
@@ -507,6 +514,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _UploadCard(
+                cardKey: AppTestKeys.actionQualificationIdCardPortraitUpload,
                 pickedFile: idCardPortraitImage,
                 imageAsset: 'assets/images/qualification_id_portrait.png',
                 label: '认证流程.上传人像面'.tr(),
@@ -521,6 +529,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.官方联系人'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: contactPersonController,
+          fieldKey: AppTestKeys.fieldQualificationContactPerson,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -528,6 +537,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.联系电话'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: phoneController,
+          fieldKey: AppTestKeys.fieldQualificationContactPhone,
           required: true,
           keyboardType: TextInputType.phone,
         ),
@@ -536,6 +546,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.邮箱'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: emailController,
+          fieldKey: AppTestKeys.fieldQualificationContactEmail,
           required: true,
           keyboardType: TextInputType.emailAddress,
         ),
@@ -544,6 +555,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.公司官网'.tr(),
           hintText: '通用.选填'.tr(),
           controller: websiteController,
+          fieldKey: AppTestKeys.fieldQualificationWebsite,
           keyboardType: TextInputType.url,
         ),
       ],
@@ -716,6 +728,7 @@ class _QualificationTextField extends StatelessWidget {
     required this.controller,
     this.required = false,
     this.keyboardType,
+    this.fieldKey,
   });
 
   final String label;
@@ -723,6 +736,7 @@ class _QualificationTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool required;
   final TextInputType? keyboardType;
+  final Key? fieldKey;
 
   @override
   Widget build(BuildContext context) {
@@ -739,6 +753,7 @@ class _QualificationTextField extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: TextField(
+              key: fieldKey,
               controller: controller,
               keyboardType: keyboardType,
               textAlignVertical: TextAlignVertical.center,
@@ -832,6 +847,7 @@ class _UploadCard extends StatelessWidget {
     required this.imageAsset,
     required this.label,
     required this.onTap,
+    this.cardKey,
     this.pickedFile,
     this.isUploading = false,
   });
@@ -839,12 +855,14 @@ class _UploadCard extends StatelessWidget {
   final String imageAsset;
   final String label;
   final VoidCallback onTap;
+  final Key? cardKey;
   final PickedUploadFile? pickedFile;
   final bool isUploading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: cardKey,
       onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
       child: Column(

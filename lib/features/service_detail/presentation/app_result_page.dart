@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/ui/test_keys.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
@@ -98,6 +99,7 @@ class AppResultPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      key: AppTestKeys.pageQualificationCertificationResult,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
