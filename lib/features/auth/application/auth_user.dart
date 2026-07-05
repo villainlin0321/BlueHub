@@ -14,6 +14,7 @@ class AuthUser {
     required this.birthday,
     required this.currentLocation,
     required this.isVerified,
+    this.realName = '',
   });
 
   final int userId;
@@ -27,6 +28,7 @@ class AuthUser {
   final String birthday;
   final String currentLocation;
   final bool isVerified;
+  final String realName;
 
   factory AuthUser.fromLoginUser(UserSimpleVO user) {
     return AuthUser(
@@ -41,6 +43,7 @@ class AuthUser {
       birthday: '',
       currentLocation: '',
       isVerified: false,
+      realName: '',
     );
   }
 
@@ -57,6 +60,7 @@ class AuthUser {
       birthday: user.birthday,
       currentLocation: user.currentLocation,
       isVerified: user.isVerified,
+      realName: user.realName,
     );
   }
 }
