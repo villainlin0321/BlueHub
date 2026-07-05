@@ -53,6 +53,7 @@ class _SelectableOptionsBottomSheetState<T>
     extends State<_SelectableOptionsBottomSheet<T>> {
   late final Set<T> _selected = widget.initialSelectedValues.toSet();
 
+  /// 构建可复用的选项列表弹层，并根据单选/多选模式展示对应控件。
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -127,8 +128,10 @@ class _SelectableOptionsBottomSheetState<T>
                   return _SelectableOptionTile(
                     label: option.label,
                     selected: selected,
+                    multiple: widget.multiple,
                     onTap: () {
                       setState(() {
+                        // 多选模式允许增删当前项；单选模式始终仅保留当前点击项。
                         if (selected) {
                           _selected.remove(option.value);
                         } else if (widget.multiple) {
@@ -168,13 +171,16 @@ class _SelectableOptionTile extends StatelessWidget {
   const _SelectableOptionTile({
     required this.label,
     required this.selected,
+    required this.multiple,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
+  final bool multiple;
   final VoidCallback onTap;
 
+  /// 根据选择模式切换图标语义，避免多选和单选都显示为同一种控件。
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -190,7 +196,13 @@ class _SelectableOptionTile extends StatelessWidget {
           children: <Widget>[
             const SizedBox(width: 15),
             Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              multiple
+                  ? (selected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded)
+                  : (selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off),
               size: 20,
               color: selected
                   ? const Color(0xFF096DD9)

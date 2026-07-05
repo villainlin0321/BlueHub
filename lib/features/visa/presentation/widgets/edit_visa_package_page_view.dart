@@ -39,6 +39,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onAddTier,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -71,6 +72,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -135,6 +137,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                               onAddTier: onAddTier,
                               onDeleteTier: onDeleteTier,
                               onAddMaterial: onAddMaterial,
+                              onDeleteMaterial: onDeleteMaterial,
                               onAddCustomService: onAddCustomService,
                               onRemoveCustomService: onRemoveCustomService,
                               onToggleServiceTag: onToggleServiceTag,
@@ -269,6 +272,7 @@ class _TierConfigSection extends StatelessWidget {
     required this.onAddTier,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -288,6 +292,7 @@ class _TierConfigSection extends StatelessWidget {
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -325,6 +330,7 @@ class _TierConfigSection extends StatelessWidget {
                 onCurrencyTap: onCurrencyTap,
                 onDeleteTier: onDeleteTier,
                 onAddMaterial: onAddMaterial,
+                onDeleteMaterial: onDeleteMaterial,
                 onAddCustomService: onAddCustomService,
                 onRemoveCustomService: onRemoveCustomService,
                 onToggleServiceTag: onToggleServiceTag,
@@ -358,6 +364,7 @@ class _TierCard extends StatelessWidget {
     required this.onCurrencyTap,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -377,6 +384,7 @@ class _TierCard extends StatelessWidget {
   final VoidCallback onCurrencyTap;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -475,7 +483,9 @@ class _TierCard extends StatelessWidget {
                 tierIndex: tierIndex,
                 materialIndex: entry.key,
                 material: entry.value,
+                canDelete: tier.materials.length > 1,
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
+                onDeleteMaterial: onDeleteMaterial,
                 onMaterialTypeTap: onMaterialTypeTap,
                 onExampleUploadTap: onExampleUploadTap,
                 onDeleteExampleFile: onDeleteExampleFile,
@@ -498,7 +508,9 @@ class _MaterialCard extends StatelessWidget {
     required this.tierIndex,
     required this.materialIndex,
     required this.material,
+    required this.canDelete,
     required this.onMaterialRequiredChanged,
+    required this.onDeleteMaterial,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
     required this.onDeleteExampleFile,
@@ -507,8 +519,10 @@ class _MaterialCard extends StatelessWidget {
   final int tierIndex;
   final int materialIndex;
   final EditVisaPackageMaterialViewDraft material;
+  final bool canDelete;
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
@@ -521,16 +535,36 @@ class _MaterialCard extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Expanded(
-              child: Text(
-                '签证编辑.材料序号'.tr(
-                  namedArgs: <String, String>{
-                    'index': (materialIndex + 1).toString(),
-                  },
-                ),
-                style: EditVisaPackageStyles.fieldLabel,
+            Text(
+              '签证编辑.材料序号'.tr(
+                namedArgs: <String, String>{
+                  'index': (materialIndex + 1).toString(),
+                },
               ),
+              style: EditVisaPackageStyles.fieldLabel,
             ),
+            if (canDelete) ...<Widget>[
+              const SizedBox(width: 6),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: dismissKeyboardThen(
+                    context,
+                    () => onDeleteMaterial(tierIndex, materialIndex),
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset(
+                      'assets/images/visa_package_delete.svg',
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
             Text(
               material.isRequired ? '签证编辑.必填'.tr() : '通用.选填'.tr(),
               style: EditVisaPackageStyles.materialMeta,
