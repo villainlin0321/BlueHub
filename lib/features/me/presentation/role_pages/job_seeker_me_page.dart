@@ -14,6 +14,7 @@ import '../../../home/data/home_providers.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/job_seeker_page_background.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
+import '../../../../shared/ui/test_keys.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者端我的页，按 Figma 设计图还原。
@@ -69,6 +70,7 @@ class JobSeekerMePage extends ConsumerWidget {
     );
 
     return JobSeekerPageBackground(
+      key: AppTestKeys.pageJobSeekerMe,
       fit: BoxFit.fitWidth,
       alignment: Alignment.topCenter,
       child: SafeArea(
