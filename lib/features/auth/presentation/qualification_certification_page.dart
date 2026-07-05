@@ -60,7 +60,6 @@ class _QualificationCertificationPageState
   String? _selectedCompanyCountry;
   String? _selectedCompanyCountryCode;
   late String _initialSnapshotSignature;
-  bool _allowDirectPop = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   bool get _isCompany => _role == QualificationCertificationRole.company;
@@ -258,26 +257,7 @@ class _QualificationCertificationPageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    context.go(RoutePaths.me);
   }
 
   /// 仅供测试注入已选身份证图片，避免测试依赖真实系统相册或相机。
@@ -397,7 +377,7 @@ class _QualificationCertificationPageState
 
     _syncDraftFromForm();
 
-    context.push(
+    context.go(
       RoutePaths.qualificationCertificationStepTwo,
       extra: widget.args,
     );
@@ -406,9 +386,9 @@ class _QualificationCertificationPageState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _allowDirectPop,
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
+        if (didPop) {
           return;
         }
         await _handleAttemptLeave();

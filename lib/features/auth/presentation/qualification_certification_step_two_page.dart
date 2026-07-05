@@ -57,7 +57,6 @@ class _QualificationCertificationStepTwoPageState
   PickedUploadFile? _specialPermitImage;
   String? _debugBusinessLicensePathForTest;
   late _QualificationStepTwoSnapshot _initialSnapshot;
-  bool _allowDirectPop = false;
 
   QualificationCertificationDraft get _draft => widget.args.draft;
   List<String> get _steps => <String>[
@@ -124,26 +123,7 @@ class _QualificationCertificationStepTwoPageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    context.go(RoutePaths.me);
   }
 
   /// 仅供测试注入已选营业执照图片，避免测试依赖真实上传流程。
@@ -181,7 +161,7 @@ class _QualificationCertificationStepTwoPageState
       return;
     }
 
-    context.push(
+    context.go(
       RoutePaths.qualificationCertificationStepThree,
       extra: widget.args,
     );
@@ -225,9 +205,9 @@ class _QualificationCertificationStepTwoPageState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _allowDirectPop,
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
+        if (didPop) {
           return;
         }
         await _handleAttemptLeave();
@@ -337,7 +317,10 @@ class _QualificationCertificationStepTwoPageState
                   child: SizedBox(
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: _handleAttemptLeave,
+                      onPressed: () => context.go(
+                        RoutePaths.qualificationCertification,
+                        extra: widget.args,
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFD9D9D9)),
                         shape: RoundedRectangleBorder(

@@ -65,7 +65,6 @@ class _QualificationCertificationStepThreePageState
   late final List<String> _selectedCountries;
   late _QualificationStepThreeSnapshot _initialSnapshot;
   bool _isSubmitting = false;
-  bool _allowDirectPop = false;
   bool _skipSuccessNavigationForTest = false;
 
   QualificationCertificationRole get _role => widget.args.role;
@@ -111,26 +110,7 @@ class _QualificationCertificationStepThreePageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    context.go(RoutePaths.me);
   }
 
   Future<void> _openExpectedCountrySheet() async {
@@ -175,11 +155,28 @@ class _QualificationCertificationStepThreePageState
     return true;
   }
 
+  /// 提交前校验第三步服务信息必填项，避免空国家或非法年限直接进入审核。
+  bool _validateServiceInfoBeforeSubmit() {
+    if (_selectedCountries.isEmpty) {
+      AppToast.show('请选择服务国家'.tr());
+      return false;
+    }
+    final int? yearsOfService = int.tryParse(_experienceController.text.trim());
+    if (yearsOfService == null || yearsOfService <= 0) {
+      AppToast.show('认证流程.请填写有效从业年限'.tr());
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
     if (_isSubmitting) {
       return;
     }
     if (!_validateRequiredImagesBeforeSubmit()) {
+      return;
+    }
+    if (!_validateServiceInfoBeforeSubmit()) {
       return;
     }
 
@@ -212,12 +209,10 @@ class _QualificationCertificationStepThreePageState
       if (!mounted) {
         return;
       }
-      // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
-      _allowDirectPop = true;
       if (_skipSuccessNavigationForTest) {
         return;
       }
-      context.push(
+      context.go(
         RoutePaths.appResult,
         extra: AppResultPageArgs(
           pageTitle: tr('认证流程.资质认证'),
@@ -225,6 +220,7 @@ class _QualificationCertificationStepThreePageState
           tipText: tr('认证流程.审核提示'),
           actionLabel: tr('认证流程.进入首页'),
           action: AppResultAction.go(RoutePaths.home),
+          backAction: AppResultAction.go(RoutePaths.me),
         ),
       );
     } catch (_) {
@@ -254,9 +250,9 @@ class _QualificationCertificationStepThreePageState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _allowDirectPop,
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
+        if (didPop) {
           return;
         }
         await _handleAttemptLeave();
@@ -474,7 +470,10 @@ class _QualificationCertificationStepThreePageState
                   child: SizedBox(
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: _handleAttemptLeave,
+                      onPressed: () => context.go(
+                        RoutePaths.qualificationCertificationStepTwo,
+                        extra: widget.args,
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFD9D9D9)),
                         shape: RoundedRectangleBorder(

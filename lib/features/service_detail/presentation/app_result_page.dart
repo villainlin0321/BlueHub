@@ -15,6 +15,7 @@ class AppResultPageArgs {
     required this.actionLabel,
     required this.action,
     this.orderId,
+    this.backAction = const AppResultAction.pop(),
   });
 
   factory AppResultPageArgs.paymentSuccess({int? orderId}) {
@@ -34,6 +35,7 @@ class AppResultPageArgs {
   final String actionLabel;
   final AppResultAction action;
   final int? orderId;
+  final AppResultAction backAction;
 }
 
 class AppResultAction {
@@ -59,14 +61,15 @@ class AppResultPage extends StatelessWidget {
 
   final AppResultPageArgs args;
 
-  void _handleAction(BuildContext context) {
+  /// 统一处理结果页动作，保证主按钮与左上角返回都走同一套路由分发逻辑。
+  void _handleAction(BuildContext context, AppResultAction action) {
     final bool hasValidOrderId = (args.orderId ?? 0) > 0;
-    switch (args.action.type) {
+    switch (action.type) {
       case AppResultActionType.push:
         final String route =
-            args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+            action.route == RoutePaths.orderDetail && !hasValidOrderId
             ? RoutePaths.myOrders
-            : args.action.route!;
+            : action.route!;
         context.pushReplacement(
           route,
           extra: route == RoutePaths.orderDetail
@@ -76,9 +79,9 @@ class AppResultPage extends StatelessWidget {
         return;
       case AppResultActionType.go:
         final String route =
-            args.action.route == RoutePaths.orderDetail && !hasValidOrderId
+            action.route == RoutePaths.orderDetail && !hasValidOrderId
             ? RoutePaths.myOrders
-            : args.action.route!;
+            : action.route!;
         context.go(
           route,
           extra: route == RoutePaths.orderDetail
@@ -107,11 +110,7 @@ class AppResultPage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            }
-          },
+          onPressed: () => _handleAction(context, args.backAction),
           icon: const AppSvgIcon(
             assetPath: 'assets/images/service_detail_back.svg',
             fallback: Icons.arrow_back_ios_new_rounded,
@@ -166,7 +165,7 @@ class AppResultPage extends StatelessWidget {
                 width: 148,
                 height: 36,
                 child: FilledButton(
-                  onPressed: () => _handleAction(context),
+                  onPressed: () => _handleAction(context, args.action),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF096DD9),
                     elevation: 0,
