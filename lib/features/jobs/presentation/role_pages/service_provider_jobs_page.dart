@@ -11,6 +11,7 @@ import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/compact_publish_button.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../me/data/dictionary_providers.dart';
@@ -535,20 +536,10 @@ class _PageHeader extends StatelessWidget {
               ),
             ),
           ),
-          InkWell(
+          CompactPublishButton(
             key: AppTestKeys.actionServiceProviderJobsPublish,
-            onTap: onPublishTap,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Text(
-                '套餐管理.发布'.tr(),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 14,
-                  color: Color(0xFF262626),
-                ),
-              ),
-            ),
+            label: '套餐管理.发布'.tr(),
+            onPressed: onPublishTap,
           ),
         ],
       ),

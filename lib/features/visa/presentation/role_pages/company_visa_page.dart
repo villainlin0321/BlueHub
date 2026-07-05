@@ -14,11 +14,13 @@ import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/widgets/compact_publish_button.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 企业岗位页。
 class CompanyVisaPage extends ConsumerStatefulWidget {
   const CompanyVisaPage({super.key});
@@ -73,7 +75,8 @@ enum _CompanyJobTab {
   String get emptyText => isOffline ? tr('企业岗位.暂无已下线岗位') : tr('企业岗位.暂无招聘中的岗位');
 }
 
-class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget {
+class _CompanyVisaAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const _CompanyVisaAppBar({required this.onPublishTap});
 
   final VoidCallback onPublishTap;
@@ -95,16 +98,12 @@ class _CompanyVisaAppBar extends StatelessWidget implements PreferredSizeWidget 
         style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black),
       ),
       actions: <Widget>[
-        GestureDetector(
-          onTap: onPublishTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
-            child: Center(
-              child: Text(
-                '企业岗位.发布'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
-              ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+          child: Center(
+            child: CompactPublishButton(
+              label: '企业岗位.发布'.tr(),
+              onPressed: onPublishTap,
             ),
           ),
         ),
@@ -565,7 +564,10 @@ class _JobManageCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                    style: TestStyle.medium(
+                      fontSize: 16,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const _MoreActionIcon(),
@@ -590,7 +592,10 @@ class _JobManageCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   _formatSalary(job),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFFFE5815)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Color(0xFFFE5815),
+                  ),
                 ),
                 const Spacer(),
                 Text(
@@ -599,7 +604,10 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.viewCount.toString(),
                     },
                   ),
-                  style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 12,
+                    color: Color(0xFF8C8C8C),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Text(
@@ -608,7 +616,10 @@ class _JobManageCard extends StatelessWidget {
                       'count': job.applyCount.toString(),
                     },
                   ),
-                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF096DD9)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: Color(0xFF096DD9),
+                  ),
                 ),
               ],
             ),
@@ -618,7 +629,10 @@ class _JobManageCard extends StatelessWidget {
                 '企业岗位.发布时间'.tr(
                   namedArgs: <String, String>{'time': job.publishedAt},
                 ),
-                style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 12,
+                  color: Color(0xFF8C8C8C),
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -827,7 +841,11 @@ class _BorderActionChip extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: TestStyle.regular(fontSize: 12, color: textColor, letterSpacing: 0.2),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: textColor,
+                    letterSpacing: 0.2,
+                  ),
                 ),
         ),
       ),
@@ -858,7 +876,11 @@ class _PrimaryActionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TestStyle.regular(fontSize: 12, color: Colors.white, letterSpacing: 0.2),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
       ),
