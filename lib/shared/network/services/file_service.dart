@@ -83,8 +83,11 @@ class FileService {
       context: <String, Object?>{
         'scene': scene.value,
         'fileName': UploadPickerUtils.basename(path),
-        'fileSize': preparedPayload.fileSize,
-        'mimeType': uploadMimeType,
+        'fileSize': bytes.length,
+        'mimeType': mimeType,
+        'isImage': preparedPayload.isImage,
+        'isCompressed': preparedPayload.isCompressed,
+        'exceedsMaxSizeLimit': preparedPayload.exceedsMaxSizeLimit,
         'fileId': response.fileId,
         'objectKey': response.objectKey,
         'uploadHost': uploadUri?.host ?? '',

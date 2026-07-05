@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:europepass/shared/logging/app_logger.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class PreparedUploadPayload {
@@ -72,6 +73,7 @@ class ImageUploadCompressService {
   static const int maxShortSide = 1080;
   static const int maxUploadImageSize = 10 * 1024 * 1024;
   static const List<int> qualitySteps = <int>[80, 70, 60, 50, 40];
+  static const String _logTag = 'IMAGE_UPLOAD_COMPRESS';
   static const Map<String, _SafeCompressionTarget> _safeCompressionTargets =
       <String, _SafeCompressionTarget>{
         'jpg': _SafeCompressionTarget(
@@ -141,6 +143,17 @@ class ImageUploadCompressService {
     );
     final bool isImage = _isImageMimeType(mimeType);
     if (compressionTarget == null) {
+      AppLogger.instance.info(
+        _logTag,
+        isImage ? '图片跳过压缩' : '非图片跳过压缩',
+        context: <String, Object?>{
+          'path': filePath,
+          'mimeType': mimeType,
+          'fileSize': originalBytes.length,
+          'isImage': isImage,
+          'reason': isImage ? 'unsupported_or_skipped_subtype' : 'non_image',
+        },
+      );
       return _buildOriginalPayload(
         mimeType: mimeType,
         originalBytes: originalBytes,
@@ -150,6 +163,15 @@ class ImageUploadCompressService {
 
     final ImageInfoForCompress? imageInfo = await _readImageInfo(filePath);
     if (imageInfo == null) {
+      AppLogger.instance.warn(
+        _logTag,
+        '图片解码失败，回退原图上传',
+        context: <String, Object?>{
+          'path': filePath,
+          'mimeType': mimeType,
+          'fileSize': originalBytes.length,
+        },
+      );
       return _buildOriginalPayload(
         mimeType: mimeType,
         originalBytes: originalBytes,
@@ -163,9 +185,24 @@ class ImageUploadCompressService {
       maxLongSide: maxLongSide,
       maxShortSide: maxShortSide,
     );
+    AppLogger.instance.info(
+      _logTag,
+      '图片压缩开始',
+      context: <String, Object?>{
+        'path': filePath,
+        'sourceMimeType': mimeType,
+        'targetMimeType': compressionTarget.mimeType,
+        'originalWidth': imageInfo.width,
+        'originalHeight': imageInfo.height,
+        'originalSize': originalBytes.length,
+        'targetWidth': target.width,
+        'targetHeight': target.height,
+      },
+    );
 
     Uint8List? lastBytes;
-    for (final int quality in qualitySteps) {
+    for (int index = 0; index < qualitySteps.length; index++) {
+      final int quality = qualitySteps[index];
       final Uint8List? compressed;
       try {
         compressed = await _engine.compress(
@@ -176,6 +213,17 @@ class ImageUploadCompressService {
           minHeight: target.height,
         );
       } catch (_) {
+        AppLogger.instance.warn(
+          _logTag,
+          '图片压缩异常，回退原图上传',
+          context: <String, Object?>{
+            'path': filePath,
+            'mimeType': mimeType,
+            'quality': quality,
+            'round': index + 1,
+            'originalSize': originalBytes.length,
+          },
+        );
         return _buildOriginalPayload(
           mimeType: mimeType,
           originalBytes: originalBytes,
@@ -183,10 +231,43 @@ class ImageUploadCompressService {
         );
       }
       if (compressed == null || compressed.isEmpty) {
+        AppLogger.instance.warn(
+          _logTag,
+          '图片压缩结果为空，继续下一轮',
+          context: <String, Object?>{
+            'path': filePath,
+            'mimeType': mimeType,
+            'quality': quality,
+            'round': index + 1,
+          },
+        );
         continue;
       }
       lastBytes = compressed;
+      AppLogger.instance.debug(
+        _logTag,
+        '图片压缩轮次完成',
+        context: <String, Object?>{
+          'path': filePath,
+          'quality': quality,
+          'round': index + 1,
+          'outputSize': compressed.length,
+          'outputMimeType': compressionTarget.mimeType,
+        },
+      );
       if (compressed.length <= maxUploadImageSize) {
+        AppLogger.instance.info(
+          _logTag,
+          '图片压缩完成',
+          context: <String, Object?>{
+            'path': filePath,
+            'quality': quality,
+            'round': index + 1,
+            'outputSize': compressed.length,
+            'outputMimeType': compressionTarget.mimeType,
+            'exceedsMaxSizeLimit': false,
+          },
+        );
         return PreparedUploadPayload(
           bytes: compressed,
           mimeType: compressionTarget.mimeType,
@@ -199,6 +280,21 @@ class ImageUploadCompressService {
     }
 
     final List<int> finalBytes = lastBytes ?? originalBytes;
+    AppLogger.instance.warn(
+      _logTag,
+      lastBytes == null ? '图片压缩未生成有效结果，回退原图上传' : '图片压缩后仍超过大小限制，上传最后一轮结果',
+      context: <String, Object?>{
+        'path': filePath,
+        'sourceMimeType': mimeType,
+        'outputMimeType': lastBytes == null
+            ? mimeType
+            : compressionTarget.mimeType,
+        'originalSize': originalBytes.length,
+        'outputSize': finalBytes.length,
+        'exceedsMaxSizeLimit': finalBytes.length > maxUploadImageSize,
+        'usedCompressedResult': lastBytes != null,
+      },
+    );
     return PreparedUploadPayload(
       bytes: finalBytes,
       mimeType: lastBytes == null ? mimeType : compressionTarget.mimeType,

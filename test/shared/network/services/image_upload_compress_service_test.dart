@@ -205,6 +205,33 @@ void main() {
     expect(payload.mimeType, 'image/webp');
     expect(payload.bytes, <int>[2, 4, 6, 8]);
   });
+
+  for (final String mimeType in <String>[
+    'image/bmp',
+    'image/heic',
+    'image/heif',
+  ]) {
+    test('$mimeType 保守跳过压缩并保留原始内容', () async {
+      final engine = _TrackingCompressionEngine();
+      final service = ImageUploadCompressService(
+        engine: engine,
+        readImageInfo: (_) async =>
+            const ImageInfoForCompress(width: 2000, height: 1200),
+        readFileBytes: (_) async => Uint8List.fromList(<int>[9, 8, 7, 6]),
+      );
+
+      final payload = await service.prepareForUpload(
+        filePath: '/tmp/demo.bin',
+        mimeType: mimeType,
+      );
+
+      expect(engine.callCount, 0);
+      expect(payload.isImage, true);
+      expect(payload.isCompressed, false);
+      expect(payload.mimeType, mimeType);
+      expect(payload.bytes, <int>[9, 8, 7, 6]);
+    });
+  }
 }
 
 class _FakeCompressionEngine implements ImageCompressionEngine {
