@@ -21,10 +21,12 @@ import '../../config/data/config_providers.dart';
 import '../../home/data/home_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/config_service.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../utils/upload_picker_utils.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
 import '../../me/data/collection_providers.dart';
@@ -775,7 +777,13 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
               child: _ServiceSampleFileCard(
                 material: material,
                 isDownloading: _downloadingMaterialUrls.contains(file.fileUrl),
-                onTap: () => _downloadAndOpenSampleFile(file),
+                onPreviewTap: () async {
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                  await _previewSampleFile(file);
+                },
+                onDownloadTap: () => _downloadAndOpenSampleFile(file),
               ),
             );
           },
@@ -794,6 +802,23 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
       exampleFileUrls: <String>[file.fileUrl],
     );
     await _downloadAndOpenMaterial(material);
+  }
+
+  /// 使用页面上下文打开样例附件预览，避免在弹窗子上下文里直接做路由跳转。
+  Future<void> _previewSampleFile(_ServiceSampleFileData file) async {
+    final String fileUrl = file.fileUrl.trim();
+    if (fileUrl.isEmpty) {
+      _showMessage('服务详情.文件地址不存在'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: fileUrl,
+      title: file.title,
+      isImage: UploadPickerUtils.isImagePath(fileUrl),
+      isPdf: UploadPickerUtils.isPdfPath(fileUrl) ||
+          UploadPickerUtils.isPdfPath(file.title),
+    );
   }
 
   Future<void> _downloadAndOpenMaterial(ServiceMaterialData material) async {
@@ -910,12 +935,14 @@ class _ServiceSampleFileCard extends StatelessWidget {
   const _ServiceSampleFileCard({
     required this.material,
     required this.isDownloading,
-    required this.onTap,
+    required this.onPreviewTap,
+    required this.onDownloadTap,
   });
 
   final ServiceMaterialData material;
   final bool isDownloading;
-  final VoidCallback onTap;
+  final VoidCallback onPreviewTap;
+  final VoidCallback onDownloadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -923,8 +950,9 @@ class _ServiceSampleFileCard extends StatelessWidget {
       title: material.title,
       subtitle: material.subtitle,
       fileUrl: material.fileUrl,
+      onTap: onPreviewTap,
       isDownloading: isDownloading,
-      onDownloadTap: onTap,
+      onDownloadTap: onDownloadTap,
     );
   }
 }
