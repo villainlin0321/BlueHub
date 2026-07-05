@@ -118,7 +118,7 @@ enum _PackageTab {
     secondaryActionLabel: '套餐管理.上架',
     secondaryActionStatus: 'active',
   ),
-  draft(label: '套餐管理.已驳回', status: 'draft', emptyText: '套餐管理.暂无已驳回套餐');
+  draft(label: '套餐管理.草稿箱', status: 'draft', emptyText: '套餐管理.暂无草稿箱套餐');
 
   const _PackageTab({
     required this.label,
