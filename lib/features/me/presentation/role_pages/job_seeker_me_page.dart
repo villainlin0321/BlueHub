@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -17,12 +18,36 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../../shared/ui/test_keys.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+typedef CustomerServiceTapHandler = Future<bool> Function();
+
+final Uri _customerServiceUri = Uri.parse(
+  'https://work.weixin.qq.com/ca/cawcde42ca858f9905',
+);
+
+/// 使用系统外部浏览器打开客服中心链接，避免被应用内 WebView 承接。
+Future<bool> _openCustomerServiceLink(BuildContext context) async {
+  try {
+    final bool opened = await launchUrl(
+      _customerServiceUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened) {
+      await AppToast.show('我的.占位提示'.tr(namedArgs: <String, String>{'label': '客服中心'}));
+    }
+    return opened;
+  } catch (_) {
+    await AppToast.show('我的.占位提示'.tr(namedArgs: <String, String>{'label': '客服中心'}));
+    return false;
+  }
+}
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({
     super.key,
     this.onProfileTapOverride,
     this.onRealNameEntryTapOverride,
+    this.onCustomerServiceTapOverride,
   });
 
   static const String _verifiedBadgeBgAsset =
@@ -46,15 +71,16 @@ class JobSeekerMePage extends ConsumerWidget {
       iconAsset: 'assets/images/mou4gf13-2yasg57.svg',
       fallbackIcon: Icons.star_outline_rounded,
     ),
-    // _MenuActionItem(
-    //   labelKey: '我的.客服中心',
-    //   iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
-    //   fallbackIcon: Icons.support_agent_outlined,
-    // ),
+    _MenuActionItem(
+      labelKey: '我的.客服中心',
+      iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
+      fallbackIcon: Icons.support_agent_outlined,
+    ),
   ];
 
   final void Function(BuildContext context)? onProfileTapOverride;
   final void Function(BuildContext context)? onRealNameEntryTapOverride;
+  final CustomerServiceTapHandler? onCustomerServiceTapOverride;
 
   @override
   /// 构建求职者端“我的”页面，并展示当前登录用户的资料摘要。
@@ -105,16 +131,20 @@ class JobSeekerMePage extends ConsumerWidget {
   }
 
   /// 根据菜单名称分发跳转行为。
-  void _handleMenuTap(BuildContext context, String label) {
+  Future<void> _handleMenuTap(BuildContext context, String label) async {
     switch (label) {
       case '我的.简历管理':
         context.push(RoutePaths.myResume);
+        return;
       case '我的.订单进度':
         context.push(RoutePaths.myOrders);
+        return;
       case '我的.我的收藏':
         context.push(RoutePaths.myFavorites);
+        return;
       case '我的.客服中心':
-        _showPlaceholderToast(context, label);
+        await _handleCustomerServiceTap(context);
+        return;
     }
   }
 
@@ -144,11 +174,14 @@ class JobSeekerMePage extends ConsumerWidget {
     context.push(RoutePaths.jobSeekerRealNameVerification);
   }
 
-  /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。
-  void _showPlaceholderToast(BuildContext context, String label) {
-    AppToast.show(
-      '我的.占位提示'.tr(namedArgs: <String, String>{'label': tr(label)}),
-    );
+  /// 打开客服中心链接；测试环境可覆写以便稳定验证点击行为。
+  Future<void> _handleCustomerServiceTap(BuildContext context) async {
+    final onCustomerServiceTapOverride = this.onCustomerServiceTapOverride;
+    if (onCustomerServiceTapOverride != null) {
+      await onCustomerServiceTapOverride();
+      return;
+    }
+    await _openCustomerServiceLink(context);
   }
 }
 

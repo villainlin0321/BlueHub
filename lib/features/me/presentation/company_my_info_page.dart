@@ -394,10 +394,17 @@ class _CompanyMyInfoContent extends StatelessWidget {
             CompanyMyInfoPrimaryButton(
               label: '我的.修改信息'.tr(),
               onTap: () {
+                final QualificationCertificationDraft draft =
+                    QualificationCertificationDraft()
+                      ..fillFromEmployerProfile(
+                        profile,
+                        countryLabelMap: countryLabelMap,
+                      );
                 context.push(
                   RoutePaths.qualificationCertification,
                   extra: QualificationCertificationPageArgs(
                     role: QualificationCertificationRole.company,
+                    draft: draft,
                   ),
                 );
               },
