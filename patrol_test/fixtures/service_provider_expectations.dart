@@ -46,4 +46,17 @@ const Map<String, PatrolRouteMatcher> serviceProviderRouteMatchers =
         routePath: RoutePaths.settings,
         fallbackText: '设置',
       ),
+      'visa': PatrolRouteMatcher(
+        routePath: RoutePaths.visa,
+        readyKey: AppTestKeys.pageServiceProviderVisa,
+        fallbackText: '订单',
+      ),
+      'orderDetail': PatrolRouteMatcher(
+        routePath: RoutePaths.orderDetail,
+        fallbackText: '订单详情',
+      ),
+      'chat': PatrolRouteMatcher(
+        routePath: RoutePaths.chat,
+        fallbackText: '聊天',
+      ),
     };

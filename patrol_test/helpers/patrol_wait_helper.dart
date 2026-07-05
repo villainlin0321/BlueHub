@@ -23,6 +23,26 @@ const Map<String, PatrolRouteMatcher> _pageMatchers =
         routePath: RoutePaths.me,
         readyKey: AppTestKeys.pageServiceProviderMe,
       ),
+      'jobs': PatrolRouteMatcher(
+        routePath: RoutePaths.jobs,
+        readyKey: AppTestKeys.pageServiceProviderJobs,
+      ),
+      'serviceProviderJobs': PatrolRouteMatcher(
+        routePath: RoutePaths.jobs,
+        readyKey: AppTestKeys.pageServiceProviderJobs,
+      ),
+      'editVisaPackage': PatrolRouteMatcher(
+        routePath: RoutePaths.editVisaPackage,
+        readyKey: AppTestKeys.pageEditVisaPackage,
+      ),
+      'visa': PatrolRouteMatcher(
+        routePath: RoutePaths.visa,
+        readyKey: AppTestKeys.pageServiceProviderVisa,
+      ),
+      'serviceProviderVisa': PatrolRouteMatcher(
+        routePath: RoutePaths.visa,
+        readyKey: AppTestKeys.pageServiceProviderVisa,
+      ),
     };
 
 /// 按页面别名等待目标页面完成渲染，避免在测试里直接写固定休眠。
