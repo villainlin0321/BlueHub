@@ -95,19 +95,24 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
     context.goNamed(RoutePaths.homeName);
   }
 
-  /// 按测试角色填充邮箱与验证码，并直接发起邮箱验证码登录。
+  /// 按测试角色串联“一键直登”流程：自动同意协议、先发邮箱验证码，再继续登录。
   Future<void> _handleDirectEmailLogin(String email) async {
     _emailController.text = email;
     _codeController.text = _testCode;
 
     final notifier = ref.read(loginFormControllerProvider.notifier);
     notifier.setLoginMode(false);
+    notifier.setAgreement(true);
     notifier.updateEmail(email);
     notifier.updateCode(_testCode);
 
-    final login = await ref
-        .read(loginFormControllerProvider.notifier)
-        .submitEmailLoginWithoutValidation(email: email, code: _testCode);
+    // 关键流程：只有验证码发送成功后，才继续走真实的邮箱验证码登录链路。
+    final bool codeSent = await notifier.sendCode();
+    if (!mounted || !codeSent) {
+      return;
+    }
+
+    final login = await notifier.submitLogin();
     if (!mounted || login == null) {
       return;
     }
