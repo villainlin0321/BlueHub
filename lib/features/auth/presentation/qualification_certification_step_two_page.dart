@@ -525,22 +525,8 @@ class _QualificationPlaceholderImage extends StatelessWidget {
           fit: BoxFit.cover,
         ),
       ),
-      child: Center(
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(
-            color: Color(0x80000000),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: SvgPicture.asset(
-            'assets/images/qualification_camera.svg',
-            width: 24,
-            height: 24,
-          ),
-        ),
-      ),
+      // 相机入口统一由外层上传容器叠加，避免空态/错误态与占位图重复绘制。
+      child: const SizedBox.expand(),
     );
   }
 }

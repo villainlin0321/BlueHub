@@ -13,6 +13,7 @@ import 'package:europepass/features/visa/data/provider_models.dart';
 import 'package:europepass/shared/localization/app_locales.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -213,6 +214,43 @@ void main() {
     );
     expect(preview.imageUrl, 'https://example.com/business-license.png');
   });
+
+  testWidgets('第二页空态上传区只显示一层相机按钮', (WidgetTester tester) async {
+    await _pumpQualificationTestHost(
+      tester,
+      child: QualificationCertificationStepTwoPage(
+        args: QualificationCertificationPageArgs(
+          draft: QualificationCertificationDraft(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(_qualificationCameraFinder(), findsNWidgets(2));
+  });
+
+  testWidgets('第二页文件预览失败后仍只显示一层相机按钮', (WidgetTester tester) async {
+    final QualificationCertificationDraft draft =
+        QualificationCertificationDraft()
+          ..businessLicenseDoc = const UploadedQualificationDoc(
+            docType: QualificationDocType.businessLicense,
+            docName: '营业执照',
+            fileId: 303,
+            fileUrl: '',
+            localPath: '/tmp/bluehub-missing-license.png',
+          );
+
+    await _pumpQualificationTestHost(
+      tester,
+      child: QualificationCertificationStepTwoPage(
+        args: QualificationCertificationPageArgs(draft: draft),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(_qualificationCameraFinder(), findsNWidgets(2));
+  });
 }
 
 /// 挂载资质认证测试页面，并补齐本地化与 Riverpod 运行环境。
@@ -241,6 +279,15 @@ Future<void> _pumpQualificationTestHost(
         ),
       ),
     ),
+  );
+}
+
+/// 只统计第二页上传区使用的相机图标，避免把返回按钮和步骤图标算进断言。
+Finder _qualificationCameraFinder() {
+  return find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is SvgPicture &&
+        widget.bytesLoader.toString().contains('qualification_camera.svg'),
   );
 }
 
