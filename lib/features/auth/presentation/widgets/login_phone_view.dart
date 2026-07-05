@@ -155,6 +155,7 @@ class LoginPhoneView extends StatelessWidget {
                   if (kDebugMode) ...<Widget>[
                     const SizedBox(height: 48),
                     _LoginButton(
+                      key: AppTestKeys.loginTestJobSeekerButton,
                       label: '认证.测试登录求职者'.tr(),
                       enabled: !state.isSendingCode && !state.isSubmitting,
                       onPressed: onTestWorkerLogin,

@@ -146,6 +146,8 @@ class PostJobPageView extends StatelessWidget {
               child: SizedBox(
                 width: contentWidth,
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
                   child: Column(
                     children: <Widget>[

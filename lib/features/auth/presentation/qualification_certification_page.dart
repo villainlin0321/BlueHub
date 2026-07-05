@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -14,6 +13,7 @@ import '../application/qualification_upload_helper.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
+import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -110,26 +110,37 @@ class _QualificationCertificationPageState
         ? null
         : _draft.companyCountryCode.trim();
     if (_draft.idCardEmblemDoc != null) {
+      final String? previewPath = QualificationPreviewResolver.resolvePreviewPath(
+        _draft.idCardEmblemDoc,
+      );
+      if (previewPath != null) {
       _idCardEmblemImage = PickedUploadFile(
         id: 'qualification-id-emblem',
-        path: _draft.idCardEmblemDoc!.localPath,
+        path: previewPath,
         name: _draft.idCardEmblemDoc!.docName,
         isImage: true,
         sizeLabel: '',
         sourceType: UploadSourceType.gallery,
         state: UploadItemState.success,
       );
+      }
     }
     if (_draft.idCardPortraitDoc != null) {
+      final String? previewPath =
+          QualificationPreviewResolver.resolvePreviewPath(
+            _draft.idCardPortraitDoc,
+          );
+      if (previewPath != null) {
       _idCardPortraitImage = PickedUploadFile(
         id: 'qualification-id-portrait',
-        path: _draft.idCardPortraitDoc!.localPath,
+        path: previewPath,
         name: _draft.idCardPortraitDoc!.docName,
         isImage: true,
         sizeLabel: '',
         sourceType: UploadSourceType.gallery,
         state: UploadItemState.success,
       );
+      }
     }
     _companyNameController.addListener(_handleCompanyFormChanged);
     _companyIndustryController.addListener(_handleCompanyFormChanged);
@@ -892,8 +903,9 @@ class _UploadCard extends StatelessWidget {
   }
 
   Widget _buildPreview() {
-    final String? path = pickedFile?.path;
-    if (path == null || path.isEmpty) {
+    final ImageProvider<Object>? previewImage =
+        QualificationPreviewResolver.resolveImageProvider(pickedFile?.path);
+    if (previewImage == null) {
       return Image.asset(
         imageAsset,
         width: 159,
@@ -904,8 +916,8 @@ class _UploadCard extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(path),
+      child: Image(
+        image: previewImage,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
