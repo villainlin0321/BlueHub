@@ -70,6 +70,15 @@ class ImageUploadCompressService {
   static const int maxShortSide = 1080;
   static const int maxUploadImageSize = 10 * 1024 * 1024;
   static const List<int> qualitySteps = <int>[80, 70, 60, 50, 40];
+  static const Set<String> _compressibleMimeSubtypes = <String>{
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'bmp',
+    'heic',
+    'heif',
+  };
 
   final ImageCompressionEngine _engine;
   final Future<Uint8List> Function(String path) _readFileBytes;
@@ -108,28 +117,20 @@ class ImageUploadCompressService {
     required String mimeType,
   }) async {
     final Uint8List originalBytes = await _readFileBytes(filePath);
-    if (!_shouldCompress(mimeType: mimeType, filePath: filePath)) {
-      return PreparedUploadPayload(
-        bytes: originalBytes,
+    if (!_shouldCompress(mimeType: mimeType)) {
+      return _buildOriginalPayload(
         mimeType: mimeType,
-        fileSize: originalBytes.length,
+        originalBytes: originalBytes,
         isImage: mimeType.startsWith('image/'),
-        isCompressed: false,
-        exceedsMaxSizeLimit:
-            mimeType.startsWith('image/') &&
-            originalBytes.length > maxUploadImageSize,
       );
     }
 
     final ImageInfoForCompress? imageInfo = await _readImageInfo(filePath);
     if (imageInfo == null) {
-      return PreparedUploadPayload(
-        bytes: originalBytes,
+      return _buildOriginalPayload(
         mimeType: mimeType,
-        fileSize: originalBytes.length,
+        originalBytes: originalBytes,
         isImage: true,
-        isCompressed: false,
-        exceedsMaxSizeLimit: originalBytes.length > maxUploadImageSize,
       );
     }
 
@@ -142,12 +143,21 @@ class ImageUploadCompressService {
 
     Uint8List? lastBytes;
     for (final int quality in qualitySteps) {
-      final Uint8List? compressed = await _engine.compress(
-        path: filePath,
-        quality: quality,
-        minWidth: target.width,
-        minHeight: target.height,
-      );
+      final Uint8List? compressed;
+      try {
+        compressed = await _engine.compress(
+          path: filePath,
+          quality: quality,
+          minWidth: target.width,
+          minHeight: target.height,
+        );
+      } catch (_) {
+        return _buildOriginalPayload(
+          mimeType: mimeType,
+          originalBytes: originalBytes,
+          isImage: true,
+        );
+      }
       if (compressed == null || compressed.isEmpty) {
         continue;
       }
@@ -175,13 +185,34 @@ class ImageUploadCompressService {
     );
   }
 
-  bool _shouldCompress({required String mimeType, required String filePath}) {
+  bool _shouldCompress({required String mimeType}) {
     if (!mimeType.startsWith('image/')) {
       return false;
     }
 
-    final String lowerPath = filePath.toLowerCase();
-    return !lowerPath.endsWith('.svg');
+    final String normalizedMimeType = mimeType.toLowerCase().split(';').first;
+    final int slashIndex = normalizedMimeType.indexOf('/');
+    if (slashIndex < 0 || slashIndex == normalizedMimeType.length - 1) {
+      return false;
+    }
+
+    final String subtype = normalizedMimeType.substring(slashIndex + 1);
+    return _compressibleMimeSubtypes.contains(subtype);
+  }
+
+  PreparedUploadPayload _buildOriginalPayload({
+    required String mimeType,
+    required Uint8List originalBytes,
+    required bool isImage,
+  }) {
+    return PreparedUploadPayload(
+      bytes: originalBytes,
+      mimeType: mimeType,
+      fileSize: originalBytes.length,
+      isImage: isImage,
+      isCompressed: false,
+      exceedsMaxSizeLimit: isImage && originalBytes.length > maxUploadImageSize,
+    );
   }
 
   static Future<Uint8List> _defaultReadFileBytes(String path) async {

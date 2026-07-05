@@ -130,3 +130,104 @@ Relevant output:
 ## any concerns
 
 - brief 中给出的缩放示例代码片段与断言值存在差异：按片段里的比例选择会得到 `1920x1440`，但任务要求的测试断言是 `1440x1080`。实现最终以任务中的“精确断言值”和测试为准。
+
+---
+
+## fix report after review findings (2026-07-05)
+
+### what you changed
+
+- 将 `_shouldCompress` 改为基于显式白名单判断，仅允许 `jpg/jpeg/png/webp/bmp/heic/heif` 进入压缩流程。
+- 修正 `image/gif`、`image/svg+xml` 与其他非白名单图片类型的行为，统一跳过压缩并直接返回原始内容。
+- 在压缩循环中为 `_engine.compress(...)` 增加异常兜底；任一轮抛异常时，`prepareForUpload(...)` 返回原始文件字节而不是抛出失败。
+- 新增 3 个聚焦回归测试：
+  - `image/gif` 跳过压缩
+  - `image/svg+xml` 跳过压缩
+  - 压缩引擎抛异常时回退原始内容
+
+### tests run and results
+
+1. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
+   - 结果：RED，符合预期
+   - 失败点：
+     - `GIF 图片跳过压缩并保留原始内容`
+     - `SVG 图片跳过压缩并保留原始内容`
+     - `压缩引擎抛异常时回退原始内容`
+
+2. `dart format lib/shared/network/services/image_upload_compress_service.dart test/shared/network/services/image_upload_compress_service_test.dart`
+   - 结果：成功
+
+3. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
+   - 结果：GREEN
+   - 关键输出：`00:00 +9: All tests passed!`
+
+### exact command run and relevant output
+
+#### RED
+
+Command:
+
+```bash
+flutter test test/shared/network/services/image_upload_compress_service_test.dart
+```
+
+Relevant output:
+
+```text
+00:00 +5 -1: GIF 图片跳过压缩并保留原始内容 [E]
+Expected: <0>
+  Actual: <1>
+
+00:00 +5 -2: SVG 图片跳过压缩并保留原始内容 [E]
+Expected: <0>
+  Actual: <1>
+
+00:00 +6 -3: 压缩引擎抛异常时回退原始内容 [E]
+Bad state: compression failed
+
+00:00 +6 -3: Some tests failed.
+```
+
+#### FORMAT
+
+Command:
+
+```bash
+dart format lib/shared/network/services/image_upload_compress_service.dart test/shared/network/services/image_upload_compress_service_test.dart
+```
+
+Relevant output:
+
+```text
+Formatted 2 files (0 changed) in 0.01 seconds.
+```
+
+#### GREEN
+
+Command:
+
+```bash
+flutter test test/shared/network/services/image_upload_compress_service_test.dart
+```
+
+Relevant output:
+
+```text
+00:00 +9: All tests passed!
+```
+
+### files changed
+
+- `lib/shared/network/services/image_upload_compress_service.dart`
+- `test/shared/network/services/image_upload_compress_service_test.dart`
+- `.superpowers/sdd/task-1-report.md`
+
+### self-review findings
+
+- 白名单逻辑现在只依赖标准化后的 MIME subtype，不再把任意 `image/*` 视为可压缩格式，行为与 review finding 对齐。
+- 异常兜底保持在压缩调用边界内，没有扩大到文件读取或解码阶段，避免掩盖其他类型的错误。
+- 新增测试只覆盖本次 review 指出的三个缺口，没有扩展到 Task 2 范围。
+
+### any concerns
+
+- 当前白名单按 MIME subtype 判定；如果调用方未来传入错误 MIME 但文件后缀正确，服务会保守地跳过压缩。这与本次 review 要求一致，但依赖上游 MIME 传递准确。

@@ -71,6 +71,48 @@ void main() {
     expect(payload.bytes, <int>[1, 2, 3]);
   });
 
+  test('GIF 图片跳过压缩并保留原始内容', () async {
+    final engine = _TrackingCompressionEngine();
+    final service = ImageUploadCompressService(
+      engine: engine,
+      readImageInfo: (_) async =>
+          const ImageInfoForCompress(width: 100, height: 100),
+      readFileBytes: (_) async => Uint8List.fromList(<int>[4, 5, 6]),
+    );
+
+    final payload = await service.prepareForUpload(
+      filePath: '/tmp/demo.bin',
+      mimeType: 'image/gif',
+    );
+
+    expect(engine.callCount, 0);
+    expect(payload.isImage, true);
+    expect(payload.isCompressed, false);
+    expect(payload.mimeType, 'image/gif');
+    expect(payload.bytes, <int>[4, 5, 6]);
+  });
+
+  test('SVG 图片跳过压缩并保留原始内容', () async {
+    final engine = _TrackingCompressionEngine();
+    final service = ImageUploadCompressService(
+      engine: engine,
+      readImageInfo: (_) async =>
+          const ImageInfoForCompress(width: 100, height: 100),
+      readFileBytes: (_) async => Uint8List.fromList(<int>[7, 8, 9]),
+    );
+
+    final payload = await service.prepareForUpload(
+      filePath: '/tmp/vector.bin',
+      mimeType: 'image/svg+xml',
+    );
+
+    expect(engine.callCount, 0);
+    expect(payload.isImage, true);
+    expect(payload.isCompressed, false);
+    expect(payload.mimeType, 'image/svg+xml');
+    expect(payload.bytes, <int>[7, 8, 9]);
+  });
+
   test('多轮压缩后仍超限时返回最后一轮结果', () async {
     final service = ImageUploadCompressService(
       engine: _SequenceCompressionEngine(<Uint8List>[
@@ -96,6 +138,26 @@ void main() {
       payload.fileSize,
       ImageUploadCompressService.maxUploadImageSize + 50,
     );
+  });
+
+  test('压缩引擎抛异常时回退原始内容', () async {
+    final service = ImageUploadCompressService(
+      engine: _ThrowingCompressionEngine(),
+      readImageInfo: (_) async =>
+          const ImageInfoForCompress(width: 4000, height: 3000),
+      readFileBytes: (_) async => Uint8List.fromList(<int>[1, 3, 5, 7]),
+    );
+
+    final payload = await service.prepareForUpload(
+      filePath: '/tmp/demo.jpg',
+      mimeType: 'image/jpeg',
+    );
+
+    expect(payload.isImage, true);
+    expect(payload.isCompressed, false);
+    expect(payload.mimeType, 'image/jpeg');
+    expect(payload.fileSize, 4);
+    expect(payload.bytes, <int>[1, 3, 5, 7]);
   });
 }
 
@@ -128,5 +190,32 @@ class _SequenceCompressionEngine implements ImageCompressionEngine {
       return outputs.last;
     }
     return outputs[_index++];
+  }
+}
+
+class _TrackingCompressionEngine implements ImageCompressionEngine {
+  int callCount = 0;
+
+  @override
+  Future<Uint8List?> compress({
+    required String path,
+    required int quality,
+    required int minWidth,
+    required int minHeight,
+  }) async {
+    callCount += 1;
+    return Uint8List.fromList(<int>[9, 9, 9]);
+  }
+}
+
+class _ThrowingCompressionEngine implements ImageCompressionEngine {
+  @override
+  Future<Uint8List?> compress({
+    required String path,
+    required int quality,
+    required int minWidth,
+    required int minHeight,
+  }) {
+    throw StateError('compression failed');
   }
 }
