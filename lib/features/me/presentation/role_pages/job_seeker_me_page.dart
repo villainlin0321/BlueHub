@@ -18,7 +18,10 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import 'package:europepass/shared/ui/test_style.dart';
 /// 求职者端我的页，按 Figma 设计图还原。
 class JobSeekerMePage extends ConsumerWidget {
-  const JobSeekerMePage({super.key});
+  const JobSeekerMePage({
+    super.key,
+    this.onRealNameEntryTapOverride,
+  });
 
   static const String _verifiedBadgeBgAsset =
       'assets/images/mou4gf12-gd4t3xy.svg';
@@ -47,6 +50,8 @@ class JobSeekerMePage extends ConsumerWidget {
       fallbackIcon: Icons.support_agent_outlined,
     ),
   ];
+
+  final void Function(BuildContext context)? onRealNameEntryTapOverride;
 
   @override
   /// 构建求职者端“我的”页面，并展示当前登录用户的资料摘要。
@@ -77,7 +82,7 @@ class JobSeekerMePage extends ConsumerWidget {
                 userViewData: userViewData,
                 stats: stats,
                 onTap: () => context.push(RoutePaths.myInfo),
-                onRealNameTap: () => context.push(RoutePaths.jobSeekerRealNameVerification),
+                onRealNameTap: () => _handleRealNameTap(context),
                 onOrderTap: () => context.push(RoutePaths.myOrders),
                 onResumeTap: () => context.push(RoutePaths.myResume),
                 onApplicationTap: () => context.push(RoutePaths.myApplications),
@@ -113,6 +118,16 @@ class JobSeekerMePage extends ConsumerWidget {
   void _handleSettingsTap(BuildContext context) {
     // 关键交互：右上角设置按钮进入真实设置页，而不是占位提示。
     context.push(RoutePaths.settings);
+  }
+
+  /// 打开求职者实名认证页；测试可覆写该入口以稳定验证页面跳转结果。
+  void _handleRealNameTap(BuildContext context) {
+    final onRealNameEntryTapOverride = this.onRealNameEntryTapOverride;
+    if (onRealNameEntryTapOverride != null) {
+      onRealNameEntryTapOverride(context);
+      return;
+    }
+    context.push(RoutePaths.jobSeekerRealNameVerification);
   }
 
   /// 对尚未接入的菜单先展示占位提示，避免点击无反馈。

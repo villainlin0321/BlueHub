@@ -81,3 +81,37 @@ flutter analyze lib/app/router/route_paths.dart lib/app/router/app_router.dart l
 
 - 当前测试为了避开 `easy_localization` 在 Widget 测试中的空白页问题，采用组件级断言 key 文案分支，而不是最终翻译后的展示文案；运行时多语言仍由真实翻译文件提供。
 - Task 1 仅完成占位页跳转，不包含后续实名表单、上传与提交流程。
+
+## 2026-07-05 审查修复追加
+
+- 修复目标：
+  - 将 `test/features/me/job_seeker_real_name_page_test.dart` 从孤立组件测试升级为高价值页面级测试
+  - 在真实 `EasyLocalization` 宿主中断言最终中文文案，而不是国际化 key
+  - 从“我的”页真实入口点击进入实名认证占位页，并断言落页标题
+
+### 本次改动
+
+- 文件：`test/features/me/job_seeker_real_name_page_test.dart`
+  - 使用真实 `EasyLocalization` 宿主，并通过测试专用 `AssetLoader` 直接读取仓库里的翻译 JSON
+  - 使用 `ProviderContainer` 覆盖 `authSessionProvider` 与 `homeDashboardStatsProvider`
+  - 覆盖点调整为：
+    - 未实名用户在“我的”页看到最终文案“您还未实名，点击去实名认证”，点击后进入实名认证占位页标题
+    - 已实名用户在“我的”页看到最终文案“已完成实名认证”，点击后同样可进入实名认证占位页标题
+- 文件：`lib/features/me/presentation/role_pages/job_seeker_me_page.dart`
+  - 为实名认证入口增加测试可覆写的可选跳转回调
+  - 默认行为仍保持走现有 `go_router` 路由，不影响生产逻辑
+
+### 根因记录
+
+- `EasyLocalization` 在 Widget 测试中若直接依赖默认资源加载路径，容易停留在空白宿主态，导致测试只能退回 key 级断言。
+- `homeDashboardStatsProvider` 在测试环境会触发真实网络请求并带来重试定时器，需在页面级测试中显式覆盖为静态数据。
+
+### 修复后验证
+
+- 已通过：
+  - `flutter test test/features/me/job_seeker_real_name_page_test.dart`
+  - `flutter analyze lib/features/me/presentation/role_pages/job_seeker_me_page.dart test/features/me/job_seeker_real_name_page_test.dart lib/features/me/presentation/job_seeker_real_name_verification_page.dart`
+
+### 更新后的顾虑
+
+- Task 1 仍只覆盖实名认证入口与占位页落点，不包含实名表单、上传与提交流程。

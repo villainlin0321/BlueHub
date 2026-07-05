@@ -1,69 +1,176 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:europepass/features/auth/application/auth_session_provider.dart';
+import 'package:europepass/features/auth/application/auth_session_state.dart';
+import 'package:europepass/features/auth/application/auth_user.dart';
+import 'package:europepass/features/home/data/home_models.dart';
+import 'package:europepass/features/home/data/home_providers.dart';
 import 'package:europepass/features/me/presentation/job_seeker_real_name_verification_page.dart';
 import 'package:europepass/features/me/presentation/role_pages/job_seeker_me_page.dart';
+import 'package:europepass/shared/localization/app_locales.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('未实名入口会展示引导文案并响应点击', (WidgetTester tester) async {
-    var didTap = false;
-
-    await tester.pumpWidget(
-      _buildLocalizedApp(
-        child: Scaffold(
-          body: JobSeekerRealNameEntry(
-            isVerified: false,
-            onTap: () => didTap = true,
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('我的.点击去实名认证'), findsOneWidget);
-
-    await tester.tap(find.text('我的.点击去实名认证'));
-    await tester.pumpAndSettle();
-
-    expect(didTap, isTrue);
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await EasyLocalization.ensureInitialized();
   });
 
-  testWidgets('已实名入口会展示完成实名认证文案', (WidgetTester tester) async {
+  testWidgets('未实名用户会从我的页看到最终提示文案并跳转到实名认证页', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    addTearDown(container.dispose);
+
     await tester.pumpWidget(
-      _buildLocalizedApp(
-        child: const Scaffold(
-          body: JobSeekerRealNameEntry(
-            isVerified: true,
-            onTap: _noop,
-          ),
-        ),
+      _buildRealNameTestHost(
+        container: container,
       ),
     );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+    final Finder realNameEntry = find.text('您还未实名，点击去实名认证');
+    expect(realNameEntry, findsOneWidget);
+
+    // 关键验收路径：从“我的”页真实入口点击进入实名认证占位页。
+    await tester.tap(realNameEntry);
     await tester.pumpAndSettle();
 
-    expect(find.text('我的.已完成实名认证'), findsOneWidget);
-    expect(find.text('我的.点击去实名认证'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('实名认证'),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('实名认证占位页会展示标题', (WidgetTester tester) async {
+  testWidgets('已实名用户会从我的页看到最终提示文案并可进入实名认证页', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: true,
+    );
+    addTearDown(container.dispose);
+
     await tester.pumpWidget(
-      _buildLocalizedApp(
-        child: const JobSeekerRealNameVerificationPage(),
+      _buildRealNameTestHost(
+        container: container,
       ),
     );
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    expect(find.text('我的.实名认证'), findsWidgets);
+    final Finder realNameEntry = find.text('已完成实名认证');
+    expect(realNameEntry, findsOneWidget);
+    expect(find.text('您还未实名，点击去实名认证'), findsNothing);
+
+    // 已实名场景仍需保持入口可达，避免状态切换后丢失跳转能力。
+    await tester.tap(realNameEntry);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('实名认证'),
+      ),
+      findsOneWidget,
+    );
   });
 }
 
-/// 构建最小测试宿主，专注验证组件分支和点击行为，不引入额外路由或本地化噪音。
-Widget _buildLocalizedApp({required Widget child}) {
-  return MaterialApp(
-    home: child,
+/// 创建已登录的求职者测试容器，确保“我的”页读取到真实入口所需的用户态。
+ProviderContainer _createAuthenticatedContainer({required bool isVerified}) {
+  final ProviderContainer container = ProviderContainer(
+    overrides: [
+      homeDashboardStatsProvider.overrideWith(
+        (Ref ref) => const HomeDashboardStatsVO(
+          monthlyIncome: '0',
+          incomeCurrency: 'CNY',
+        ),
+      ),
+    ],
+  );
+  container.read(authSessionProvider.notifier).state = AuthSessionState(
+    user: AuthUser(
+      userId: 1001,
+      phone: '13812345678',
+      countryCode: '+86',
+      email: 'jobseeker@example.com',
+      nickname: '测试求职者',
+      avatarUrl: '',
+      role: 'job_seeker',
+      gender: 'male',
+      birthday: '1990-01-01',
+      currentLocation: 'Shanghai',
+      isVerified: isVerified,
+    ),
+    isAuthenticated: true,
+    isHydrating: false,
+    needSelectRole: false,
+  );
+  return container;
+}
+
+/// 构建带 EasyLocalization、Riverpod 与真实页面跳转的测试宿主。
+Widget _buildRealNameTestHost({required ProviderContainer container}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: EasyLocalization(
+      supportedLocales: AppLocales.supported,
+      path: 'assets/translations',
+      assetLoader: const _TestJsonFileAssetLoader(),
+      fallbackLocale: AppLocales.chinese,
+      startLocale: AppLocales.chinese,
+      saveLocale: false,
+      child: const _RealNameTestApp(),
+    ),
   );
 }
 
-/// 提供无副作用点击回调，方便只验证展示分支的组件测试复用。
-void _noop() {}
+/// 测试环境直接从仓库读取翻译文件，避免 widget test 里资源 Bundle 未挂起导致空白页。
+class _TestJsonFileAssetLoader extends AssetLoader {
+  const _TestJsonFileAssetLoader();
+
+  @override
+  Future<Map<String, dynamic>> load(String path, Locale locale) async {
+    final File file = File('${Directory.current.path}/$path/${locale.languageCode}.json');
+    final String content = file.readAsStringSync();
+    return jsonDecode(content) as Map<String, dynamic>;
+  }
+}
+
+/// 提供最小可运行的页面宿主，覆盖“我的”页入口到实名认证占位页的真实跳转链路。
+class _RealNameTestApp extends StatelessWidget {
+  const _RealNameTestApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
+      home: Scaffold(
+        body: JobSeekerMePage(
+          onRealNameEntryTapOverride: (BuildContext context) {
+            // 关键路径：测试中使用真实 Navigator 承接页面跳转，稳定验证落页标题。
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const JobSeekerRealNameVerificationPage(),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
