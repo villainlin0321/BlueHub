@@ -40,7 +40,23 @@ const Map<String, PatrolRouteMatcher> serviceProviderRouteMatchers =
       ),
       'qualificationCertification': PatrolRouteMatcher(
         routePath: RoutePaths.qualificationCertification,
+        readyKey: AppTestKeys.pageQualificationCertificationStepOne,
         fallbackText: '资质认证',
+      ),
+      'qualificationCertificationStepTwo': PatrolRouteMatcher(
+        routePath: RoutePaths.qualificationCertificationStepTwo,
+        readyKey: AppTestKeys.pageQualificationCertificationStepTwo,
+        fallbackText: '资质认证',
+      ),
+      'qualificationCertificationStepThree': PatrolRouteMatcher(
+        routePath: RoutePaths.qualificationCertificationStepThree,
+        readyKey: AppTestKeys.pageQualificationCertificationStepThree,
+        fallbackText: '资质认证',
+      ),
+      'qualificationCertificationResult': PatrolRouteMatcher(
+        routePath: RoutePaths.appResult,
+        readyKey: AppTestKeys.pageQualificationCertificationResult,
+        fallbackText: '信息已提交',
       ),
       'settings': PatrolRouteMatcher(
         routePath: RoutePaths.settings,

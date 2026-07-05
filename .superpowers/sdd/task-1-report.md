@@ -1,238 +1,27 @@
-# Task 1 Report: 图片压缩服务与规则测试
-
-## what you implemented
-
-- 在 `pubspec.yaml` 新增依赖 `flutter_image_compress: ^2.4.0`，并通过 `flutter pub get` 更新 `pubspec.lock`。
-- 新增 `lib/shared/network/services/image_upload_compress_service.dart`，实现：
-  - `PreparedUploadPayload`
-  - `ImageInfoForCompress`
-  - `ImageCompressionEngine`
-  - `FlutterImageCompressionEngine`
-  - `ImageUploadCompressService`
-  - `ImageUploadCompressService.resolveTargetDimensions(...)`
-  - `ImageUploadCompressService.prepareForUpload(...)`
-- 新增 `test/shared/network/services/image_upload_compress_service_test.dart`，覆盖：
-  - 宽高异常兜底到 `1920x1920`
-  - 长边未超限保留原尺寸
-  - 短边未超限保留原尺寸
-  - 同时超过长短边限制时按任务要求等比缩放
-  - 非图片文件跳过压缩并保留原始内容
-  - 多轮压缩后仍超限时返回最后一轮结果
-
-## tests run and results
-
-1. `flutter pub get`
-   - 结果：成功
-   - 关键输出：新增 `flutter_image_compress 2.4.0` 及其平台依赖
-
-2. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：RED，符合预期
-   - 原因：`image_upload_compress_service.dart` 不存在，相关类型未定义
-
-3. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：RED，符合预期
-   - 原因：首轮最小实现后，`同时超过长短边限制时按参考公式等比缩放` 用例失败，实际为 `1920`，期望为 `1440`
-
-4. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：GREEN
-   - 关键输出：`00:00 +5: All tests passed!`
-
-5. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：RED，符合预期
-   - 原因：新增“多轮压缩后仍超限时返回最后一轮结果”后，`payload.isCompressed` 实际为 `false`，期望为 `true`
-
-6. `dart format lib/shared/network/services/image_upload_compress_service.dart test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：成功
-
-7. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：GREEN
-   - 关键输出：`00:00 +6: All tests passed!`
-
-## TDD evidence with RED and GREEN commands + relevant output
-
-### RED 1
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-Error when reading 'lib/shared/network/services/image_upload_compress_service.dart': No such file or directory
-Type 'ImageCompressionEngine' not found.
-Undefined name 'ImageUploadCompressService'.
-Some tests failed.
-```
-
-### GREEN 1
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-00:00 +5: All tests passed!
-```
-
-### RED 2
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-多轮压缩后仍超限时返回最后一轮结果 [E]
-Expected: <true>
-  Actual: <false>
-Some tests failed.
-```
-
-### GREEN 2
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-00:00 +6: All tests passed!
-```
-
-## files changed
-
-- `pubspec.yaml`
-- `pubspec.lock`
-- `lib/shared/network/services/image_upload_compress_service.dart`
-- `test/shared/network/services/image_upload_compress_service_test.dart`
-- `.superpowers/sdd/task-1-report.md`
-
-## self-review findings
-
-- 服务实现保持在 Task 1 范围内，没有改动 `FileService` 或其他调用方。
-- 压缩逻辑通过依赖注入暴露文件读取、图片信息读取、压缩引擎，便于后续 Task 2 集成和补更多测试。
-- 第二轮实现只补了“返回最后一轮压缩结果”的缺口，没有顺手扩范围。
-- `_shouldCompress` 目前仅明确跳过非图片和 `.svg`，这是保守实现；更细的图片格式策略应由后续集成任务根据真实上传入口补齐。
-
-## any concerns
-
-- brief 中给出的缩放示例代码片段与断言值存在差异：按片段里的比例选择会得到 `1920x1440`，但任务要求的测试断言是 `1440x1080`。实现最终以任务中的“精确断言值”和测试为准。
-
----
-
-## fix report after review findings (2026-07-05)
-
-### what you changed
-
-- 将 `_shouldCompress` 改为基于显式白名单判断，仅允许 `jpg/jpeg/png/webp/bmp/heic/heif` 进入压缩流程。
-- 修正 `image/gif`、`image/svg+xml` 与其他非白名单图片类型的行为，统一跳过压缩并直接返回原始内容。
-- 在压缩循环中为 `_engine.compress(...)` 增加异常兜底；任一轮抛异常时，`prepareForUpload(...)` 返回原始文件字节而不是抛出失败。
-- 新增 3 个聚焦回归测试：
-  - `image/gif` 跳过压缩
-  - `image/svg+xml` 跳过压缩
-  - 压缩引擎抛异常时回退原始内容
-
-### tests run and results
-
-1. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：RED，符合预期
-   - 失败点：
-     - `GIF 图片跳过压缩并保留原始内容`
-     - `SVG 图片跳过压缩并保留原始内容`
-     - `压缩引擎抛异常时回退原始内容`
-
-2. `dart format lib/shared/network/services/image_upload_compress_service.dart test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：成功
-
-3. `flutter test test/shared/network/services/image_upload_compress_service_test.dart`
-   - 结果：GREEN
-   - 关键输出：`00:00 +9: All tests passed!`
-
-### exact command run and relevant output
-
-#### RED
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-00:00 +5 -1: GIF 图片跳过压缩并保留原始内容 [E]
-Expected: <0>
-  Actual: <1>
-
-00:00 +5 -2: SVG 图片跳过压缩并保留原始内容 [E]
-Expected: <0>
-  Actual: <1>
-
-00:00 +6 -3: 压缩引擎抛异常时回退原始内容 [E]
-Bad state: compression failed
-
-00:00 +6 -3: Some tests failed.
-```
-
-#### FORMAT
-
-Command:
-
-```bash
-dart format lib/shared/network/services/image_upload_compress_service.dart test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-Formatted 2 files (0 changed) in 0.01 seconds.
-```
-
-#### GREEN
-
-Command:
-
-```bash
-flutter test test/shared/network/services/image_upload_compress_service_test.dart
-```
-
-Relevant output:
-
-```text
-00:00 +9: All tests passed!
-```
-
-### files changed
-
-- `lib/shared/network/services/image_upload_compress_service.dart`
-- `test/shared/network/services/image_upload_compress_service_test.dart`
-- `.superpowers/sdd/task-1-report.md`
-
-### self-review findings
-
-- 白名单逻辑现在只依赖标准化后的 MIME subtype，不再把任意 `image/*` 视为可压缩格式，行为与 review finding 对齐。
-- 异常兜底保持在压缩调用边界内，没有扩大到文件读取或解码阶段，避免掩盖其他类型的错误。
-- 新增测试只覆盖本次 review 指出的三个缺口，没有扩展到 Task 2 范围。
-
-### any concerns
-
-- 当前白名单按 MIME subtype 判定；如果调用方未来传入错误 MIME 但文件后缀正确，服务会保守地跳过压缩。这与本次 review 要求一致，但依赖上游 MIME 传递准确。
-
-### commit note
-
-- Task 1 fix commit: `aca75db fix: tighten image upload compression rules`
-- No additional code changes were needed after that commit; this follow-up only records the commit SHA.
+# Task1 报告
+
+- 状态: DONE
+- 修改文件:
+  - `lib/shared/widgets/unsaved_changes_exit_guard.dart`
+  - `test/shared/widgets/unsaved_changes_exit_guard_test.dart`
+- 测试命令与结果:
+  - `flutter test test/shared/widgets/unsaved_changes_exit_guard_test.dart -r expanded`
+  - 结果: PASS，`2` 条测试全部通过
+- 提交哈希:
+  - 无
+- concerns:
+  - `lib/shared/widgets/app_dialog.dart` 已支持仅标题 + 操作按钮场景，本次 Task1 未发现必须修改的缺口，因此保持不变。
+  - 当前工作区存在与 Task1 无关的既有未提交改动；本次实现未处理这些改动，也未进入 Task2 及以上范围。
+
+## 2026-07-05 Task1 修复追加记录
+
+- 状态: DONE
+- 修改文件:
+  - `test/shared/widgets/unsaved_changes_exit_guard_test.dart`
+  - `.superpowers/sdd/task-1-report.md`
+- 测试命令与结果:
+  - `flutter test test/shared/widgets/unsaved_changes_exit_guard_test.dart -r expanded`
+  - 结果: PASS，`3` 条测试全部通过，已覆盖“点击确定返回 true”分支。
+- concerns:
+  - `lib/shared/widgets/unsaved_changes_exit_guard.dart` 中“点击确定返回 true”逻辑已存在，本次无需同步实现改动。
+  - 本次按要求仅修改 `Task1` 相关测试文件与报告文件，未触碰其他任务范围文件。
