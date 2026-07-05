@@ -76,17 +76,17 @@ Future<void> main() async {
                       jobSeekerRealNamePatrolSupportProvider.overrideWithValue(
                         patrolRealNameSupport,
                       ),
-                    if (patrolRealNameSupport != null)
+                    if (JobSeekerRealNamePatrolSupport.fakeFlowEnabled)
                       userServiceProvider.overrideWith(
                         (ref) => PatrolRealNameUserService(
                           apiClient: ref.watch(apiClientProvider),
                         ),
                       ),
-                    if (patrolRealNameSupport != null)
+                    if (JobSeekerRealNamePatrolSupport.fakeFlowEnabled)
                       fileServiceProvider.overrideWith(
                         (ref) => PatrolRealNameFileService(
                           apiClient: ref.watch(apiClientProvider),
-                          support: patrolRealNameSupport,
+                          support: patrolRealNameSupport!,
                         ),
                       ),
                   ],

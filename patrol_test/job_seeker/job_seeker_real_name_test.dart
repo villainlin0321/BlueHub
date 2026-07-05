@@ -23,15 +23,13 @@ void main() {
     await $(find.byKey(const Key('real-name-input'))).enterText('张三');
     await $(find.byKey(const Key('id-card-input'))).enterText('110101199003047777');
 
-    await _selectGalleryImage(
+    await _selectPatrolRealImage(
       $,
       uploadCardKey: const Key('id-card-emblem-upload'),
-      imageIndex: 0,
     );
-    await _selectGalleryImage(
+    await _selectPatrolRealImage(
       $,
       uploadCardKey: const Key('id-card-portrait-upload'),
-      imageIndex: 1,
     );
 
     await $(find.byKey(const Key('real-name-submit-button'))).tap();
@@ -44,21 +42,11 @@ void main() {
   });
 }
 
-/// 通过真实 iOS 相册为指定上传卡片选择一张测试图片。
-Future<void> _selectGalleryImage(
+/// 点击上传卡片，由测试开关直接回填本地真实图片文件。
+Future<void> _selectPatrolRealImage(
   PatrolIntegrationTester $, {
   required Key uploadCardKey,
-  required int imageIndex,
 }) async {
   await $(find.byKey(uploadCardKey)).tap();
-  await $.pumpAndSettle();
-  await $('从相册选择').tap();
-
-  // 首次打开系统相册时可能弹出权限框，出现时显式放行。
-  if (await $.native.isPermissionDialogVisible()) {
-    await $.native.grantPermissionWhenInUse();
-  }
-
-  await $.native.pickImageFromGallery(index: imageIndex);
   await $.pumpAndSettle();
 }

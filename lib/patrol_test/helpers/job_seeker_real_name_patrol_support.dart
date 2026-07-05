@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/files/data/file_models.dart';
@@ -12,18 +15,33 @@ import '../../utils/upload_picker_utils.dart';
 class JobSeekerRealNamePatrolSupport {
   JobSeekerRealNamePatrolSupport();
 
-  static const bool enabled = bool.fromEnvironment(
+  static const bool fakeFlowEnabled = bool.fromEnvironment(
     'PATROL_FAKE_REAL_NAME_FLOW',
     defaultValue: false,
   );
+  static const bool localImageFlowEnabled = bool.fromEnvironment(
+    'PATROL_REAL_NAME_TEST_IMAGES',
+    defaultValue: false,
+  );
+  static const bool enabled = fakeFlowEnabled || localImageFlowEnabled;
+
+  static const String _emblemAssetPath =
+      'assets/images/qualification_id_emblem.png';
+  static const String _portraitAssetPath =
+      'assets/images/qualification_id_portrait.png';
 
   int _nextFileId = 9000;
 
-  /// 按身份证正反面返回稳定的伪图片结果，避免 Patrol 依赖系统相册与相机。
+  /// 按当前 Patrol 模式返回图片：
+  /// - 半真实模式：回填本地真实测试文件，后续仍走真实上传与实名接口。
+  /// - fake 模式：回填伪文件，仅用于纯流程验证。
   Future<List<PickedUploadFile>> pickImages(
     BuildContext context, {
     required bool isEmblemSide,
   }) async {
+    if (localImageFlowEnabled) {
+      return _pickBundledRealImages(isEmblemSide: isEmblemSide);
+    }
     final String side = isEmblemSide ? 'emblem' : 'portrait';
     return <PickedUploadFile>[
       PickedUploadFile(
@@ -48,6 +66,51 @@ class JobSeekerRealNamePatrolSupport {
       objectKey: 'patrol/$normalizedPath',
       fileId: fileId,
     );
+  }
+
+  /// 把打包进应用的测试图片复制到临时目录，生成可被真实文件上传链路读取的本地文件。
+  Future<List<PickedUploadFile>> _pickBundledRealImages({
+    required bool isEmblemSide,
+  }) async {
+    final String side = isEmblemSide ? 'emblem' : 'portrait';
+    final String assetPath = isEmblemSide
+        ? _emblemAssetPath
+        : _portraitAssetPath;
+    final File localFile = await _copyAssetToTempFile(
+      assetPath: assetPath,
+      fileName: 'patrol_real_name_$side',
+    );
+    final int fileSize = await localFile.length();
+    return <PickedUploadFile>[
+      PickedUploadFile(
+        id: 'patrol-real-name-$side-${DateTime.now().microsecondsSinceEpoch}',
+        name: UploadPickerUtils.basename(localFile.path),
+        path: localFile.path,
+        sourceType: UploadSourceType.gallery,
+        state: UploadItemState.success,
+        isImage: true,
+        sizeLabel: UploadPickerUtils.formatFileSize(fileSize),
+        fileSizeBytes: fileSize,
+      ),
+    ];
+  }
+
+  /// 将 asset 图片落盘到应用临时目录，供真实上传接口按文件路径读取。
+  Future<File> _copyAssetToTempFile({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    final ByteData data = await rootBundle.load(assetPath);
+    final Uint8List bytes = data.buffer.asUint8List();
+    final Directory directory = await Directory(
+      '${Directory.systemTemp.path}/patrol_real_name_assets',
+    ).create(recursive: true);
+    final String suffix = assetPath.toLowerCase().endsWith('.png')
+        ? '.png'
+        : '.jpg';
+    final File file = File('${directory.path}/$fileName$suffix');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
   }
 }
 

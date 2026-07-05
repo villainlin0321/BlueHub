@@ -210,7 +210,7 @@ class _JobSeekerRealNameVerificationPageState
         widget.pickImages ??
         (BuildContext context) {
           if (patrolSupport != null) {
-            // 关键测试缝：Patrol 环境直接回填伪图片，避免依赖系统相册与相机。
+            // 关键测试缝：Patrol 可直接回填测试图片，避免 iOS 原生相册控件影响自动化稳定性。
             return patrolSupport.pickImages(
               context,
               isEmblemSide: isEmblemSide,
