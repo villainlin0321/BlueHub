@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../application/qualification_upload_helper.dart';
@@ -60,7 +61,8 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepThreePageState
-    extends ConsumerState<QualificationCertificationStepThreePage> {
+    extends ConsumerState<QualificationCertificationStepThreePage>
+    with GuardedPopScopeMixin {
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
   late _QualificationStepThreeSnapshot _initialSnapshot;
@@ -111,26 +113,7 @@ class _QualificationCertificationStepThreePageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    scheduleDirectPop();
   }
 
   Future<void> _openExpectedCountrySheet() async {
@@ -213,10 +196,24 @@ class _QualificationCertificationStepThreePageState
         return;
       }
       // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
-      _allowDirectPop = true;
+      if (!mounted) {
+        return;
+      }
+      // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
+      allowDirectPop();
       if (_skipSuccessNavigationForTest) {
         return;
       }
+      context.push(
+        RoutePaths.appResult,
+        extra: AppResultPageArgs(
+          pageTitle: tr('认证流程.资质认证'),
+          resultTitle: tr('认证流程.信息已提交'),
+          tipText: tr('认证流程.审核提示'),
+          actionLabel: tr('认证流程.进入首页'),
+          action: AppResultAction.go(RoutePaths.home),
+        ),
+      );
       context.push(
         RoutePaths.appResult,
         extra: AppResultPageArgs(
@@ -253,14 +250,8 @@ class _QualificationCertificationStepThreePageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _allowDirectPop,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: Scaffold(
         key: AppTestKeys.pageQualificationCertificationStepThree,
         backgroundColor: const Color(0xFFF5F7FA),

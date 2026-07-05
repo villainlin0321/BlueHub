@@ -23,6 +23,7 @@ import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 import '../../../shared/widgets/app_text_input_dialog.dart';
 import '../../../shared/widgets/field_trailing_selector.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../data/resume_models.dart';
 import '../data/dictionary_providers.dart';
 import '../data/resume_providers.dart';
@@ -181,7 +182,8 @@ class MyResumeEditorPage extends ConsumerStatefulWidget {
   ConsumerState<MyResumeEditorPage> createState() => _MyResumeEditorPageState();
 }
 
-class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
+class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
+    with GuardedPopScopeMixin {
   late final ResumeVO? _resume;
   late final ResumeDraft _draft;
   late final List<String> _jobTags;
@@ -266,34 +268,45 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: _buildAppBar(context),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            _buildCompletionSection(),
-            const SizedBox(height: 2),
-            _buildBasicInfoSection(),
-            const SizedBox(height: 2),
-            _buildJobIntentionSection(),
-            const SizedBox(height: 2),
-            _buildWorkExperienceSection(),
-            const SizedBox(height: 2),
-            _buildLanguageSection(),
-            const SizedBox(height: 2),
-            _buildCertificateSection(),
-            const SizedBox(height: 2),
-            _buildEducationSection(),
-            const SizedBox(height: 2),
-            _buildSelfEvaluationSection(),
-          ],
+    return buildGuardedPopScope(
+      onInterceptPop: () async {},
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: _buildAppBar(context),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              _buildCompletionSection(),
+              const SizedBox(height: 2),
+              _buildBasicInfoSection(),
+              const SizedBox(height: 2),
+              _buildJobIntentionSection(),
+              const SizedBox(height: 2),
+              _buildWorkExperienceSection(),
+              const SizedBox(height: 2),
+              _buildLanguageSection(),
+              const SizedBox(height: 2),
+              _buildCertificateSection(),
+              const SizedBox(height: 2),
+              _buildEducationSection(),
+              const SizedBox(height: 2),
+              _buildSelfEvaluationSection(),
+            ],
+          ),
         ),
+        bottomNavigationBar: _buildBottomAction(context),
       ),
-      bottomNavigationBar: _buildBottomAction(context),
+    );
+  }
+
+  /// 统一处理编辑页返回，禁用系统侧滑返回时仍允许点击左上角按钮离开页面。
+  void _handleBackPressed() {
+    scheduleDirectPop(
+      result: _didSave,
+      onCannotPop: () => context.go(RoutePaths.myResume),
     );
   }
 
@@ -507,13 +520,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage> {
       scrolledUnderElevation: 0,
       leadingWidth: 44,
       leading: IconButton(
-        onPressed: () {
-          if (context.canPop()) {
-            context.pop(_didSave);
-            return;
-          }
-          context.go(RoutePaths.myResume);
-        },
+        onPressed: _handleBackPressed,
         icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 18,

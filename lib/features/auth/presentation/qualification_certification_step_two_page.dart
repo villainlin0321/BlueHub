@@ -9,6 +9,7 @@ import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import 'qualification_certification_flow.dart';
@@ -52,12 +53,15 @@ class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepTwoPageState
-    extends ConsumerState<QualificationCertificationStepTwoPage> {
+    extends ConsumerState<QualificationCertificationStepTwoPage>
+    with GuardedPopScopeMixin {
   PickedUploadFile? _businessLicenseImage;
   PickedUploadFile? _specialPermitImage;
   String? _debugBusinessLicensePathForTest;
   late _QualificationStepTwoSnapshot _initialSnapshot;
   bool _allowDirectPop = false;
+  bool _isUploadingBusinessLicense = false;
+  bool _isUploadingSpecialPermit = false;
 
   QualificationCertificationDraft get _draft => widget.args.draft;
   List<String> get _steps => <String>[
@@ -124,26 +128,7 @@ class _QualificationCertificationStepTwoPageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    scheduleDirectPop();
   }
 
   /// 仅供测试注入已选营业执照图片，避免测试依赖真实上传流程。
@@ -224,14 +209,8 @@ class _QualificationCertificationStepTwoPageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _allowDirectPop,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: Scaffold(
         key: AppTestKeys.pageQualificationCertificationStepTwo,
         backgroundColor: const Color(0xFFF5F7FA),
