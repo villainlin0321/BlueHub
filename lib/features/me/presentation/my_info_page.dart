@@ -101,9 +101,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                           _InfoValueRow(
                             key: const Key('my-info-real-name-row'),
                             label: '我的.实名认证'.tr(),
-                            value: userViewData.isVerified
-                                ? '我的.已完成实名认证'.tr()
-                                : '我的.点击去实名认证'.tr(),
+                            value: userViewData.realNameText,
                             onTap: _handleRealNameTap,
                           ),
                           const Divider(

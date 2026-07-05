@@ -22,9 +22,9 @@ class AppToast {
       ..indicatorType = EasyLoadingIndicatorType.fadingCircle
       ..maskType = EasyLoadingMaskType.none
       ..userInteractions = true
-      ..dismissOnTap = true
+      ..dismissOnTap = false
       ..displayDuration = _displayDuration
-      ..toastPosition = EasyLoadingToastPosition.bottom
+      ..toastPosition = EasyLoadingToastPosition.top
       ..backgroundColor = _backgroundColor
       ..textColor = _textColor
       ..indicatorColor = _textColor
@@ -45,8 +45,8 @@ class AppToast {
     await EasyLoading.showToast(
       trimmedMessage,
       duration: _displayDuration,
-      toastPosition: EasyLoadingToastPosition.bottom,
-      dismissOnTap: true,
+      toastPosition: EasyLoadingToastPosition.top,
+      dismissOnTap: false,
       maskType: EasyLoadingMaskType.none,
     );
   }
