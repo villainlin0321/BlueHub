@@ -77,6 +77,7 @@ class JobSeekerMePage extends ConsumerWidget {
                 userViewData: userViewData,
                 stats: stats,
                 onTap: () => context.push(RoutePaths.myInfo),
+                onRealNameTap: () => context.push(RoutePaths.jobSeekerRealNameVerification),
                 onOrderTap: () => context.push(RoutePaths.myOrders),
                 onResumeTap: () => context.push(RoutePaths.myResume),
                 onApplicationTap: () => context.push(RoutePaths.myApplications),
@@ -191,6 +192,7 @@ class _ProfileCard extends StatelessWidget {
     required this.userViewData,
     required this.stats,
     required this.onTap,
+    required this.onRealNameTap,
     required this.onOrderTap,
     required this.onResumeTap,
     required this.onApplicationTap,
@@ -200,6 +202,7 @@ class _ProfileCard extends StatelessWidget {
   final CurrentUserViewData userViewData;
   final HomeDashboardStatsVO? stats;
   final VoidCallback onTap;
+  final VoidCallback onRealNameTap;
   final VoidCallback onOrderTap;
   final VoidCallback onResumeTap;
   final VoidCallback onApplicationTap;
@@ -284,6 +287,11 @@ class _ProfileCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          JobSeekerRealNameEntry(
+            isVerified: userViewData.isVerified,
+            onTap: onRealNameTap,
+          ),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
@@ -328,6 +336,57 @@ class _ProfileCard extends StatelessWidget {
 
   String _formatPercent(int? value) {
     return '${value ?? 0}%';
+  }
+}
+
+/// 求职者实名认证入口组件：独立承载文案展示与点击行为，便于测试和后续复用。
+class JobSeekerRealNameEntry extends StatelessWidget {
+  const JobSeekerRealNameEntry({
+    super.key,
+    required this.isVerified,
+    required this.onTap,
+  });
+
+  final bool isVerified;
+  final VoidCallback onTap;
+
+  @override
+  /// 构建实名认证提示区，并保持与顶部资料卡分离的独立点击行为。
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F7FA),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                // 关键约束：实名状态只依赖 isVerified，不额外引入其他审核态。
+                _buildRealNameStatusText(),
+                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 12,
+              color: Color(0xFFBFBFBF),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 根据当前实名状态生成入口文案，统一控制已实名与未实名展示分支。
+  String _buildRealNameStatusText() {
+    return isVerified ? '我的.已完成实名认证'.tr() : '我的.点击去实名认证'.tr();
   }
 }
 
