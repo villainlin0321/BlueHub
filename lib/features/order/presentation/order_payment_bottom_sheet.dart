@@ -1,16 +1,18 @@
 import 'dart:async';
 
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
+import '../../../shared/logging/app_route_tracker.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../data/visa_order_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import '../data/payment_providers.dart';
+import 'order_payment_copy.dart';
 import 'order_payment_widgets.dart';
 
 class OrderPaymentBottomSheet {
@@ -25,22 +27,73 @@ class OrderPaymentBottomSheet {
     required BuildContext parentContext,
     Future<void> Function()? onFlowCompleted,
   }) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _OrderPaymentBottomSheetContent(
-          amount: amount,
-          currency: currency,
-          orderId: orderId,
-          packageName: packageName,
-          parentContext: parentContext,
-          onFlowCompleted: onFlowCompleted,
+    final String traceId = buildAppTraceId('order_payment_sheet');
+    await AppLogScope.run<Future<void>>(
+      traceId: traceId,
+      fields: _buildSheetLogContext(
+        amount: amount,
+        currency: currency,
+        orderId: orderId,
+        packageName: packageName,
+      ),
+      action: () async {
+        // 弹层打开日志要早于底部按钮点击，后续整条支付交互链路才能复用同一条 traceId。
+        ActionLog.sheetOpen(
+          event: 'ORDER_PAYMENT_SHEET_OPEN',
+          message: '打开订单支付弹层',
+        );
+        final Map<String, Object?>? closePayload =
+            await showModalBottomSheet<Map<String, Object?>>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: false,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) {
+            return _OrderPaymentBottomSheetContent(
+              amount: amount,
+              currency: currency,
+              orderId: orderId,
+              packageName: packageName,
+              parentContext: parentContext,
+              traceId: traceId,
+              onFlowCompleted: onFlowCompleted,
+            );
+          },
+        );
+        // 无论是主动关闭、支付成功还是手势/遮罩 dismiss，都统一在这里补齐关闭事件。
+        ActionLog.sheetClose(
+          event: 'ORDER_PAYMENT_SHEET_CLOSE',
+          message: '关闭订单支付弹层',
+          context: <String, Object?>{
+            'closeReason':
+                closePayload?['closeReason']?.toString() ?? 'system_dismiss',
+            if (closePayload?['paymentMethod'] != null)
+              'paymentMethod': closePayload!['paymentMethod'],
+            if (closePayload?['isPaying'] != null)
+              'isPaying': closePayload!['isPaying'],
+          },
         );
       },
     );
+  }
+
+  /// 构建支付弹层的统一日志上下文，只保留安全摘要与订单定位字段。
+  static Map<String, Object?> _buildSheetLogContext({
+    required double amount,
+    required String? currency,
+    required int orderId,
+    required String packageName,
+  }) {
+    return <String, Object?>{
+      'route': AppRouteTracker.instance.currentRoute ?? RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'payment_bottom_sheet',
+      'source': 'order_payment_bottom_sheet',
+      'orderId': orderId,
+      'amount': amount,
+      if (currency != null && currency.trim().isNotEmpty) 'currency': currency,
+      'hasPackageName': packageName.trim().isNotEmpty,
+    };
   }
 }
 
@@ -51,6 +104,7 @@ class _OrderPaymentBottomSheetContent extends ConsumerStatefulWidget {
     required this.orderId,
     required this.packageName,
     required this.parentContext,
+    required this.traceId,
     this.onFlowCompleted,
   });
 
@@ -59,6 +113,7 @@ class _OrderPaymentBottomSheetContent extends ConsumerStatefulWidget {
   final int orderId;
   final String packageName;
   final BuildContext parentContext;
+  final String traceId;
   final Future<void> Function()? onFlowCompleted;
 
   @override
@@ -121,7 +176,7 @@ class _OrderPaymentBottomSheetContentState
                   children: <Widget>[
                     Align(
                       child: Text(
-                        '服务详情.确认支付'.tr(),
+                        _confirmPaymentLabel(),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: const Color(0xFF171A1D),
                           fontSize: 17,
@@ -134,7 +189,7 @@ class _OrderPaymentBottomSheetContentState
                       top: 16,
                       right: 16,
                       child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
+                        onTap: _handleCloseButtonTap,
                         behavior: HitTestBehavior.opaque,
                         child: const SizedBox(
                           width: 20,
@@ -163,7 +218,15 @@ class _OrderPaymentBottomSheetContentState
                 child: OrderPaymentMethodCard(
                   selectedMethod: _selectedMethod,
                   onSelected: (AppPaymentMethod method) {
+                    if (_selectedMethod == method) {
+                      return;
+                    }
+                    final AppPaymentMethod previousMethod = _selectedMethod;
                     setState(() => _selectedMethod = method);
+                    _logPaymentMethodSwitch(
+                      previousMethod: previousMethod,
+                      nextMethod: method,
+                    );
                   },
                 ),
               ),
@@ -191,7 +254,7 @@ class _OrderPaymentBottomSheetContentState
               shadowColor: Colors.transparent,
             ),
             child: Text(
-              _isPaying ? '服务详情.支付中'.tr() : '服务详情.立即支付'.tr(),
+              _isPaying ? _payingLabel() : _confirmPaymentLabel(),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -211,45 +274,106 @@ class _OrderPaymentBottomSheetContentState
     }
     setState(() => _isPaying = true);
     try {
-      if (_selectedMethod == AppPaymentMethod.wechat) {
-        // Temporary fallback: backend directly marks the order as paid for WeChat.
-        await ref
-            .read(visaOrderServiceProvider)
-            .payOrder(orderId: widget.orderId);
-        if (!mounted) {
-          return;
-        }
-        _handlePaymentSuccess();
-        return;
-      }
-      final PaymentFlowResult result = await ref
-          .read(paymentFlowCoordinatorProvider)
-          .startPayment(orderId: widget.orderId, method: _selectedMethod);
-      if (!mounted) {
-        return;
-      }
-      switch (result.status) {
-        case PaymentFlowStatus.success:
-          _handlePaymentSuccess();
-          return;
-        case PaymentFlowStatus.cancel:
-        case PaymentFlowStatus.failed:
-        case PaymentFlowStatus.pending:
-          setState(() => _isPaying = false);
-          _showMessage(result.message);
-          return;
-      }
+      await AppLogScope.run<Future<void>>(
+        // 点击回调可能脱离 show() 的 Zone，这里显式复用弹层打开时创建的 traceId。
+        traceId: widget.traceId,
+        fields: _buildConfirmPayLogContext(),
+        action: () async {
+          // 确认支付点击日志必须贴近按钮触发点，保证和真实点击顺序一致。
+          ActionLog.tap(
+            event: 'ORDER_PAYMENT_CONFIRM_TAP',
+            message: '用户确认订单支付',
+          );
+          final PaymentFlowResult result = await ref
+              .read(paymentFlowCoordinatorProvider)
+              .startPayment(orderId: widget.orderId, method: _selectedMethod);
+          if (!mounted) {
+            return;
+          }
+          switch (result.status) {
+            case PaymentFlowStatus.success:
+              _handlePaymentSuccess();
+              return;
+            case PaymentFlowStatus.cancel:
+            case PaymentFlowStatus.failed:
+            case PaymentFlowStatus.pending:
+              setState(() => _isPaying = false);
+              _showMessage(result.message);
+              return;
+          }
+        },
+      );
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() => _isPaying = false);
-      _showMessage(resolveOrderPaymentErrorMessage(error));
+      _showMessage(resolveOrderPaymentErrorMessage(context, error));
     }
   }
 
+  /// 返回确认支付主文案，统一复用当前支付弹层专用翻译 key。
+  String _confirmPaymentLabel() {
+    return OrderPaymentCopy.confirmPayment(context);
+  }
+
+  /// 返回支付中主文案，避免界面回退到未翻译的 key。
+  String _payingLabel() {
+    return OrderPaymentCopy.paying(context);
+  }
+
+  /// 构建确认支付点击日志上下文，补齐支付方式与弹层来源。
+  Map<String, Object?> _buildConfirmPayLogContext({
+    AppPaymentMethod? paymentMethod,
+  }) {
+    return <String, Object?>{
+      'route': AppRouteTracker.instance.currentRoute ?? RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'payment_bottom_sheet',
+      'source': 'order_payment_bottom_sheet',
+      'orderId': widget.orderId,
+      'paymentMethod': (paymentMethod ?? _selectedMethod).apiValue,
+    };
+  }
+
+  /// 记录支付方式切换事件，明确前后方式并复用当前弹层 traceId。
+  void _logPaymentMethodSwitch({
+    required AppPaymentMethod previousMethod,
+    required AppPaymentMethod nextMethod,
+  }) {
+    AppLogScope.run<void>(
+      traceId: widget.traceId,
+      fields: <String, Object?>{
+        ..._buildConfirmPayLogContext(paymentMethod: nextMethod),
+        'previousPaymentMethod': previousMethod.apiValue,
+      },
+      action: () {
+        ActionLog.selectionChange(
+          event: 'ORDER_PAYMENT_METHOD_SWITCH',
+          message: '切换订单支付方式',
+        );
+      },
+    );
+  }
+
+  /// 处理关闭按钮点击，显式返回关闭原因，避免弹层关闭日志缺少上下文。
+  void _handleCloseButtonTap() {
+    Navigator.of(context).pop(_buildClosePayload(closeReason: 'close_button'));
+  }
+
+  /// 构建弹层关闭结果，供 show() 侧统一记录关闭事件时复用。
+  Map<String, Object?> _buildClosePayload({required String closeReason}) {
+    return <String, Object?>{
+      'closeReason': closeReason,
+      'paymentMethod': _selectedMethod.apiValue,
+      'isPaying': _isPaying,
+    };
+  }
+
   void _handlePaymentSuccess() {
-    Navigator.of(context).pop();
+    Navigator.of(
+      context,
+    ).pop(_buildClosePayload(closeReason: 'payment_success'));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!widget.parentContext.mounted) {
         return;

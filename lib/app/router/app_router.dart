@@ -36,6 +36,7 @@ import '../../features/me/presentation/finance_transactions_page.dart';
 import '../../features/me/presentation/finance_withdrawals_page.dart';
 import '../../features/me/presentation/my_favorites_page.dart';
 import '../../features/me/presentation/my_info_page.dart';
+import '../../features/me/presentation/job_seeker_real_name_verification_page.dart';
 import '../../features/me/presentation/my_resume_editor_page.dart';
 import '../../features/me/presentation/my_resume_page.dart';
 import '../../features/me/presentation/my_resume_preview_page.dart';
@@ -321,6 +322,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.myInfo,
         builder: (context, state) => const MyInfoPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.jobSeekerRealNameVerification,
+        builder: (context, state) =>
+            const JobSeekerRealNameVerificationPage(),
       ),
       GoRoute(
         path: RoutePaths.serviceProviderMyInfo,

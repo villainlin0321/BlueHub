@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../patrol_test/helpers/auth_test_helper.dart';
 
-/// 覆盖服务商登录态判断，避免 Patrol 误复用到其他角色会话。
+/// 覆盖服务商登录态判断与安全路由读取逻辑，避免 Patrol 前置误判会话或路由状态。
 void main() {
   test('服务商已登录且无需选角色时返回 true', () {
     final authSession = AuthSessionState(
@@ -34,6 +34,24 @@ void main() {
     );
 
     expect(isServiceProviderAuthenticatedSession(authSession), isFalse);
+  });
+
+  test('safeReadCurrentRoute 会返回实际读取到的路由', () {
+    final route = safeReadCurrentRoute(
+      fallbackLocation: '/login/phone',
+      readLocation: () => '/home',
+    );
+
+    expect(route, '/home');
+  });
+
+  test('safeReadCurrentRoute 在读取抛出 StateError 时回退到默认路由', () {
+    final route = safeReadCurrentRoute(
+      fallbackLocation: '/login/phone',
+      readLocation: () => throw StateError('router state not ready'),
+    );
+
+    expect(route, '/login/phone');
   });
 }
 

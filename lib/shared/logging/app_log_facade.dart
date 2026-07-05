@@ -243,6 +243,106 @@ class ActionLog {
       },
     );
   }
+
+  /// 记录点击类交互事件，统一补齐交互类型，避免各页面重复拼接 `actionType`。
+  static void tap({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'tap',
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录弹层打开事件，统一保留交互类型，便于和点击、关闭等事件区分。
+  static void sheetOpen({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'sheet_open',
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录弹层关闭事件，统一补齐交互类型和关闭原因上下文。
+  static void sheetClose({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'sheet_close',
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录选择切换事件，适合支付方式、筛选项等单选状态的切换场景。
+  static void selectionChange({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'selection_change',
+        if (context != null) ...context,
+      },
+    );
+  }
+
+  /// 记录列表滚动到底的交互事件，统一补齐交互类型与页面滚动语义。
+  static void scrollReachEnd({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: <String, Object?>{
+        'actionType': 'scroll_reach_end',
+        if (context != null) ...context,
+      },
+    );
+  }
 }
 
 /// 状态日志门面：负责 Provider 与 Controller 等状态链路的统一记录。
@@ -334,6 +434,27 @@ class StateLog {
         if (to != null) 'to': to,
         if (context != null) ...context,
       },
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// 记录页面或流程中的单步状态事件，适合页面进入等离散节点日志。
+  static void step({
+    required String event,
+    required String message,
+    AppLogLevel level = AppLogLevel.info,
+    AppLogResult? result,
+    AppLogContext? context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    log(
+      event: event,
+      message: message,
+      level: level,
+      result: result,
+      context: context,
       error: error,
       stackTrace: stackTrace,
     );

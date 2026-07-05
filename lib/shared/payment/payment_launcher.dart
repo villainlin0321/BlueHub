@@ -22,6 +22,33 @@ class AppPaymentLaunchResult {
   final Object? raw;
 }
 
+/// 为支付日志构建统一的安全上下文，避免在多处重复拼接和遗漏脱敏规则。
+Map<String, Object?> buildPaymentLogContext(
+  PaymentResultVO payload, {
+  Map<String, Object?> extra = const <String, Object?>{},
+}) {
+  return <String, Object?>{
+    'paymentId': payload.paymentId,
+    'paymentMethod': payload.paymentMethod,
+    'orderNo': _mask(payload.outTradeNo),
+    ...extra,
+  };
+}
+
+/// 为支付拉起结果构建统一摘要，避免把 SDK 原始返回直接落入业务日志。
+Map<String, Object?> buildPaymentLaunchResultLogContext(
+  AppPaymentLaunchResult result, {
+  required String channel,
+  Map<String, Object?> extra = const <String, Object?>{},
+}) {
+  return <String, Object?>{
+    'channel': channel,
+    'launchStatus': result.status.name,
+    'launchMessage': result.message,
+    ...extra,
+  };
+}
+
 class PaymentLauncher {
   PaymentLauncher._();
 
@@ -96,12 +123,14 @@ class PaymentLauncher {
       AppLogger.instance.info(
         'PAYMENT',
         '支付宝支付返回',
-        context: <String, Object?>{
+        context: buildPaymentLogContext(
+          payload,
+          extra: <String, Object?>{
+            'channel': 'alipay',
           'resultStatus': status,
           'memo': memo,
-          'paymentId': payload.paymentId,
-          'orderNo': _mask(payload.outTradeNo),
-        },
+          },
+        ),
       );
       switch (status) {
         case '9000':
@@ -246,7 +275,11 @@ class PaymentLauncher {
     AppLogger.instance.info(
       'PAYMENT',
       '微信支付返回',
-      context: <String, Object?>{'errCode': code, 'errStr': response.errStr},
+      context: <String, Object?>{
+        'channel': 'wechat_pay',
+        'errCode': code,
+        'errStr': response.errStr,
+      },
     );
     if (code == 0) {
       return AppPaymentLaunchResult(

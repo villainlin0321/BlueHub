@@ -113,7 +113,13 @@ bool isSensitiveAppLogKey(String? key) {
       normalized.contains('secret') ||
       // 统一把手机号和邮箱也纳入敏感字段规则，避免结构化快照明文落日志。
       normalized.contains('phone') ||
-      normalized.contains('email');
+      normalized.contains('email') ||
+      // 实名认证相关字段需要统一脱敏，避免身份证号或证件照片地址进入客户端日志。
+      normalized.contains('realname') ||
+      normalized.contains('idcard') ||
+      normalized.contains('identitycard') ||
+      key.contains('实名') ||
+      key.contains('身份证');
 }
 
 /// 对超长日志文本做统一裁剪，保留前缀用于快速排障。

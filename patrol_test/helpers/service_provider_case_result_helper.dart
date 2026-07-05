@@ -8,6 +8,31 @@ const List<String> _qualificationBlockedSignals = <String>[
   '服务商测试账号未配置',
 ];
 
+/// 构建服务商 Patrol 的统一失败结果，避免首页和“我的”页重复拼接失败原因。
+PatrolCaseResult buildServiceProviderFailureResult({
+  required PatrolCaseDefinition definition,
+  required DateTime startedAt,
+  required Object error,
+  String reason = 'interaction_failed',
+  String actualPrefix = '交互未达到预期',
+}) {
+  final String errorText = _stringifyError(error);
+
+  return PatrolCaseResult(
+    module: definition.module,
+    page: definition.page,
+    feature: definition.feature,
+    description: definition.description,
+    precondition: definition.precondition,
+    expected: definition.expected,
+    actual: '$actualPrefix：$errorText',
+    status: PatrolCaseStatus.fail,
+    reason: reason,
+    startedAt: startedAt,
+    endedAt: DateTime.now(),
+  );
+}
+
 /// 为资质管理场景构造失败结果，只在明确前置条件不足时输出 `BLOCKED`。
 PatrolCaseResult buildQualificationManagementFailureResult({
   required PatrolCaseDefinition definition,
@@ -17,6 +42,17 @@ PatrolCaseResult buildQualificationManagementFailureResult({
   final String errorText = _stringifyError(error);
   final bool isBlocked = _qualificationBlockedSignals.any(errorText.contains);
 
+  // 只有明确命中前置条件不足信号时才输出 BLOCKED，其余异常一律按 FAIL 记录。
+  if (!isBlocked) {
+    return buildServiceProviderFailureResult(
+      definition: definition,
+      startedAt: startedAt,
+      error: error,
+      reason: 'qualification_unexpected_error',
+      actualPrefix: '资质管理执行异常',
+    );
+  }
+
   return PatrolCaseResult(
     module: definition.module,
     page: definition.page,
@@ -24,11 +60,9 @@ PatrolCaseResult buildQualificationManagementFailureResult({
     description: definition.description,
     precondition: definition.precondition,
     expected: definition.expected,
-    actual: isBlocked ? '未进入资质认证流程，明确前置条件不足：$errorText' : '资质管理执行异常：$errorText',
-    status: isBlocked ? PatrolCaseStatus.blocked : PatrolCaseStatus.fail,
-    reason: isBlocked
-        ? 'qualification_precondition_blocked'
-        : 'qualification_unexpected_error',
+    actual: '未进入资质认证流程，明确前置条件不足：$errorText',
+    status: PatrolCaseStatus.blocked,
+    reason: 'qualification_precondition_blocked',
     startedAt: startedAt,
     endedAt: DateTime.now(),
   );
