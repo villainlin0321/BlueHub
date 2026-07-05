@@ -72,10 +72,19 @@ void main() {
       ),
     );
 
-    expect(draft.businessLicenseDoc?.fileUrl, 'https://example.com/business-license.png');
-    expect(draft.specialPermitDoc?.fileUrl, 'https://example.com/special-permit.png');
+    expect(
+      draft.businessLicenseDoc?.fileUrl,
+      'https://example.com/business-license.png',
+    );
+    expect(
+      draft.specialPermitDoc?.fileUrl,
+      'https://example.com/special-permit.png',
+    );
     expect(draft.idCardEmblemDoc?.fileUrl, 'https://example.com/id-emblem.png');
-    expect(draft.idCardPortraitDoc?.fileUrl, 'https://example.com/id-portrait.png');
+    expect(
+      draft.idCardPortraitDoc?.fileUrl,
+      'https://example.com/id-portrait.png',
+    );
     expect(draft.idCardEmblemDoc?.localPath, isEmpty);
     expect(draft.idCardPortraitDoc?.localPath, isEmpty);
   });
@@ -121,8 +130,14 @@ void main() {
       ),
     );
 
-    expect(draft.businessLicenseDoc?.fileUrl, 'https://example.com/company-license.png');
-    expect(draft.specialPermitDoc?.fileUrl, 'https://example.com/company-permit.png');
+    expect(
+      draft.businessLicenseDoc?.fileUrl,
+      'https://example.com/company-license.png',
+    );
+    expect(
+      draft.specialPermitDoc?.fileUrl,
+      'https://example.com/company-permit.png',
+    );
     expect(draft.businessLicenseDoc?.localPath, isEmpty);
   });
 

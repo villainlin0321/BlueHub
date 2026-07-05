@@ -11,6 +11,7 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -152,7 +153,8 @@ class EditVisaPackagePage extends ConsumerStatefulWidget {
       _EditVisaPackagePageState();
 }
 
-class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
+class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
+    with GuardedPopScopeMixin {
   late final TextEditingController _serviceNameController;
   late final TextEditingController _durationController;
   late final List<EditVisaPackageTierViewDraft> _tiers;
@@ -161,7 +163,6 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   String? _packageDetailError;
   late _EditVisaPackageSnapshot _initialSnapshot;
   bool _hasInitialSnapshot = false;
-  bool _allowDirectPop = false;
 
   bool get _isEditMode => widget.packageId != null;
 
@@ -202,35 +203,6 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     _hasInitialSnapshot = true;
   }
 
-  /// 先在下一帧放行 `PopScope`，再执行真实返回，避免同帧 `pop` 被再次拦截。
-  void _scheduleDirectPop({Object? result, VoidCallback? onCannotPop}) {
-    if (_allowDirectPop) {
-      final NavigatorState navigator = Navigator.of(context);
-      if (navigator.canPop()) {
-        navigator.pop(result);
-      } else if (onCannotPop != null) {
-        onCannotPop();
-      }
-      return;
-    }
-    setState(() {
-      _allowDirectPop = true;
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final NavigatorState navigator = Navigator.of(context);
-      if (navigator.canPop()) {
-        navigator.pop(result);
-        return;
-      }
-      if (onCannotPop != null) {
-        onCannotPop();
-      }
-    });
-  }
-
   /// 统一处理头部返回和系统返回，在存在未保存改动时弹出确认框。
   Future<void> _handleAttemptLeave() async {
     final bool hasUnsavedChanges =
@@ -242,7 +214,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     if (!mounted || !canLeave) {
       return;
     }
-    _scheduleDirectPop();
+    scheduleDirectPop();
   }
 
   EditVisaPackageTierViewDraft _createTierDraft({
@@ -1263,7 +1235,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       if (previous?.submitSuccessId != next.submitSuccessId &&
           next.submitSuccessId > 0) {
         _markSavedSnapshot();
-        _scheduleDirectPop(
+        scheduleDirectPop(
           result: true,
           onCannotPop: () => context.go(RoutePaths.jobs),
         );
@@ -1332,14 +1304,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       );
     }
 
-    return PopScope(
-      canPop: _allowDirectPop,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: EditVisaPackagePageView(
         bottomPadding: mediaQuery.padding.bottom,
         serviceNameController: _serviceNameController,

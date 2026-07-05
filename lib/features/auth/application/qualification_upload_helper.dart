@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/network/api_exception.dart';
-import '../../../utils/upload_picker_utils.dart';
 import '../../employer/data/employer_providers.dart';
 import '../../files/data/file_models.dart';
 import '../../files/data/file_providers.dart';
@@ -22,41 +21,71 @@ class QualificationUploadHelper {
     Duration(milliseconds: 1500),
   ];
 
-  /// 上传资质图片：先走文件预签名上传，再回调资质接口登记文档信息。
-  static Future<UploadedQualificationDoc> uploadQualificationImage({
+  /// 在最终提交前统一上传草稿中的本地资质图片，并一次性登记 `docs` 数组。
+  static Future<void> uploadDraftQualifications({
     required WidgetRef ref,
     required QualificationCertificationRole role,
-    required PickedUploadFile file,
-    required QualificationDocType docType,
-    String? docName,
+    required QualificationCertificationDraft draft,
   }) async {
-    final String path = file.path;
-    final FilePresignVO presign = await ref
-        .read(fileServiceProvider)
-        .uploadFile(
-          path: path,
-          scene: docType.uploadScene,
-          errorMessage: '上传.文件上传失败'.tr(),
-        );
-
-    final UploadedQualificationDoc uploadedDoc = UploadedQualificationDoc(
-      docType: docType,
-      docName: docName?.trim().isNotEmpty == true
-          ? docName!.trim()
-          : docType.localizedDefaultDocName,
-      fileId: presign.fileId,
-      fileUrl: presign.fileUrl,
-      localPath: path,
+    draft.businessLicenseDoc = await _resolveDraftDocument(
+      ref: ref,
+      document: draft.businessLicenseDoc,
     );
+    draft.specialPermitDoc = await _resolveDraftDocument(
+      ref: ref,
+      document: draft.specialPermitDoc,
+    );
+    draft.idCardEmblemDoc = await _resolveDraftDocument(
+      ref: ref,
+      document: draft.idCardEmblemDoc,
+    );
+    draft.idCardPortraitDoc = await _resolveDraftDocument(
+      ref: ref,
+      document: draft.idCardPortraitDoc,
+    );
+
+    final List<DocItemBO> docs = draft.qualificationDocs();
+    if (docs.isEmpty) {
+      return;
+    }
 
     await _uploadQualificationsWithRetry(
       ref: ref,
       role: role,
-      request: UploadQualificationDocsBO(
-        docs: <DocItemBO>[uploadedDoc.toDocItemBO()],
-      ),
+      request: UploadQualificationDocsBO(docs: docs),
     );
-    return uploadedDoc;
+  }
+
+  /// 将单个草稿文档解析为最终可提交状态：历史远端图片直接复用，本地图片先上传文件。
+  static Future<UploadedQualificationDoc?> _resolveDraftDocument({
+    required WidgetRef ref,
+    required UploadedQualificationDoc? document,
+  }) async {
+    if (document == null) {
+      return null;
+    }
+    if (document.hasRemoteFile && !document.hasLocalFile) {
+      return document;
+    }
+    if (!document.hasLocalFile) {
+      return document.hasRemoteFile ? document : null;
+    }
+
+    final FilePresignVO presign = await ref
+        .read(fileServiceProvider)
+        .uploadFile(
+          path: document.localPath,
+          scene: document.docType.uploadScene,
+          errorMessage: '上传.文件上传失败'.tr(),
+        );
+
+    return UploadedQualificationDoc(
+      docType: document.docType,
+      docName: document.docName,
+      fileId: presign.fileId,
+      fileUrl: presign.fileUrl,
+      localPath: document.localPath,
+    );
   }
 
   /// 规避文件确认后立即登记资质时的短暂一致性窗口，失败时做有限重试。
