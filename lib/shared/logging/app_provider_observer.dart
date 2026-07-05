@@ -111,8 +111,17 @@ final class AppProviderObserver extends ProviderObserver {
       // 关键保护：复杂对象缺少稳定快照时宁可保留日志，也不能误吞关键状态更新。
       return false;
     }
-    return jsonEncode(previousComparableSnapshot) ==
-        jsonEncode(nextComparableSnapshot);
+    final String? previousEncodedSnapshot = _tryEncodeComparableSnapshot(
+      previousComparableSnapshot,
+    );
+    final String? nextEncodedSnapshot = _tryEncodeComparableSnapshot(
+      nextComparableSnapshot,
+    );
+    if (previousEncodedSnapshot == null || nextEncodedSnapshot == null) {
+      // 关键保护：即便快照编码失败，也只能退化为“保留日志”，不能让观察器抛异常。
+      return false;
+    }
+    return previousEncodedSnapshot == nextEncodedSnapshot;
   }
 
   /// 为日志输出构建受控快照，让高价值复杂对象也能保留关键字段变化。
@@ -135,12 +144,12 @@ final class AppProviderObserver extends ProviderObserver {
 
   /// 为可判等的 Provider 值生成稳定快照，既用于去噪，也复用于结构化日志输出。
   Object? _buildComparableSnapshot(Object? value) {
-    if (value == null ||
-        value is num ||
-        value is bool ||
-        value is String ||
-        value is Enum) {
+    if (value == null || value is num || value is bool || value is String) {
       return value;
+    }
+    if (value is Enum) {
+      // 关键保护：Enum 直接 `jsonEncode` 会抛异常，这里统一转成稳定字符串快照。
+      return '${value.runtimeType}.${value.name}';
     }
     if (value is DateTime) {
       return value.toIso8601String();
@@ -178,6 +187,15 @@ final class AppProviderObserver extends ProviderObserver {
       };
     }
     return null;
+  }
+
+  /// 安全编码可比较快照；若编码失败则返回 `null`，由调用方退化为“保留日志”。
+  String? _tryEncodeComparableSnapshot(Object snapshot) {
+    try {
+      return jsonEncode(snapshot);
+    } on JsonUnsupportedObjectError {
+      return null;
+    }
   }
 
   /// 针对无稳定 `toString()` 的关键业务对象做显式字段提取，避免日志退化成对象地址。

@@ -17,7 +17,7 @@ Future<void> ensureServiceProviderAuthenticated(
   PatrolIntegrationTester $,
   ServiceProviderTestAccount account,
 ) async {
-  final container = _readProviderContainer($);
+  final container = readAppProviderContainer($);
   final authSession = container.read(authSessionProvider);
   if (isServiceProviderAuthenticatedSession(authSession)) {
     return;
@@ -26,16 +26,18 @@ Future<void> ensureServiceProviderAuthenticated(
     throw StateError('当前登录态不是服务商角色：${authSession.user?.role ?? 'unknown'}');
   }
 
-  // 通过安全读取方法获取当前路由，避免 go_router 尚未完成匹配时直接读 state 抛错。
-  final currentRoute = readCurrentRouterLocation(
-    container.read(routerProvider),
+  // 安全读取当前路由，避免 go_router 首轮匹配未完成时直接抛出 StateError。
+  final currentRoute = safeReadCurrentRoute(
     fallbackLocation: RoutePaths.loginPhone,
+    readLocation: () => container.read(routerProvider).state.uri.toString(),
   );
   if (currentRoute != RoutePaths.loginPhone) {
     throw StateError('当前不在登录页，无法执行服务商登录前置：$currentRoute');
   }
 
-  final quickLoginButton = $(find.byKey(AppTestKeys.loginTestServiceProviderButton));
+  final quickLoginButton = $(
+    find.byKey(AppTestKeys.loginTestServiceProviderButton),
+  );
   if (quickLoginButton.visible) {
     // 优先走稳定 Key 对应的测试快捷登录入口，避免依赖中文文案。
     await quickLoginButton.tap();
@@ -56,7 +58,7 @@ Future<void> ensureServiceProviderAuthenticated(
 }
 
 /// 读取应用根节点对应的 Riverpod 容器，供 Patrol helper 访问共享状态。
-ProviderContainer _readProviderContainer(PatrolIntegrationTester $) {
+ProviderContainer readAppProviderContainer(PatrolIntegrationTester $) {
   final context = $.tester.element(find.byKey(const Key('app-root')));
   return ProviderScope.containerOf(context, listen: false);
 }
@@ -75,4 +77,16 @@ void _assertServiceProviderSession(AuthSessionState authSession) {
     return;
   }
   throw StateError('服务商登录完成后角色校验失败：${authSession.user?.role ?? 'unknown'}');
+}
+
+/// 安全读取当前路由；若路由状态尚未就绪，则回退到调用方提供的默认地址。
+String safeReadCurrentRoute({
+  required String fallbackLocation,
+  required String Function() readLocation,
+}) {
+  try {
+    return readLocation();
+  } on StateError {
+    return fallbackLocation;
+  }
 }

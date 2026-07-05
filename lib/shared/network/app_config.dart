@@ -23,10 +23,12 @@ class AppConfig {
         return const AppConfig(
           env: AppEnv.dev,
           baseUrl: 'http://39.101.190.245:8090',
+          // baseUrl: 'https://yunhezp.vip/api',
         );
       case AppEnv.prod:
         return const AppConfig(
           env: AppEnv.prod,
+          // baseUrl: 'https://yunhezp.vip/api',
           baseUrl: 'http://39.101.190.245:8090',
         );
     }

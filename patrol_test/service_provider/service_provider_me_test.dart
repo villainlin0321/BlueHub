@@ -55,28 +55,28 @@ Future<PatrolCaseResult> _runMeCase(
 
   try {
     switch (definition.feature) {
-      case 'qualification_management':
+      case 'me.menu.qualification_management':
         await $('资质管理').tap();
         await _waitForMatcher(
           $,
           serviceProviderRouteMatchers['qualificationCertification']!,
         );
         break;
-      case 'order_management':
+      case 'me.menu.order_management':
         await $('订单管理').tap();
         await _waitForMatcher(
           $,
           serviceProviderRouteMatchers['orderManagement']!,
         );
         break;
-      case 'finance_settlement':
+      case 'me.menu.finance_settlement':
         await $('财务结算').tap();
         await _waitForMatcher(
           $,
           serviceProviderRouteMatchers['financeSettlement']!,
         );
         break;
-      case 'settings':
+      case 'me.menu.settings':
         await $(find.byKey(AppTestKeys.actionServiceProviderMeSettings)).tap();
         await _waitForMatcher($, serviceProviderRouteMatchers['settings']!);
         break;
@@ -98,7 +98,7 @@ Future<PatrolCaseResult> _runMeCase(
       endedAt: DateTime.now(),
     );
   } catch (error) {
-    if (definition.feature == 'qualification_management') {
+    if (definition.feature == 'me.menu.qualification_management') {
       return buildQualificationManagementFailureResult(
         definition: definition,
         startedAt: startedAt,
@@ -106,18 +106,12 @@ Future<PatrolCaseResult> _runMeCase(
       );
     }
 
-    return PatrolCaseResult(
-      module: definition.module,
-      page: definition.page,
-      feature: definition.feature,
-      description: definition.description,
-      precondition: definition.precondition,
-      expected: definition.expected,
-      actual: '点击后未达到预期页面：$error',
-      status: PatrolCaseStatus.fail,
-      reason: 'route_mismatch',
+    return buildServiceProviderFailureResult(
+      definition: definition,
       startedAt: startedAt,
-      endedAt: DateTime.now(),
+      error: error,
+      reason: 'route_mismatch',
+      actualPrefix: '点击后未达到预期页面',
     );
   }
 }
@@ -127,7 +121,7 @@ bool _isAcceptedStatus(
   PatrolCaseResult result,
   PatrolCaseDefinition definition,
 ) {
-  if (definition.feature == 'qualification_management') {
+  if (definition.feature == 'me.menu.qualification_management') {
     return result.status == PatrolCaseStatus.pass ||
         result.status == PatrolCaseStatus.blocked;
   }
@@ -143,7 +137,7 @@ bool _shouldReturnToMePage(
   if (index >= serviceProviderMeCases.length - 1) {
     return false;
   }
-  if (definition.feature == 'qualification_management') {
+  if (definition.feature == 'me.menu.qualification_management') {
     return result.status == PatrolCaseStatus.pass;
   }
   return result.status == PatrolCaseStatus.pass;

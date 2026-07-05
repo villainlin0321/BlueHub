@@ -19,4 +19,50 @@ class AppTestKeys {
   static const Key actionServiceProviderMeSettings = Key(
     'action-me-service-provider-settings',
   );
+
+  /// 服务商套餐管理页根节点的稳定定位 Key。
+  static const Key pageServiceProviderJobs = Key('page-jobs-service-provider');
+
+  /// 服务商套餐管理页发布按钮的稳定定位 Key。
+  static const Key actionServiceProviderJobsPublish = Key(
+    'action-jobs-service-provider-publish',
+  );
+
+  /// 服务商签证套餐编辑页根节点的稳定定位 Key。
+  static const Key pageEditVisaPackage = Key('page-edit-visa-package');
+
+  /// 服务商签证套餐编辑页返回按钮的稳定定位 Key。
+  static const Key actionEditVisaPackageBack = Key(
+    'action-edit-visa-package-back',
+  );
+
+  /// 返回服务商套餐管理页指定状态 Tab 的稳定定位 Key。
+  static Key tabServiceProviderJobs(String tabStatus) {
+    return Key('tab-jobs-service-provider-$tabStatus');
+  }
+
+  /// 返回服务商套餐管理页指定状态内容面板的稳定定位 Key。
+  static Key sectionServiceProviderJobsPanel(String tabStatus) {
+    return Key('section-jobs-service-provider-panel-$tabStatus');
+  }
+
+  /// 返回服务商套餐管理页指定套餐编辑按钮的稳定定位 Key。
+  static Key actionServiceProviderJobsEdit(String tabStatus, int packageId) {
+    return Key('action-jobs-service-provider-edit-$tabStatus-$packageId');
+  }
+
+  /// 返回服务商套餐管理页指定套餐删除按钮的稳定定位 Key。
+  static Key actionServiceProviderJobsDelete(String tabStatus, int packageId) {
+    return Key('action-jobs-service-provider-delete-$tabStatus-$packageId');
+  }
+
+  /// 返回服务商套餐管理页指定套餐上下架按钮的稳定定位 Key。
+  static Key actionServiceProviderJobsStatusToggle(
+    String tabStatus,
+    int packageId,
+  ) {
+    return Key(
+      'action-jobs-service-provider-status-toggle-$tabStatus-$packageId',
+    );
+  }
 }

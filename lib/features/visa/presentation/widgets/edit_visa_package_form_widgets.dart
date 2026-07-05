@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/ui/test_keys.dart';
 import '../../../config/data/config_models.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
@@ -177,6 +178,7 @@ class EditVisaPackageHeader extends StatelessWidget
       leading: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: AppTestKeys.actionEditVisaPackageBack,
           onTap: onBackTap,
           child: Center(
             child: SvgPicture.asset(

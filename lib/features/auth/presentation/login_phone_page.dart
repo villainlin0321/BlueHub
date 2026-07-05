@@ -23,7 +23,8 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   static const String _workerTestEmail = 'zhangwei@example.com';
   static const String _employerTestEmail = 'berlin.food@example.de';
   static const String _serviceProviderTestEmail = 'oulu@example.com';
-  static const String _testCode = '1234';
+  /// 统一测试账号验证码，便于本地直登和联调时保持一致。
+  static const String _testCode = '123456';
 
   final _phoneController = TextEditingController();
 
@@ -37,8 +38,8 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
   // oulu@example.com
   // zhongde@example.com
   // final _emailController = TextEditingController();
-  final _emailController = TextEditingController(text: _workerTestEmail);
-  final _codeController = TextEditingController(text: _testCode);
+  final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
 
   @override
   void dispose() {
@@ -94,19 +95,24 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
     context.goNamed(RoutePaths.homeName);
   }
 
-  /// 按测试角色填充邮箱与验证码，并直接发起邮箱验证码登录。
+  /// 按测试角色串联“一键直登”流程：自动同意协议、先发邮箱验证码，再继续登录。
   Future<void> _handleDirectEmailLogin(String email) async {
     _emailController.text = email;
     _codeController.text = _testCode;
 
     final notifier = ref.read(loginFormControllerProvider.notifier);
     notifier.setLoginMode(false);
+    notifier.setAgreement(true);
     notifier.updateEmail(email);
     notifier.updateCode(_testCode);
 
-    final login = await ref
-        .read(loginFormControllerProvider.notifier)
-        .submitEmailLoginWithoutValidation(email: email, code: _testCode);
+    // 关键流程：只有验证码发送成功后，才继续走真实的邮箱验证码登录链路。
+    final bool codeSent = await notifier.sendCode();
+    if (!mounted || !codeSent) {
+      return;
+    }
+
+    final login = await notifier.submitLogin();
     if (!mounted || login == null) {
       return;
     }

@@ -11,8 +11,14 @@ const Map<String, PatrolRouteMatcher> serviceProviderRouteMatchers =
         readyKey: AppTestKeys.pageServiceProviderHome,
         fallbackText: '首页',
       ),
+      'jobs': PatrolRouteMatcher(
+        routePath: RoutePaths.jobs,
+        readyKey: AppTestKeys.pageServiceProviderJobs,
+        fallbackText: '套餐管理',
+      ),
       'editVisaPackage': PatrolRouteMatcher(
         routePath: RoutePaths.editVisaPackage,
+        readyKey: AppTestKeys.pageEditVisaPackage,
         fallbackText: '编辑套餐',
       ),
       'orderManagement': PatrolRouteMatcher(
