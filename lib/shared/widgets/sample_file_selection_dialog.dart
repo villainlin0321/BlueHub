@@ -65,6 +65,7 @@ class SampleFileSelectionItem extends StatelessWidget {
     required this.fileUrl,
     this.fileType = '',
     required this.isDownloading,
+    this.onTap,
     this.onDownloadTap,
   });
 
@@ -73,6 +74,7 @@ class SampleFileSelectionItem extends StatelessWidget {
   final String fileUrl;
   final String fileType;
   final bool isDownloading;
+  final VoidCallback? onTap;
   final VoidCallback? onDownloadTap;
 
   bool get _isImage {
@@ -87,7 +89,7 @@ class SampleFileSelectionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget content = Container(
       constraints: const BoxConstraints(minHeight: 56),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
       decoration: BoxDecoration(
@@ -156,6 +158,18 @@ class SampleFileSelectionItem extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: content,
       ),
     );
   }

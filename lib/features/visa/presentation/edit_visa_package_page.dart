@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
 import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -538,6 +539,27 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
     await _pickCoverFromGallery();
   }
 
+  /// 预览当前封面图，优先使用上传后的远程地址，缺失时回退到本地裁剪结果。
+  Future<void> _handleCoverPreviewTap() async {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null) {
+      return;
+    }
+    final String previewPath = (coverImage.uploadedFileUrl ?? coverImage.path)
+        .trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: coverImage.name,
+      isImage: true,
+      isPdf: false,
+    );
+  }
+
   Future<void> _pickCoverFromGallery() async {
     try {
       final List<PickedUploadFile> pickedFiles =
@@ -1059,7 +1081,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
   ) async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showToast('订单.未能读取所选文件'.tr());
         return;
@@ -1071,6 +1093,23 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
       }
       _showToast('订单.选择文件失败'.tr());
     }
+  }
+
+  /// 预览材料示例文件，兼容本地已选文件与上传后的远程地址。
+  Future<void> _handlePreviewExampleFile(PickedUploadFile file) async {
+    final String previewPath = (file.uploadedFileUrl ?? file.path).trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: file.name,
+      isImage: file.isImage,
+      isPdf: UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(file.name),
+    );
   }
 
   Future<void> _appendExampleFiles(
@@ -1328,6 +1367,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
         onSaveDraftTap: _handleSaveDraft,
         onPublishTap: _handlePublish,
         onCoverUploadTap: _handleCoverUploadTap,
+        onCoverPreviewTap: _handleCoverPreviewTap,
         onDeleteCoverTap: _handleDeleteCover,
         onCountryTap: _openCountrySheet,
         onVisaTypeTap: _openVisaTypeSheet,
@@ -1343,6 +1383,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
         onMaterialRequiredChanged: _handleMaterialRequiredChanged,
         onMaterialTypeTap: _openMaterialTypeSheet,
         onExampleUploadTap: _openExampleUploadSheet,
+        onPreviewExampleFile: _handlePreviewExampleFile,
         onDeleteExampleFile: _handleDeleteExampleFile,
         tagLabelBuilder: controller.tagLabel,
       ),

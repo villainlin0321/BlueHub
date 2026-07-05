@@ -301,11 +301,13 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
     super.key,
     required this.file,
     required this.onUploadTap,
+    this.onPreviewTap,
     this.onDeleteTap,
   });
 
   final PickedUploadFile? file;
   final VoidCallback onUploadTap;
+  final VoidCallback? onPreviewTap;
   final VoidCallback? onDeleteTap;
 
   @override
@@ -356,101 +358,113 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
         children: <Widget>[
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            child: SizedBox(
-              height: 148,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  _CoverPreviewImage(file: file!),
-                  if (file!.state == UploadItemState.uploading)
-                    _CoverPreviewOverlay(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              value: file!.progress > 0 ? file!.progress : null,
-                              strokeWidth: 2,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '签证编辑.封面上传中'.tr(),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPreviewTap == null
+                    ? null
+                    : dismissKeyboardThen(context, onPreviewTap!),
+                child: SizedBox(
+                  height: 148,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      _CoverPreviewImage(file: file!),
+                      if (file!.state == UploadItemState.uploading)
+                        _CoverPreviewOverlay(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  value: file!.progress > 0
+                                      ? file!.progress
+                                      : null,
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                 ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (file!.state == UploadItemState.failure)
-                    _CoverPreviewOverlay(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            '签证编辑.封面上传失败'.tr(),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextButton(
-                            onPressed: dismissKeyboardThen(
-                              context,
-                              onUploadTap,
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
                               ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text('签证编辑.重新上传封面'.tr()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (onDeleteTap != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: InkWell(
-                        onTap: dismissKeyboardThen(context, onDeleteTap!),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/images/order_upload_remove.svg',
-                            width: 8,
-                            height: 8,
+                              const SizedBox(height: 8),
+                              Text(
+                                '签证编辑.封面上传中'.tr(),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                      if (file!.state == UploadItemState.failure)
+                        _CoverPreviewOverlay(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                '签证编辑.封面上传失败'.tr(),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextButton(
+                                onPressed: dismissKeyboardThen(
+                                  context,
+                                  onUploadTap,
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  minimumSize: Size.zero,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text('签证编辑.重新上传封面'.tr()),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (onDeleteTap != null)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: InkWell(
+                            onTap: dismissKeyboardThen(context, onDeleteTap!),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/images/order_upload_remove.svg',
+                                width: 8,
+                                height: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

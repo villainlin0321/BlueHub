@@ -29,6 +29,7 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -731,7 +732,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Future<void> _pickFromFiles(_MaterialRequirement requirement) async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('订单.未能读取所选文件'.tr());
         return;
@@ -781,7 +782,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Future<void> _pickVisaDocumentsFromFiles() async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('订单.未能读取所选文件'.tr());
         return;
@@ -1331,6 +1332,62 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return 'application/octet-stream';
   }
 
+  /// 判断材料 MIME 是否属于图片，优先复用后端返回的文件类型信息。
+  bool _isImageFileType(String fileType) {
+    return fileType.trim().toLowerCase().startsWith('image/');
+  }
+
+  /// 判断材料 MIME 或路径是否属于 PDF，兼容后端未稳定返回扩展名的场景。
+  bool _isPdfMaterial({
+    required String fileType,
+    required String fileUrl,
+    required String fileName,
+  }) {
+    final String normalizedType = fileType.trim().toLowerCase();
+    if (normalizedType == 'application/pdf' || normalizedType.endsWith('/pdf')) {
+      return true;
+    }
+    return UploadPickerUtils.isPdfPath(fileUrl) ||
+        UploadPickerUtils.isPdfPath(fileName);
+  }
+
+  /// 打开订单材料预览，图片和 PDF 都优先使用应用内预览。
+  Future<void> _openMaterialPreview(MaterialVO material) async {
+    final String fileUrl = material.fileUrl.trim();
+    if (fileUrl.isEmpty) {
+      _showMessage('订单.文件地址不存在'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: fileUrl,
+      title: _materialDisplayName(material),
+      isImage: _isImageFileType(material.fileType),
+      isPdf: _isPdfMaterial(
+        fileType: material.fileType,
+        fileUrl: fileUrl,
+        fileName: _materialDisplayName(material),
+      ),
+    );
+  }
+
+  /// 打开本地或远程已选文件预览，优先使用上传后的 URL，缺失时回退到本地路径。
+  Future<void> _openPickedFilePreview(PickedUploadFile file) async {
+    final String previewPath = (file.uploadedFileUrl ?? file.path).trim();
+    if (previewPath.isEmpty) {
+      _showMessage('订单.文件地址不存在'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: file.name,
+      isImage: file.isImage,
+      isPdf: UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(file.name),
+    );
+  }
+
   Future<void> _handleRequirementPreview(
     _MaterialRequirement requirement,
   ) async {
@@ -1369,6 +1426,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 subtitle: UploadPickerUtils.formatFileSize(material.fileSize),
                 fileUrl: material.fileUrl,
                 fileType: material.fileType,
+                onTap: () async {
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                  await _openMaterialPreview(material);
+                },
                 isDownloading: _downloadingMaterialUrls.contains(
                   material.fileUrl.trim(),
                 ),
@@ -1833,6 +1896,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     ? _ProviderMaterialReviewCard(
                         materials: detail.materials,
                         downloadingFileUrls: _downloadingMaterialUrls,
+                        onPreviewTap: _openMaterialPreview,
                         onDownloadTap: (MaterialVO material) async {
                           await _downloadAndOpenMaterial(material);
                         },
@@ -1845,6 +1909,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   allowUpload: isUploadMaterialsStage,
                   allowDelete: isUploadMaterialsStage,
                   onPreviewTap: _handleRequirementPreview,
+                  onPreviewFile: _openPickedFilePreview,
                   onUploadTap: _openUploadSheet,
                   onDeleteFile: _removeUploadFile,
                 )
@@ -1858,6 +1923,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               allowUpload: isEmbassySubmittedStage,
               allowDelete: isEmbassySubmittedStage,
               onUploadTap: _openVisaDocumentUploadSheet,
+              onPreviewFile: _openPickedFilePreview,
               onDeleteFile: _removeVisaDocumentFile,
             ),
           ),
@@ -1967,6 +2033,7 @@ class _MaterialUploadCard extends StatelessWidget {
     required this.allowUpload,
     required this.allowDelete,
     required this.onPreviewTap,
+    required this.onPreviewFile,
     required this.onUploadTap,
     required this.onDeleteFile,
   });
@@ -1976,6 +2043,7 @@ class _MaterialUploadCard extends StatelessWidget {
   final bool allowUpload;
   final bool allowDelete;
   final ValueChanged<_MaterialRequirement> onPreviewTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
   final ValueChanged<_MaterialRequirement> onUploadTap;
   final void Function(_MaterialRequirement, PickedUploadFile) onDeleteFile;
 
@@ -2002,6 +2070,7 @@ class _MaterialUploadCard extends StatelessWidget {
               allowUpload: allowUpload,
               allowDelete: allowDelete,
               onPreviewTap: () => onPreviewTap(item),
+              onPreviewFile: onPreviewFile,
               onUploadTap: allowUpload ? () => onUploadTap(item) : null,
               onDeleteFile: allowDelete
                   ? (PickedUploadFile file) => onDeleteFile(item, file)
@@ -2020,6 +2089,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
     required this.allowUpload,
     required this.allowDelete,
     required this.onUploadTap,
+    required this.onPreviewFile,
     required this.onDeleteFile,
   });
 
@@ -2027,6 +2097,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
   final bool allowUpload;
   final bool allowDelete;
   final VoidCallback onUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
   final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
@@ -2050,6 +2121,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
             allowUpload: allowUpload,
             allowDelete: allowDelete,
             onAddTap: onUploadTap,
+            onPreviewFile: onPreviewFile,
             onDeleteFile: onDeleteFile,
           ),
         ],
@@ -2062,11 +2134,13 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
   const _ProviderMaterialReviewCard({
     required this.materials,
     required this.downloadingFileUrls,
+    this.onPreviewTap,
     this.onDownloadTap,
   });
 
   final List<MaterialVO> materials;
   final Set<String> downloadingFileUrls;
+  final Future<void> Function(MaterialVO)? onPreviewTap;
   final Future<void> Function(MaterialVO)? onDownloadTap;
 
   @override
@@ -2125,6 +2199,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                   subtitle: UploadPickerUtils.formatFileSize(material.fileSize),
                   fileUrl: material.fileUrl,
                   fileType: material.fileType,
+                  onTap: onPreviewTap == null
+                      ? null
+                      : () => onPreviewTap!(material),
                   isDownloading: downloadingFileUrls.contains(
                     material.fileUrl.trim(),
                   ),
@@ -2147,6 +2224,7 @@ class _MaterialUploadItem extends StatelessWidget {
     required this.allowUpload,
     required this.allowDelete,
     required this.onPreviewTap,
+    required this.onPreviewFile,
     required this.onUploadTap,
     required this.onDeleteFile,
   });
@@ -2156,6 +2234,7 @@ class _MaterialUploadItem extends StatelessWidget {
   final bool allowUpload;
   final bool allowDelete;
   final VoidCallback onPreviewTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
   final VoidCallback? onUploadTap;
   final ValueChanged<PickedUploadFile>? onDeleteFile;
 
@@ -2202,6 +2281,7 @@ class _MaterialUploadItem extends StatelessWidget {
           allowUpload: allowUpload,
           allowDelete: allowDelete,
           onAddTap: onUploadTap,
+          onPreviewFile: onPreviewFile,
           onDeleteFile: onDeleteFile,
         ),
       ],
@@ -2215,6 +2295,7 @@ class _MaterialUploadContent extends StatelessWidget {
     required this.allowUpload,
     required this.allowDelete,
     required this.onAddTap,
+    this.onPreviewFile,
     required this.onDeleteFile,
   });
 
@@ -2222,6 +2303,7 @@ class _MaterialUploadContent extends StatelessWidget {
   final bool allowUpload;
   final bool allowDelete;
   final VoidCallback? onAddTap;
+  final ValueChanged<PickedUploadFile>? onPreviewFile;
   final ValueChanged<PickedUploadFile>? onDeleteFile;
 
   @override
@@ -2241,6 +2323,9 @@ class _MaterialUploadContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
               file: file,
+              onPreviewTap: onPreviewFile == null
+                  ? null
+                  : () => onPreviewFile!(file),
               showRemoveButton: allowDelete && onDeleteFile != null,
               onRemoveTap: onDeleteFile == null
                   ? null
@@ -2258,19 +2343,33 @@ class _MaterialUploadContent extends StatelessWidget {
 class _UploadFileCard extends StatelessWidget {
   const _UploadFileCard({
     required this.file,
+    this.onPreviewTap,
     this.onRemoveTap,
     this.showRemoveButton = true,
   });
 
   final PickedUploadFile file;
+  final VoidCallback? onPreviewTap;
   final VoidCallback? onRemoveTap;
   final bool showRemoveButton;
+
+  /// 将统一的卡片内容按需包装为可点击预览的交互容器。
+  Widget _wrapPreviewTap(Widget child) {
+    if (onPreviewTap == null) {
+      return child;
+    }
+    return InkWell(
+      onTap: onPreviewTap,
+      borderRadius: BorderRadius.circular(8),
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     switch (file.state) {
       case UploadItemState.uploading:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -2303,9 +2402,9 @@ class _UploadFileCard extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ));
       case UploadItemState.success:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -2335,9 +2434,9 @@ class _UploadFileCard extends StatelessWidget {
                 _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
       case UploadItemState.failure:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
           child: Row(
             children: <Widget>[
@@ -2368,7 +2467,7 @@ class _UploadFileCard extends StatelessWidget {
                 _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
     }
   }
 }

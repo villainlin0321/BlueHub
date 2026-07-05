@@ -31,6 +31,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onSaveDraftTap,
     required this.onPublishTap,
     required this.onCoverUploadTap,
+    required this.onCoverPreviewTap,
     required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
@@ -46,6 +47,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -63,6 +65,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onSaveDraftTap;
   final VoidCallback onPublishTap;
   final VoidCallback onCoverUploadTap;
+  final VoidCallback onCoverPreviewTap;
   final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
@@ -79,6 +82,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -121,6 +125,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                               selectedCountryLabel: selectedCountryLabel,
                               selectedVisaTypeLabel: selectedVisaTypeLabel,
                               onCoverUploadTap: onCoverUploadTap,
+                              onCoverPreviewTap: onCoverPreviewTap,
                               onDeleteCoverTap: onDeleteCoverTap,
                               onCountryTap: onCountryTap,
                               onVisaTypeTap: onVisaTypeTap,
@@ -143,6 +148,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                                   onMaterialRequiredChanged,
                               onMaterialTypeTap: onMaterialTypeTap,
                               onExampleUploadTap: onExampleUploadTap,
+                              onPreviewExampleFile: onPreviewExampleFile,
                               onDeleteExampleFile: onDeleteExampleFile,
                               tagLabelBuilder: tagLabelBuilder,
                             ),
@@ -176,6 +182,7 @@ class _BasicInfoSection extends StatelessWidget {
     required this.selectedCountryLabel,
     required this.selectedVisaTypeLabel,
     required this.onCoverUploadTap,
+    required this.onCoverPreviewTap,
     required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
@@ -187,6 +194,7 @@ class _BasicInfoSection extends StatelessWidget {
   final String? selectedCountryLabel;
   final String? selectedVisaTypeLabel;
   final VoidCallback onCoverUploadTap;
+  final VoidCallback onCoverPreviewTap;
   final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
@@ -206,6 +214,7 @@ class _BasicInfoSection extends StatelessWidget {
           EditVisaPackageCoverPreview(
             file: coverImage,
             onUploadTap: onCoverUploadTap,
+            onPreviewTap: coverImage == null ? null : onCoverPreviewTap,
             onDeleteTap: coverImage == null ? null : onDeleteCoverTap,
           ),
           const SizedBox(height: 16),
@@ -276,6 +285,7 @@ class _TierConfigSection extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -296,6 +306,7 @@ class _TierConfigSection extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -332,6 +343,7 @@ class _TierConfigSection extends StatelessWidget {
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
                 onMaterialTypeTap: onMaterialTypeTap,
                 onExampleUploadTap: onExampleUploadTap,
+                onPreviewExampleFile: onPreviewExampleFile,
                 onDeleteExampleFile: onDeleteExampleFile,
                 tagLabelBuilder: tagLabelBuilder,
               ),
@@ -365,6 +377,7 @@ class _TierCard extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -385,6 +398,7 @@ class _TierCard extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -478,6 +492,7 @@ class _TierCard extends StatelessWidget {
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
                 onMaterialTypeTap: onMaterialTypeTap,
                 onExampleUploadTap: onExampleUploadTap,
+                onPreviewExampleFile: onPreviewExampleFile,
                 onDeleteExampleFile: onDeleteExampleFile,
               ),
             );
@@ -501,6 +516,7 @@ class _MaterialCard extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
   });
 
@@ -511,6 +527,7 @@ class _MaterialCard extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
 
@@ -563,6 +580,7 @@ class _MaterialCard extends StatelessWidget {
         _ExampleUploadContent(
           files: material.exampleFiles,
           onAddTap: () => onExampleUploadTap(tierIndex, materialIndex),
+          onPreviewFile: onPreviewExampleFile,
           onDeleteFile: (PickedUploadFile file) =>
               onDeleteExampleFile(tierIndex, materialIndex, file),
         ),
@@ -575,11 +593,13 @@ class _ExampleUploadContent extends StatelessWidget {
   const _ExampleUploadContent({
     required this.files,
     required this.onAddTap,
+    required this.onPreviewFile,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
   final VoidCallback onAddTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
   final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
@@ -599,6 +619,7 @@ class _ExampleUploadContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
               file: file,
+              onPreviewTap: () => onPreviewFile(file),
               onRemoveTap: () => onDeleteFile(file),
             ),
           );
@@ -613,16 +634,33 @@ class _ExampleUploadContent extends StatelessWidget {
 }
 
 class _UploadFileCard extends StatelessWidget {
-  const _UploadFileCard({required this.file, this.onRemoveTap});
+  const _UploadFileCard({
+    required this.file,
+    this.onPreviewTap,
+    this.onRemoveTap,
+  });
 
   final PickedUploadFile file;
+  final VoidCallback? onPreviewTap;
   final VoidCallback? onRemoveTap;
+
+  /// 将文件卡片包装成可点击预览的交互区域，保持视觉结构不变。
+  Widget _wrapPreviewTap(Widget child) {
+    if (onPreviewTap == null) {
+      return child;
+    }
+    return InkWell(
+      onTap: onPreviewTap,
+      borderRadius: BorderRadius.circular(8),
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     switch (file.state) {
       case UploadItemState.uploading:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -655,9 +693,9 @@ class _UploadFileCard extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ));
       case UploadItemState.success:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -686,9 +724,9 @@ class _UploadFileCard extends StatelessWidget {
               if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
       case UploadItemState.failure:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -717,7 +755,7 @@ class _UploadFileCard extends StatelessWidget {
               if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
     }
   }
 }
