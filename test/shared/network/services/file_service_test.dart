@@ -28,7 +28,11 @@ void main() {
       ),
     );
 
-    await service.uploadFile(path: file.path, scene: FileScene.chat);
+    await service.uploadFile(
+      path: file.path,
+      scene: FileScene.chat,
+      errorMessage: 'upload failed',
+    );
 
     expect(service.lastPresignRequest?.fileType, 'text/plain');
     expect(service.lastPresignRequest?.fileSize, 4);
@@ -57,7 +61,11 @@ void main() {
       ),
     );
 
-    await service.uploadFile(path: file.path, scene: FileScene.chat);
+    await service.uploadFile(
+      path: file.path,
+      scene: FileScene.chat,
+      errorMessage: 'upload failed',
+    );
 
     expect(service.lastPresignRequest?.fileType, 'image/jpeg');
     expect(service.lastPresignRequest?.fileSize, 3);
