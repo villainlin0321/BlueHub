@@ -9,8 +9,10 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../application/qualification_upload_helper.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../employer/data/employer_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
@@ -59,12 +61,13 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepThreePageState
-    extends ConsumerState<QualificationCertificationStepThreePage> {
+    extends ConsumerState<QualificationCertificationStepThreePage>
+    with GuardedPopScopeMixin {
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
   late _QualificationStepThreeSnapshot _initialSnapshot;
   bool _isSubmitting = false;
-  bool _allowDirectPop = false;
+  bool _skipSuccessNavigationForTest = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
@@ -109,26 +112,8 @@ class _QualificationCertificationStepThreePageState
     if (!mounted || !canLeave) {
       return;
     }
-
-    await _leavePageAfterPopScopeUnlocked();
-  }
-
-  /// 确认退出后先刷新 `PopScope.canPop`，再执行真实离页，避免同一帧再次被拦截。
-  Future<void> _leavePageAfterPopScopeUnlocked() async {
-    if (_allowDirectPop) {
-      return;
-    }
-
-    setState(() {
-      _allowDirectPop = true;
-    });
-
-    // 关键时序：等待下一帧让 PopScope 读到最新 canPop，再触发真实返回。
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
+    // 优先执行真实返回；若当前路由栈不可返回，则兜底回到“我的”页。
+    scheduleDirectPop(onCannotPop: () => context.go(RoutePaths.me));
   }
 
   Future<void> _openExpectedCountrySheet() async {
@@ -154,8 +139,47 @@ class _QualificationCertificationStepThreePageState
     });
   }
 
+  /// 在最终提交前兜底校验必填资质图片，避免用户绕过前序步骤直接提交。
+  bool _validateRequiredImagesBeforeSubmit() {
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardEmblemDoc == null) {
+      AppToast.show('请上传身份证国徽面'.tr());
+      return false;
+    }
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardPortraitDoc == null) {
+      AppToast.show('请上传身份证人像面'.tr());
+      return false;
+    }
+    if (_draft.businessLicenseDoc == null) {
+      AppToast.show('认证流程.请上传营业执照'.tr());
+      return false;
+    }
+    return true;
+  }
+
+  /// 提交前校验第三步服务信息必填项，避免空国家或非法年限直接进入审核。
+  bool _validateServiceInfoBeforeSubmit() {
+    if (_selectedCountries.isEmpty) {
+      AppToast.show('请选择服务国家'.tr());
+      return false;
+    }
+    final int? yearsOfService = int.tryParse(_experienceController.text.trim());
+    if (yearsOfService == null || yearsOfService <= 0) {
+      AppToast.show('认证流程.请填写有效从业年限'.tr());
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
     if (_isSubmitting) {
+      return;
+    }
+    if (!_validateRequiredImagesBeforeSubmit()) {
+      return;
+    }
+    if (!_validateServiceInfoBeforeSubmit()) {
       return;
     }
 
@@ -171,6 +195,11 @@ class _QualificationCertificationStepThreePageState
       );
       _draft.yearsOfService =
           int.tryParse(_experienceController.text.trim()) ?? 0;
+      await QualificationUploadHelper.uploadDraftQualifications(
+        ref: ref,
+        role: _role,
+        draft: _draft,
+      );
       if (_role == QualificationCertificationRole.company) {
         await ref
             .read(employerServiceProvider)
@@ -184,8 +213,11 @@ class _QualificationCertificationStepThreePageState
         return;
       }
       // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
-      _allowDirectPop = true;
-      context.push(
+      allowDirectPop();
+      if (_skipSuccessNavigationForTest) {
+        return;
+      }
+      context.go(
         RoutePaths.appResult,
         extra: AppResultPageArgs(
           pageTitle: tr('认证流程.资质认证'),
@@ -193,6 +225,7 @@ class _QualificationCertificationStepThreePageState
           tipText: tr('认证流程.审核提示'),
           actionLabel: tr('认证流程.进入首页'),
           action: AppResultAction.go(RoutePaths.home),
+          backAction: AppResultAction.go(RoutePaths.me),
         ),
       );
     } catch (_) {
@@ -209,16 +242,20 @@ class _QualificationCertificationStepThreePageState
     }
   }
 
+  /// 仅供测试直接触发最终提交，避免测试依赖真实路由跳转。
+  Future<void> debugSubmitForTest() async {
+    _skipSuccessNavigationForTest = true;
+    try {
+      await _handleSubmit();
+    } finally {
+      _skipSuccessNavigationForTest = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _allowDirectPop,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop || _allowDirectPop) {
-          return;
-        }
-        await _handleAttemptLeave();
-      },
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
       child: Scaffold(
         key: AppTestKeys.pageQualificationCertificationStepThree,
         backgroundColor: const Color(0xFFF5F7FA),
@@ -309,8 +346,8 @@ class _QualificationCertificationStepThreePageState
                             ),
                             const Spacer(),
                             GestureDetector(
-                              key:
-                                  AppTestKeys.actionQualificationServiceCountrySelect,
+                              key: AppTestKeys
+                                  .actionQualificationServiceCountrySelect,
                               onTap: _openExpectedCountrySheet,
                               child: SizedBox(
                                 width: 20,
@@ -375,8 +412,8 @@ class _QualificationCertificationStepThreePageState
                                 ),
                                 alignment: Alignment.center,
                                 child: TextField(
-                                  key:
-                                      AppTestKeys.fieldQualificationYearsOfService,
+                                  key: AppTestKeys
+                                      .fieldQualificationYearsOfService,
                                   controller: _experienceController,
                                   keyboardType: TextInputType.number,
                                   textAlignVertical: TextAlignVertical.center,
@@ -432,7 +469,10 @@ class _QualificationCertificationStepThreePageState
                   child: SizedBox(
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: _handleAttemptLeave,
+                      onPressed: () => context.go(
+                        RoutePaths.qualificationCertificationStepTwo,
+                        extra: widget.args,
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFD9D9D9)),
                         shape: RoundedRectangleBorder(
