@@ -87,6 +87,14 @@ class ImageUploadCompressService {
           mimeType: 'image/png',
         ),
       };
+  static const Set<String> _skippedImageMimeSubtypes = <String>{
+    'gif',
+    'svg+xml',
+    'webp',
+    'bmp',
+    'heic',
+    'heif',
+  };
 
   final ImageCompressionEngine _engine;
   final Future<Uint8List> Function(String path) _readFileBytes;
@@ -104,13 +112,16 @@ class ImageUploadCompressService {
 
     final int longSide = width > height ? width : height;
     final int shortSide = width > height ? height : width;
-    if (longSide <= maxLongSide || shortSide <= maxShortSide) {
+    if (longSide <= maxLongSide) {
+      return (width: width, height: height);
+    }
+    if (shortSide <= maxShortSide) {
       return (width: width, height: height);
     }
 
     final double longSideScale = longSide / maxLongSide;
     final double shortSideScale = shortSide / maxShortSide;
-    final double limitScale = longSideScale > shortSideScale
+    final double limitScale = longSideScale < shortSideScale
         ? longSideScale
         : shortSideScale;
     final double scale = 1 / limitScale;
@@ -212,6 +223,9 @@ class ImageUploadCompressService {
     }
 
     final String subtype = normalizedMimeType.substring(slashIndex + 1);
+    if (_skippedImageMimeSubtypes.contains(subtype)) {
+      return null;
+    }
     return _safeCompressionTargets[subtype];
   }
 

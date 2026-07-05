@@ -49,8 +49,8 @@ void main() {
       maxShortSide: 1080,
     );
 
-    expect(result.width, 1440);
-    expect(result.height, 1080);
+    expect(result.width, 1920);
+    expect(result.height, 1440);
   });
 
   test('非图片文件直接跳过压缩并保留原始内容', () async {
