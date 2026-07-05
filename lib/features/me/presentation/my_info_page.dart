@@ -90,6 +90,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             key: const Key('my-info-nickname-row'),
                             label: '我的.昵称'.tr(),
                             value: userViewData.nickname,
+                            valueColor: const Color(0xFF262626),
                             onTap: _handleNicknameTap,
                           ),
                           const Divider(
@@ -555,12 +556,14 @@ class _InfoValueRow extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
+    this.valueColor = const Color(0xFF8C8C8C),
     this.onTap,
     this.showChevron = true,
   });
 
   final String label;
   final String value;
+  final Color valueColor;
   final VoidCallback? onTap;
   final bool showChevron;
 
@@ -595,10 +598,7 @@ class _InfoValueRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: TestStyle.regular(
-                    fontSize: 16,
-                    color: Color(0xFF8C8C8C),
-                  ),
+                  style: TestStyle.regular(fontSize: 16, color: valueColor),
                 ),
               ),
             ),

@@ -32,7 +32,7 @@ class CurrentUserViewData {
     final String nickname = user?.nickname.trim() ?? '';
     final String email = user?.email.trim() ?? '';
     return CurrentUserViewData(
-      nickname: nickname.isEmpty ? '我的.未设置昵称'.tr() : nickname,
+      nickname: nickname.isEmpty ? '我的.点击修改昵称'.tr() : nickname,
       avatarUrl: user?.avatarUrl.trim() ?? '',
       phone: phone,
       maskedPhone: _maskPhone(phone),
