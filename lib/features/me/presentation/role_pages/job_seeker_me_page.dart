@@ -41,11 +41,11 @@ class JobSeekerMePage extends ConsumerWidget {
       iconAsset: 'assets/images/mou4gf13-2yasg57.svg',
       fallbackIcon: Icons.star_outline_rounded,
     ),
-    _MenuActionItem(
-      labelKey: '我的.客服中心',
-      iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
-      fallbackIcon: Icons.support_agent_outlined,
-    ),
+    // _MenuActionItem(
+    //   labelKey: '我的.客服中心',
+    //   iconAsset: 'assets/images/mou4gf13-lra1z08.svg',
+    //   fallbackIcon: Icons.support_agent_outlined,
+    // ),
   ];
 
   @override
