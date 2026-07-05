@@ -305,8 +305,10 @@
     "草稿已保存": "Draft saved",
     "岗位发布成功": "Position published successfully",
     "岗位更新成功": "Position updated successfully",
+    "岗位发布.岗位更新成功": "Position updated successfully",
     "岗位发布失败": "Failed to publish position. Please try again later.",
     "岗位更新失败": "Failed to update position. Please try again later.",
+    "岗位发布.岗位更新失败": "Failed to update position. Please try again later.",
     "岗位详情加载失败": "Failed to load position details. Please try again later.",
     "选择货币": "Select Currency",
     "人民币": "CNY",
@@ -509,6 +511,7 @@
     "姓名": "Name",
     "支付结果": "Payment Result",
     "支付成功": "Payment Successful",
+    "服务详情.支付成功": "Payment Successful",
     "支付成功提示": "You can view it in \"Order Management\" under Me.",
     "去上传提交材料": "Upload Materials",
     "查看样例": "View Sample",
@@ -1205,6 +1208,14 @@
     "处理中": "Processing",
     "已解决": "Resolved",
     "已驳回": "Rejected"
+  },
+  "订单支付": {
+    "确认支付": "Confirm Payment",
+    "支付中": "Paying...",
+    "支付倒计时": "Please complete payment within {minutes}m {seconds}s, or it will be canceled.",
+    "支付宝支付": "Alipay",
+    "微信支付": "WeChat Pay",
+    "支付发起失败": "Failed to initiate payment. Please try again later."
   },
   "支付": {
     "支付宝支付参数缺失": "Missing Alipay payment parameters",
