@@ -9,11 +9,18 @@ import '../../../shared/network/api_exception.dart';
 import '../../../shared/logging/app_logger.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../../features/files/data/file_models.dart';
+import 'image_upload_compress_service.dart';
 
 class FileService {
-  FileService({required ApiClient apiClient}) : _apiClient = apiClient;
+  FileService({
+    required ApiClient apiClient,
+    ImageUploadCompressService? imageUploadCompressService,
+  }) : _apiClient = apiClient,
+       _imageUploadCompressService =
+           imageUploadCompressService ?? ImageUploadCompressService();
 
   final ApiClient _apiClient;
+  final ImageUploadCompressService _imageUploadCompressService;
 
   /// 确认文件上传完成。
   ///
@@ -49,16 +56,22 @@ class FileService {
       throw ApiException.unknown('file not found');
     }
 
-    final List<int> bytes = await localFile.readAsBytes();
     final String mimeType = resolveMimeType(path);
+    final PreparedUploadPayload preparedPayload =
+        await _imageUploadCompressService.prepareForUpload(
+          filePath: path,
+          mimeType: mimeType,
+        );
+    final List<int> bytes = preparedPayload.bytes;
+    final String uploadMimeType = preparedPayload.mimeType;
     final String resolvedErrorMessage = errorMessage.isEmpty
         ? tr('上传.文件上传失败')
         : errorMessage;
     final FilePresignVO response = await presign(
       request: FilePresignBO(
         fileName: UploadPickerUtils.basename(path),
-        fileType: mimeType,
-        fileSize: bytes.length,
+        fileType: uploadMimeType,
+        fileSize: preparedPayload.fileSize,
         scene: scene,
         accessType: accessType,
       ),
@@ -70,8 +83,8 @@ class FileService {
       context: <String, Object?>{
         'scene': scene.value,
         'fileName': UploadPickerUtils.basename(path),
-        'fileSize': bytes.length,
-        'mimeType': mimeType,
+        'fileSize': preparedPayload.fileSize,
+        'mimeType': uploadMimeType,
         'fileId': response.fileId,
         'objectKey': response.objectKey,
         'uploadHost': uploadUri?.host ?? '',
@@ -81,7 +94,7 @@ class FileService {
     await putToUploadUrl(
       uploadUrl: response.uploadUrl,
       bytes: bytes,
-      mimeType: mimeType,
+      mimeType: uploadMimeType,
       errorMessage: resolvedErrorMessage,
       onSendProgress: onSendProgress,
     );
@@ -89,7 +102,7 @@ class FileService {
       request: ConfirmUploadBO(
         fileId: response.fileId,
         objectKey: response.objectKey,
-        fileSize: bytes.length,
+        fileSize: preparedPayload.fileSize,
       ),
     );
     AppLogger.instance.info(
@@ -99,7 +112,7 @@ class FileService {
         'scene': scene.value,
         'fileId': response.fileId,
         'objectKey': response.objectKey,
-        'fileSize': bytes.length,
+        'fileSize': preparedPayload.fileSize,
       },
     );
     final String fileUrl = await getFileUrl(fileId: response.fileId);
