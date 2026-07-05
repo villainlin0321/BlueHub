@@ -20,6 +20,7 @@ import 'package:europepass/shared/ui/test_style.dart';
 class JobSeekerMePage extends ConsumerWidget {
   const JobSeekerMePage({
     super.key,
+    this.onProfileTapOverride,
     this.onRealNameEntryTapOverride,
   });
 
@@ -51,6 +52,7 @@ class JobSeekerMePage extends ConsumerWidget {
     ),
   ];
 
+  final void Function(BuildContext context)? onProfileTapOverride;
   final void Function(BuildContext context)? onRealNameEntryTapOverride;
 
   @override
@@ -81,8 +83,8 @@ class JobSeekerMePage extends ConsumerWidget {
               _ProfileCard(
                 userViewData: userViewData,
                 stats: stats,
-                onTap: () => context.push(RoutePaths.myInfo),
-                onRealNameTap: () => _handleRealNameTap(context),
+                onTap: () => _handleRealNameTap(context),
+                onRealNameTap: () => _handleProfileTap(context),
                 onOrderTap: () => context.push(RoutePaths.myOrders),
                 onResumeTap: () => context.push(RoutePaths.myResume),
                 onApplicationTap: () => context.push(RoutePaths.myApplications),
@@ -118,6 +120,16 @@ class JobSeekerMePage extends ConsumerWidget {
   void _handleSettingsTap(BuildContext context) {
     // 关键交互：右上角设置按钮进入真实设置页，而不是占位提示。
     context.push(RoutePaths.settings);
+  }
+
+  /// 打开求职者“我的信息”页；测试可覆写该入口以稳定验证顶部资料区跳转结果。
+  void _handleProfileTap(BuildContext context) {
+    final onProfileTapOverride = this.onProfileTapOverride;
+    if (onProfileTapOverride != null) {
+      onProfileTapOverride(context);
+      return;
+    }
+    context.push(RoutePaths.myInfo);
   }
 
   /// 打开求职者实名认证页；测试可覆写该入口以稳定验证页面跳转结果。
@@ -229,83 +241,57 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(19.2),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 18, 15, 16),
+      padding: const EdgeInsets.fromLTRB(7, 18, 6, 18),
       child: Column(
         children: <Widget>[
-          InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: <Widget>[
-                _UserAvatar(
-                  avatarUrl: userViewData.avatarUrl,
-                  fallbackAssetPath: JobSeekerMePage._avatarAsset,
-                  size: 48,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Flexible(
-                            child: Text(
-                              userViewData.nickname,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TestStyle.semibold(fontSize: 20, color: Color(0xFF262626)),
-                            ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: InkWell(
+                  key: const ValueKey<String>('job_seeker_profile_info_hotspot'),
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(9, 0, 0, 0),
+                    child: Row(
+                      children: <Widget>[
+                        _UserAvatar(
+                          avatarUrl: userViewData.avatarUrl,
+                          fallbackAssetPath: JobSeekerMePage._avatarAsset,
+                          size: 48,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ProfileIdentity(
+                            nickname: userViewData.nickname,
+                            isVerified: userViewData.isVerified,
                           ),
-                          const SizedBox(width: 8),
-                          if (userViewData.isVerified) ...<Widget>[
-                            SizedBox(
-                              width: 42,
-                              height: 18,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: <Widget>[
-                                  SvgPicture.asset(
-                                    JobSeekerMePage._verifiedBadgeBgAsset,
-                                    fit: BoxFit.fill,
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      '我的.已实名'.tr(),
-                                      style: TestStyle.pingFangMedium(fontSize: 10, color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        userViewData.maskedPhone,
-                        style: TestStyle.regular(fontSize: 13, color: Color(0xFF595959)),
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Color(0xFFBFBFBF),
+              ),
+              const SizedBox(width: 12),
+              InkWell(
+                key: const ValueKey<String>('job_seeker_profile_real_name_hotspot'),
+                onTap: onRealNameTap,
+                borderRadius: BorderRadius.circular(16),
+                child: const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: Center(
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Color(0xFFBFBFBF),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          JobSeekerRealNameEntry(
-            isVerified: userViewData.isVerified,
-            onTap: onRealNameTap,
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Row(
@@ -351,6 +337,100 @@ class _ProfileCard extends StatelessWidget {
 
   String _formatPercent(int? value) {
     return '${value ?? 0}%';
+  }
+}
+
+/// 顶部身份信息区：展示昵称、实名状态标签与提示文案。
+class _ProfileIdentity extends StatelessWidget {
+  const _ProfileIdentity({
+    required this.nickname,
+    required this.isVerified,
+  });
+
+  final String nickname;
+  final bool isVerified;
+
+  @override
+  /// 构建昵称与实名状态信息，未实名时展示提示文案，已实名时展示完成状态。
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Flexible(
+              child: Text(
+                nickname,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TestStyle.semibold(fontSize: 20, color: const Color(0xFF262626)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _RealNameBadge(isVerified: isVerified),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          // 关键文案：提示语并入资料卡，和设计稿保持同一信息层级。
+          _buildRealNameHintText(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
+        ),
+      ],
+    );
+  }
+
+  /// 根据实名状态返回顶部资料卡中的提示文案。
+  String _buildRealNameHintText() {
+    return isVerified ? '我的.已完成实名认证'.tr() : '我的.点击去实名认证'.tr();
+  }
+}
+
+/// 实名状态胶囊：未实名显示灰色胶囊，已实名继续复用设计资源底图。
+class _RealNameBadge extends StatelessWidget {
+  const _RealNameBadge({required this.isVerified});
+
+  final bool isVerified;
+
+  @override
+  /// 构建实名状态标签，保持“已实名”和“未实名”两种设计分支。
+  Widget build(BuildContext context) {
+    if (isVerified) {
+      return SizedBox(
+        width: 42,
+        height: 18,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            SvgPicture.asset(
+              JobSeekerMePage._verifiedBadgeBgAsset,
+              fit: BoxFit.fill,
+            ),
+            Center(
+              child: Text(
+                '我的.已实名'.tr(),
+                style: TestStyle.pingFangMedium(fontSize: 10, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F2),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(
+        '我的.未实名'.tr(),
+        style: TestStyle.pingFangMedium(fontSize: 10, color: const Color(0xFF8C8C8C)),
+      ),
+    );
   }
 }
 

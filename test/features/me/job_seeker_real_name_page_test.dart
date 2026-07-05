@@ -38,7 +38,7 @@ void main() {
     await EasyLocalization.ensureInitialized();
   });
 
-  testWidgets('未实名用户会从我的页看到最终提示文案并跳转到实名认证页', (
+  testWidgets('未实名用户点击左侧资料区会从我的页跳转到实名认证页', (
     WidgetTester tester,
   ) async {
     final ProviderContainer container = _createAuthenticatedContainer(
@@ -56,8 +56,8 @@ void main() {
     final Finder realNameEntry = find.text('您还未实名，点击去实名认证');
     expect(realNameEntry, findsOneWidget);
 
-    // 关键验收路径：从“我的”页真实入口点击进入实名认证占位页。
-    await tester.tap(realNameEntry);
+    // 关键验收路径：左侧资料区应进入实名认证页。
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     expect(
@@ -69,7 +69,39 @@ void main() {
     );
   });
 
-  testWidgets('已实名用户会从我的页看到最终提示文案并可进入实名认证页', (
+  testWidgets('未实名用户点击右侧箭头区会从我的页跳转到我的信息页', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildRealNameTestHost(
+        container: container,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final Finder realNameEntry = find.text('您还未实名，点击去实名认证');
+    expect(realNameEntry, findsOneWidget);
+
+    // 关键验收路径：右侧箭头区单独承接“我的信息”跳转。
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_real_name_hotspot')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('我的信息'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('已实名用户仍会展示实名完成文案且左侧资料区可进入实名认证页', (
     WidgetTester tester,
   ) async {
     final ProviderContainer container = _createAuthenticatedContainer(
@@ -85,12 +117,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    final Finder realNameEntry = find.text('已完成实名认证');
-    expect(realNameEntry, findsOneWidget);
+    expect(find.text('已完成实名认证'), findsOneWidget);
     expect(find.text('您还未实名，点击去实名认证'), findsNothing);
 
-    // 已实名场景仍需保持入口可达，避免状态切换后丢失跳转能力。
-    await tester.tap(realNameEntry);
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     expect(
@@ -102,7 +132,7 @@ void main() {
     );
   });
 
-  testWidgets('未实名用户点击实名认证入口会通过生产 routerProvider 进入已注册实名页', (
+  testWidgets('未实名用户点击左侧资料区会通过生产 routerProvider 进入已注册实名页', (
     WidgetTester tester,
   ) async {
     final ProviderContainer container = _createAuthenticatedContainer(
@@ -131,7 +161,7 @@ void main() {
     final Finder realNameEntry = find.text('您还未实名，点击去实名认证');
     expect(realNameEntry, findsOneWidget);
 
-    await tester.tap(realNameEntry);
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     expect(
@@ -159,7 +189,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('同意并提交'));
@@ -233,7 +263,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('real-name-input')), '张三');
@@ -332,7 +362,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('real-name-input')), '张三');
@@ -377,7 +407,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('您还未实名，点击去实名认证'));
+    await tester.tap(find.byKey(const ValueKey<String>('job_seeker_profile_info_hotspot')));
     await tester.pumpAndSettle();
 
     final Finder instructionText = find.text(
@@ -440,6 +470,7 @@ ProviderContainer _createAuthenticatedContainer({required bool isVerified}) {
 Widget _buildRealNameTestHost({
   required ProviderContainer container,
   Widget Function(BuildContext context)? verificationPageBuilder,
+  Widget Function(BuildContext context)? profilePageBuilder,
 }) {
   return UncontrolledProviderScope(
     container: container,
@@ -452,6 +483,7 @@ Widget _buildRealNameTestHost({
       saveLocale: false,
       child: _RealNameTestApp(
         verificationPageBuilder: verificationPageBuilder,
+        profilePageBuilder: profilePageBuilder,
       ),
     ),
   );
@@ -471,9 +503,13 @@ class _TestJsonFileAssetLoader extends AssetLoader {
 
 /// 提供最小可运行的页面宿主，覆盖“我的”页入口到实名认证占位页的真实跳转链路。
 class _RealNameTestApp extends StatelessWidget {
-  const _RealNameTestApp({this.verificationPageBuilder});
+  const _RealNameTestApp({
+    this.verificationPageBuilder,
+    this.profilePageBuilder,
+  });
 
   final Widget Function(BuildContext context)? verificationPageBuilder;
+  final Widget Function(BuildContext context)? profilePageBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -488,6 +524,16 @@ class _RealNameTestApp extends StatelessWidget {
       },
       home: Scaffold(
         body: JobSeekerMePage(
+          onProfileTapOverride: (BuildContext context) {
+            // 关键路径：测试中使用真实 Navigator 验证“我的信息”跳转落页。
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (BuildContext routeContext) =>
+                    profilePageBuilder?.call(routeContext) ??
+                    _buildTestLandingPage(title: '我的信息'),
+              ),
+            );
+          },
           onRealNameEntryTapOverride: (BuildContext context) {
             // 关键路径：测试中使用真实 Navigator 承接页面跳转，稳定验证落页标题。
             Navigator.of(context).push(
@@ -502,6 +548,14 @@ class _RealNameTestApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 生成最小测试落页，统一承接“我的信息”等入口跳转断言。
+Widget _buildTestLandingPage({required String title}) {
+  return Scaffold(
+    appBar: AppBar(title: Text(title)),
+    body: const SizedBox.shrink(),
+  );
 }
 
 /// 从生产 `routerProvider` 中定位实名认证注册路由，避免测试再维护一份自建路由表。
