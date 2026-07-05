@@ -169,82 +169,29 @@ class _JobSeekerRealNameVerificationPageState
       body: SafeArea(
         top: false,
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-          children: <Widget>[
-            _RealNameFormCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _InlineInputRow(
-                    label: '我的.实名认证姓名'.tr(),
-                    controller: _nameController,
-                    fieldKey: const Key('real-name-input'),
-                    errorText: _nameError,
-                  ),
-                  const Divider(height: 1, thickness: 0.5, color: Color(0xFFF0F0F0)),
-                  _InlineInputRow(
-                    label: '我的.实名认证身份证号'.tr(),
-                    controller: _idCardController,
-                    fieldKey: const Key('id-card-input'),
-                    errorText: _idCardError,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '我的.身份证验证'.tr(),
-                    style: TestStyle.regular(
-                      fontSize: 16,
-                      color: const Color(0xFF262626),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '我的.请上传本人的身份证照片'.tr(),
-                    style: TestStyle.regular(
-                      fontSize: 12,
-                      color: const Color(0xFF8C8C8C),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Expanded(
-                        child: _UploadColumn(
-                          cardKey: const Key('id-card-front-upload'),
-                          label: '我的.上传国徽面'.tr(),
-                          placeholderAsset:
-                              'assets/images/qualification_id_emblem.png',
-                          pickedFile: _frontImage,
-                          errorText: _frontImageError,
-                          onTap: () => _pickImage(isFrontSide: true),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: _UploadColumn(
-                          cardKey: const Key('id-card-back-upload'),
-                          label: '我的.上传人像面'.tr(),
-                          placeholderAsset:
-                              'assets/images/qualification_id_portrait.png',
-                          pickedFile: _backImage,
-                          errorText: _backImageError,
-                          onTap: () => _pickImage(isFrontSide: false),
-                        ),
+                      _buildFormCard(),
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildInstructionText(),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '我的.实名认证说明文案'.tr(),
-              style: TestStyle.regular(
-                fontSize: 12,
-                color: const Color(0xFF8C8C8C),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -278,6 +225,84 @@ class _JobSeekerRealNameVerificationPageState
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 构建白色表单卡片内容，集中管理输入区与身份证上传区，避免主构建函数过长。
+  Widget _buildFormCard() {
+    return _RealNameFormCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _InlineInputRow(
+            label: '我的.实名认证姓名'.tr(),
+            controller: _nameController,
+            fieldKey: const Key('real-name-input'),
+            errorText: _nameError,
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0xFFF0F0F0)),
+          _InlineInputRow(
+            label: '我的.实名认证身份证号'.tr(),
+            controller: _idCardController,
+            fieldKey: const Key('id-card-input'),
+            errorText: _idCardError,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            '我的.身份证验证'.tr(),
+            style: TestStyle.regular(
+              fontSize: 16,
+              color: const Color(0xFF262626),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '我的.请上传本人的身份证照片'.tr(),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: const Color(0xFF8C8C8C),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _UploadColumn(
+                  cardKey: const Key('id-card-front-upload'),
+                  label: '我的.上传国徽面'.tr(),
+                  placeholderAsset: 'assets/images/qualification_id_emblem.png',
+                  pickedFile: _frontImage,
+                  errorText: _frontImageError,
+                  onTap: () => _pickImage(isFrontSide: true),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: _UploadColumn(
+                  cardKey: const Key('id-card-back-upload'),
+                  label: '我的.上传人像面'.tr(),
+                  placeholderAsset:
+                      'assets/images/qualification_id_portrait.png',
+                  pickedFile: _backImage,
+                  errorText: _backImageError,
+                  onTap: () => _pickImage(isFrontSide: false),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建底部说明文案，大屏时贴近固定按钮区，小屏时随滚动内容一起向下展开。
+  Widget _buildInstructionText() {
+    return Text(
+      '我的.实名认证说明文案'.tr(),
+      style: TestStyle.regular(
+        fontSize: 12,
+        color: const Color(0xFF8C8C8C),
       ),
     );
   }

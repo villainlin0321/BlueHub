@@ -113,7 +113,15 @@ void main() {
     expect(find.text('请上传身份证人像面'), findsOneWidget);
   });
 
-  testWidgets('实名页会展示 Figma 对齐的说明文案和上传标签', (WidgetTester tester) async {
+  testWidgets('实名页在长屏下会把说明文案压到固定提交区上方', (WidgetTester tester) async {
+    final TestFlutterView view = tester.view;
+    view.devicePixelRatio = 1;
+    view.physicalSize = const Size(375, 1000);
+    addTearDown(() {
+      view.resetPhysicalSize();
+      view.resetDevicePixelRatio();
+    });
+
     final ProviderContainer container = _createAuthenticatedContainer(
       isVerified: false,
     );
@@ -130,17 +138,26 @@ void main() {
     await tester.tap(find.text('您还未实名，点击去实名认证'));
     await tester.pumpAndSettle();
 
+    final Finder instructionText = find.text(
+      '本平台将采集和保存您的身份证照片，并将身份证照片提供至实名核验服务商，用于对您进行身份核验和资质审核',
+    );
+    final Finder submitButton = find.byKey(const Key('real-name-submit-button'));
+
     expect(find.text('姓名'), findsOneWidget);
     expect(find.text('身份证号'), findsOneWidget);
     expect(find.text('身份证验证'), findsOneWidget);
     expect(find.text('上传国徽面'), findsOneWidget);
     expect(find.text('上传人像面'), findsOneWidget);
-    expect(
-      find.text(
-        '本平台将采集和保存您的身份证照片，并将身份证照片提供至实名核验服务商，用于对您进行身份核验和资质审核',
-      ),
-      findsOneWidget,
-    );
+    expect(instructionText, findsOneWidget);
+    expect(submitButton, findsOneWidget);
+
+    final Rect instructionRect = tester.getRect(instructionText);
+    final Rect submitButtonRect = tester.getRect(submitButton);
+    final double verticalGap = submitButtonRect.top - instructionRect.bottom;
+
+    // 关键布局回归保护：长屏下说明文案要贴近固定底部按钮区，而不是停留在表单卡片下方。
+    expect(instructionRect.bottom, lessThan(submitButtonRect.top));
+    expect(verticalGap, lessThanOrEqualTo(48));
   });
 }
 
