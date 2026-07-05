@@ -179,6 +179,10 @@ void main() {
     const phone = '+8613800138000';
     const password = 'P@ssw0rd-For-Test';
     const accessToken = 'token-should-never-appear';
+    const realName = '张三';
+    const idCardNumber = '110101199003047777';
+    const idCardFrontUrl = 'https://example.com/id-card-portrait.png';
+    const idCardBackUrl = 'https://example.com/id-card-emblem.png';
     final interceptor = AppLogInterceptor(enabled: true);
     final options = RequestOptions(
       path: '/profile',
@@ -188,6 +192,10 @@ void main() {
           'email': email,
           'phone': phone,
         },
+        'realName': realName,
+        'idCardNumber': idCardNumber,
+        'idCardFrontUrl': idCardFrontUrl,
+        'idCardBackUrl': idCardBackUrl,
         'password': password,
         'tokens': <Object?>[
           <String, Object?>{'accessToken': accessToken},
@@ -214,7 +222,10 @@ void main() {
           statusCode: 401,
           data: <String, Object?>{
             'token': accessToken,
+            'idCardNumber': idCardNumber,
+            'idCardFrontUrl': idCardFrontUrl,
             'user': <String, Object?>{
+              'realName': realName,
               'email': email,
               'phone': phone,
             },
@@ -259,11 +270,22 @@ void main() {
     expect(failContext['response'], isA<Map>());
     expect(requestProfile['email'], '***');
     expect(requestProfile['phone'], '***');
+    expect(requestBody['realName'], '***');
+    expect(requestBody['idCardNumber'], '***');
+    expect(requestBody['idCardFrontUrl'], '***');
+    expect(requestBody['idCardBackUrl'], '***');
     expect(requestBody['password'], '***');
     expect(requestTokenItem['accessToken'], '***');
     expect(responseBody['token'], '***');
+    expect(responseBody['idCardNumber'], '***');
+    expect(responseBody['idCardFrontUrl'], '***');
+    expect(responseUser['realName'], '***');
     expect(responseUser['email'], '***');
     expect(responseUser['phone'], '***');
+    expect(rawLogContent, isNot(contains(realName)));
+    expect(rawLogContent, isNot(contains(idCardNumber)));
+    expect(rawLogContent, isNot(contains(idCardFrontUrl)));
+    expect(rawLogContent, isNot(contains(idCardBackUrl)));
     expect(rawLogContent, isNot(contains(email)));
     expect(rawLogContent, isNot(contains(phone)));
     expect(rawLogContent, isNot(contains(password)));

@@ -950,6 +950,7 @@
     "实名认证说明文案": "This platform will collect and store your ID card photos, and provide them to the identity verification service provider for identity verification and qualification review.",
     "实名认证提交": "Agree and Submit",
     "实名认证提交成功": "Identity verification submitted successfully",
+    "实名认证提交成功但资料刷新失败": "Identity verification submitted successfully, but profile refresh failed. Please re-enter later to check.",
     "实名认证提交失败": "Failed to submit identity verification. Please try again later.",
     "请填写姓名": "Please enter your name",
     "请填写身份证号": "Please enter your ID card number",

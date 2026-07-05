@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:europepass/app/router/route_paths.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:europepass/features/auth/application/auth_session_provider.dart';
@@ -25,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -99,6 +101,48 @@ void main() {
     );
   });
 
+  testWidgets('未实名用户点击实名认证入口会通过真实 GoRouter 进入已注册实名页', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = _createAuthenticatedContainer(
+      isVerified: false,
+    );
+    final GoRouter router = _buildRealNameTestRouter();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      router.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      _buildGoRouterRealNameTestHost(
+        container: container,
+        router: router,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final Finder realNameEntry = find.text('您还未实名，点击去实名认证');
+    expect(realNameEntry, findsOneWidget);
+
+    await tester.tap(realNameEntry);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('实名认证'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      router.state.uri.toString(),
+      RoutePaths.jobSeekerRealNameVerification,
+    );
+  });
+
   testWidgets('实名页缺少必填项时会提示并阻止提交', (WidgetTester tester) async {
     final ProviderContainer container = _createAuthenticatedContainer(
       isVerified: false,
@@ -125,20 +169,20 @@ void main() {
     expect(find.text('请上传身份证人像面'), findsOneWidget);
   });
 
-  testWidgets('实名表单完整提交时会先上传本地身份证图片再调用实名接口', (
+  testWidgets('实名表单完整提交时会按后端契约提交人像面 front 与国徽面 back', (
     WidgetTester tester,
   ) async {
     final _FakeRealNameUserService userService = _FakeRealNameUserService();
     final _FakeRealNameFileService fileService = _FakeRealNameFileService(
       uploadedUrlsByPath: <String, String>{
-        '/tmp/front.png': 'https://example.com/front-uploaded.png',
-        '/tmp/back.png': 'https://example.com/back-uploaded.png',
+        '/tmp/emblem.png': 'https://example.com/emblem-uploaded.png',
+        '/tmp/portrait.png': 'https://example.com/portrait-uploaded.png',
       },
     );
     final _FakeImagePicker imagePicker = _FakeImagePicker(
       files: <PickedUploadFile>[
-        _buildPickedUploadFile(name: 'front.png', path: '/tmp/front.png'),
-        _buildPickedUploadFile(name: 'back.png', path: '/tmp/back.png'),
+        _buildPickedUploadFile(name: 'emblem.png', path: '/tmp/emblem.png'),
+        _buildPickedUploadFile(name: 'portrait.png', path: '/tmp/portrait.png'),
       ],
     );
     final ProviderContainer container = ProviderContainer(
@@ -191,9 +235,9 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('real-name-input')), '张三');
     await tester.enterText(find.byKey(const Key('id-card-input')), '110101199003047777');
-    await tester.tap(find.byKey(const Key('id-card-front-upload')));
+    await tester.tap(find.byKey(const Key('id-card-emblem-upload')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('id-card-back-upload')));
+    await tester.tap(find.byKey(const Key('id-card-portrait-upload')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('real-name-submit-button')));
@@ -207,18 +251,18 @@ void main() {
     );
     expect(
       userService.lastRealNameRequest?.idCardFrontUrl,
-      'https://example.com/front-uploaded.png',
+      'https://example.com/portrait-uploaded.png',
     );
     expect(
       userService.lastRealNameRequest?.idCardBackUrl,
-      'https://example.com/back-uploaded.png',
+      'https://example.com/emblem-uploaded.png',
     );
-    expect(fileService.uploadedPaths, <String>['/tmp/front.png', '/tmp/back.png']);
+    expect(fileService.uploadedPaths, <String>['/tmp/emblem.png', '/tmp/portrait.png']);
     expect(container.read(authSessionProvider).user?.isVerified, isTrue);
     expect(find.text('已完成实名认证'), findsOneWidget);
   });
 
-  testWidgets('实名提交后刷新 `/users/me` 失败时不会清空登录态也不会按成功路径返回', (
+  testWidgets('实名提交成功后即使刷新 `/users/me` 失败也会返回并提示真实语义', (
     WidgetTester tester,
   ) async {
     final _FakeRealNameUserService userService = _FakeRealNameUserService(
@@ -226,14 +270,14 @@ void main() {
     );
     final _FakeRealNameFileService fileService = _FakeRealNameFileService(
       uploadedUrlsByPath: <String, String>{
-        '/tmp/front.png': 'https://example.com/front-uploaded.png',
-        '/tmp/back.png': 'https://example.com/back-uploaded.png',
+        '/tmp/emblem.png': 'https://example.com/emblem-uploaded.png',
+        '/tmp/portrait.png': 'https://example.com/portrait-uploaded.png',
       },
     );
     final _FakeImagePicker imagePicker = _FakeImagePicker(
       files: <PickedUploadFile>[
-        _buildPickedUploadFile(name: 'front.png', path: '/tmp/front.png'),
-        _buildPickedUploadFile(name: 'back.png', path: '/tmp/back.png'),
+        _buildPickedUploadFile(name: 'emblem.png', path: '/tmp/emblem.png'),
+        _buildPickedUploadFile(name: 'portrait.png', path: '/tmp/portrait.png'),
       ],
     );
     final List<String> toastMessages = <String>[];
@@ -289,22 +333,22 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('real-name-input')), '张三');
     await tester.enterText(find.byKey(const Key('id-card-input')), '110101199003047777');
-    await tester.tap(find.byKey(const Key('id-card-front-upload')));
+    await tester.tap(find.byKey(const Key('id-card-emblem-upload')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('id-card-back-upload')));
+    await tester.tap(find.byKey(const Key('id-card-portrait-upload')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('real-name-submit-button')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
     expect(container.read(authSessionProvider).isAuthenticated, isTrue);
     expect(container.read(authSessionProvider).user?.isVerified, isFalse);
-    expect(find.byKey(const Key('real-name-submit-button')), findsOneWidget);
+    expect(find.byKey(const Key('real-name-submit-button')), findsNothing);
     expect(find.text('已完成实名认证'), findsNothing);
     expect(toastMessages, isNotEmpty);
-    expect(toastMessages.last, contains('实名认证提交失败'));
-    expect(toastMessages, isNot(contains('实名认证提交成功')));
+    expect(toastMessages.last, '实名认证提交成功，但资料刷新失败，请稍后重新进入查看');
+    expect(toastMessages, isNot(contains('实名认证提交失败，请稍后重试')));
   });
 
   testWidgets('实名页在长屏下会把说明文案压到固定提交区上方', (WidgetTester tester) async {
@@ -409,6 +453,45 @@ Widget _buildRealNameTestHost({
   );
 }
 
+/// 构建使用真实 `GoRouter` 的测试宿主，覆盖入口点击到路由注册的完整链路。
+Widget _buildGoRouterRealNameTestHost({
+  required ProviderContainer container,
+  required GoRouter router,
+}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: EasyLocalization(
+      supportedLocales: AppLocales.supported,
+      path: 'assets/translations',
+      assetLoader: const _TestJsonFileAssetLoader(),
+      fallbackLocale: AppLocales.chinese,
+      startLocale: AppLocales.chinese,
+      saveLocale: false,
+      child: _GoRouterRealNameTestApp(router: router),
+    ),
+  );
+}
+
+/// 构建测试专用 GoRouter，避免手动 push 绕过求职者“我的”页到实名页的真实跳转链。
+GoRouter _buildRealNameTestRouter() {
+  return GoRouter(
+    initialLocation: RoutePaths.me,
+    routes: <RouteBase>[
+      GoRoute(
+        path: RoutePaths.me,
+        builder: (BuildContext context, GoRouterState state) => const Scaffold(
+          body: JobSeekerMePage(),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.jobSeekerRealNameVerification,
+        builder: (BuildContext context, GoRouterState state) =>
+            const JobSeekerRealNameVerificationPage(),
+      ),
+    ],
+  );
+}
+
 /// 测试环境直接从仓库读取翻译文件，避免 widget test 里资源 Bundle 未挂起导致空白页。
 class _TestJsonFileAssetLoader extends AssetLoader {
   const _TestJsonFileAssetLoader();
@@ -418,6 +501,28 @@ class _TestJsonFileAssetLoader extends AssetLoader {
     final File file = File('${Directory.current.path}/$path/${locale.languageCode}.json');
     final String content = file.readAsStringSync();
     return jsonDecode(content) as Map<String, dynamic>;
+  }
+}
+
+/// 通过真实 `GoRouter` 渲染应用外壳，避免测试宿主手动 push 绕过路由注册链。
+class _GoRouterRealNameTestApp extends StatelessWidget {
+  const _GoRouterRealNameTestApp({required this.router});
+
+  final GoRouter router;
+
+  @override
+  Widget build(BuildContext context) {
+    AppToast.configure();
+    return MaterialApp.router(
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
+      routerConfig: router,
+      builder: (BuildContext context, Widget? child) {
+        final TransitionBuilder easyLoadingBuilder = EasyLoading.init();
+        return easyLoadingBuilder(context, child ?? const SizedBox.shrink());
+      },
+    );
   }
 }
 

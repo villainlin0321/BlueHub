@@ -40,14 +40,14 @@ class _JobSeekerRealNameVerificationPageState
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _idCardController = TextEditingController();
 
-  PickedUploadFile? _frontImage;
-  PickedUploadFile? _backImage;
+  PickedUploadFile? _emblemImage;
+  PickedUploadFile? _portraitImage;
   bool _isSubmitting = false;
 
   String? _nameError;
   String? _idCardError;
-  String? _frontImageError;
-  String? _backImageError;
+  String? _emblemImageError;
+  String? _portraitImageError;
 
   @override
   /// 初始化输入监听：用户开始修正内容后，及时清理对应的错误提示。
@@ -95,23 +95,23 @@ class _JobSeekerRealNameVerificationPageState
     final String? nextIdCardError = _idCardController.text.trim().isEmpty
         ? '我的.请填写身份证号'.tr()
         : null;
-    final String? nextFrontImageError =
-        _frontImage == null ? '我的.请上传身份证国徽面'.tr() : null;
-    final String? nextBackImageError =
-        _backImage == null ? '我的.请上传身份证人像面'.tr() : null;
+    final String? nextEmblemImageError =
+        _emblemImage == null ? '我的.请上传身份证国徽面'.tr() : null;
+    final String? nextPortraitImageError =
+        _portraitImage == null ? '我的.请上传身份证人像面'.tr() : null;
 
     // 点击提交后统一刷新所有错误状态，确保用户和测试都能看到稳定反馈。
     setState(() {
       _nameError = nextNameError;
       _idCardError = nextIdCardError;
-      _frontImageError = nextFrontImageError;
-      _backImageError = nextBackImageError;
+      _emblemImageError = nextEmblemImageError;
+      _portraitImageError = nextPortraitImageError;
     });
 
     return nextNameError == null &&
         nextIdCardError == null &&
-        nextFrontImageError == null &&
-        nextBackImageError == null;
+        nextEmblemImageError == null &&
+        nextPortraitImageError == null;
   }
 
   /// 提交实名认证信息，并在成功后刷新当前登录用户资料。
@@ -124,20 +124,19 @@ class _JobSeekerRealNameVerificationPageState
       _isSubmitting = true;
     });
     try {
-      final PickedUploadFile uploadedFrontImage = await _uploadIdCardImageIfNeeded(
-        isFrontSide: true,
+      final PickedUploadFile uploadedEmblemImage = await _uploadIdCardImageIfNeeded(
+        isEmblemSide: true,
       );
-      final PickedUploadFile uploadedBackImage = await _uploadIdCardImageIfNeeded(
-        isFrontSide: false,
+      final PickedUploadFile uploadedPortraitImage =
+          await _uploadIdCardImageIfNeeded(
+        isEmblemSide: false,
       );
 
-      // 关键提交：只使用当前表单与已上传图片地址组装真实请求体。
+      // 关键提交：沿用现有接口契约，不改字段名，只修正页面语义与 front/back 的映射关系。
       await ref.read(userServiceProvider).realNameVerify(
-        request: RealNameVerifyBO(
-          realName: _nameController.text.trim(),
-          idCardNumber: _idCardController.text.trim(),
-          idCardFrontUrl: uploadedFrontImage.uploadedFileUrl!.trim(),
-          idCardBackUrl: uploadedBackImage.uploadedFileUrl!.trim(),
+        request: _buildRealNameVerifyRequest(
+          uploadedEmblemImage: uploadedEmblemImage,
+          uploadedPortraitImage: uploadedPortraitImage,
         ),
       );
       final authSession = ref.read(authSessionProvider);
@@ -151,13 +150,7 @@ class _JobSeekerRealNameVerificationPageState
       if (!mounted) {
         return;
       }
-      if (!refreshed) {
-        await _showToast('我的.实名认证提交失败'.tr());
-        return;
-      }
-      final NavigatorState navigator = Navigator.of(context);
-      await _showToast('我的.实名认证提交成功'.tr());
-      navigator.pop(true);
+      await _handleSubmitSuccess(refreshed: refreshed);
     } catch (error) {
       if (!mounted) {
         return;
@@ -174,9 +167,9 @@ class _JobSeekerRealNameVerificationPageState
 
   /// 确保身份证图片在实名提交前已经上传到文件服务，并把远端地址回写到当前页面状态。
   Future<PickedUploadFile> _uploadIdCardImageIfNeeded({
-    required bool isFrontSide,
+    required bool isEmblemSide,
   }) async {
-    final PickedUploadFile targetFile = isFrontSide ? _frontImage! : _backImage!;
+    final PickedUploadFile targetFile = isEmblemSide ? _emblemImage! : _portraitImage!;
     final String remoteUrl = (targetFile.uploadedFileUrl ?? '').trim();
     if (remoteUrl.isNotEmpty) {
       return targetFile;
@@ -196,10 +189,10 @@ class _JobSeekerRealNameVerificationPageState
     );
     if (mounted) {
       setState(() {
-        if (isFrontSide) {
-          _frontImage = uploadedFile;
+        if (isEmblemSide) {
+          _emblemImage = uploadedFile;
         } else {
-          _backImage = uploadedFile;
+          _portraitImage = uploadedFile;
         }
       });
     }
@@ -207,7 +200,7 @@ class _JobSeekerRealNameVerificationPageState
   }
 
   /// 选择身份证图片并更新本地展示状态，默认沿用现有上传工具，也允许测试注入替身。
-  Future<void> _pickImage({required bool isFrontSide}) async {
+  Future<void> _pickImage({required bool isEmblemSide}) async {
     final RealNameImagePicker picker =
         widget.pickImages ??
         (BuildContext context) =>
@@ -223,14 +216,39 @@ class _JobSeekerRealNameVerificationPageState
       orElse: () => images.first,
     );
     setState(() {
-      if (isFrontSide) {
-        _frontImage = pickedFile;
-        _frontImageError = null;
+      if (isEmblemSide) {
+        _emblemImage = pickedFile;
+        _emblemImageError = null;
       } else {
-        _backImage = pickedFile;
-        _backImageError = null;
+        _portraitImage = pickedFile;
+        _portraitImageError = null;
       }
     });
+  }
+
+  /// 按现有后端字段契约组装实名请求，明确 front=人像面、back=国徽面。
+  RealNameVerifyBO _buildRealNameVerifyRequest({
+    required PickedUploadFile uploadedEmblemImage,
+    required PickedUploadFile uploadedPortraitImage,
+  }) {
+    return RealNameVerifyBO(
+      realName: _nameController.text.trim(),
+      idCardNumber: _idCardController.text.trim(),
+      idCardFrontUrl: uploadedPortraitImage.uploadedFileUrl!.trim(),
+      idCardBackUrl: uploadedEmblemImage.uploadedFileUrl!.trim(),
+    );
+  }
+
+  /// 在实名接口成功后统一处理反馈；资料刷新失败时也保持成功返回语义。
+  Future<void> _handleSubmitSuccess({required bool refreshed}) async {
+    final String message = refreshed
+        ? '我的.实名认证提交成功'.tr()
+        : '我的.实名认证提交成功但资料刷新失败'.tr();
+    await _showToast(message);
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop(true);
   }
 
   /// 统一分发页面提示，生产默认走全局 Toast，测试可注入空实现避免动画干扰。
@@ -376,24 +394,24 @@ class _JobSeekerRealNameVerificationPageState
             children: <Widget>[
               Expanded(
                 child: _UploadColumn(
-                  cardKey: const Key('id-card-front-upload'),
+                  cardKey: const Key('id-card-emblem-upload'),
                   label: '我的.上传国徽面'.tr(),
                   placeholderAsset: 'assets/images/qualification_id_emblem.png',
-                  pickedFile: _frontImage,
-                  errorText: _frontImageError,
-                  onTap: () => _pickImage(isFrontSide: true),
+                  pickedFile: _emblemImage,
+                  errorText: _emblemImageError,
+                  onTap: () => _pickImage(isEmblemSide: true),
                 ),
               ),
               const SizedBox(width: 9),
               Expanded(
                 child: _UploadColumn(
-                  cardKey: const Key('id-card-back-upload'),
+                  cardKey: const Key('id-card-portrait-upload'),
                   label: '我的.上传人像面'.tr(),
                   placeholderAsset:
                       'assets/images/qualification_id_portrait.png',
-                  pickedFile: _backImage,
-                  errorText: _backImageError,
-                  onTap: () => _pickImage(isFrontSide: false),
+                  pickedFile: _portraitImage,
+                  errorText: _portraitImageError,
+                  onTap: () => _pickImage(isEmblemSide: false),
                 ),
               ),
             ],
