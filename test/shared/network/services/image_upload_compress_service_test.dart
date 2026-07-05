@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:europepass/shared/network/services/image_upload_compress_service.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -159,12 +160,58 @@ void main() {
     expect(payload.fileSize, 4);
     expect(payload.bytes, <int>[1, 3, 5, 7]);
   });
+
+  test('PNG 图片压缩后保留 image/png MIME 并使用 PNG 输出格式', () async {
+    final engine = _RecordingCompressionEngine(
+      resultBytes: Uint8List.fromList(<int>[8, 6, 7, 5, 3, 0, 9]),
+    );
+    final service = ImageUploadCompressService(
+      engine: engine,
+      readImageInfo: (_) async =>
+          const ImageInfoForCompress(width: 4000, height: 3000),
+      readFileBytes: (_) async => Uint8List.fromList(<int>[1, 2, 3, 4, 5]),
+    );
+
+    final payload = await service.prepareForUpload(
+      filePath: '/tmp/demo.png',
+      mimeType: 'image/png',
+    );
+
+    expect(engine.callCount, 1);
+    expect(engine.lastFormat, CompressFormat.png);
+    expect(payload.isImage, true);
+    expect(payload.isCompressed, true);
+    expect(payload.mimeType, 'image/png');
+    expect(payload.bytes, <int>[8, 6, 7, 5, 3, 0, 9]);
+  });
+
+  test('WEBP 图片保守跳过压缩并保留原始内容', () async {
+    final engine = _TrackingCompressionEngine();
+    final service = ImageUploadCompressService(
+      engine: engine,
+      readImageInfo: (_) async =>
+          const ImageInfoForCompress(width: 2000, height: 1200),
+      readFileBytes: (_) async => Uint8List.fromList(<int>[2, 4, 6, 8]),
+    );
+
+    final payload = await service.prepareForUpload(
+      filePath: '/tmp/demo.webp',
+      mimeType: 'image/webp',
+    );
+
+    expect(engine.callCount, 0);
+    expect(payload.isImage, true);
+    expect(payload.isCompressed, false);
+    expect(payload.mimeType, 'image/webp');
+    expect(payload.bytes, <int>[2, 4, 6, 8]);
+  });
 }
 
 class _FakeCompressionEngine implements ImageCompressionEngine {
   @override
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
@@ -182,6 +229,7 @@ class _SequenceCompressionEngine implements ImageCompressionEngine {
   @override
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
@@ -199,6 +247,7 @@ class _TrackingCompressionEngine implements ImageCompressionEngine {
   @override
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
@@ -212,10 +261,32 @@ class _ThrowingCompressionEngine implements ImageCompressionEngine {
   @override
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
   }) {
     throw StateError('compression failed');
+  }
+}
+
+class _RecordingCompressionEngine implements ImageCompressionEngine {
+  _RecordingCompressionEngine({required this.resultBytes});
+
+  final Uint8List resultBytes;
+  int callCount = 0;
+  CompressFormat? lastFormat;
+
+  @override
+  Future<Uint8List?> compress({
+    required String path,
+    required CompressFormat format,
+    required int quality,
+    required int minWidth,
+    required int minHeight,
+  }) async {
+    callCount += 1;
+    lastFormat = format;
+    return resultBytes;
   }
 }

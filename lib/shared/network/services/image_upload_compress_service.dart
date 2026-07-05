@@ -32,6 +32,7 @@ class ImageInfoForCompress {
 abstract class ImageCompressionEngine {
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
@@ -42,17 +43,18 @@ class FlutterImageCompressionEngine implements ImageCompressionEngine {
   @override
   Future<Uint8List?> compress({
     required String path,
+    required CompressFormat format,
     required int quality,
     required int minWidth,
     required int minHeight,
   }) {
     return FlutterImageCompress.compressWithFile(
       path,
-      format: CompressFormat.jpeg,
+      format: format,
       quality: quality,
       minWidth: minWidth,
       minHeight: minHeight,
-      keepExif: true,
+      keepExif: format == CompressFormat.jpeg,
     );
   }
 }
@@ -70,15 +72,21 @@ class ImageUploadCompressService {
   static const int maxShortSide = 1080;
   static const int maxUploadImageSize = 10 * 1024 * 1024;
   static const List<int> qualitySteps = <int>[80, 70, 60, 50, 40];
-  static const Set<String> _compressibleMimeSubtypes = <String>{
-    'jpg',
-    'jpeg',
-    'png',
-    'webp',
-    'bmp',
-    'heic',
-    'heif',
-  };
+  static const Map<String, _SafeCompressionTarget> _safeCompressionTargets =
+      <String, _SafeCompressionTarget>{
+        'jpg': _SafeCompressionTarget(
+          format: CompressFormat.jpeg,
+          mimeType: 'image/jpeg',
+        ),
+        'jpeg': _SafeCompressionTarget(
+          format: CompressFormat.jpeg,
+          mimeType: 'image/jpeg',
+        ),
+        'png': _SafeCompressionTarget(
+          format: CompressFormat.png,
+          mimeType: 'image/png',
+        ),
+      };
 
   final ImageCompressionEngine _engine;
   final Future<Uint8List> Function(String path) _readFileBytes;
@@ -117,11 +125,15 @@ class ImageUploadCompressService {
     required String mimeType,
   }) async {
     final Uint8List originalBytes = await _readFileBytes(filePath);
-    if (!_shouldCompress(mimeType: mimeType)) {
+    final _SafeCompressionTarget? compressionTarget = _resolveCompressionTarget(
+      mimeType: mimeType,
+    );
+    final bool isImage = _isImageMimeType(mimeType);
+    if (compressionTarget == null) {
       return _buildOriginalPayload(
         mimeType: mimeType,
         originalBytes: originalBytes,
-        isImage: mimeType.startsWith('image/'),
+        isImage: isImage,
       );
     }
 
@@ -147,6 +159,7 @@ class ImageUploadCompressService {
       try {
         compressed = await _engine.compress(
           path: filePath,
+          format: compressionTarget.format,
           quality: quality,
           minWidth: target.width,
           minHeight: target.height,
@@ -165,7 +178,7 @@ class ImageUploadCompressService {
       if (compressed.length <= maxUploadImageSize) {
         return PreparedUploadPayload(
           bytes: compressed,
-          mimeType: 'image/jpeg',
+          mimeType: compressionTarget.mimeType,
           fileSize: compressed.length,
           isImage: true,
           isCompressed: true,
@@ -177,7 +190,7 @@ class ImageUploadCompressService {
     final List<int> finalBytes = lastBytes ?? originalBytes;
     return PreparedUploadPayload(
       bytes: finalBytes,
-      mimeType: lastBytes == null ? mimeType : 'image/jpeg',
+      mimeType: lastBytes == null ? mimeType : compressionTarget.mimeType,
       fileSize: finalBytes.length,
       isImage: true,
       isCompressed: lastBytes != null,
@@ -185,19 +198,29 @@ class ImageUploadCompressService {
     );
   }
 
-  bool _shouldCompress({required String mimeType}) {
-    if (!mimeType.startsWith('image/')) {
-      return false;
+  _SafeCompressionTarget? _resolveCompressionTarget({
+    required String mimeType,
+  }) {
+    final String normalizedMimeType = _normalizeMimeType(mimeType);
+    if (!_isImageMimeType(normalizedMimeType)) {
+      return null;
     }
 
-    final String normalizedMimeType = mimeType.toLowerCase().split(';').first;
     final int slashIndex = normalizedMimeType.indexOf('/');
     if (slashIndex < 0 || slashIndex == normalizedMimeType.length - 1) {
-      return false;
+      return null;
     }
 
     final String subtype = normalizedMimeType.substring(slashIndex + 1);
-    return _compressibleMimeSubtypes.contains(subtype);
+    return _safeCompressionTargets[subtype];
+  }
+
+  bool _isImageMimeType(String mimeType) {
+    return _normalizeMimeType(mimeType).startsWith('image/');
+  }
+
+  String _normalizeMimeType(String mimeType) {
+    return mimeType.toLowerCase().split(';').first.trim();
   }
 
   PreparedUploadPayload _buildOriginalPayload({
@@ -237,4 +260,11 @@ class ImageUploadCompressService {
       return null;
     }
   }
+}
+
+class _SafeCompressionTarget {
+  const _SafeCompressionTarget({required this.format, required this.mimeType});
+
+  final CompressFormat format;
+  final String mimeType;
 }
