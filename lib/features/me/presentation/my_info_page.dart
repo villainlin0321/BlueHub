@@ -38,6 +38,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   bool _isSubmitting = false;
   String? _localAvatarPreviewPath;
+  late Future<RealNameVerificationVO?> _latestRealNameVerificationFuture;
 
   /// 返回性别选择项，运行时读取国际化文案。
   List<SelectableSheetOption<String>> get _genderOptions =>
@@ -46,6 +47,12 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
         SelectableSheetOption<String>(value: 'female', label: '我的.女'.tr()),
         SelectableSheetOption<String>(value: 'unknown', label: '我的.未完善'.tr()),
       ];
+
+  @override
+  void initState() {
+    super.initState();
+    _latestRealNameVerificationFuture = _loadLatestRealNameVerification();
+  }
 
   @override
   /// 构建“我的信息”页面，并根据当前登录态刷新展示内容。
@@ -98,11 +105,24 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
                             thickness: 1,
                             color: Color(0xFFF0F0F0),
                           ),
-                          _InfoValueRow(
-                            key: const Key('my-info-real-name-row'),
-                            label: '我的.实名认证'.tr(),
-                            value: userViewData.realNameText,
-                            onTap: _handleRealNameTap,
+                          FutureBuilder<RealNameVerificationVO?>(
+                            future: _latestRealNameVerificationFuture,
+                            builder:
+                                (
+                                  BuildContext context,
+                                  AsyncSnapshot<RealNameVerificationVO?>
+                                  snapshot,
+                                ) {
+                                  return _InfoValueRow(
+                                    key: const Key('my-info-real-name-row'),
+                                    label: '我的.实名认证'.tr(),
+                                    value: _mapRealNameRowValue(
+                                      record: snapshot.data,
+                                      fallback: userViewData.realNameText,
+                                    ),
+                                    onTap: _handleRealNameTap,
+                                  );
+                                },
                           ),
                           const Divider(
                             height: 1,
@@ -235,8 +255,85 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
   }
 
   /// 进入实名认证页面，沿用既有路由。
-  void _handleRealNameTap() {
-    context.push(RoutePaths.jobSeekerRealNameVerification);
+  Future<void> _handleRealNameTap() async {
+    await context.push(RoutePaths.jobSeekerRealNameVerification);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _latestRealNameVerificationFuture = _loadLatestRealNameVerification();
+    });
+  }
+
+  Future<RealNameVerificationVO?> _loadLatestRealNameVerification() async {
+    try {
+      final List<RealNameVerificationVO> records = await ref
+          .read(userServiceProvider)
+          .listMyRealNameVerifications();
+      if (records.isEmpty) {
+        return null;
+      }
+      final List<RealNameVerificationVO> sorted = <RealNameVerificationVO>[
+        ...records,
+      ]..sort(_compareRealNameVerificationRecord);
+      return sorted.first;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static int _compareRealNameVerificationRecord(
+    RealNameVerificationVO left,
+    RealNameVerificationVO right,
+  ) {
+    final DateTime? rightTime = _resolveRealNameRecordTime(right);
+    final DateTime? leftTime = _resolveRealNameRecordTime(left);
+    if (rightTime != null && leftTime != null) {
+      final int timeCompare = rightTime.compareTo(leftTime);
+      if (timeCompare != 0) {
+        return timeCompare;
+      }
+    } else if (rightTime != null) {
+      return 1;
+    } else if (leftTime != null) {
+      return -1;
+    }
+    return right.verifyId.compareTo(left.verifyId);
+  }
+
+  static DateTime? _resolveRealNameRecordTime(RealNameVerificationVO record) {
+    final List<String> candidates = <String>[
+      record.updatedAt,
+      record.reviewedAt,
+      record.createdAt,
+    ];
+    for (final String value in candidates) {
+      final DateTime? parsed = DateTime.tryParse(value.trim());
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  static String _mapRealNameRowValue({
+    required RealNameVerificationVO? record,
+    required String fallback,
+  }) {
+    if (record == null) {
+      return fallback;
+    }
+    switch (record.status.trim().toLowerCase()) {
+      case 'verified':
+        final String realName = record.realName.trim();
+        return realName.isEmpty ? '我的.已完成实名认证'.tr() : realName;
+      case 'pending':
+        return '我的.认证中'.tr();
+      case 'unverified':
+      case 'rejected':
+      default:
+        return '我的.未实名'.tr();
+    }
   }
 
   /// 打开生日选择器，并把结果回写到用户资料。
@@ -556,27 +653,16 @@ class _InfoValueRow extends StatelessWidget {
     required this.value,
     this.valueColor = const Color(0xFF8C8C8C),
     this.onTap,
-    this.showChevron = true,
   });
 
   final String label;
   final String value;
   final Color valueColor;
   final VoidCallback? onTap;
-  final bool showChevron;
 
   @override
   /// 构建基础资料行，支持可点击编辑和只读展示两种状态。
   Widget build(BuildContext context) {
-    final Widget trailing = showChevron
-        ? const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox(width: 4),
-              Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
-            ],
-          )
-        : const SizedBox.shrink();
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -600,7 +686,13 @@ class _InfoValueRow extends StatelessWidget {
                 ),
               ),
             ),
-            trailing,
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
+              ],
+            ),
           ],
         ),
       ),

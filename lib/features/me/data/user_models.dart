@@ -114,6 +114,66 @@ class RealNameVerifyBO {
   }
 }
 
+class RealNameVerificationVO {
+  const RealNameVerificationVO({
+    required this.verifyId,
+    required this.realName,
+    required this.idCardNumber,
+    required this.idCardFront,
+    required this.idCardBack,
+    required this.status,
+    required this.statusLabel,
+    required this.rejectReason,
+    required this.createdAt,
+    required this.reviewedAt,
+    required this.updatedAt,
+  });
+
+  final int verifyId;
+  final String realName;
+  final String idCardNumber;
+  final String idCardFront;
+  final String idCardBack;
+  final String status;
+  final String statusLabel;
+  final String rejectReason;
+  final String createdAt;
+  final String reviewedAt;
+  final String updatedAt;
+
+  factory RealNameVerificationVO.fromJson(JsonMap json) {
+    return RealNameVerificationVO(
+      verifyId: readInt(json, 'verifyId'),
+      realName: readString(json, 'realName'),
+      idCardNumber: readString(json, 'idCardNumber'),
+      idCardFront: readString(json, 'idCardFront'),
+      idCardBack: readString(json, 'idCardBack'),
+      status: readString(json, 'status'),
+      statusLabel: readString(json, 'statusLabel'),
+      rejectReason: readString(json, 'rejectReason'),
+      createdAt: readString(json, 'createdAt'),
+      reviewedAt: readString(json, 'reviewedAt'),
+      updatedAt: readString(json, 'updatedAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'verifyId': verifyId,
+      'realName': realName,
+      'idCardNumber': idCardNumber,
+      'idCardFront': idCardFront,
+      'idCardBack': idCardBack,
+      'status': status,
+      'statusLabel': statusLabel,
+      'rejectReason': rejectReason,
+      'createdAt': createdAt,
+      'reviewedAt': reviewedAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
 class SwitchRoleBO {
   const SwitchRoleBO({required this.role});
 

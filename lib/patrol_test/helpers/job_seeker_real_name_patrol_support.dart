@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/files/data/file_models.dart';
 import '../../features/me/data/user_models.dart';
-import '../../shared/network/api_client.dart';
 import '../../shared/network/services/file_service.dart';
 import '../../shared/network/services/user_service.dart';
 import '../../utils/upload_picker_utils.dart';
@@ -125,10 +124,7 @@ final jobSeekerRealNamePatrolSupportProvider =
 
 /// Patrol 实名文件服务替身：身份证图片上传直接返回伪远端地址，其他场景走真实实现。
 class PatrolRealNameFileService extends FileService {
-  PatrolRealNameFileService({
-    required ApiClient apiClient,
-    required this.support,
-  }) : super(apiClient: apiClient);
+  PatrolRealNameFileService({required super.apiClient, required this.support});
 
   final JobSeekerRealNamePatrolSupport support;
 
@@ -156,10 +152,10 @@ class PatrolRealNameFileService extends FileService {
 
 /// Patrol 实名用户服务替身：实名提交成功后，把后续 `getMe()` 结果切换为已实名。
 class PatrolRealNameUserService extends UserService {
-  PatrolRealNameUserService({required ApiClient apiClient})
-    : super(apiClient: apiClient);
+  PatrolRealNameUserService({required super.apiClient});
 
   UserVO? _verifiedUser;
+  RealNameVerificationVO? _latestVerification;
 
   @override
   /// 实名提交后不调用真实接口，直接记录已实名快照供刷新当前用户资料时回读。
@@ -176,8 +172,22 @@ class PatrolRealNameUserService extends UserService {
       role: profile.role,
       currentLocation: profile.currentLocation,
       isVerified: true,
+      realName: request.realName,
       blacklistCount: profile.blacklistCount,
       createdAt: profile.createdAt,
+    );
+    _latestVerification = RealNameVerificationVO(
+      verifyId: 1,
+      realName: request.realName,
+      idCardNumber: '******************',
+      idCardFront: request.idCardFrontUrl,
+      idCardBack: request.idCardBackUrl,
+      status: 'verified',
+      statusLabel: '已完成实名认证',
+      rejectReason: '',
+      createdAt: '2026-01-01T00:00:00Z',
+      reviewedAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
     );
   }
 
@@ -185,5 +195,13 @@ class PatrolRealNameUserService extends UserService {
   /// 若 Patrol 已完成实名认证提交，则优先返回已实名快照。
   Future<UserVO> getMe() async {
     return _verifiedUser ?? super.getMe();
+  }
+
+  @override
+  Future<List<RealNameVerificationVO>> listMyRealNameVerifications() async {
+    if (_latestVerification != null) {
+      return <RealNameVerificationVO>[_latestVerification!];
+    }
+    return const <RealNameVerificationVO>[];
   }
 }

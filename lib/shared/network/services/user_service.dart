@@ -87,6 +87,17 @@ class UserService {
     );
   }
 
+  /// 查询当前用户的实名认证记录。
+  Future<List<RealNameVerificationVO>> listMyRealNameVerifications() async {
+    return _apiClient.get<List<RealNameVerificationVO>>(
+      '/users/me/real-name-verifications',
+      decode: (data) => decodeModelList<RealNameVerificationVO>(
+        data,
+        RealNameVerificationVO.fromJson,
+      ),
+    );
+  }
+
   /// 切换当前登录用户的激活角色。
   Future<void> switchRole({required SwitchRoleBO request}) async {
     return _apiClient.putVoid('/users/me/role', data: request.toJson());
