@@ -186,12 +186,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       requiredMaterials,
     );
     setState(() {
-      final Map<String, List<PickedUploadFile>> next =
-          materials == null
+      final Map<String, List<PickedUploadFile>> next = materials == null
           ? <String, List<PickedUploadFile>>{
               for (final _MaterialRequirement requirement in requirements)
                 requirement.id:
-                    _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[],
+                    _uploadsByRequirement[requirement.id] ??
+                    <PickedUploadFile>[],
             }
           : _buildEditableUploadsByRequirement(
               requirements: requirements,
@@ -326,7 +326,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         <String, List<PickedUploadFile>>{
           for (final _MaterialRequirement requirement in requirements)
             requirement.id: <PickedUploadFile>[
-              ...(_uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[]),
+              ...(_uploadsByRequirement[requirement.id] ??
+                  const <PickedUploadFile>[]),
             ],
         };
     final Map<String, _MaterialRequirement> requirementByTitle =
@@ -346,7 +347,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (requirement == null) {
         continue;
       }
-      final PickedUploadFile file = _buildPickedUploadFileFromMaterial(material);
+      final PickedUploadFile file = _buildPickedUploadFileFromMaterial(
+        material,
+      );
       final String dedupeKey =
           '${(file.uploadedFileUrl ?? '').trim()}|${file.name.trim()}';
       if (!existingKeys.add(dedupeKey)) {
@@ -379,12 +382,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (requirement == null) {
         continue;
       }
+      final String normalizedPath = _normalizedPathFromUrl(material.fileUrl);
       final String rejectReason = (material.rejectReason ?? '').trim();
       uploadsByRequirement[requirement.id]!.add(
         PickedUploadFile(
           id: '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
           name: _materialDisplayName(material),
-          path: material.fileUrl,
+          path: normalizedPath.isEmpty ? material.fileUrl : normalizedPath,
           sourceType: UploadSourceType.file,
           state: rejectReason.isEmpty
               ? UploadItemState.success
@@ -394,6 +398,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               ? UploadPickerUtils.formatFileSize(material.fileSize)
               : null,
           errorMessage: rejectReason.isEmpty ? null : rejectReason,
+          uploadedFileUrl: material.fileUrl,
         ),
       );
     }
@@ -1364,7 +1369,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     required String fileName,
   }) {
     final String normalizedType = fileType.trim().toLowerCase();
-    if (normalizedType == 'application/pdf' || normalizedType.endsWith('/pdf')) {
+    if (normalizedType == 'application/pdf' ||
+        normalizedType.endsWith('/pdf')) {
       return true;
     }
     return UploadPickerUtils.isPdfPath(fileUrl) ||
@@ -1403,7 +1409,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       path: previewPath,
       title: file.name,
       isImage: file.isImage,
-      isPdf: UploadPickerUtils.isPdfPath(previewPath) ||
+      isPdf:
+          UploadPickerUtils.isPdfPath(previewPath) ||
           UploadPickerUtils.isPdfPath(file.name),
     );
   }
@@ -1427,7 +1434,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
     if (uploadedFileUrl.isNotEmpty) {
-      final String remotePath = Uri.tryParse(uploadedFileUrl)?.path ?? uploadedFileUrl;
+      final String remotePath =
+          Uri.tryParse(uploadedFileUrl)?.path ?? uploadedFileUrl;
       final String remoteName = UploadPickerUtils.basename(remotePath);
       final int remoteDotIndex = remoteName.lastIndexOf('.');
       if (remoteDotIndex > 0) {
@@ -1507,7 +1515,15 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     });
 
     final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
-    final String downloadUrl = uploadedFileUrl.isNotEmpty ? uploadedFileUrl : file.path.trim();
+    final String filePath = file.path.trim();
+    final String remoteFileUrl = uploadedFileUrl.isNotEmpty
+        ? uploadedFileUrl
+        : _isNetworkFilePath(filePath)
+        ? filePath
+        : '';
+    final String downloadUrl = remoteFileUrl.isNotEmpty
+        ? remoteFileUrl
+        : filePath;
     final (Dio dio, bool shouldCloseDio) = _createDownloadDio(downloadUrl);
     try {
       final Directory directory = await _resolveDownloadDirectory();
@@ -1516,8 +1532,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
 
       final String extension = _pickedFileExtension(file);
-      final String normalizedName =
-          file.name.contains('.') || extension.isEmpty ? file.name : '${file.name}$extension';
+      final String normalizedName = file.name.contains('.') || extension.isEmpty
+          ? file.name
+          : '${file.name}$extension';
       final String sanitizedName = _sanitizeFileName(normalizedName);
       String savePath = '${directory.path}/$sanitizedName';
       if (File(savePath).existsSync()) {
@@ -1530,9 +1547,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         savePath = '${directory.path}/$uniqueName';
       }
 
-      if (uploadedFileUrl.isNotEmpty) {
+      if (remoteFileUrl.isNotEmpty) {
         await dio.download(
-          uploadedFileUrl,
+          remoteFileUrl,
           savePath,
           options: Options(
             responseType: ResponseType.bytes,
@@ -1541,9 +1558,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           deleteOnError: true,
         );
       } else {
-        final File localFile = File(file.path);
+        final File localFile = File(filePath);
         if (!localFile.existsSync()) {
-          _showMessage('订单.文件不存在'.tr());
+          _showMessage('订单.文件地址不存在'.tr());
           return false;
         }
         await localFile.copy(savePath);
@@ -1553,10 +1570,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return false;
       }
       if (Platform.isIOS) {
-        await _presentIosSavePanel(
-          savePath: savePath,
-          fileName: sanitizedName,
-        );
+        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
         return true;
       }
       _showMessage('${'订单.已下载到本地'.tr()}\n$savePath');
@@ -1722,10 +1736,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       if (Platform.isIOS && !openAfterDownload) {
         await dismissPageLoading();
-        await _presentIosSavePanel(
-          savePath: savePath,
-          fileName: sanitizedName,
-        );
+        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
         return true;
       }
       if (openAfterDownload) {
@@ -1906,7 +1917,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         title: Text(
           '订单.订单详情'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: const Color(0xE6000000),
+          ),
         ),
         actions: isServiceProvider
             ? const <Widget>[]
@@ -1915,7 +1929,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   onPressed: _handleConsultTap,
                   child: Text(
                     '订单.联系商家'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF262626)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: const Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -2204,14 +2221,20 @@ class _OrderInfoRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+          style: TestStyle.regular(
+            fontSize: 12,
+            color: const Color(0xFF8C8C8C),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
         ),
       ],
@@ -2316,7 +2339,10 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
         children: <Widget>[
           Text(
             '订单.添加出证材料'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: const Color(0xFF171A1D),
+            ),
           ),
           const SizedBox(height: 12),
           _MaterialUploadContent(
@@ -2364,7 +2390,10 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '订单.客户上传材料'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
               ),
               Text(
@@ -2373,7 +2402,10 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                     'count': materials.length.toString(),
                   },
                 ),
-                style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+                style: TestStyle.regular(
+                  fontSize: 14,
+                  color: const Color(0xFF8C8C8C),
+                ),
               ),
             ],
           ),
@@ -2461,7 +2493,10 @@ class _MaterialUploadItem extends StatelessWidget {
                   Flexible(
                     child: Text(
                       requirement.title,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF171A1D)),
+                      style: TestStyle.regular(
+                        fontSize: 14,
+                        color: const Color(0xFF171A1D),
+                      ),
                     ),
                   ),
                   if (requirement.required) ...<Widget>[
@@ -2479,7 +2514,10 @@ class _MaterialUploadItem extends StatelessWidget {
               onTap: onPreviewTap,
               child: Text(
                 '服务详情.查看样例'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF096DD9)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 13,
+                  color: const Color(0xFF096DD9),
+                ),
               ),
             ),
           ],
@@ -2580,6 +2618,16 @@ class _UploadFileCard extends StatelessWidget {
   final VoidCallback? onRemoveTap;
   final bool showRemoveButton;
 
+  bool get _showsDownloadButton {
+    if (onDownloadTap == null || file.state == UploadItemState.uploading) {
+      return false;
+    }
+    if (file.state == UploadItemState.success) {
+      return true;
+    }
+    return _hasRemoteDownloadSource(file);
+  }
+
   /// 将统一的卡片内容按需包装为可点击预览的交互容器。
   Widget _wrapPreviewTap(Widget child) {
     if (onPreviewTap == null) {
@@ -2596,114 +2644,156 @@ class _UploadFileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (file.state) {
       case UploadItemState.uploading:
-        return _wrapPreviewTap(_UploadFileCardFrame(
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
-                    ),
-                    const SizedBox(height: 9),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: file.progress,
-                        minHeight: 4,
-                        backgroundColor: Colors.white,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF096DD9),
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.regular(
+                          fontSize: 14,
+                          color: const Color(0xFF333333),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ));
-      case UploadItemState.success:
-        return _wrapPreviewTap(_UploadFileCardFrame(
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
-                    ),
-                    if (file.sizeLabel != null) ...<Widget>[
-                      const SizedBox(height: 2),
-                      Text(
-                        file.sizeLabel!,
-                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                      const SizedBox(height: 9),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: file.progress,
+                          minHeight: 4,
+                          backgroundColor: Colors.white,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF096DD9),
+                          ),
+                        ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (onDownloadTap != null) ...<Widget>[
-                _DownloadUploadButton(
-                  onTap: onDownloadTap!,
-                  isDownloading: isDownloading,
-                ),
-                const SizedBox(width: 8),
               ],
-              if (showRemoveButton && onRemoveTap != null)
-                _RemoveUploadButton(onTap: onRemoveTap!),
-            ],
+            ),
           ),
-        ));
-      case UploadItemState.failure:
-        return _wrapPreviewTap(_UploadFileCardFrame(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFFF3141)),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.pingFangRegular(fontSize: 11, color: const Color(0xFFFF3141)),
-                    ),
-                  ],
+        );
+      case UploadItemState.success:
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.regular(
+                          fontSize: 14,
+                          color: const Color(0xFF333333),
+                        ),
+                      ),
+                      if (file.sizeLabel != null) ...<Widget>[
+                        const SizedBox(height: 2),
+                        Text(
+                          file.sizeLabel!,
+                          style: TestStyle.regular(
+                            fontSize: 12,
+                            color: const Color(0xFF8C8C8C),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              if (showRemoveButton && onRemoveTap != null)
-                _RemoveUploadButton(onTap: onRemoveTap!),
-            ],
+                if (_showsDownloadButton) ...<Widget>[
+                  _DownloadUploadButton(
+                    onTap: onDownloadTap!,
+                    isDownloading: isDownloading,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (showRemoveButton && onRemoveTap != null)
+                  _RemoveUploadButton(onTap: onRemoveTap!),
+              ],
+            ),
           ),
-        ));
+        );
+      case UploadItemState.failure:
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 14,
+                          color: const Color(0xFFFF3141),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 11,
+                          color: const Color(0xFFFF3141),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_showsDownloadButton) ...<Widget>[
+                  _DownloadUploadButton(
+                    onTap: onDownloadTap!,
+                    isDownloading: isDownloading,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (showRemoveButton && onRemoveTap != null)
+                  _RemoveUploadButton(onTap: onRemoveTap!),
+              ],
+            ),
+          ),
+        );
     }
   }
+}
+
+bool _isNetworkFilePath(String value) {
+  final String normalizedValue = value.trim().toLowerCase();
+  return normalizedValue.startsWith('http://') ||
+      normalizedValue.startsWith('https://');
+}
+
+bool _hasRemoteDownloadSource(PickedUploadFile file) {
+  final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+  if (uploadedFileUrl.isNotEmpty) {
+    return true;
+  }
+  return _isNetworkFilePath(file.path);
 }
 
 class _UploadFileCardFrame extends StatelessWidget {
@@ -2848,7 +2938,10 @@ class _UploadPlaceholder extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '订单.上传文件'.tr(),
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: const Color(0xFF171A1D),
+                  ),
                 ),
               ],
             ),
@@ -3440,7 +3533,10 @@ class _UploadTypeAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 13,
+                color: const Color(0xFF595959),
+              ),
             ),
           ],
         ),
@@ -3471,7 +3567,10 @@ class _OrderDetailStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 14,
+                color: const Color(0xFF595959),
+              ),
             ),
             const SizedBox(height: 16),
             PrimaryButton(label: buttonLabel, onPressed: onTap, enabled: true),
@@ -3555,7 +3654,10 @@ class _RejectedStatusBar extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               '订单.已驳回'.tr(),
-              style: TestStyle.pingFangRegular(fontSize: 16, color: const Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 16,
+                color: const Color(0xFF8C8C8C),
+              ),
             ),
           ),
         ),
