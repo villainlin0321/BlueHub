@@ -803,11 +803,17 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-class _AiAssistantBanner extends StatelessWidget {
+class _AiAssistantBanner extends ConsumerWidget {
   const _AiAssistantBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final String aiContent = stats?.aiContent?.trim() ?? '';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -846,7 +852,7 @@ class _AiAssistantBanner extends StatelessWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          '招聘.AI推荐文案'.tr(),
+                          aiContent,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TestStyle.pingFangRegular(

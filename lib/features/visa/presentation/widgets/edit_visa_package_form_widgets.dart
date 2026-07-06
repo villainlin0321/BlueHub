@@ -334,12 +334,18 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '签证编辑.上传封面'.tr(),
-                style: TestStyle.pingFangMedium(fontSize: 14, color: const Color(0xFF171A1D)),
+                style: TestStyle.pingFangMedium(
+                  fontSize: 14,
+                  color: const Color(0xFF171A1D),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 '签证编辑.封面图提示'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 12,
+                  color: const Color(0xFF8C8C8C),
+                ),
               ),
             ],
           ),
@@ -477,7 +483,10 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                     file!.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.medium(fontSize: 14, color: const Color(0xFF171A1D)),
+                    style: TestStyle.medium(
+                      fontSize: 14,
+                      color: const Color(0xFF171A1D),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1018,13 +1027,14 @@ class EditVisaPackageCustomTagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       decoration: BoxDecoration(
-        color: EditVisaPackageStyles.fieldBackground,
+        color: EditVisaPackageStyles.primarySoft,
         borderRadius: EditVisaPackageStyles.chipRadius,
+        border: Border.all(color: EditVisaPackageStyles.primary, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(label, style: EditVisaPackageStyles.fieldLabel),
+          Text(label, style: EditVisaPackageStyles.selectedChip),
           const SizedBox(width: 6),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -1032,7 +1042,7 @@ class EditVisaPackageCustomTagChip extends StatelessWidget {
             child: const Icon(
               Icons.close,
               size: 16,
-              color: EditVisaPackageStyles.textSecondary,
+              color: EditVisaPackageStyles.primary,
             ),
           ),
         ],

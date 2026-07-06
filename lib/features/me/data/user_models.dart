@@ -182,6 +182,7 @@ class UserVO {
     required this.role,
     required this.currentLocation,
     required this.isVerified,
+    this.realName = '',
     required this.blacklistCount,
     required this.createdAt,
   });
@@ -196,6 +197,7 @@ class UserVO {
   final String role;
   final String currentLocation;
   final bool isVerified;
+  final String realName;
   final int blacklistCount;
   final String createdAt;
 
@@ -211,6 +213,7 @@ class UserVO {
       role: readString(json, 'role'),
       currentLocation: readString(json, 'currentLocation'),
       isVerified: readBool(json, 'isVerified'),
+      realName: readString(json, 'realName'),
       blacklistCount: readInt(json, 'blacklistCount'),
       createdAt: readString(json, 'createdAt'),
     );
@@ -228,6 +231,7 @@ class UserVO {
       'role': role,
       'currentLocation': currentLocation,
       'isVerified': isVerified,
+      'realName': realName,
       'blacklistCount': blacklistCount,
       'createdAt': createdAt,
     };

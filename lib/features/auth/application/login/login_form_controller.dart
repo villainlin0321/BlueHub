@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_models.dart';
 import '../../data/auth_providers.dart';
+import '../../data/login_account_store.dart';
 import '../auth_session_provider.dart';
 import 'login_form_state.dart';
 
@@ -125,6 +126,14 @@ class LoginFormController extends Notifier<LoginFormState> {
               ),
             );
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
+      await ref
+          .read(loginAccountStoreProvider)
+          .save(
+            mode: state.isPhoneLogin
+                ? LoginAccountMode.phone
+                : LoginAccountMode.email,
+            account: state.currentAccount,
+          );
       return login;
     } catch (_) {
       _emitFeedback(tr('认证.登录失败'), isError: true);
