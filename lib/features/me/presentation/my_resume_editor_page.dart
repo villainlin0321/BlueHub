@@ -285,19 +285,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
             padding: EdgeInsets.zero,
             children: <Widget>[
               _buildCompletionSection(),
-              const SizedBox(height: 2),
               _buildBasicInfoSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildJobIntentionSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildWorkExperienceSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildLanguageSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildCertificateSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildEducationSection(),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               _buildSelfEvaluationSection(),
             ],
           ),
@@ -575,7 +574,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
   Widget _buildCompletionSection() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       child: Container(
         height: 88,
         padding: const EdgeInsets.fromLTRB(12, 15, 16, 15),
@@ -688,7 +687,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -774,6 +773,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          borderColor: const Color(0xFF096DD9),
                           onIconTap: () => _removeJobTag(item),
                         ),
                       )
@@ -809,6 +809,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
                           iconPath: _ResumeEditorAssets.tagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          borderColor: const Color(0xFF096DD9),
                           onIconTap: () => _removeCountryTag(item),
                         ),
                       )
@@ -946,6 +947,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
                           iconPath: _ResumeEditorAssets.languageTagRemove,
                           backgroundColor: const Color(0xFFEDF4FF),
                           textColor: const Color(0xFF096DD9),
+                          borderColor: const Color(0xFF096DD9),
                           onIconTap: () => _removeLanguageTag(item),
                         ),
                       )
