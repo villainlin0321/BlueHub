@@ -2123,14 +2123,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 )
               : const SizedBox.shrink(),
         ),
-        if (isServiceProvider && (isEmbassySubmittedStage || isVisaIssuedStage))
+        if (isEmbassySubmittedStage || isVisaIssuedStage)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: _ProviderVisaDocumentUploadCard(
               files: _visaDocumentUploads,
               downloadingFileKeys: _downloadingMaterialUrls,
-              allowUpload: isEmbassySubmittedStage,
-              allowDelete: isEmbassySubmittedStage,
+              allowUpload: isServiceProvider && isEmbassySubmittedStage,
+              allowDelete: isServiceProvider && isEmbassySubmittedStage,
               onUploadTap: _openVisaDocumentUploadSheet,
               onPreviewFile: _openPickedFilePreview,
               onDownloadFile: _downloadPickedUploadFile,
@@ -2338,7 +2338,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '订单.添加出证材料'.tr(),
+            allowUpload ? '订单.添加出证材料'.tr() : '订单.出证材料'.tr(),
             style: TestStyle.pingFangRegular(
               fontSize: 14,
               color: const Color(0xFF171A1D),
@@ -2350,6 +2350,7 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
             downloadingFileKeys: downloadingFileKeys,
             allowUpload: allowUpload,
             allowDelete: allowDelete,
+            emptyReadonlyText: '订单.暂无出证材料'.tr(),
             onAddTap: onUploadTap,
             onPreviewFile: onPreviewFile,
             onDownloadFile: onDownloadFile,
@@ -2544,6 +2545,7 @@ class _MaterialUploadContent extends StatelessWidget {
     required this.downloadingFileKeys,
     required this.allowUpload,
     required this.allowDelete,
+    this.emptyReadonlyText = '',
     required this.onAddTap,
     this.onPreviewFile,
     this.onDownloadFile,
@@ -2554,6 +2556,7 @@ class _MaterialUploadContent extends StatelessWidget {
   final Set<String> downloadingFileKeys;
   final bool allowUpload;
   final bool allowDelete;
+  final String emptyReadonlyText;
   final VoidCallback? onAddTap;
   final ValueChanged<PickedUploadFile>? onPreviewFile;
   final ValueChanged<PickedUploadFile>? onDownloadFile;
@@ -2565,7 +2568,11 @@ class _MaterialUploadContent extends StatelessWidget {
       if (allowUpload && onAddTap != null) {
         return _UploadPlaceholder(onTap: onAddTap!);
       }
-      return _ReadonlyUploadPlaceholder(text: '订单.待求职者上传材料'.tr());
+      return _ReadonlyUploadPlaceholder(
+        text: emptyReadonlyText.isNotEmpty
+            ? emptyReadonlyText
+            : '订单.待求职者上传材料'.tr(),
+      );
     }
 
     return Column(
@@ -2618,8 +2625,12 @@ class _UploadFileCard extends StatelessWidget {
   final VoidCallback? onRemoveTap;
   final bool showRemoveButton;
 
+  bool get _showsRemoveButton => showRemoveButton && onRemoveTap != null;
+
   bool get _showsDownloadButton {
-    if (onDownloadTap == null || file.state == UploadItemState.uploading) {
+    if (onDownloadTap == null ||
+        file.state == UploadItemState.uploading ||
+        _showsRemoveButton) {
       return false;
     }
     if (file.state == UploadItemState.success) {
@@ -2724,7 +2735,7 @@ class _UploadFileCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if (showRemoveButton && onRemoveTap != null)
+                if (_showsRemoveButton)
                   _RemoveUploadButton(onTap: onRemoveTap!),
               ],
             ),
@@ -2772,7 +2783,7 @@ class _UploadFileCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if (showRemoveButton && onRemoveTap != null)
+                if (_showsRemoveButton)
                   _RemoveUploadButton(onTap: onRemoveTap!),
               ],
             ),

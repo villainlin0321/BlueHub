@@ -1,16 +1,23 @@
 import 'package:dio/dio.dart';
 
 import '../auth/token_store.dart';
+import '../localization/app_language_store.dart';
 import '../logging/app_logger.dart';
 import 'app_config.dart';
 import 'interceptors/app_log_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
+import 'interceptors/language_interceptor.dart';
 
 class DioFactory {
-  DioFactory({required this.config, required this.tokenStore});
+  DioFactory({
+    required this.config,
+    required this.tokenStore,
+    required this.languageStore,
+  });
 
   final AppConfig config;
   final TokenStore tokenStore;
+  final AppLanguageStore languageStore;
 
   /// 创建全局共享的 Dio 实例，并挂接鉴权与日志拦截器。
   Dio create() {
@@ -28,6 +35,7 @@ class DioFactory {
     );
 
     dio.interceptors.add(AuthInterceptor(tokenStore));
+    dio.interceptors.add(LanguageInterceptor(languageStore));
     dio.interceptors.add(AppLogInterceptor(enabled: true));
     AppLogger.instance.info(
       'HTTP',

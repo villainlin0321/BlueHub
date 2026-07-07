@@ -613,6 +613,7 @@
     "请先上传出证材料": "Please upload visa issuance materials first",
     "存在未上传成功的出证材料": "Some visa issuance materials failed to upload. Please resolve them before completion.",
     "上传出证材料失败": "Failed to upload visa issuance materials. Please try again later.",
+    "暂无出证材料": "No visa issuance materials yet",
     "订单材料": "Order Material",
     "文件地址不存在": "File URL does not exist. Unable to download right now.",
     "已下载到本地": "Downloaded to local storage",
