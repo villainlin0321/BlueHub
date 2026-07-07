@@ -11,7 +11,7 @@ IPA_OUTPUT_DIR="${PROJECT_ROOT}/build/ios/ipa"
 APP_NAME_PREFIX="europepass"
 COMMIT_MESSAGE="chore: bump build version"
 IOS_EXPORT_METHOD="${IOS_EXPORT_METHOD:-ad-hoc}"
-PGYER_API_KEY="${PGYER_API_KEY:-}"
+PGYER_API_KEY="06bd871b10060956dfad79248e0cd44c"
 PGYER_INSTALL_TYPE="${PGYER_INSTALL_TYPE:-1}"
 PGYER_PASSWORD="${PGYER_PASSWORD:-}"
 PGYER_BUILD_DESCRIPTION="${PGYER_BUILD_DESCRIPTION:-}"
@@ -79,9 +79,11 @@ build_ipa() {
   flutter build ipa --release --export-method "${IOS_EXPORT_METHOD}"
 }
 
-upload_ipa_to_pgyer() {
-  local ipa_path="$1"
-  local build_update_description="$2"
+upload_to_pgyer() {
+  local artifact_path="$1"
+  local display_name="$2"
+  local build_type="$3"
+  local build_update_description="$4"
   local token_response
   local token_code
   local upload_endpoint
@@ -114,7 +116,7 @@ upload_ipa_to_pgyer() {
     --request POST
     "https://api.pgyer.com/apiv2/app/getCOSToken"
     --data-urlencode "_api_key=${PGYER_API_KEY}"
-    --data-urlencode "buildType=ipa"
+    --data-urlencode "buildType=${build_type}"
     --data-urlencode "buildInstallType=${PGYER_INSTALL_TYPE}"
     --data-urlencode "buildUpdateDescription=${build_update_description}"
     --data-urlencode "oversea=${PGYER_OVERSEA}"
@@ -145,17 +147,17 @@ upload_ipa_to_pgyer() {
       --write-out "%{http_code}" \
       --request POST \
       "${upload_endpoint}" \
-      --form "key=${upload_key}" \
-      --form "signature=${signature}" \
-      --form "x-cos-security-token=${security_token}" \
-      --form "x-cos-meta-file-name=$(basename "${ipa_path}")" \
-      --form "file=@${ipa_path}"
+      --form-string "key=${upload_key}" \
+      --form-string "signature=${signature}" \
+      --form-string "x-cos-security-token=${security_token}" \
+      --form-string "x-cos-meta-file-name=$(basename "${artifact_path}")" \
+      --form "file=@${artifact_path}"
   )"
 
-  [[ "${upload_http_code}" == "204" ]] || fail "Failed to upload IPA to PGYER, http code: ${upload_http_code}"
+  [[ "${upload_http_code}" == "204" ]] || fail "Failed to upload ${display_name} to PGYER, http code: ${upload_http_code}"
 
   build_key="${upload_key}"
-  echo "IPA uploaded to PGYER storage, waiting for publishing..."
+  echo "${display_name} uploaded to PGYER storage, waiting for publishing..."
 
   for attempt in {1..20}; do
     build_info_response="$(
@@ -198,6 +200,20 @@ upload_ipa_to_pgyer() {
   echo "PGYER upload completed, but publishing is still in progress. Check it later in PGYER console."
 }
 
+upload_ipa_to_pgyer() {
+  local ipa_path="$1"
+  local build_update_description="$2"
+
+  upload_to_pgyer "${ipa_path}" "IPA" "ipa" "${build_update_description}"
+}
+
+upload_apk_to_pgyer() {
+  local apk_path="$1"
+  local build_update_description="$2"
+
+  upload_to_pgyer "${apk_path}" "APK" "apk" "${build_update_description}"
+}
+
 require_file "${PUBSPEC_FILE}"
 require_command flutter
 require_command git
@@ -237,6 +253,7 @@ git commit -m "${COMMIT_MESSAGE}"
 git push
 
 upload_ipa_to_pgyer "${renamed_ipa}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}"
+upload_apk_to_pgyer "${renamed_apk}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}"
 
 echo "APK generated: ${renamed_apk}"
 echo "IPA generated: ${renamed_ipa}"
