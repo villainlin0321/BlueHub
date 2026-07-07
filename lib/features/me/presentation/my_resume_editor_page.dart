@@ -1330,11 +1330,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
   Widget _buildEmptyStateChip(String text) {
     return Container(
       height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(4),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         text,
         style: TestStyle.pingFangRegular(
@@ -1504,7 +1500,10 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
             SvgPicture.asset(iconPath, width: 10, height: 10),
             const SizedBox(width: 6),
           ],
-          Text(label, style: TestStyle.regular(fontSize: 14, color: textColor)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, color: textColor, height: 1),
+          ),
           if (iconPath != _ResumeEditorAssets.tagAdd) ...<Widget>[
             const SizedBox(width: 8),
             GestureDetector(
@@ -2067,6 +2066,9 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
     final Set<String> validValues = positionOptions
         .map((SelectableSheetOption<String> item) => item.value)
         .toSet();
+    final List<String> customSelected = _jobTags
+        .where((String item) => !validValues.contains(item))
+        .toList(growable: false);
     final List<String> currentSelected = _jobTags
         .where(validValues.contains)
         .toList(growable: false);
@@ -2088,6 +2090,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
     setState(() {
       _jobTags
         ..clear()
+        ..addAll(customSelected)
         ..addAll(result);
     });
   }

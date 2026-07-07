@@ -171,45 +171,58 @@ class _AiSessionHistorySheetState
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
+      padding: EdgeInsets.only(bottom: bottomInset),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.72,
+          height: MediaQuery.sizeOf(context).height * 0.764,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              SizedBox(
-                height: 35,
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    Text(
-                      'AI.历史记录'.tr(),
-                      style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF171A1D)),
-                    ),
-                    Positioned(
-                      right: 0,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 22,
-                          color: Color(0xFF171A1D),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+              _buildSheetHeader(context),
+              const SizedBox(height: 9),
               Expanded(child: _buildBody()),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 构建历史记录弹窗顶部标题栏，统一控制标题居中与关闭按钮点击热区。
+  Widget _buildSheetHeader(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          Text(
+            'AI.历史记录'.tr(),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: const Color(0xFF171A1D),
+            ),
+          ),
+          Positioned(
+            right: 16,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                padding: EdgeInsets.zero,
+                splashRadius: 20,
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: Color(0xFF171A1D),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -241,6 +254,7 @@ class _AiSessionHistorySheetState
     return RefreshIndicator(
       onRefresh: _loadSessions,
       child: ListView.separated(
+        padding: EdgeInsets.zero,
         itemCount: _sessions.length,
         separatorBuilder: (_, __) => const Divider(
           height: 0.5,
@@ -297,47 +311,61 @@ class _AiSessionHistoryItem extends StatelessWidget {
         onTap: isBusy ? null : onTap,
         child: SizedBox(
           height: 64,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 20, 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 29),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          updatedAt,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
-                        ),
-                      ],
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: const Color(0xFF262626),
+                        ).copyWith(height: 22 / 16),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        updatedAt,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.regular(
+                          fontSize: 12,
+                          color: const Color(0xFFBFBFBF),
+                        ).copyWith(height: 14 / 12),
+                      ),
+                    ],
                   ),
                 ),
-                _AiSessionHistoryActionIcon(
-                  assetPath: _kAiHistoryEditIconAsset,
-                  tooltip: '通用.编辑'.tr(),
-                  color: iconColor,
-                  onTap: isBusy ? null : onRename,
+                const SizedBox(width: 29),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _AiSessionHistoryActionIcon(
+                    assetPath: _kAiHistoryEditIconAsset,
+                    tooltip: '通用.编辑'.tr(),
+                    color: iconColor,
+                    iconWidth: 14,
+                    iconHeight: 14,
+                    onTap: isBusy ? null : onRename,
+                  ),
                 ),
                 const SizedBox(width: 20),
-                _AiSessionHistoryActionIcon(
-                  assetPath: _kAiHistoryDeleteIconAsset,
-                  tooltip: '通用.删除'.tr(),
-                  color: iconColor,
-                  onTap: isBusy ? null : onDelete,
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _AiSessionHistoryActionIcon(
+                    assetPath: _kAiHistoryDeleteIconAsset,
+                    tooltip: '通用.删除'.tr(),
+                    color: iconColor,
+                    iconWidth: 16,
+                    iconHeight: 16,
+                    onTap: isBusy ? null : onDelete,
+                  ),
                 ),
               ],
             ),
@@ -353,31 +381,35 @@ class _AiSessionHistoryActionIcon extends StatelessWidget {
     required this.assetPath,
     required this.tooltip,
     required this.color,
+    required this.iconWidth,
+    required this.iconHeight,
     required this.onTap,
   });
 
   final String assetPath;
   final String tooltip;
   final Color color;
+  final double iconWidth;
+  final double iconHeight;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
           width: 20,
           height: 20,
-          color: Colors.transparent,
-          alignment: Alignment.center,
-          child: SvgPicture.asset(
-            assetPath,
-            width: 18,
-            height: 18,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          child: Center(
+            child: SvgPicture.asset(
+              assetPath,
+              width: iconWidth,
+              height: iconHeight,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
           ),
         ),
       ),

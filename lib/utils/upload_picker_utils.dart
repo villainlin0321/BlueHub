@@ -168,21 +168,21 @@ class UploadPickerUtils {
     if (!granted) {
       return const <PickedUploadFile>[];
     }
-    final List<XFile> images = await _imagePicker.pickMultiImage(
+    // 项目约束：相册单次只允许选择 1 张；如需多张，由业务侧重复触发入口逐张追加。
+    final XFile? image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
       imageQuality: 90,
     );
-    if (images.isEmpty) {
+    if (image == null) {
       return const <PickedUploadFile>[];
     }
-    return images
-        .map(
-          (XFile image) => _buildUploadFile(
-            path: image.path,
-            sourceType: UploadSourceType.gallery,
-            name: image.name,
-          ),
-        )
-        .toList();
+    return <PickedUploadFile>[
+      _buildUploadFile(
+        path: image.path,
+        sourceType: UploadSourceType.gallery,
+        name: image.name,
+      ),
+    ];
   }
 
   static Future<List<PickedUploadFile>> pickFromFiles() async {
