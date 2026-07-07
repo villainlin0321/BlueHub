@@ -139,20 +139,33 @@ class _QualificationCertificationStepThreePageState
     });
   }
 
+  /// 提交前兜底校验第一页基础信息，避免跨步骤返回后遗留空值仍然提交成功。
+  bool _validateStepOneRequiredFieldsBeforeSubmit() {
+    final String? errorMessage = validateQualificationStepOneRequiredFields(
+      role: _role,
+      draft: _draft,
+    );
+    if (errorMessage == null) {
+      return true;
+    }
+    AppToast.show(errorMessage, position: AppToastPosition.center);
+    return false;
+  }
+
   /// 在最终提交前兜底校验必填资质图片，避免用户绕过前序步骤直接提交。
   bool _validateRequiredImagesBeforeSubmit() {
     if (_role == QualificationCertificationRole.serviceProvider &&
         _draft.idCardEmblemDoc == null) {
-      AppToast.show('请上传身份证国徽面'.tr());
+      AppToast.show('请上传身份证国徽面'.tr(), position: AppToastPosition.center);
       return false;
     }
     if (_role == QualificationCertificationRole.serviceProvider &&
         _draft.idCardPortraitDoc == null) {
-      AppToast.show('请上传身份证人像面'.tr());
+      AppToast.show('请上传身份证人像面'.tr(), position: AppToastPosition.center);
       return false;
     }
     if (_draft.businessLicenseDoc == null) {
-      AppToast.show('认证流程.请上传营业执照'.tr());
+      AppToast.show('认证流程.请上传营业执照'.tr(), position: AppToastPosition.center);
       return false;
     }
     return true;
@@ -161,12 +174,15 @@ class _QualificationCertificationStepThreePageState
   /// 提交前校验第三步服务信息必填项，避免空国家或非法年限直接进入审核。
   bool _validateServiceInfoBeforeSubmit() {
     if (_selectedCountries.isEmpty) {
-      AppToast.show('请选择服务国家'.tr());
+      AppToast.show('请选择服务国家'.tr(), position: AppToastPosition.center);
       return false;
     }
     final int? yearsOfService = int.tryParse(_experienceController.text.trim());
     if (yearsOfService == null || yearsOfService <= 0) {
-      AppToast.show('认证流程.请填写有效从业年限'.tr());
+      AppToast.show(
+        '认证流程.请填写有效从业年限'.tr(),
+        position: AppToastPosition.center,
+      );
       return false;
     }
     return true;
@@ -174,6 +190,9 @@ class _QualificationCertificationStepThreePageState
 
   Future<void> _handleSubmit() async {
     if (_isSubmitting) {
+      return;
+    }
+    if (!_validateStepOneRequiredFieldsBeforeSubmit()) {
       return;
     }
     if (!_validateRequiredImagesBeforeSubmit()) {
@@ -226,13 +245,15 @@ class _QualificationCertificationStepThreePageState
           actionLabel: tr('认证流程.进入首页'),
           action: AppResultAction.go(RoutePaths.home),
           backAction: AppResultAction.go(RoutePaths.me),
+          countdownSeconds: 5,
+          countdownAction: AppResultAction.go(RoutePaths.home),
         ),
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
-      AppToast.show('认证流程.提交失败'.tr());
+      AppToast.show('认证流程.提交失败'.tr(), position: AppToastPosition.center);
     } finally {
       if (mounted) {
         setState(() {
@@ -368,17 +389,21 @@ class _QualificationCertificationStepThreePageState
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _selectedCountries
-                              .map(
-                                (String country) => _CountryTag(
-                                  label: country,
-                                  onTap: () => _removeSelectedCountry(country),
-                                ),
-                              )
-                              .toList(),
+                        ConstrainedBox(
+                          // 空态时保留一行标签区高度，避免下方“从业年限”整体上移。
+                          constraints: const BoxConstraints(minHeight: 34),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedCountries
+                                .map(
+                                  (String country) => _CountryTag(
+                                    label: country,
+                                    onTap: () => _removeSelectedCountry(country),
+                                  ),
+                                )
+                                .toList(),
+                          ),
                         ),
                         const SizedBox(height: 20),
                         Row(

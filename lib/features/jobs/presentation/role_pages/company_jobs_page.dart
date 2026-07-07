@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
+import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
@@ -249,14 +250,10 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final double topPadding = MediaQuery.paddingOf(context).top;
-    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final talentsAsync = ref.watch(talentListProvider(_query));
-
-    return ListView(
-      padding: EdgeInsets.only(bottom: bottomPadding + 24),
+  /// 构建顶部固定区域，保证标题、搜索框和标签栏不跟随列表滚动。
+  Widget _buildFixedHeader(double topPadding) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _Header(topPadding: topPadding),
         _SearchBar(controller: _searchController),
@@ -264,6 +261,18 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
           selectedIndex: _selectedTabIndex,
           onTap: _handleTalentTabChanged,
         ),
+      ],
+    );
+  }
+
+  /// 构建下方可滚动内容区域，仅让 Banner 和人才列表参与滚动。
+  Widget _buildScrollableContent({
+    required AsyncValue<PageResult<TalentVO>> talentsAsync,
+    required double bottomPadding,
+  }) {
+    return ListView(
+      padding: EdgeInsets.only(bottom: bottomPadding + 24),
+      children: <Widget>[
         const _AiBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(11, 12, 14, 0),
@@ -318,6 +327,29 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
                 ref.invalidate(talentListProvider(_query));
               },
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建页面主体，将顶部筛选区域固定在上方，下方结果列表独立滚动。
+  @override
+  Widget build(BuildContext context) {
+    final double topPadding = MediaQuery.paddingOf(context).top;
+    final double bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final AsyncValue<PageResult<TalentVO>> talentsAsync = ref.watch(
+      talentListProvider(_query),
+    );
+
+    return Column(
+      children: <Widget>[
+        _buildFixedHeader(topPadding),
+        Expanded(
+          // 仅让下方内容区滚动，保证顶部三个区域始终固定可见。
+          child: _buildScrollableContent(
+            talentsAsync: talentsAsync,
+            bottomPadding: bottomPadding,
           ),
         ),
       ],
