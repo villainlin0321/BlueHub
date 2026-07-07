@@ -153,7 +153,10 @@ class _QualificationCertificationStepTwoPageState
     if (_businessLicenseImage == null &&
         (_debugBusinessLicensePathForTest == null ||
             _debugBusinessLicensePathForTest!.isEmpty)) {
-      AppToast.show('认证流程.请上传营业执照'.tr());
+      AppToast.show(
+        '认证流程.请上传营业执照'.tr(),
+        position: AppToastPosition.center,
+      );
       return false;
     }
     return true;

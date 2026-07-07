@@ -30,6 +30,103 @@ String qualificationCountryLabel(QualificationCertificationRole role) {
       : tr('认证流程.期望国家地区');
 }
 
+/// 统一校验认证流程第一页必填项，供“下一步”与最终“提交”复用同一套规则。
+String? validateQualificationStepOneRequiredFields({
+  required QualificationCertificationRole role,
+  required QualificationCertificationDraft draft,
+}) {
+  if (role == QualificationCertificationRole.company) {
+    return _validateCompanyStepOneRequiredFields(draft);
+  }
+  return _validateServiceProviderStepOneRequiredFields(draft);
+}
+
+/// 校验服务商第一页必填项，命中第一个缺失字段后立即返回提示文案。
+String? _validateServiceProviderStepOneRequiredFields(
+  QualificationCertificationDraft draft,
+) {
+  if (draft.serviceProviderCompanyName.trim().isEmpty) {
+    return '请填写企业名称';
+  }
+  if (draft.unifiedCreditCode.trim().isEmpty) {
+    return '请填写统一社会信用代码';
+  }
+  if (draft.legalPerson.trim().isEmpty) {
+    return '请填写法人姓名';
+  }
+  if (draft.contactPerson.trim().isEmpty) {
+    return '请填写官方联系人';
+  }
+  if (draft.contactPhone.trim().isEmpty) {
+    return '请填写联系电话';
+  }
+  if (!_isQualificationEmailValid(draft.contactEmail)) {
+    return '请填写有效邮箱';
+  }
+  if (draft.website.trim().isEmpty) {
+    return '请填写公司官网';
+  }
+  if (draft.idCardEmblemDoc == null) {
+    return '请上传身份证国徽面'.tr();
+  }
+  if (draft.idCardPortraitDoc == null) {
+    return '请上传身份证人像面'.tr();
+  }
+  return null;
+}
+
+/// 校验企业第一页必填项，保证企业角色在下一步和提交时口径一致。
+String? _validateCompanyStepOneRequiredFields(
+  QualificationCertificationDraft draft,
+) {
+  if (draft.companyName.trim().isEmpty) {
+    return '请填写企业名称';
+  }
+  if (draft.companyIndustry.trim().isEmpty) {
+    return '请填写所属行业';
+  }
+  if (draft.companySize.trim().isEmpty) {
+    return '请填写公司规模';
+  }
+  if (draft.companyWebsite.trim().isEmpty) {
+    return '请填写官网地址';
+  }
+  if (!_isQualificationFoundedYearValid(draft.companyFoundedYear)) {
+    return '请填写有效成立年份';
+  }
+  if (draft.companyCountryLabel.trim().isEmpty) {
+    return '请选择注册国家';
+  }
+  if (draft.companyCity.trim().isEmpty) {
+    return '请填写所在城市';
+  }
+  if (draft.companyManagerName.trim().isEmpty) {
+    return '请填写负责人姓名';
+  }
+  if (draft.companyPhone.trim().isEmpty) {
+    return '请填写联系电话';
+  }
+  if (!_isQualificationEmailValid(draft.companyEmail)) {
+    return '请填写有效联系邮箱';
+  }
+  return null;
+}
+
+/// 统一邮箱格式校验，避免不同页面各自维护不一致的正则。
+bool _isQualificationEmailValid(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+  return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed);
+}
+
+/// 统一成立年份合法性校验，避免企业第一页和提交页规则漂移。
+bool _isQualificationFoundedYearValid(String value) {
+  final int? foundedYear = int.tryParse(value.trim());
+  return foundedYear != null && foundedYear > 0;
+}
+
 class UploadedQualificationDoc {
   const UploadedQualificationDoc({
     required this.docType,

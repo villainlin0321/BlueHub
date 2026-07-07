@@ -71,19 +71,6 @@ class _QualificationCertificationPageState
     tr('认证流程.服务信息'),
   ];
 
-  bool get _isCompanyNextEnabled {
-    return _companyNameController.text.trim().isNotEmpty &&
-        _companyIndustryController.text.trim().isNotEmpty &&
-        _companySizeController.text.trim().isNotEmpty &&
-        _companyWebsiteController.text.trim().isNotEmpty &&
-        _isValidFoundedYear(_companyFoundedYearController.text) &&
-        (_selectedCompanyCountry?.trim().isNotEmpty ?? false) &&
-        _companyCityController.text.trim().isNotEmpty &&
-        _companyManagerNameController.text.trim().isNotEmpty &&
-        _companyPhoneController.text.trim().isNotEmpty &&
-        _isValidEmail(_companyEmailController.text);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -235,19 +222,6 @@ class _QualificationCertificationPageState
     _draft.companyCity = _companyCityController.text.trim();
   }
 
-  /// 校验服务商第一页的必填身份证图片是否已经选择完成。
-  bool _validateRequiredIdentityImages() {
-    if (_idCardEmblemImage == null) {
-      AppToast.show('请上传身份证国徽面'.tr());
-      return false;
-    }
-    if (_idCardPortraitImage == null) {
-      AppToast.show('请上传身份证人像面'.tr());
-      return false;
-    }
-    return true;
-  }
-
   /// 统一处理离开第一页页面的动作，存在未保存改动时先弹确认框。
   Future<void> _handleAttemptLeave() async {
     final bool canLeave = await confirmDiscardChangesIfNeeded(
@@ -302,17 +276,19 @@ class _QualificationCertificationPageState
     });
   }
 
-  bool _isValidEmail(String value) {
-    final String trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return false;
+  /// 校验第一页当前角色的必填项，命中缺失项后给出对应提示。
+  bool _validateCurrentStepRequiredFields() {
+    // 先同步当前输入，再基于统一草稿执行校验，确保“下一步”和“提交”口径一致。
+    _syncDraftFromForm();
+    final String? errorMessage = validateQualificationStepOneRequiredFields(
+      role: _role,
+      draft: _draft,
+    );
+    if (errorMessage == null) {
+      return true;
     }
-    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed);
-  }
-
-  bool _isValidFoundedYear(String value) {
-    final int? foundedYear = int.tryParse(value.trim());
-    return foundedYear != null && foundedYear > 0;
+    AppToast.show(errorMessage, position: AppToastPosition.center);
+    return false;
   }
 
   Future<void> _pickIdentityCardImage({required bool isEmblemSide}) async {
@@ -368,15 +344,9 @@ class _QualificationCertificationPageState
   }
 
   void _handleNext() {
-    if (_isCompany && !_isCompanyNextEnabled) {
+    if (!_validateCurrentStepRequiredFields()) {
       return;
     }
-
-    if (!_isCompany && !_validateRequiredIdentityImages()) {
-      return;
-    }
-
-    _syncDraftFromForm();
 
     context.go(
       RoutePaths.qualificationCertificationStepTwo,
@@ -500,9 +470,7 @@ class _QualificationCertificationPageState
               height: 48,
               child: FilledButton(
                 key: AppTestKeys.actionQualificationStepOneNext,
-                onPressed: _isCompany
-                    ? (_isCompanyNextEnabled ? _handleNext : null)
-                    : _handleNext,
+                  onPressed: _handleNext,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF096DD9),
                   disabledBackgroundColor: const Color(0xFFD9D9D9),
@@ -644,9 +612,10 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
         const SizedBox(height: 16),
         _QualificationTextField(
           label: '认证流程.公司官网'.tr(),
-          hintText: '通用.选填'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: websiteController,
           fieldKey: AppTestKeys.fieldQualificationWebsite,
+          required: true,
           keyboardType: TextInputType.url,
         ),
       ],
