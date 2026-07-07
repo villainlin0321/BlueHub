@@ -17,6 +17,7 @@ PGYER_PASSWORD="${PGYER_PASSWORD:-}"
 PGYER_BUILD_DESCRIPTION="${PGYER_BUILD_DESCRIPTION:-}"
 PGYER_UPDATE_DESCRIPTION="${PGYER_UPDATE_DESCRIPTION:-}"
 PGYER_OVERSEA="${PGYER_OVERSEA:-2}"
+WECOM_WEBHOOK_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b9fadafa-e50b-4acd-a15b-4bcddd47d349"
 
 cd "${PROJECT_ROOT}"
 
@@ -61,6 +62,72 @@ extract_json_field_optional() {
   ' "$@" <<< "${json_payload}"
 }
 
+send_wecom_notification() {
+  local display_name="$1"
+  local build_version="$2"
+  local install_url="$3"
+  local qr_code_url="$4"
+  local notification_time
+  local content
+  local payload
+  local response
+  local response_code
+  local response_message
+
+  if [[ -z "${WECOM_WEBHOOK_URL}" ]]; then
+    echo "WECOM_WEBHOOK_URL not set, skip WeCom notification."
+    return 0
+  fi
+
+  notification_time="$(date '+%F %T')"
+  content=$'BlueHub 构建上传完成'
+  content+=$'\n'"项目: ${APP_NAME_PREFIX}"
+  content+=$'\n'"包类型: ${display_name}"
+  content+=$'\n'"版本: ${build_version}"
+  content+=$'\n'"时间: ${notification_time}"
+
+  if [[ -n "${install_url}" ]]; then
+    content+=$'\n'"安装链接: ${install_url}"
+  fi
+
+  if [[ -n "${qr_code_url}" ]]; then
+    content+=$'\n'"二维码: ${qr_code_url}"
+  fi
+
+  payload="$(
+    CONTENT="${content}" ruby -rjson -e '
+      puts JSON.generate(
+        msgtype: "text",
+        text: { content: ENV.fetch("CONTENT") }
+      )
+    '
+  )"
+
+  response="$(
+    curl \
+      --silent \
+      --show-error \
+      --fail-with-body \
+      --request POST \
+      --header "Content-Type: application/json" \
+      --data "${payload}" \
+      "${WECOM_WEBHOOK_URL}"
+  )" || {
+    echo "Failed to send WeCom notification."
+    return 0
+  }
+
+  response_code="$(extract_json_field_optional "${response}" errcode || true)"
+
+  if [[ -n "${response_code}" && "${response_code}" != "0" ]]; then
+    response_message="$(extract_json_field_optional "${response}" errmsg || true)"
+    echo "WeCom notification failed: ${response_message:-${response}}"
+    return 0
+  fi
+
+  echo "WeCom notification sent."
+}
+
 resolve_ipa_path() {
   local ipa_count
   ipa_count="$(find "${IPA_OUTPUT_DIR}" -maxdepth 1 -name '*.ipa' | wc -l | tr -d ' ')"
@@ -84,6 +151,7 @@ upload_to_pgyer() {
   local display_name="$2"
   local build_type="$3"
   local build_update_description="$4"
+  local build_version="$5"
   local token_response
   local token_code
   local upload_endpoint
@@ -184,6 +252,11 @@ upload_to_pgyer() {
       if [[ -n "${build_qr_code_url}" ]]; then
         echo "PGYER QR code URL: ${build_qr_code_url}"
       fi
+      send_wecom_notification \
+        "${display_name}" \
+        "${build_version}" \
+        "${build_shortcut_url:+https://www.pgyer.com/${build_shortcut_url}}" \
+        "${build_qr_code_url}"
       return 0
     fi
 
@@ -203,15 +276,17 @@ upload_to_pgyer() {
 upload_ipa_to_pgyer() {
   local ipa_path="$1"
   local build_update_description="$2"
+  local build_version="$3"
 
-  upload_to_pgyer "${ipa_path}" "IPA" "ipa" "${build_update_description}"
+  upload_to_pgyer "${ipa_path}" "IPA" "ipa" "${build_update_description}" "${build_version}"
 }
 
 upload_apk_to_pgyer() {
   local apk_path="$1"
   local build_update_description="$2"
+  local build_version="$3"
 
-  upload_to_pgyer "${apk_path}" "APK" "apk" "${build_update_description}"
+  upload_to_pgyer "${apk_path}" "APK" "apk" "${build_update_description}" "${build_version}"
 }
 
 require_file "${PUBSPEC_FILE}"
@@ -252,8 +327,8 @@ git add pubspec.yaml
 git commit -m "${COMMIT_MESSAGE}"
 git push
 
-upload_ipa_to_pgyer "${renamed_ipa}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}"
-upload_apk_to_pgyer "${renamed_apk}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}"
+upload_ipa_to_pgyer "${renamed_ipa}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}" "${next_version}"
+upload_apk_to_pgyer "${renamed_apk}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}" "${next_version}"
 
 echo "APK generated: ${renamed_apk}"
 echo "IPA generated: ${renamed_ipa}"
