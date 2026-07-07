@@ -9,7 +9,6 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
-import '../job_requirement_tag_label_resolver.dart';
 import 'filter_bottom_sheet_chip.dart';
 import '../../../../shared/network/services/config_service.dart';
 
@@ -156,7 +155,7 @@ class _CompanyApplicationJobFilterSheetState
   @override
   Widget build(BuildContext context) {
     final Map<String, TagItemVO> requirementTagLookup =
-        buildRequirementTagLookup(
+        ConfigService.buildTagLookup(
           ref
                   .watch(tagDictionaryProvider(TagCategory.requirement))
                   .asData
@@ -384,26 +383,19 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
       addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
-      addTag(resolveRequirementTagLabel(context, tag, requirementTagLookup));
+      addTag(
+        ConfigService.resolveTagLabel(
+          rawLabel: tag.label,
+          tagLookup: requirementTagLookup,
+          locale: context.locale,
+        ),
+      );
       if (tags.length >= 4) {
         break;
       }
     }
 
     return tags;
-  }
-
-  String _formatLocation(JobDetailVO job) {
-    if (job.country.isEmpty && job.city.isEmpty) {
-      return '';
-    }
-    if (job.country.isEmpty) {
-      return job.city;
-    }
-    if (job.city.isEmpty) {
-      return job.country;
-    }
-    return '${job.country}·${job.city}';
   }
 
   String _formatSalary(JobDetailVO job) {

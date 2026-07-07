@@ -102,12 +102,12 @@ class JobSeekerMePage extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 96),
+          padding: EdgeInsets.fromLTRB(12, 10, 12, bottomInset + 96),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _Header(onSettingsTap: () => _handleSettingsTap(context)),
-              const SizedBox(height: 11),
+              const SizedBox(height: 10),
               _ProfileCard(
                 userViewData: userViewData,
                 stats: stats,
@@ -193,13 +193,12 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 36,
       child: Row(
         children: <Widget>[
           SizedBox(width: 6),
           Text(
             '我的.我的'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE5000000)),
+            style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xFF000000)),
           ),
           const Spacer(),
           const MessageCenterIconButton(color: Colors.black),

@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -17,6 +18,8 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../auth/application/auth_user.dart';
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/presentation/job_apply_helper.dart';
 import '../../../jobs/presentation/job_detail_page.dart';
@@ -26,6 +29,7 @@ import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 求职者首页：独立页面文件，后续该角色的业务逻辑统一放在这里处理。
 class JobSeekerHomePage extends ConsumerWidget {
   const JobSeekerHomePage({super.key});
@@ -71,77 +75,79 @@ class JobSeekerHomePage extends ConsumerWidget {
       homeLatestJobsProvider,
     );
 
-    return Column(
-      key: AppTestKeys.pageJobSeekerHome,
-      children: <Widget>[
-        const _HomeTopHeader(),
-        Expanded(
-          child: ListView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.only(bottom: bottomPadding + 20),
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 20, 15, 0),
-                child: _ShortcutRow(
-                  items: JobSeekerHomePage._shortcutItems,
-                  onItemTap: (_ShortcutItem item) =>
-                      _handleShortcutTap(context, item),
+    return JobSeekerPageBackground(
+      child: Column(
+        key: AppTestKeys.pageJobSeekerHome,
+        children: <Widget>[
+          const _HomeTopHeader(),
+          Expanded(
+            child: ListView(
+              physics: const ClampingScrollPhysics(),
+              padding: EdgeInsets.only(bottom: bottomPadding + 20),
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 20, 15, 0),
+                  child: _ShortcutRow(
+                    items: JobSeekerHomePage._shortcutItems,
+                    onItemTap: (_ShortcutItem item) =>
+                        _handleShortcutTap(context, item),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.go(RoutePaths.ai),
-                    borderRadius: BorderRadius.circular(12),
-                    child: ClipRRect(
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => context.go(RoutePaths.ai),
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/mon5bjog-qq5tufd.png',
-                        height: 80,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/images/mon5bjog-qq5tufd.png',
+                          height: 80,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: _HomeSectionHeader(
-                  title: '首页.热门签证套餐'.tr(),
-                  onTap: () => _handleVisaMoreTap(context),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: _HomeSectionHeader(
+                    title: '首页.热门签证套餐'.tr(),
+                    onTap: () => _handleVisaMoreTap(context),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _HomeVisaPackagesSection(
-                packagesAsync: hotVisaPackagesAsync,
-                onRetry: () {
-                  ref.invalidate(homeHotVisaPackagesProvider);
-                },
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: _HomeSectionHeader(
-                  title: '首页.最新欧洲岗位'.tr(),
-                  onTap: () => _handleJobsMoreTap(context),
+                const SizedBox(height: 12),
+                _HomeVisaPackagesSection(
+                  packagesAsync: hotVisaPackagesAsync,
+                  onRetry: () {
+                    ref.invalidate(homeHotVisaPackagesProvider);
+                  },
                 ),
-              ),
-              const SizedBox(height: 12),
-              _HomeLatestJobsSection(
-                jobsAsync: latestJobsAsync,
-                onRetry: () {
-                  ref.invalidate(homeLatestJobsProvider);
-                },
-              ),
-            ],
+                const SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: _HomeSectionHeader(
+                    title: '首页.最新欧洲岗位'.tr(),
+                    onTap: () => _handleJobsMoreTap(context),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _HomeLatestJobsSection(
+                  jobsAsync: latestJobsAsync,
+                  onRetry: () {
+                    ref.invalidate(homeLatestJobsProvider);
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -180,18 +186,15 @@ class _HomeTopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
-
-    return JobSeekerPageBackground(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(12, topPadding + 6, 15, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const _HeaderProfileRow(),
-            const SizedBox(height: 12),
-            const _HomeSearchBar(),
-          ],
-        ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, topPadding + 6, 15, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const _HeaderProfileRow(),
+          const SizedBox(height: 12),
+          const _HomeSearchBar(),
+        ],
       ),
     );
   }
@@ -260,7 +263,10 @@ class _HeaderProfileRow extends ConsumerWidget {
                 greetingKey.tr(
                   namedArgs: <String, String>{'name': userViewData.nickname},
                 ),
-                style: TestStyle.medium(fontSize: 15, color: const Color(0xFF262626)),
+                style: TestStyle.medium(
+                  fontSize: 15,
+                  color: const Color(0xFF262626),
+                ),
               ),
               const SizedBox(height: 4),
               Row(
@@ -268,13 +274,16 @@ class _HeaderProfileRow extends ConsumerWidget {
                   const AppSvgIcon(
                     assetPath: 'assets/images/mon5bjog-7bcl82r.svg',
                     fallback: Icons.location_on_outlined,
-                    size: 16,
-                    color: Color(0xFF595959),
+                    size: 14,
+                    color: Color(0xFFBCBCBC),
                   ),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 4),
                   Text(
                     '国家.德国'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF595959)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 12,
+                      color: const Color(0xFF595959),
+                    ),
                   ),
                 ],
               ),
@@ -318,7 +327,10 @@ class _HomeSearchBar extends StatelessWidget {
                   '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFBFBFBF)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: const Color(0xFFBFBFBF),
+                  ),
                 ),
               ),
             ],
@@ -370,7 +382,10 @@ class _ShortcutButton extends StatelessWidget {
               Text(
                 item.labelKey.tr(),
                 textAlign: TextAlign.center,
-                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF171A1D)),
+                style: TestStyle.regular(
+                  fontSize: 12,
+                  color: const Color(0xFF171A1D),
+                ),
               ),
             ],
           ),
@@ -411,28 +426,31 @@ class _HomeSectionHeader extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  title,
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                title,
+                style: TestStyle.pingFangMedium(
+                  fontSize: 16,
+                  color: const Color(0xFF262626),
                 ),
               ),
-              Text(
-                '首页.更多'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+            ),
+            Text(
+              '首页.更多'.tr(),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: const Color(0xFF8C8C8C),
               ),
-              const SizedBox(width: 2),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: Color(0xFFBFBFBF),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Color(0xFFBFBFBF),
+            ),
+          ],
         ),
       ),
     );
@@ -501,7 +519,7 @@ class _HomeVisaPackagesSection extends StatelessWidget {
   }
 }
 
-class _HomeLatestJobsSection extends StatelessWidget {
+class _HomeLatestJobsSection extends ConsumerWidget {
   const _HomeLatestJobsSection({
     required this.jobsAsync,
     required this.onRetry,
@@ -524,7 +542,16 @@ class _HomeLatestJobsSection extends StatelessWidget {
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Map<String, TagItemVO> requirementTagLookup =
+        ConfigService.buildTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
+
     return jobsAsync.when(
       data: (List<JobListVO> jobs) {
         if (jobs.isEmpty) {
@@ -543,6 +570,7 @@ class _HomeLatestJobsSection extends StatelessWidget {
                 ),
                 child: JobPositionCard(
                   data: jobs[index].toHomeJobCardData(),
+                  requirementTagLookup: requirementTagLookup,
                   onTap: () => context.push(
                     RoutePaths.jobDetail,
                     extra: JobDetailPageArgs(jobId: jobs[index].jobId),
@@ -591,7 +619,10 @@ class _HomeSectionEmptyState extends StatelessWidget {
         child: AppEmptyState(
           message: message,
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          textStyle: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+          textStyle: TestStyle.regular(
+            fontSize: 14,
+            color: const Color(0xFF8C8C8C),
+          ),
         ),
       ),
     );
@@ -623,7 +654,10 @@ class _HomeSectionErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
           const SizedBox(height: 14),
           OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -725,14 +759,20 @@ class _VisaMiniCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
+                    style: TestStyle.medium(
+                      fontSize: 16,
+                      color: const Color(0xFF262626),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     data.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                    style: TestStyle.regular(
+                      fontSize: 12,
+                      color: const Color(0xFF8C8C8C),
+                    ),
                   ),
                   const Spacer(),
                   Row(
@@ -745,12 +785,18 @@ class _VisaMiniCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         data.rating,
-                        style: TestStyle.medium(fontSize: 12, color: const Color(0xFFFE5815)),
+                        style: TestStyle.medium(
+                          fontSize: 12,
+                          color: const Color(0xFFFE5815),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         data.casesText,
-                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                        style: TestStyle.regular(
+                          fontSize: 12,
+                          color: const Color(0xFF8C8C8C),
+                        ),
                       ),
                       const Spacer(),
                       Image.asset(data.actionAssetPath, width: 20, height: 20),
@@ -770,12 +816,13 @@ class _VisaMiniCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: <Widget>[
                   SvgPicture.asset(data.ribbonAssetPath, fit: BoxFit.cover),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        data.country,
-                        style: TestStyle.regular(fontSize: 12, color: Colors.white),
+                  Align(
+                    alignment: Alignment(-0.3, -0.6),
+                    child: Text(
+                      data.country,
+                      style: TestStyle.regular(
+                        fontSize: 12,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -948,5 +995,4 @@ extension on JobListVO {
     ].where((String value) => value.isNotEmpty).toList(growable: false);
     return parts.join('·');
   }
-
 }

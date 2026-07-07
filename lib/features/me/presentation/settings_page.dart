@@ -2,11 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import '../../../shared/widgets/app_toast.dart';
 
+import '../../../shared/widgets/app_toast.dart';
 import '../../../app/router/route_paths.dart';
-import '../../auth/presentation/widgets/auth_language_switch.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/localization/app_locales.dart';
 import '../../../shared/widgets/app_dialog.dart';
@@ -27,12 +25,10 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _isSubmittingAccountAction = false;
-  String _versionLabel = '--';
 
   @override
   void initState() {
     super.initState();
-    _loadVersionCode();
   }
 
   @override
@@ -41,86 +37,91 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final bool isChinese = context.isChineseLocale;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: <Widget>[
-            Column(
-              children: <Widget>[
-                _SettingsHeader(onBackTap: context.pop),
-                Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      _SettingsCard(
+      body: Stack(
+        children: <Widget>[
+          Column(
+            children: <Widget>[
+              // 顶部区域独立使用白底，保证状态栏和导航栏与设计稿一致。
+              Container(
+                color: Colors.white,
+                child: SafeArea(
+                  bottom: false,
+                  child: _SettingsHeader(onBackTap: context.pop),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  color: const Color(0xFFF5F7FA),
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                      child: Column(
                         children: <Widget>[
-                          _LanguageRow(
-                            isChinese: isChinese,
-                            onChanged: _handleLanguageChanged,
+                          _SettingsCard(
+                            children: <Widget>[
+                              _LanguageRow(
+                                isChinese: isChinese,
+                                onChanged: _handleLanguageChanged,
+                              ),
+                              _SettingsActionRow(
+                                title: '设置.我的信息'.tr(),
+                                onTap: _handleMyInfoTap,
+                              ),
+                              _SettingsActionRow(
+                                title: '设置.黑名单'.tr(),
+                                onTap: _handleBlacklistTap,
+                              ),
+                              _SettingsActionRow(
+                                title: '设置.关于我们'.tr(),
+                                onTap: _handleAboutTap,
+                              ),
+                            ],
                           ),
-                          _SettingsActionRow(
-                            title: '设置.我的信息'.tr(),
-                            onTap: _handleMyInfoTap,
+                          const Spacer(),
+                          // 通过额外 4pt 内边距，把底部主按钮控制在设计稿的 16pt 左右边距。
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _BottomTextButton(
+                              label: '设置.退出登录'.tr(),
+                              onTap: _isSubmittingAccountAction
+                                  ? null
+                                  : _handleLogoutTap,
+                            ),
                           ),
-                          _SettingsActionRow(
-                            title: '设置.黑名单'.tr(),
-                            onTap: _handleBlacklistTap,
-                          ),
-                          _SettingsActionRow(
-                            title: '设置.关于我们'.tr(),
-                            onTap: _handleAboutTap,
+                          const SizedBox(height: 16),
+                          _BottomLinkButton(
+                            label: '设置.注销'.tr(),
+                            onTap: _isSubmittingAccountAction
+                                ? null
+                                : _handleDeleteTap,
                           ),
                         ],
                       ),
-                      Expanded(child: SizedBox()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: _BottomTextButton(
-                          label: '设置.退出登录'.tr(),
-                          onTap: _isSubmittingAccountAction
-                              ? null
-                              : _handleLogoutTap,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _BottomLinkButton(
-                        label: '设置.注销'.tr(),
-                        onTap: _isSubmittingAccountAction
-                            ? null
-                            : _handleDeleteTap,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '— $_versionLabel —',
-                        style: TestStyle.regular(
-                          fontSize: 12,
-                          color: Color(0xFFBFBFBF),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 100),
-              ],
-            ),
-            if (_isSubmittingAccountAction)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: const Color(0x33000000),
-                  child: Center(
-                    child: Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(child: CircularProgressIndicator()),
                     ),
                   ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+          if (_isSubmittingAccountAction)
+            Positioned.fill(
+              child: ColoredBox(
+                color: const Color(0x33000000),
+                child: Center(
+                  child: Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -128,28 +129,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 切换应用全局语言，并让设置页与其他页面共享同一份 Locale 状态。
   Future<void> _handleLanguageChanged(bool isChinese) async {
     await context.switchAppLocale(isChinese);
-  }
-
-  /// 读取平台版本号与构建号，组合成设置页底部展示文案。
-  Future<void> _loadVersionCode() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    final String version = packageInfo.version.trim();
-    final String buildNumber = packageInfo.buildNumber.trim();
-    final String nextVersionLabel = switch ((
-      version.isEmpty,
-      buildNumber.isEmpty,
-    )) {
-      (true, true) => '--',
-      (false, true) => 'v$version',
-      (true, false) => '($buildNumber)',
-      (false, false) => 'v$version ($buildNumber)',
-    };
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _versionLabel = nextVersionLabel;
-    });
   }
 
   /// 按当前角色分流“我的信息”入口，避免不同身份误入不匹配的资料页。
@@ -296,22 +275,38 @@ class _SettingsHeader extends StatelessWidget {
   @override
   /// 构建顶部标题栏，保持与设计稿一致的返回位置和标题层级。
   Widget build(BuildContext context) {
-    return AppBar(
-      toolbarHeight: 44,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      leadingWidth: 44,
-      titleSpacing: 0,
-      leading: IconButton(
-        onPressed: onBackTap,
-        icon: const Icon(Icons.chevron_left, color: Color(0xFF262626)),
-      ),
-      title: Text(
-        '设置.标题'.tr(),
-        style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
+    return SizedBox(
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          Center(
+            child: Text(
+              '设置.标题'.tr(),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: const Color(0xFF262626),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                onPressed: onBackTap,
+                padding: EdgeInsets.zero,
+                splashRadius: 20,
+                icon: const Icon(
+                  Icons.chevron_left,
+                  size: 24,
+                  color: Color(0xFF262626),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -326,11 +321,12 @@ class _SettingsCard extends StatelessWidget {
   /// 构建设置分组卡片，统一承载卡片圆角和白底样式。
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(children: children),
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }
@@ -353,11 +349,11 @@ class _LanguageRow extends StatelessWidget {
               '设置.系统语言'.tr(),
               style: TestStyle.pingFangRegular(
                 fontSize: 16,
-                color: Color(0xFF262626),
+                color: const Color(0xFF262626),
               ),
             ),
           ),
-          AuthLanguageSwitch(
+          _SettingsLanguageSwitch(
             isChineseSelected: isChinese,
             onChanged: onChanged,
           ),
@@ -378,6 +374,7 @@ class _SettingsActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
         child: Row(
@@ -385,13 +382,17 @@ class _SettingsActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: TestStyle.regular(
+                style: TestStyle.pingFangRegular(
                   fontSize: 16,
-                  color: Color(0xFF262626),
+                  color: const Color(0xFF262626),
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Color(0xFFBFBFBF),
+            ),
           ],
         ),
       ),
@@ -408,19 +409,27 @@ class _BottomTextButton extends StatelessWidget {
   @override
   /// 构建底部主操作按钮，用于承载“退出登录”这类高频设置动作。
   Widget build(BuildContext context) {
+    final double opacity = onTap == null ? 0.5 : 1;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
+      child: Opacity(
+        opacity: opacity,
+        child: Container(
+          width: double.infinity,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            style: TestStyle.pingFangRegular(
+              fontSize: 17,
+              color: const Color(0xFF262626),
+            ),
+          ),
         ),
       ),
     );
@@ -436,15 +445,99 @@ class _BottomLinkButton extends StatelessWidget {
   @override
   /// 构建底部文本入口，适合承载次级设置动作。
   Widget build(BuildContext context) {
+    final double opacity = onTap == null ? 0.5 : 1;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        height: 44,
-        child: Center(
-          child: Text(
-            label,
-            style: TestStyle.regular(fontSize: 16, color: Color(0xFF595959)),
+      child: Opacity(
+        opacity: opacity,
+        child: SizedBox(
+          height: 44,
+          child: Center(
+            child: Text(
+              label,
+              style: TestStyle.pingFangRegular(
+                fontSize: 16,
+                color: const Color(0xFF595959),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsLanguageSwitch extends StatelessWidget {
+  const _SettingsLanguageSwitch({
+    required this.isChineseSelected,
+    required this.onChanged,
+  });
+
+  final bool isChineseSelected;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  /// 构建设置页专用语言切换器，避免修改全局共享组件影响其他页面。
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 24,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(17),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _SettingsLanguageOption(
+              label: '语言.中文简称'.tr(),
+              selected: isChineseSelected,
+              onTap: () => onChanged(true),
+            ),
+          ),
+          Expanded(
+            child: _SettingsLanguageOption(
+              label: '语言.英文简称'.tr(),
+              selected: !isChineseSelected,
+              onTap: () => onChanged(false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsLanguageOption extends StatelessWidget {
+  const _SettingsLanguageOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  /// 构建切换器内部选项，通过蓝底白字突出当前语言。
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(17),
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF1890FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(17),
+        ),
+        child: Text(
+          label,
+          style: TestStyle.pingFangSemibold(
+            fontSize: 12,
+            color: selected ? Colors.white : const Color(0xFF262626),
           ),
         ),
       ),

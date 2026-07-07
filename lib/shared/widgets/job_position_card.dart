@@ -2,7 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../features/config/data/config_models.dart';
+import '../network/services/config_service.dart';
 import 'package:europepass/shared/ui/test_style.dart';
+
 class JobPositionCardData {
   const JobPositionCardData({
     required this.title,
@@ -37,6 +40,7 @@ class JobPositionCard extends StatelessWidget {
   const JobPositionCard({
     super.key,
     required this.data,
+    this.requirementTagLookup = const <String, TagItemVO>{},
     this.onApply,
     this.onTap,
     this.isApplying = false,
@@ -44,6 +48,7 @@ class JobPositionCard extends StatelessWidget {
   });
 
   final JobPositionCardData data;
+  final Map<String, TagItemVO> requirementTagLookup;
   final VoidCallback? onApply;
   final VoidCallback? onTap;
   final bool isApplying;
@@ -56,6 +61,7 @@ class JobPositionCard extends StatelessWidget {
     final String resolvedApplyButtonText = applyButtonText.trim().isEmpty
         ? '招聘卡片.一键投递'.tr()
         : applyButtonText;
+    final Locale locale = context.locale;
     final Widget cardBody = Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -73,13 +79,19 @@ class JobPositionCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                    style: TestStyle.medium(
+                      fontSize: 16,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   data.salary,
-                  style: TestStyle.medium(fontSize: 14, color: Color(0xFFFE5815)),
+                  style: TestStyle.medium(
+                    fontSize: 14,
+                    color: Color(0xFFFE5815),
+                  ),
                 ),
               ],
             ),
@@ -90,8 +102,13 @@ class JobPositionCard extends StatelessWidget {
                 runSpacing: 6,
                 children: data.requirementTags
                     .map(
-                      (tag) =>
-                          const _JobPositionTagStyle.requirement().build(tag),
+                      (tag) => const _JobPositionTagStyle.requirement().build(
+                        ConfigService.resolveTagLabel(
+                          rawLabel: tag,
+                          tagLookup: requirementTagLookup,
+                          locale: locale,
+                        ),
+                      ),
                     )
                     .toList(),
               ),
@@ -135,7 +152,10 @@ class JobPositionCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     data.statusText!,
-                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                    style: TestStyle.regular(
+                      fontSize: 12,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ] else if (data.showApplyButton) ...<Widget>[
                   const SizedBox(width: 12),
@@ -154,7 +174,10 @@ class JobPositionCard extends StatelessWidget {
                       ),
                       child: Text(
                         resolvedApplyButtonText,
-                        style: TestStyle.medium(fontSize: 12, color: Colors.white),
+                        style: TestStyle.medium(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

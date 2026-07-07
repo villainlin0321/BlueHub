@@ -59,31 +59,13 @@ class AiAssistantPageView extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        title: Text(
-          'AI.AI助手'.tr(),
-          style: TestStyle.numberBold(
-            fontSize: 22,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(onPressed: onOpenHistory, child: Text('AI.历史记录'.tr())),
-          const SizedBox(width: AppSpacing.pagePadding - 4),
-        ],
-      ),
       body: TapBlankToDismissKeyboard(
         child: JobSeekerPageBackground(
           fit: BoxFit.fitWidth,
           alignment: Alignment.topCenter,
           child: Column(
             children: <Widget>[
+              _Header(onOpenHistory: onOpenHistory),
               Expanded(
                 child: _ChatMessageList(
                   scrollController: scrollController,
@@ -114,6 +96,56 @@ class AiAssistantPageView extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onOpenHistory});
+
+  final VoidCallback onOpenHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        // height: kToolbarHeight,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.pagePadding,
+          vertical: 10,
+        ),
+        color: Colors.transparent,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                'AI.AI助手'.tr(),
+                style: TestStyle.pingFangMedium(
+                  fontSize: 17,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onOpenHistory,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'AI.历史记录'.tr(),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
