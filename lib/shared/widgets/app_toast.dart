@@ -20,7 +20,7 @@ class AppToast {
     vertical: 10,
   );
   static const Duration _displayDuration = Duration(milliseconds: 2000);
-  static const AppToastPosition _defaultPosition = AppToastPosition.top;
+  static const AppToastPosition _defaultPosition = AppToastPosition.center;
 
   /// 将项目内部位置枚举映射为 EasyLoading 的原生位置枚举。
   static EasyLoadingToastPosition _mapToastPosition(AppToastPosition position) {
