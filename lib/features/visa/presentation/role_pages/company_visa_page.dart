@@ -8,7 +8,6 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
-import '../../../jobs/presentation/job_requirement_tag_label_resolver.dart';
 import '../../../jobs/presentation/post_job_page.dart';
 import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/models/app_currency.dart';
@@ -453,7 +452,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
       _loadInitial();
     });
     final Map<String, TagItemVO> requirementTagLookup =
-        buildRequirementTagLookup(
+        ConfigService.buildTagLookup(
           ref
                   .watch(tagDictionaryProvider(TagCategory.requirement))
                   .asData
@@ -705,7 +704,13 @@ class _JobManageCard extends StatelessWidget {
       addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
-      addTag(resolveRequirementTagLabel(context, tag, requirementTagLookup));
+      addTag(
+        ConfigService.resolveTagLabel(
+          rawLabel: tag.label,
+          tagLookup: requirementTagLookup,
+          locale: context.locale,
+        ),
+      );
       if (tags.length >= 4) {
         break;
       }

@@ -1,11 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../data/job_models.dart';
 
-class JobListCards extends StatelessWidget {
+class JobListCards extends ConsumerWidget {
   const JobListCards({
     super.key,
     required this.jobs,
@@ -30,7 +34,16 @@ class JobListCards extends StatelessWidget {
   final ScrollPhysics? physics;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Map<String, TagItemVO> requirementTagLookup =
+        ConfigService.buildTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
+
     return ListView.separated(
       shrinkWrap: shrinkWrap,
       physics: physics,
@@ -42,6 +55,7 @@ class JobListCards extends StatelessWidget {
         final bool isApplied = appliedJobIds.contains(item.jobId);
         return JobPositionCard(
           data: item.toCardData(),
+          requirementTagLookup: requirementTagLookup,
           onTap: () => onTap(item),
           onApply: isApplied || onApply == null ? null : () => onApply!(item),
           isApplying: applyingJobIds.contains(item.jobId),

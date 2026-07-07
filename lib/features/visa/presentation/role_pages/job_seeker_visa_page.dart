@@ -16,6 +16,7 @@ import '../../data/provider_models.dart';
 import '../../data/provider_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 求职者签证页。
 class JobSeekerVisaPage extends ConsumerStatefulWidget {
   const JobSeekerVisaPage({super.key});
@@ -83,6 +84,7 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
       1 => 'de',
       2 => 'fr',
       3 => 'it',
+      4 => 'uk',
       _ => 'recommended',
     };
   }
@@ -187,7 +189,10 @@ class _VisaProviderErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF8C8C8C),
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -249,27 +254,31 @@ class _VisaHeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double topPadding = MediaQuery.paddingOf(context).top;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Padding(
-          padding: EdgeInsets.only(top: topPadding + 13, bottom: 10, left: 20),
-          child: Text(
-            '签证页.服务商与签证套餐'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: 10, bottom: 10, left: 20),
+            child: Text(
+              '签证页.服务商与签证套餐'.tr(),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: Colors.black,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: const _VisaSearchBar(),
-        ),
-        const SizedBox(height: 14),
-        _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
-        const SizedBox(height: 14),
-      ],
+          // const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: const _VisaSearchBar(),
+          ),
+          const SizedBox(height: 14),
+          _VisaTabRow(selectedIndex: selectedIndex, onTap: onTabTap),
+          const SizedBox(height: 14),
+        ],
+      ),
     );
   }
 }
@@ -304,7 +313,10 @@ class _VisaSearchBar extends StatelessWidget {
                   '首页.搜索签证服务欧洲岗位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: Color(0xFFBFBFBF),
+                  ),
                 ),
               ),
             ],
@@ -320,11 +332,13 @@ class _VisaTabRow extends StatelessWidget {
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
+
   List<String> get _tabs => <String>[
     tr('签证页.推荐套餐'),
     tr('签证页.德国签证'),
     tr('签证页.法国签证'),
     tr('签证页.意大利签证'),
+    tr('签证页.英国推荐'),
   ];
 
   @override
@@ -354,9 +368,12 @@ class _VisaTabRow extends StatelessWidget {
               ),
               child: Text(
                 _tabs[index],
-                style: TestStyle.medium(fontSize: 12, color: selected
+                style: TestStyle.medium(
+                  fontSize: 12,
+                  color: selected
                       ? const Color(0xFF096DD9)
-                      : const Color(0xFF171A1D)),
+                      : const Color(0xFF171A1D),
+                ),
               ),
             ),
           );

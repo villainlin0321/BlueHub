@@ -21,7 +21,8 @@ class JobSeekerPageBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.passthrough,
       children: <Widget>[
-        Positioned.fill(
+        AspectRatio(
+          aspectRatio: 1.5,
           child: IgnorePointer(
             child: SvgPicture.asset(assetPath, fit: fit, alignment: alignment),
           ),

@@ -8,9 +8,12 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/job_position_card.dart';
 import '../../../shared/widgets/visa_service_card.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../jobs/presentation/job_apply_helper.dart';
 import '../../jobs/presentation/job_detail_page.dart';
 import '../../service_detail/presentation/service_detail_page.dart';
@@ -18,6 +21,7 @@ import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 
@@ -540,7 +544,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         ),
         title: Text(
           '我的.我的收藏'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: Color(0xE6000000),
+          ),
         ),
         actions: <Widget>[
           Padding(
@@ -555,7 +562,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               ),
               child: Text(
                 _isManaging ? '我的.退出管理'.tr() : '我的.管理'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
           ),
@@ -811,7 +821,10 @@ class _SelectableWrapper extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -883,7 +896,7 @@ class _FavoriteServiceCard extends StatelessWidget {
   }
 }
 
-class _FavoriteJobCard extends StatelessWidget {
+class _FavoriteJobCard extends ConsumerWidget {
   const _FavoriteJobCard({
     required this.item,
     required this.isApplying,
@@ -897,9 +910,19 @@ class _FavoriteJobCard extends StatelessWidget {
   final Future<void> Function(collection_models.JobListVO item) onApplyTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Map<String, TagItemVO> requirementTagLookup =
+        ConfigService.buildTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
+
     return JobPositionCard(
       data: item.toCardData(),
+      requirementTagLookup: requirementTagLookup,
       onTap: () => context.push(
         RoutePaths.jobDetail,
         extra: JobDetailPageArgs(jobId: item.jobId),
@@ -924,7 +947,10 @@ class _FavoriteServicesEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏签证服务'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+        style: TestStyle.pingFangRegular(
+          fontSize: 14,
+          color: Color(0xFF8C8C8C),
+        ),
       ),
     );
   }
@@ -951,7 +977,10 @@ class _FavoriteServicesErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF8C8C8C),
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -971,7 +1000,10 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏岗位'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+        style: TestStyle.pingFangRegular(
+          fontSize: 14,
+          color: Color(0xFF8C8C8C),
+        ),
       ),
     );
   }
@@ -1052,7 +1084,10 @@ class _FavoritesManageBar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '我的.全选'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ],
               ),
@@ -1072,7 +1107,10 @@ class _FavoritesManageBar extends StatelessWidget {
                 ),
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

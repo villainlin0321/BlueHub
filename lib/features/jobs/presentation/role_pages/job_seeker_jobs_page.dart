@@ -25,6 +25,7 @@ import '../widgets/filter_bottom_sheet_chip.dart';
 import '../widgets/job_list_cards.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 求职者招聘页：严格按 Figma 还原搜索、筛选和职位列表。
 class JobSeekerJobsPage extends ConsumerWidget {
   const JobSeekerJobsPage({super.key});
@@ -109,12 +110,16 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
     return SafeArea(
       bottom: false,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+            padding: EdgeInsets.fromLTRB(20, 10, 16, 0),
             child: Text(
               '招聘.欧洲招聘'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF000000)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: Color(0xFF000000),
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -473,7 +478,10 @@ class _JobsSearchBar extends StatelessWidget {
                   '招聘.搜索岗位占位'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: Color(0xFFBFBFBF),
+                  ),
                 ),
               ),
             ],
@@ -1155,13 +1163,19 @@ class _CombinedFilterSheetContent extends StatelessWidget {
           children: <Widget>[
             Text(
               '招聘.薪资范围'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 16,
+                color: Color(0xFF262626),
+              ),
             ),
             const Spacer(),
             FieldTrailingSelector(
               label: selectedSalaryCurrency.labelKey.tr(),
               onTap: onSalaryCurrencyTap,
-              textStyle: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
+              textStyle: TestStyle.regular(
+                fontSize: 14,
+                color: Color(0xFF595959),
+              ),
             ),
           ],
         ),
@@ -1190,7 +1204,10 @@ class _CombinedFilterSheetContent extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     '岗位发布.自定义薪资'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -1206,7 +1223,10 @@ class _CombinedFilterSheetContent extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           '岗位发布.至'.tr(),
-                          style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                          style: TestStyle.pingFangRegular(
+                            fontSize: 14,
+                            color: Color(0xFF262626),
+                          ),
                         ),
                       ),
                     ],
@@ -1304,13 +1324,19 @@ class _SalaryFilterSheetContent extends StatelessWidget {
           children: <Widget>[
             Text(
               '招聘.薪资范围'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 16,
+                color: Color(0xFF262626),
+              ),
             ),
             const Spacer(),
             FieldTrailingSelector(
               label: selectedSalaryCurrency.labelKey.tr(),
               onTap: onSalaryCurrencyTap,
-              textStyle: TestStyle.regular(fontSize: 14, color: Color(0xFF595959)),
+              textStyle: TestStyle.regular(
+                fontSize: 14,
+                color: Color(0xFF595959),
+              ),
             ),
           ],
         ),
@@ -1332,7 +1358,10 @@ class _SalaryFilterSheetContent extends StatelessWidget {
         const SizedBox(height: 30),
         Text(
           '岗位发布.自定义薪资'.tr(),
-          style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFF262626)),
+          style: TestStyle.pingFangMedium(
+            fontSize: 14,
+            color: Color(0xFF262626),
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -1348,7 +1377,10 @@ class _SalaryFilterSheetContent extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 '岗位发布.至'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
             Expanded(
