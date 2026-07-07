@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +18,8 @@ class AppResultPageArgs {
     required this.action,
     this.orderId,
     this.backAction = const AppResultAction.pop(),
+    this.countdownSeconds,
+    this.countdownAction,
   });
 
   factory AppResultPageArgs.paymentSuccess({int? orderId}) {
@@ -36,6 +40,8 @@ class AppResultPageArgs {
   final AppResultAction action;
   final int? orderId;
   final AppResultAction backAction;
+  final int? countdownSeconds;
+  final AppResultAction? countdownAction;
 }
 
 class AppResultAction {
@@ -55,14 +61,75 @@ class AppResultAction {
 
 enum AppResultActionType { push, go, pop }
 
-class AppResultPage extends StatelessWidget {
+class AppResultPage extends StatefulWidget {
   AppResultPage({super.key, AppResultPageArgs? args})
     : args = args ?? AppResultPageArgs.paymentSuccess();
 
   final AppResultPageArgs args;
 
+  @override
+  State<AppResultPage> createState() => _AppResultPageState();
+}
+
+class _AppResultPageState extends State<AppResultPage> {
+  Timer? _countdownTimer;
+  late int _remainingSeconds;
+  bool _hasHandledCountdownAction = false;
+
+  AppResultPageArgs get args => widget.args;
+
+  bool get _hasCountdown =>
+      (args.countdownSeconds ?? 0) > 0 && args.countdownAction != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingSeconds = args.countdownSeconds ?? 0;
+    _startCountdownIfNeeded();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  /// 当结果页配置了倒计时时，启动每秒递减的计时器，并在结束后自动执行目标动作。
+  void _startCountdownIfNeeded() {
+    if (!_hasCountdown) {
+      return;
+    }
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_remainingSeconds <= 1) {
+        timer.cancel();
+        _remainingSeconds = 0;
+        _handleCountdownAction();
+        return;
+      }
+      setState(() {
+        _remainingSeconds -= 1;
+      });
+    });
+  }
+
+  /// 统一处理倒计时结束后的自动跳转，避免定时器与手动点击重复触发。
+  void _handleCountdownAction() {
+    if (_hasHandledCountdownAction || !_hasCountdown || !mounted) {
+      return;
+    }
+    _hasHandledCountdownAction = true;
+    _handleAction(context, args.countdownAction!);
+  }
+
   /// 统一处理结果页动作，保证主按钮与左上角返回都走同一套路由分发逻辑。
   void _handleAction(BuildContext context, AppResultAction action) {
+    _countdownTimer?.cancel();
+    _hasHandledCountdownAction = true;
     final bool hasValidOrderId = (args.orderId ?? 0) > 0;
     switch (action.type) {
       case AppResultActionType.push:
@@ -140,6 +207,18 @@ class AppResultPage extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 24),
+              if (_hasCountdown) ...<Widget>[
+                Text(
+                  '${_remainingSeconds}s',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: const Color(0xFF096DD9),
+                    fontSize: 20,
+                    height: 28 / 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 args.resultTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
