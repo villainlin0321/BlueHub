@@ -164,6 +164,17 @@ class _AppResultPageState extends State<AppResultPage> {
     }
   }
 
+  /// 统一构造结果页提示文案，在需要时仅替换原文中的秒数字段，保持单行展示。
+  String _buildTipText() {
+    if (!_hasCountdown) {
+      return args.tipText;
+    }
+    return args.tipText.replaceFirst(
+      RegExp(r'\d+s后进入首页'),
+      '${_remainingSeconds}s后进入首页',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -207,18 +218,6 @@ class _AppResultPageState extends State<AppResultPage> {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 24),
-              if (_hasCountdown) ...<Widget>[
-                Text(
-                  '${_remainingSeconds}s',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF096DD9),
-                    fontSize: 20,
-                    height: 28 / 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
               Text(
                 args.resultTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -230,7 +229,7 @@ class _AppResultPageState extends State<AppResultPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                args.tipText,
+                _buildTipText(),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF8C8C8C),

@@ -20,6 +20,7 @@ import '../../features/jobs/presentation/job_detail_page.dart';
 import '../../features/jobs/presentation/job_search_page.dart';
 import '../../features/jobs/presentation/jobs_page.dart';
 import '../../features/jobs/presentation/post_job_page.dart';
+import '../../features/jobs/presentation/role_pages/company_jobs_page.dart';
 import '../../features/jobs/presentation/service_provider_talent_center_page.dart';
 import '../../features/me/presentation/me_page.dart';
 import '../../features/me/presentation/add_education_experience_page.dart';
@@ -322,6 +323,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.jobSearch,
         builder: (context, state) => const JobSearchPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.talentSearch,
+        builder: (context, state) => TalentSearchPage(
+          args:
+              state.extra as TalentSearchPageArgs? ??
+              const TalentSearchPageArgs(),
+        ),
       ),
       GoRoute(
         path: RoutePaths.myInfo,

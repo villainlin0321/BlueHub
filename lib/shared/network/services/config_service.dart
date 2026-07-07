@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:europepass/shared/network/api_client.dart';
 import 'package:europepass/shared/network/api_decoders.dart';
 import '../../../features/config/data/config_models.dart';
@@ -68,6 +70,74 @@ class ConfigService {
 
   final ApiClient _apiClient;
 
+  /// 构建标签查找表，支持通过 code / 中文 / 英文反查标签项。
+  static Map<String, TagItemVO> buildTagLookup(Iterable<TagItemVO> tags) {
+    final Map<String, TagItemVO> lookup = <String, TagItemVO>{};
+
+    void addKey(String value, TagItemVO item) {
+      final String key = _normalizeTagKey(value);
+      if (key.isEmpty || lookup.containsKey(key)) {
+        return;
+      }
+      lookup[key] = item;
+    }
+
+    for (final TagItemVO item in tags) {
+      addKey(item.tagCode, item);
+      addKey(item.tagNameZh, item);
+      addKey(item.tagNameEn, item);
+    }
+
+    return lookup;
+  }
+
+  /// 按当前语言环境解析标签展示文案，找不到映射时回退原始值。
+  static String resolveTagLabel({
+    required String rawLabel,
+    required Map<String, TagItemVO> tagLookup,
+    required Locale locale,
+  }) {
+    final String normalizedLabel = rawLabel.trim();
+    if (normalizedLabel.isEmpty) {
+      return '';
+    }
+
+    final TagItemVO? matched = tagLookup[_normalizeTagKey(normalizedLabel)];
+    if (matched == null) {
+      return normalizedLabel;
+    }
+
+    return resolveLocalizedTagLabel(matched, locale: locale);
+  }
+
+  /// 返回标签项在当前语言下应展示的文案。
+  static String resolveLocalizedTagLabel(
+    TagItemVO item, {
+    required Locale locale,
+  }) {
+    if (isChineseLocale(locale)) {
+      final String zh = item.tagNameZh.trim();
+      if (zh.isNotEmpty) {
+        return zh;
+      }
+      final String en = item.tagNameEn.trim();
+      return en.isNotEmpty ? en : item.tagCode.trim();
+    }
+
+    final String en = item.tagNameEn.trim();
+    if (en.isNotEmpty) {
+      return en;
+    }
+
+    final String zh = item.tagNameZh.trim();
+    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  }
+
+  /// 统一判断是否中文语言环境。
+  static bool isChineseLocale(Locale locale) {
+    return locale.languageCode.toLowerCase().startsWith('zh');
+  }
+
   /// 获取系统标签字典。
   ///
   /// 不传 `category` 时，返回服务端支持的全部标签分类字典。
@@ -102,5 +172,9 @@ class ConfigService {
       decode: (data) => TagDictVO.fromJson(asJsonMap(data)),
     );
     return response;
+  }
+
+  static String _normalizeTagKey(String value) {
+    return value.trim().toLowerCase();
   }
 }
