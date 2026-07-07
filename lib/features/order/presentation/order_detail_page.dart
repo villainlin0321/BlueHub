@@ -2943,8 +2943,8 @@ class _UploadPlaceholder extends StatelessWidget {
               children: <Widget>[
                 SvgPicture.asset(
                   'assets/images/order_upload_add_inline.svg',
-                  width: 16,
-                  height: 16,
+                  width: 11,
+                  height: 11,
                 ),
                 const SizedBox(width: 4),
                 Text(
