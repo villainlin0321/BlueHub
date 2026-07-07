@@ -23,6 +23,9 @@ class RoutePaths {
   /// 岗位搜索页。
   static const jobSearch = '/jobs/search';
 
+  /// 人才搜索页。
+  static const talentSearch = '/jobs/talent-search';
+
   /// 岗位详情页。
   static const jobDetail = '/jobs/detail';
 

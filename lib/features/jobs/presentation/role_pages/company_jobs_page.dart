@@ -40,17 +40,18 @@ class CompanyJobsPage extends ConsumerStatefulWidget {
   ConsumerState<CompanyJobsPage> createState() => _CompanyJobsPageState();
 }
 
+/// 人才搜索页参数，当前仅区分企业端与服务商端主按钮行为。
+class TalentSearchPageArgs {
+  const TalentSearchPageArgs({
+    this.mode = TalentCenterMode.employer,
+  });
+
+  final TalentCenterMode mode;
+}
+
 class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   int _selectedTabIndex = 0;
   final Set<int> _processingPrimaryActionUserIds = <int>{};
-
-  late final TextEditingController _searchController = TextEditingController()
-    ..addListener(_handleSearchChanged);
-
-  String? get _keyword {
-    final String value = _searchController.text.trim();
-    return value.isEmpty ? null : value;
-  }
 
   String _sortForTab(int index) => switch (index) {
     1 => 'active',
@@ -61,7 +62,6 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
   String get _selectedSort => _sortForTab(_selectedTabIndex);
 
   TalentListQuery _buildQueryForTab(int index) => TalentListQuery(
-    keyword: _keyword,
     position: index == 3 ? tr('招聘.中餐厨师') : null,
     sort: _sortForTab(index),
     page: 1,
@@ -72,10 +72,6 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
 
   bool get _isServiceProviderMode =>
       widget.mode == TalentCenterMode.serviceProvider;
-
-  void _handleSearchChanged() {
-    setState(() {});
-  }
 
   void _handleTalentTabChanged(int index) {
     final TalentListQuery nextQuery = _buildQueryForTab(index);
@@ -90,6 +86,14 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
       return;
     }
     AppToast.show(message);
+  }
+
+  /// 点击顶部搜索框后进入独立搜索页，复用当前角色模式对应的结果动作。
+  Future<void> _openTalentSearchPage() async {
+    await context.push(
+      RoutePaths.talentSearch,
+      extra: TalentSearchPageArgs(mode: widget.mode),
+    );
   }
 
   Future<void> _openResumePreview(int userId) async {
@@ -242,21 +246,13 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     return 0;
   }
 
-  @override
-  void dispose() {
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
-    super.dispose();
-  }
-
   /// 构建顶部固定区域，保证标题、搜索框和标签栏不跟随列表滚动。
   Widget _buildFixedHeader(double topPadding) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _Header(topPadding: topPadding),
-        _SearchBar(controller: _searchController),
+        _SearchBar(onTap: _openTalentSearchPage),
         _TabBarSection(
           selectedIndex: _selectedTabIndex,
           onTap: _handleTalentTabChanged,
@@ -281,35 +277,14 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
               if (pageResult.list.isEmpty) {
                 return const _TalentsEmptyState();
               }
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: pageResult.list.length,
-                padding: EdgeInsets.zero,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (BuildContext context, int index) {
-                  return _CandidateCard(
-                    data: _CandidateCardData.fromTalent(
-                      pageResult.list[index],
-                      sort: _selectedSort,
-                    ),
-                    onViewResumeTap: () =>
-                        _openResumePreview(pageResult.list[index].userId),
-                    primaryActionLabel: _isServiceProviderMode
-                        ? '通用.打招呼'.tr()
-                        : '招聘.邀约面试'.tr(),
-                    onPrimaryActionTap: () => _handlePrimaryAction(
-                      _CandidateCardData.fromTalent(
-                        pageResult.list[index],
-                        sort: _selectedSort,
-                      ),
-                    ),
-                    isPrimaryActionLoading:
-                        _processingPrimaryActionUserIds.contains(
-                      pageResult.list[index].userId,
-                    ),
-                  );
-                },
+              return _TalentListView(
+                pageResult: pageResult,
+                selectedSort: _selectedSort,
+                isServiceProviderMode: _isServiceProviderMode,
+                processingPrimaryActionUserIds:
+                    _processingPrimaryActionUserIds,
+                onViewResumeTap: _openResumePreview,
+                onPrimaryActionTap: _handlePrimaryAction,
               );
             },
             loading: () => const Padding(
@@ -416,16 +391,19 @@ class _Header extends StatelessWidget {
           Expanded(
             child: Text(
               '招聘.人才中心'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xE6000000)),
+              style: TestStyle.pingFangSemibold(
+                fontSize: 17,
+                color: Color(0xE6000000),
+              ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Text(
-              '招聘.筛选'.tr(),
-              style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
-            ),
-          ),
+          // Padding(
+          //   padding: EdgeInsets.only(top: 2),
+          //   child: Text(
+          //     '招聘.筛选'.tr(),
+          //     style: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFF262626)),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -433,45 +411,514 @@ class _Header extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller});
+  const _SearchBar({required this.onTap});
 
-  final TextEditingController controller;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: <Widget>[
-            SvgPicture.asset(
-              'assets/images/mou52cw6-pzdc72z.svg',
-              width: 16,
-              height: 16,
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  hintText: '招聘.搜索岗位技能经验'.tr(),
-                  hintStyle: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFFBFBFBF)),
+            child: Row(
+              children: <Widget>[
+                SvgPicture.asset(
+                  'assets/images/mou52cw6-pzdc72z.svg',
+                  width: 16,
+                  height: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '招聘.搜索岗位技能经验'.tr(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFFBFBFBF),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 人才独立搜索页：点击搜索框进入后输入关键词并展示人才结果列表。
+class TalentSearchPage extends ConsumerStatefulWidget {
+  const TalentSearchPage({
+    super.key,
+    this.args = const TalentSearchPageArgs(),
+  });
+
+  final TalentSearchPageArgs args;
+
+  @override
+  ConsumerState<TalentSearchPage> createState() => _TalentSearchPageState();
+}
+
+class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
+  static const String _searchAsset = 'assets/images/mou52cw6-pzdc72z.svg';
+
+  late final TextEditingController _searchController = TextEditingController()
+    ..addListener(_handleInputChanged);
+  late final FocusNode _focusNode = FocusNode();
+  final Set<int> _processingPrimaryActionUserIds = <int>{};
+
+  bool get _isServiceProviderMode =>
+      widget.args.mode == TalentCenterMode.serviceProvider;
+
+  String? _submittedKeyword;
+
+  bool get _hasSubmittedKeyword => (_submittedKeyword ?? '').trim().isNotEmpty;
+
+  TalentListQuery get _query => TalentListQuery(
+    keyword: _submittedKeyword,
+    sort: 'latest',
+    page: 1,
+    pageSize: 20,
+  );
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_handleInputChanged)
+      ..dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// 输入被清空后立即回到初始空态，避免继续展示旧搜索结果。
+  void _handleInputChanged() {
+    if (_searchController.text.trim().isNotEmpty || !_hasSubmittedKeyword) {
+      return;
+    }
+    setState(() {
+      _submittedKeyword = null;
+    });
+  }
+
+  /// 统一提交关键字搜索，只在用户明确点击搜索或键盘搜索时刷新结果。
+  void _handleSubmit([String? value]) {
+    final String normalized = (value ?? _searchController.text).trim();
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _submittedKeyword = normalized.isEmpty ? null : normalized;
+    });
+  }
+
+  /// 搜索页返回时优先回上一页，兜底回到招聘页。
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(RoutePaths.jobs);
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) {
+      return;
+    }
+    AppToast.show(message);
+  }
+
+  Future<void> _openResumePreview(int userId) async {
+    await context.push(RoutePaths.resumePreview, extra: userId);
+  }
+
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    return showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return _RemarkDialog(actionLabel: actionLabel);
+      },
+    );
+  }
+
+  /// 企业端搜索结果点击主按钮时，继续走邀约面试流程。
+  Future<void> _handleInviteInterview(_CandidateCardData data) async {
+    if (_processingPrimaryActionUserIds.contains(data.userId)) {
+      return;
+    }
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+    final JobDetailVO? selectedJob = await showInviteJobPickerSheet(context);
+    if (selectedJob == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _processingPrimaryActionUserIds.add(data.userId);
+    });
+    try {
+      if (data.resumeId <= 0 || selectedJob.jobId <= 0) {
+        _showMessage('招聘.邀约失败'.tr(), isError: true);
+        return;
+      }
+      await ref
+          .read(applicationServiceProvider)
+          .inviteInterview(
+            request: InviteInterviewBO(
+              jobId: selectedJob.jobId,
+              resumeId: data.resumeId,
+              remark: remark.trim().isEmpty ? null : remark.trim(),
+            ),
+          );
+      _showMessage('招聘.邀约面试'.tr());
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingPrimaryActionUserIds.remove(data.userId);
+        });
+      }
+    }
+  }
+
+  /// 服务商端搜索结果点击主按钮时，直接创建会话并跳转聊天页。
+  Future<void> _handleSayHello(_CandidateCardData data) async {
+    if (_processingPrimaryActionUserIds.contains(data.userId)) {
+      return;
+    }
+    if (data.userId <= 0) {
+      _showMessage('招聘.用户信息缺失'.tr(), isError: true);
+      return;
+    }
+    setState(() {
+      _processingPrimaryActionUserIds.add(data.userId);
+    });
+    try {
+      final Map<String, dynamic> response = await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: data.userId,
+              targetUserRole: 'job_seeker',
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      final int conversationId = _readConversationId(response);
+      await context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: data.userId,
+          targetUserRole: 'job_seeker',
+          nickname: data.name,
+          avatarUrl: data.avatarUrl,
+          conversationId: conversationId,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingPrimaryActionUserIds.remove(data.userId);
+        });
+      }
+    }
+  }
+
+  /// 根据当前搜索页角色模式分发卡片主按钮动作。
+  Future<void> _handlePrimaryAction(_CandidateCardData data) async {
+    if (_isServiceProviderMode) {
+      await _handleSayHello(data);
+      return;
+    }
+    await _handleInviteInterview(data);
+  }
+
+  /// 兼容不同接口响应格式，提取聊天会话 ID。
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
+    }
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AsyncValue<PageResult<TalentVO>>? talentsAsync = _hasSubmittedKeyword
+        ? ref.watch(talentListProvider(_query))
+        : null;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        toolbarHeight: 48,
+        titleSpacing: 0,
+        leadingWidth: 44,
+        leading: IconButton(
+          onPressed: _handleBack,
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: Color(0xE6000000),
+          ),
+        ),
+        title: _TalentSearchAppBarField(
+          controller: _searchController,
+          focusNode: _focusNode,
+          searchAssetPath: _searchAsset,
+          onSubmitted: _handleSubmit,
+        ),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: _handleSubmit,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF096DD9),
+                minimumSize: const Size(52, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                '通用.搜索'.tr(),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 15,
+                  color: Color(0xFF096DD9),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+      body: SafeArea(
+        top: false,
+        child: _hasSubmittedKeyword
+            ? _TalentSearchResultBody(
+                talentsAsync: talentsAsync!,
+                isServiceProviderMode: _isServiceProviderMode,
+                processingPrimaryActionUserIds:
+                    _processingPrimaryActionUserIds,
+                onViewResumeTap: _openResumePreview,
+                onPrimaryActionTap: _handlePrimaryAction,
+                onRetry: _handleSubmit,
+              )
+            : Center(
+                child: AppEmptyState(
+                  message: '招聘.请输入关键词开始搜索'.tr(),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _TalentSearchAppBarField extends StatelessWidget {
+  const _TalentSearchAppBarField({
+    required this.controller,
+    required this.focusNode,
+    required this.searchAssetPath,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String searchAssetPath;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      margin: const EdgeInsets.only(left: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: <Widget>[
+          const SizedBox(width: 12),
+          SvgPicture.asset(
+            searchAssetPath,
+            width: 16,
+            height: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              cursorColor: const Color(0xFF096DD9),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF262626),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                hintText: '招聘.搜索岗位技能经验'.tr(),
+                hintStyle: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFFBFBFBF),
+                ),
+              ),
+              onSubmitted: onSubmitted,
+            ),
+          ),
+          const SizedBox(width: 9),
+        ],
+      ),
+    );
+  }
+}
+
+class _TalentSearchResultBody extends StatelessWidget {
+  const _TalentSearchResultBody({
+    required this.talentsAsync,
+    required this.isServiceProviderMode,
+    required this.processingPrimaryActionUserIds,
+    required this.onViewResumeTap,
+    required this.onPrimaryActionTap,
+    required this.onRetry,
+  });
+
+  final AsyncValue<PageResult<TalentVO>> talentsAsync;
+  final bool isServiceProviderMode;
+  final Set<int> processingPrimaryActionUserIds;
+  final ValueChanged<int> onViewResumeTap;
+  final Future<void> Function(_CandidateCardData data) onPrimaryActionTap;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF5F7FA),
+      child: talentsAsync.when(
+        data: (pageResult) {
+          if (pageResult.list.isEmpty) {
+            return const _TalentsEmptyState();
+          }
+          return _TalentListView(
+            pageResult: pageResult,
+            selectedSort: 'latest',
+            isServiceProviderMode: isServiceProviderMode,
+            processingPrimaryActionUserIds: processingPrimaryActionUserIds,
+            onViewResumeTap: onViewResumeTap,
+            onPrimaryActionTap: onPrimaryActionTap,
+            padding: const EdgeInsets.fromLTRB(11, 12, 14, 24),
+            shrinkWrap: false,
+            physics: const AlwaysScrollableScrollPhysics(),
+          );
+        },
+        loading: () => const Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        error: (_, __) => _TalentLoadError(onRetry: onRetry),
+      ),
+    );
+  }
+}
+
+class _TalentListView extends StatelessWidget {
+  const _TalentListView({
+    required this.pageResult,
+    required this.selectedSort,
+    required this.isServiceProviderMode,
+    required this.processingPrimaryActionUserIds,
+    required this.onViewResumeTap,
+    required this.onPrimaryActionTap,
+    this.padding = EdgeInsets.zero,
+    this.shrinkWrap = true,
+    this.physics = const NeverScrollableScrollPhysics(),
+  });
+
+  final PageResult<TalentVO> pageResult;
+  final String selectedSort;
+  final bool isServiceProviderMode;
+  final Set<int> processingPrimaryActionUserIds;
+  final ValueChanged<int> onViewResumeTap;
+  final Future<void> Function(_CandidateCardData data) onPrimaryActionTap;
+  final EdgeInsetsGeometry padding;
+  final bool shrinkWrap;
+  final ScrollPhysics physics;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      shrinkWrap: shrinkWrap,
+      physics: physics,
+      itemCount: pageResult.list.length,
+      padding: padding,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (BuildContext context, int index) {
+        final TalentVO talent = pageResult.list[index];
+        final _CandidateCardData cardData = _CandidateCardData.fromTalent(
+          talent,
+          sort: selectedSort,
+        );
+        return _CandidateCard(
+          data: cardData,
+          onViewResumeTap: () => onViewResumeTap(talent.userId),
+          primaryActionLabel: isServiceProviderMode
+              ? '通用.打招呼'.tr()
+              : '招聘.邀约面试'.tr(),
+          onPrimaryActionTap: () => onPrimaryActionTap(cardData),
+          isPrimaryActionLoading: processingPrimaryActionUserIds.contains(
+            talent.userId,
+          ),
+        );
+      },
     );
   }
 }
