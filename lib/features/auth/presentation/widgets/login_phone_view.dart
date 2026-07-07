@@ -262,49 +262,47 @@ class _AgreementSectionState extends State<_AgreementSection> {
         TestStyle.pingFangRegular(color: AppColors.brand).copyWith(
           height: 22 / 12,
           fontSize: 12,
-          decoration: TextDecoration.underline,
-          decorationColor: AppColors.brand,
         );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _AgreementCheckbox(
-          value: widget.agreed,
-          onChanged: widget.onAgreementChanged,
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: _AgreementCheckbox(
+            value: widget.agreed,
+            onChanged: widget.onAgreementChanged,
+          ),
         ),
         const SizedBox(width: 9),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: RichText(
-              key: const Key('login_agreement_rich_text'),
-              text: TextSpan(
-                style: plainStyle,
-                children: <InlineSpan>[
-                  TextSpan(
-                    text: '认证.协议前缀'.tr(),
-                    recognizer: _toggleAgreementRecognizer,
-                  ),
-                  TextSpan(
-                    text: '认证.用户服务协议'.tr(),
-                    style: linkStyle,
-                    recognizer: _userTermsRecognizer,
-                  ),
-                  TextSpan(text: isChinese ? '、' : ', '),
-                  TextSpan(
-                    text: '认证.个人信息跨境流动用户协议'.tr(),
-                    style: linkStyle,
-                    recognizer: _crossTermsRecognizer,
-                  ),
-                  TextSpan(text: isChinese ? '和' : ', and '),
-                  TextSpan(
-                    text: '认证.用户隐私政策'.tr(),
-                    style: linkStyle,
-                    recognizer: _privacyPolicyRecognizer,
-                  ),
-                ],
-              ),
+          child: RichText(
+            key: const Key('login_agreement_rich_text'),
+            text: TextSpan(
+              style: plainStyle,
+              children: <InlineSpan>[
+                TextSpan(
+                  text: '认证.协议前缀'.tr(),
+                  recognizer: _toggleAgreementRecognizer,
+                ),
+                TextSpan(
+                  text: '认证.用户服务协议'.tr(),
+                  style: linkStyle,
+                  recognizer: _userTermsRecognizer,
+                ),
+                TextSpan(text: isChinese ? '、' : ', '),
+                TextSpan(
+                  text: '认证.个人信息跨境流动用户协议'.tr(),
+                  style: linkStyle,
+                  recognizer: _crossTermsRecognizer,
+                ),
+                TextSpan(text: isChinese ? '和' : ', and '),
+                TextSpan(
+                  text: '认证.用户隐私政策'.tr(),
+                  style: linkStyle,
+                  recognizer: _privacyPolicyRecognizer,
+                ),
+              ],
             ),
           ),
         ),
