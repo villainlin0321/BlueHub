@@ -1330,11 +1330,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
   Widget _buildEmptyStateChip(String text) {
     return Container(
       height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(4),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         text,
         style: TestStyle.pingFangRegular(
