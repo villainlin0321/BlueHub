@@ -23,11 +23,23 @@ WECOM_WEBHOOK_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b9fadafa
 cd "${PROJECT_ROOT}"
 mkdir -p "${PUB_CACHE_DIR}"
 export PUB_CACHE="${PUB_CACHE_DIR}"
+SUMMARY_DIR="$(mktemp -d "${PROJECT_ROOT}/.release-summary.XXXXXX")"
+LAST_PGYER_INSTALL_URL=""
+LAST_PGYER_QR_CODE_URL=""
+LAST_WECOM_STATUS_MESSAGE=""
+RUN_APK=1
+RUN_IPA=1
 
 fail() {
   echo "$1" >&2
   exit 1
 }
+
+cleanup() {
+  [[ -d "${SUMMARY_DIR}" ]] && rm -rf "${SUMMARY_DIR}"
+}
+
+trap cleanup EXIT
 
 require_file() {
   local file_path="$1"
@@ -37,6 +49,46 @@ require_file() {
 require_command() {
   local command_name="$1"
   command -v "${command_name}" >/dev/null 2>&1 || fail "Command not found: ${command_name}"
+}
+
+print_usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-apk | -ipa]
+
+Options:
+  -apk    Run APK release flow only.
+  -ipa    Run IPA release flow only.
+
+Without options, the script runs APK first, then IPA.
+EOF
+}
+
+parse_args() {
+  if [[ "$#" -gt 1 ]]; then
+    print_usage
+    fail "Only one optional argument is supported."
+  fi
+
+  if [[ "$#" -eq 0 ]]; then
+    return 0
+  fi
+
+  case "$1" in
+    -apk)
+      RUN_IPA=0
+      ;;
+    -ipa)
+      RUN_APK=0
+      ;;
+    -h|--help)
+      print_usage
+      exit 0
+      ;;
+    *)
+      print_usage
+      fail "Unknown option: $1"
+      ;;
+  esac
 }
 
 extract_json_field() {
@@ -65,6 +117,41 @@ extract_json_field_optional() {
   ' "$@" <<< "${json_payload}"
 }
 
+reset_release_runtime() {
+  LAST_PGYER_INSTALL_URL=""
+  LAST_PGYER_QR_CODE_URL=""
+  LAST_WECOM_STATUS_MESSAGE=""
+}
+
+write_release_summary_file() {
+  local summary_file="$1"
+  local artifact_label="$2"
+  local artifact_path="$3"
+
+  : > "${summary_file}"
+
+  if [[ -n "${LAST_PGYER_INSTALL_URL}" ]]; then
+    echo "PGYER install URL: ${LAST_PGYER_INSTALL_URL}" >> "${summary_file}"
+  fi
+
+  if [[ -n "${LAST_PGYER_QR_CODE_URL}" ]]; then
+    echo "PGYER QR code URL: ${LAST_PGYER_QR_CODE_URL}" >> "${summary_file}"
+  fi
+
+  if [[ -n "${LAST_WECOM_STATUS_MESSAGE}" ]]; then
+    echo "${LAST_WECOM_STATUS_MESSAGE}" >> "${summary_file}"
+  fi
+
+  echo "${artifact_label} generated: ${artifact_path}" >> "${summary_file}"
+}
+
+print_release_summary_file() {
+  local summary_file="$1"
+
+  [[ -s "${summary_file}" ]] || return 0
+  cat "${summary_file}"
+}
+
 send_wecom_notification() {
   local display_name="$1"
   local build_version="$2"
@@ -78,7 +165,8 @@ send_wecom_notification() {
   local response_message
 
   if [[ -z "${WECOM_WEBHOOK_URL}" ]]; then
-    echo "WECOM_WEBHOOK_URL not set, skip WeCom notification."
+    LAST_WECOM_STATUS_MESSAGE="WECOM_WEBHOOK_URL not set, skip WeCom notification."
+    echo "${LAST_WECOM_STATUS_MESSAGE}"
     return 0
   fi
 
@@ -116,7 +204,8 @@ send_wecom_notification() {
       --data "${payload}" \
       "${WECOM_WEBHOOK_URL}"
   )" || {
-    echo "Failed to send WeCom notification."
+    LAST_WECOM_STATUS_MESSAGE="Failed to send WeCom notification."
+    echo "${LAST_WECOM_STATUS_MESSAGE}"
     return 0
   }
 
@@ -124,11 +213,13 @@ send_wecom_notification() {
 
   if [[ -n "${response_code}" && "${response_code}" != "0" ]]; then
     response_message="$(extract_json_field_optional "${response}" errmsg || true)"
-    echo "WeCom notification failed: ${response_message:-${response}}"
+    LAST_WECOM_STATUS_MESSAGE="WeCom notification failed: ${response_message:-${response}}"
+    echo "${LAST_WECOM_STATUS_MESSAGE}"
     return 0
   fi
 
-  echo "WeCom notification sent."
+  LAST_WECOM_STATUS_MESSAGE="WeCom notification sent."
+  echo "${LAST_WECOM_STATUS_MESSAGE}"
 }
 
 resolve_ipa_path() {
@@ -170,6 +261,9 @@ upload_to_pgyer() {
   local build_key
   local attempt
   local curl_args=()
+
+  LAST_PGYER_INSTALL_URL=""
+  LAST_PGYER_QR_CODE_URL=""
 
   if [[ -z "${PGYER_API_KEY}" ]]; then
     echo "PGYER_API_KEY not set, skip PGYER upload."
@@ -247,19 +341,21 @@ upload_to_pgyer() {
     if [[ -z "${build_info_code}" || "${build_info_code}" == "0" ]]; then
       build_shortcut_url="$(extract_json_field_optional "${build_info_response}" data buildShortcutUrl || extract_json_field_optional "${build_info_response}" buildShortcutUrl || true)"
       build_qr_code_url="$(extract_json_field_optional "${build_info_response}" data buildQRCodeURL || extract_json_field_optional "${build_info_response}" buildQRCodeURL || true)"
+      LAST_PGYER_INSTALL_URL="${build_shortcut_url:+https://www.pgyer.com/${build_shortcut_url}}"
+      LAST_PGYER_QR_CODE_URL="${build_qr_code_url}"
 
       echo "PGYER publish completed."
-      if [[ -n "${build_shortcut_url}" ]]; then
-        echo "PGYER install URL: https://www.pgyer.com/${build_shortcut_url}"
+      if [[ -n "${LAST_PGYER_INSTALL_URL}" ]]; then
+        echo "PGYER install URL: ${LAST_PGYER_INSTALL_URL}"
       fi
-      if [[ -n "${build_qr_code_url}" ]]; then
-        echo "PGYER QR code URL: ${build_qr_code_url}"
+      if [[ -n "${LAST_PGYER_QR_CODE_URL}" ]]; then
+        echo "PGYER QR code URL: ${LAST_PGYER_QR_CODE_URL}"
       fi
       send_wecom_notification \
         "${display_name}" \
         "${build_version}" \
-        "${build_shortcut_url:+https://www.pgyer.com/${build_shortcut_url}}" \
-        "${build_qr_code_url}"
+        "${LAST_PGYER_INSTALL_URL}" \
+        "${LAST_PGYER_QR_CODE_URL}"
       return 0
     fi
 
@@ -292,6 +388,44 @@ upload_apk_to_pgyer() {
   upload_to_pgyer "${apk_path}" "APK" "apk" "${build_update_description}" "${build_version}"
 }
 
+run_apk_release_flow() {
+  local build_version="$1"
+  local build_update_description="$2"
+  local summary_file="$3"
+  local renamed_apk
+
+  reset_release_runtime
+  build_apk
+
+  renamed_apk="${APK_OUTPUT_DIR}/${APP_NAME_PREFIX}-${build_version}.apk"
+  mv "${APK_OUTPUT_FILE}" "${renamed_apk}"
+
+  upload_apk_to_pgyer "${renamed_apk}" "${build_update_description}" "${build_version}"
+  write_release_summary_file "${summary_file}" "APK" "${renamed_apk}"
+  print_release_summary_file "${summary_file}"
+}
+
+run_ipa_release_flow() {
+  local build_version="$1"
+  local build_update_description="$2"
+  local summary_file="$3"
+  local ipa_path
+  local renamed_ipa
+
+  reset_release_runtime
+  build_ipa
+
+  ipa_path="$(resolve_ipa_path)"
+  renamed_ipa="${IPA_OUTPUT_DIR}/${APP_NAME_PREFIX}-${build_version}.ipa"
+  mv "${ipa_path}" "${renamed_ipa}"
+
+  upload_ipa_to_pgyer "${renamed_ipa}" "${build_update_description}" "${build_version}"
+  write_release_summary_file "${summary_file}" "IPA" "${renamed_ipa}"
+  print_release_summary_file "${summary_file}"
+}
+
+parse_args "$@"
+
 require_file "${PUBSPEC_FILE}"
 require_command flutter
 require_command git
@@ -311,27 +445,50 @@ build_name="${BASH_REMATCH[1]}"
 build_number="${BASH_REMATCH[2]}"
 next_build_number=$((build_number + 1))
 next_version="${build_name}+${next_build_number}"
+release_update_description="${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}"
+apk_summary_file="${SUMMARY_DIR}/apk.summary.log"
+ipa_summary_file="${SUMMARY_DIR}/ipa.summary.log"
+apk_flow_succeeded=0
+ipa_flow_succeeded=0
 
 sed -i '' "s/^version: .*/version: ${next_version}/" "${PUBSPEC_FILE}"
 
 echo "Version updated: ${current_version} -> ${next_version}"
 
-build_apk
-build_ipa
-
-renamed_apk="${APK_OUTPUT_DIR}/${APP_NAME_PREFIX}-${next_version}.apk"
-mv "${APK_OUTPUT_FILE}" "${renamed_apk}"
-
-ipa_path="$(resolve_ipa_path)"
-renamed_ipa="${IPA_OUTPUT_DIR}/${APP_NAME_PREFIX}-${next_version}.ipa"
-mv "${ipa_path}" "${renamed_ipa}"
-
 git add pubspec.yaml sh/build_all_release.sh
 git commit -m "${COMMIT_MESSAGE}"
 git push
 
-upload_ipa_to_pgyer "${renamed_ipa}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}" "${next_version}"
-upload_apk_to_pgyer "${renamed_apk}" "${PGYER_UPDATE_DESCRIPTION:-Build ${next_version}}" "${next_version}"
+if [[ "${RUN_APK}" -eq 1 ]]; then
+  if ( run_apk_release_flow "${next_version}" "${release_update_description}" "${apk_summary_file}" ); then
+    apk_flow_succeeded=1
+  else
+    if [[ "${RUN_IPA}" -eq 1 ]]; then
+      echo "APK release flow failed, continue with IPA release flow." >&2
+    else
+      echo "APK release flow failed." >&2
+    fi
+  fi
+fi
 
-echo "APK generated: ${renamed_apk}"
-echo "IPA generated: ${renamed_ipa}"
+if [[ "${RUN_IPA}" -eq 1 ]]; then
+  if ( run_ipa_release_flow "${next_version}" "${release_update_description}" "${ipa_summary_file}" ); then
+    ipa_flow_succeeded=1
+  else
+    echo "IPA release flow failed." >&2
+  fi
+fi
+
+if [[ "${apk_flow_succeeded}" -eq 1 || "${ipa_flow_succeeded}" -eq 1 ]]; then
+  echo "Release flows finished. Final summary:"
+  print_release_summary_file "${apk_summary_file}"
+  print_release_summary_file "${ipa_summary_file}"
+fi
+
+if [[ "${RUN_APK}" -eq 1 && "${RUN_IPA}" -eq 1 ]]; then
+  [[ "${ipa_flow_succeeded}" -eq 1 ]] || fail "IPA release flow failed."
+elif [[ "${RUN_APK}" -eq 1 ]]; then
+  [[ "${apk_flow_succeeded}" -eq 1 ]] || fail "APK release flow failed."
+elif [[ "${RUN_IPA}" -eq 1 ]]; then
+  [[ "${ipa_flow_succeeded}" -eq 1 ]] || fail "IPA release flow failed."
+fi
