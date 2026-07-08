@@ -855,23 +855,21 @@ class _SelectionIcon extends StatelessWidget {
 
   final bool selected;
 
+  /// 构建收藏管理态的多选图标，并与全局多选视觉保持一致。
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
+    return AnimatedSwitcher(
       duration: const Duration(milliseconds: 160),
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: selected ? const Color(0xFF186CFF) : Colors.white,
-        border: Border.all(
-          color: selected ? const Color(0xFF186CFF) : const Color(0xFFD9D9D9),
-          width: 1.5,
-        ),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return ScaleTransition(scale: animation, child: child);
+      },
+      child: Icon(
+        selected ? Icons.check_circle : Icons.panorama_fish_eye,
+        key: ValueKey<bool>(selected),
+        size: 20,
+        // 收藏管理态属于多选入口，图标与公共多选弹层统一为品牌蓝。
+        color: selected ? const Color(0xFF096DD9) : const Color(0xFFBFBFBF),
       ),
-      child: selected
-          ? const Icon(Icons.check, size: 14, color: Colors.white)
-          : null,
     );
   }
 }

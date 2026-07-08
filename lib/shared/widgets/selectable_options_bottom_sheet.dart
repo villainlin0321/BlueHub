@@ -198,12 +198,13 @@ class _SelectableOptionTile extends StatelessWidget {
             Icon(
               multiple
                   ? (selected
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded)
+                      ? Icons.check_circle
+                      : Icons.panorama_fish_eye)
                   : (selected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off),
               size: 20,
+              // 多选场景统一使用品牌蓝，保证全局勾选态视觉一致。
               color: selected
                   ? const Color(0xFF096DD9)
                   : const Color(0xFFBFBFBF),
