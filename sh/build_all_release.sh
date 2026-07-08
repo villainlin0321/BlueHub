@@ -231,13 +231,26 @@ resolve_ipa_path() {
   ls -t "${IPA_OUTPUT_DIR}"/*.ipa 2>/dev/null | head -n 1
 }
 
+cleanup_old_ipa_outputs() {
+  mkdir -p "${IPA_OUTPUT_DIR}"
+  find "${IPA_OUTPUT_DIR}" -maxdepth 1 -name '*.ipa' -delete
+}
+
+cleanup_old_apk_outputs() {
+  mkdir -p "${APK_OUTPUT_DIR}"
+  find "${APK_OUTPUT_DIR}" -maxdepth 1 -name '*.apk' -delete
+}
+
 build_apk() {
+  cleanup_old_apk_outputs
   flutter build apk --release
   [[ -f "${APK_OUTPUT_FILE}" ]] || fail "Release APK not found: ${APK_OUTPUT_FILE}"
 }
 
 build_ipa() {
+  cleanup_old_ipa_outputs
   flutter build ipa --release --export-method "${IOS_EXPORT_METHOD}"
+  [[ -n "$(resolve_ipa_path)" ]] || fail "Failed to generate a new IPA in ${IPA_OUTPUT_DIR}"
 }
 
 upload_to_pgyer() {
