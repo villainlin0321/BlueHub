@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PUB_CACHE_DIR="${PROJECT_ROOT}/.pub-cache"
 PUBSPEC_FILE="${PROJECT_ROOT}/pubspec.yaml"
 APK_OUTPUT_DIR="${PROJECT_ROOT}/build/app/outputs/flutter-apk"
 APK_OUTPUT_FILE="${APK_OUTPUT_DIR}/app-release.apk"
@@ -20,6 +21,8 @@ PGYER_OVERSEA="${PGYER_OVERSEA:-2}"
 WECOM_WEBHOOK_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b9fadafa-e50b-4acd-a15b-4bcddd47d349"
 
 cd "${PROJECT_ROOT}"
+mkdir -p "${PUB_CACHE_DIR}"
+export PUB_CACHE="${PUB_CACHE_DIR}"
 
 fail() {
   echo "$1" >&2
@@ -323,7 +326,7 @@ ipa_path="$(resolve_ipa_path)"
 renamed_ipa="${IPA_OUTPUT_DIR}/${APP_NAME_PREFIX}-${next_version}.ipa"
 mv "${ipa_path}" "${renamed_ipa}"
 
-git add pubspec.yaml
+git add pubspec.yaml sh/build_all_release.sh
 git commit -m "${COMMIT_MESSAGE}"
 git push
 
