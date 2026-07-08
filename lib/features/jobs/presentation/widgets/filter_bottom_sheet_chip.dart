@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class FilterBottomSheetOption {
   const FilterBottomSheetOption({required this.value, required this.label});
 
@@ -161,7 +162,10 @@ class _FilterOptionsBottomSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             title,
-                            style: TestStyle.medium(fontSize: 17, color: Color(0xFF171A1D)),
+                            style: TestStyle.medium(
+                              fontSize: 17,
+                              color: Color(0xFF171A1D),
+                            ),
                           ),
                           Positioned(
                             right: 12,
@@ -187,7 +191,10 @@ class _FilterOptionsBottomSheet extends StatelessWidget {
                         ),
                         child: LayoutBuilder(
                           builder:
-                              (BuildContext context, BoxConstraints constraints) {
+                              (
+                                BuildContext context,
+                                BoxConstraints constraints,
+                              ) {
                                 const double spacing = 12;
                                 final double itemWidth =
                                     (constraints.maxWidth - spacing * 2) / 3;
@@ -240,7 +247,7 @@ class _FilterOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color borderColor = selected
-        ? const Color(0xFF91C3FF)
+        ? const Color(0xFF096DD9)
         : const Color(0xFFBFBFBF);
     final Color backgroundColor = selected
         ? const Color(0xFFEDF4FF)
@@ -258,7 +265,7 @@ class _FilterOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: borderColor),
+          border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Text(
           label,
@@ -284,6 +291,7 @@ Future<T?> showFilterActionBottomSheet<T>({
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    useRootNavigator: true,
     isDismissible: true,
     enableDrag: true,
     isScrollControlled: true,
@@ -363,7 +371,10 @@ class _FilterActionBottomSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             title,
-                            style: TestStyle.medium(fontSize: 17, color: Color(0xFF171A1D)),
+                            style: TestStyle.medium(
+                              fontSize: 17,
+                              color: Color(0xFF171A1D),
+                            ),
                           ),
                           Positioned(
                             right: 12,
@@ -389,7 +400,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
                       color: Colors.white,
                       padding: EdgeInsets.fromLTRB(
                         12,
-                        32,
+                        12,
                         12,
                         bottomPadding > 0 ? bottomPadding + 12 : 16,
                       ),
@@ -400,14 +411,19 @@ class _FilterActionBottomSheet extends StatelessWidget {
                               onPressed: onReset,
                               style: OutlinedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(44),
-                                side: const BorderSide(color: Color(0xFFD9D9D9)),
+                                side: const BorderSide(
+                                  color: Color(0xFFD9D9D9),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: Text(
                                 resetText,
-                                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                                style: TestStyle.regular(
+                                  fontSize: 16,
+                                  color: Color(0xFF262626),
+                                ),
                               ),
                             ),
                           ),
@@ -418,7 +434,9 @@ class _FilterActionBottomSheet extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(44),
                                 elevation: 0,
-                                disabledBackgroundColor: const Color(0xFFBFBFBF),
+                                disabledBackgroundColor: const Color(
+                                  0xFFBFBFBF,
+                                ),
                                 backgroundColor: const Color(0xFF096DD9),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -426,7 +444,10 @@ class _FilterActionBottomSheet extends StatelessWidget {
                               ),
                               child: Text(
                                 confirmText,
-                                style: TestStyle.regular(fontSize: 16, color: Colors.white),
+                                style: TestStyle.regular(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),

@@ -543,14 +543,9 @@ class _HomeLatestJobsSection extends ConsumerWidget {
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Map<String, TagItemVO> requirementTagLookup =
-        ConfigService.buildTagLookup(
-          ref
-                  .watch(tagDictionaryProvider(TagCategory.requirement))
-                  .asData
-                  ?.value ??
-              const <TagItemVO>[],
-        );
+    final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory =
+        ref.watch(jobCardTagLookupProvider).asData?.value ??
+        const <TagCategory, Map<String, TagItemVO>>{};
 
     return jobsAsync.when(
       data: (List<JobListVO> jobs) {
@@ -570,7 +565,7 @@ class _HomeLatestJobsSection extends ConsumerWidget {
                 ),
                 child: JobPositionCard(
                   data: jobs[index].toHomeJobCardData(),
-                  requirementTagLookup: requirementTagLookup,
+                  tagLookupByCategory: tagLookupByCategory,
                   onTap: () => context.push(
                     RoutePaths.jobDetail,
                     extra: JobDetailPageArgs(jobId: jobs[index].jobId),
@@ -955,16 +950,32 @@ extension on JobListVO {
   JobPositionCardData toHomeJobCardData() {
     final String urgentLabel = '招聘卡片.急招'.tr();
     final String visaSupportLabel = '招聘卡片.提供签证'.tr();
-    final List<String> tagLabels = tags
-        .map((TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
+    final List<JobPositionCardTagData> apiTags = tags
+        .map(
+          (TagVO tag) => JobPositionCardTagData(
+            label: tag.label.trim(),
+            type: tag.type.trim(),
+          ),
+        )
+        .where((JobPositionCardTagData tag) => tag.label.isNotEmpty)
         .toList(growable: false);
-    final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != urgentLabel),
-      if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
-        visaSupportLabel,
+    final List<JobPositionCardTagData> requirementTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type != TagCategory.highlight.value,
+      ),
+      if (hasVisaSupport)
+        JobPositionCardTagData(label: visaSupportLabel, type: null),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
+    final List<JobPositionCardTagData> highlightTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type == TagCategory.highlight.value,
+      ),
+      if (isUrgent)
+        JobPositionCardTagData(
+          label: urgentLabel,
+          type: TagCategory.highlight.value,
+        ),
+    ];
 
     return JobPositionCardData(
       title: title,

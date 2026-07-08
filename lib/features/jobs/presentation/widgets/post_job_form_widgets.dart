@@ -22,7 +22,6 @@ class PostJobSectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: PostJobPageStyles.surface,
         borderRadius: BorderRadius.circular(PostJobPageStyles.cardRadius),
-        boxShadow: PostJobPageStyles.cardShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
@@ -252,7 +251,7 @@ class PostJobSelectableChip extends StatelessWidget {
             ? PostJobPageStyles.chipSelectedBackground.withValues(alpha: 0.9)
             : PostJobPageStyles.inputFill,
         child: Container(
-          height: 34,
+          height: PostJobPageStyles.chipHeight,
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(PostJobPageStyles.chipRadius),
