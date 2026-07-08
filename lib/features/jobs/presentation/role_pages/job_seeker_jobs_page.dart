@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1078,6 +1080,12 @@ String _formatSalaryValue(double value) {
   return value.toStringAsFixed(1);
 }
 
+const int _kFilterGridColumnCount = 3;
+const int _kFilterGridCollapsedMaxRows = 3;
+const double _kFilterGridCrossSpacing = 12;
+const double _kFilterGridMainSpacing = 18;
+const double _kFilterGridItemHeight = 34;
+
 _SalaryFilterSelection? _resolveSalarySelection(
   BuildContext context, {
   required String? selectedPresetKey,
@@ -1145,20 +1153,20 @@ class _CombinedFilterSheetContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _CombinedFilterSection(
+        _CollapsibleCombinedFilterSection(
           title: '招聘.国家'.tr(),
           options: countryOptions,
           selectedValue: selectedCountryCode,
           onSelected: onCountrySelected,
         ),
-        const SizedBox(height: 34),
-        _CombinedFilterSection(
+        const SizedBox(height: 24),
+        _CollapsibleCombinedFilterSection(
           title: '招聘.签证类型'.tr(),
           options: positionOptions,
           selectedValue: selectedPositionKeyword,
           onSelected: onPositionSelected,
         ),
-        const SizedBox(height: 34),
+        const SizedBox(height: 24),
         Row(
           children: <Widget>[
             Text(
@@ -1180,19 +1188,10 @@ class _CombinedFilterSheetContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 18,
-          children: salaryPresetOptions
-              .map(
-                (_DropdownOption option) => _SalaryPresetOptionTile(
-                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
-                  label: option.label,
-                  selected: option.value == selectedSalaryPresetKey,
-                  onTap: () => onSalaryPresetSelected(option.value),
-                ),
-              )
-              .toList(growable: false),
+        _FilterOptionGrid(
+          options: salaryPresetOptions,
+          selectedValue: selectedSalaryPresetKey,
+          onSelected: onSalaryPresetSelected,
         ),
         const SizedBox(height: 18),
         Row(
@@ -1247,13 +1246,14 @@ class _CombinedFilterSheetContent extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 24),
       ],
     );
   }
 }
 
-class _CombinedFilterSection extends StatelessWidget {
-  const _CombinedFilterSection({
+class _CollapsibleCombinedFilterSection extends StatefulWidget {
+  const _CollapsibleCombinedFilterSection({
     required this.title,
     required this.options,
     required this.selectedValue,
@@ -1266,29 +1266,78 @@ class _CombinedFilterSection extends StatelessWidget {
   final ValueChanged<String> onSelected;
 
   @override
+  State<_CollapsibleCombinedFilterSection> createState() =>
+      _CollapsibleCombinedFilterSectionState();
+}
+
+class _CollapsibleCombinedFilterSectionState
+    extends State<_CollapsibleCombinedFilterSection> {
+  bool _expanded = false;
+
+  static int get _collapsedMaxItemCount =>
+      _kFilterGridColumnCount * _kFilterGridCollapsedMaxRows;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = _shouldExpandForSelection(widget.selectedValue);
+  }
+
+  @override
+  void didUpdateWidget(covariant _CollapsibleCombinedFilterSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedValue != oldWidget.selectedValue &&
+        _shouldExpandForSelection(widget.selectedValue)) {
+      _expanded = true;
+    }
+  }
+
+  bool _shouldExpandForSelection(String? selectedValue) {
+    if (selectedValue?.isNotEmpty != true) {
+      return false;
+    }
+    final int selectedIndex = widget.options.indexWhere(
+      (_DropdownOption option) => option.value == selectedValue,
+    );
+    return selectedIndex >= _collapsedMaxItemCount;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool shouldShowToggle =
+        widget.options.length > _collapsedMaxItemCount;
+    final int visibleCount = _expanded
+        ? widget.options.length
+        : math.min(widget.options.length, _collapsedMaxItemCount);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          title,
+          widget.title,
           style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 18,
-          children: options
-              .map(
-                (_DropdownOption option) => _SalaryPresetOptionTile(
-                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
-                  label: option.label,
-                  selected: option.value == selectedValue,
-                  onTap: () => onSelected(option.value),
-                ),
-              )
-              .toList(growable: false),
+        _FilterOptionGrid(
+          options: widget.options,
+          selectedValue: widget.selectedValue,
+          onSelected: widget.onSelected,
+          visibleItemCount: visibleCount,
         ),
+        if (shouldShowToggle) ...<Widget>[
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.center,
+            child: _FilterGridExpandButton(
+              expanded: _expanded,
+              onTap: () {
+                setState(() {
+                  _expanded = !_expanded;
+                });
+              },
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1341,19 +1390,10 @@ class _SalaryFilterSheetContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 18,
-          children: presetOptions
-              .map(
-                (_DropdownOption option) => _SalaryPresetOptionTile(
-                  width: (MediaQuery.sizeOf(context).width - 56) / 3,
-                  label: option.label,
-                  selected: option.value == selectedPresetKey,
-                  onTap: () => onPresetSelected(option.value),
-                ),
-              )
-              .toList(growable: false),
+        _FilterOptionGrid(
+          options: presetOptions,
+          selectedValue: selectedPresetKey,
+          onSelected: onPresetSelected,
         ),
         const SizedBox(height: 30),
         Text(
@@ -1390,6 +1430,7 @@ class _SalaryFilterSheetContent extends StatelessWidget {
                 onChanged: (_) => onCustomValueChanged(),
               ),
             ),
+            SizedBox(height: 24, width: 10),
           ],
         ),
       ],
@@ -1397,15 +1438,95 @@ class _SalaryFilterSheetContent extends StatelessWidget {
   }
 }
 
+class _FilterOptionGrid extends StatelessWidget {
+  const _FilterOptionGrid({
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+    this.visibleItemCount,
+  });
+
+  final List<_DropdownOption> options;
+  final String? selectedValue;
+  final ValueChanged<String> onSelected;
+  final int? visibleItemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final int itemCount = math.min(
+      visibleItemCount ?? options.length,
+      options.length,
+    );
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: _kFilterGridColumnCount,
+        crossAxisSpacing: _kFilterGridCrossSpacing,
+        mainAxisSpacing: _kFilterGridMainSpacing,
+        mainAxisExtent: _kFilterGridItemHeight,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        final _DropdownOption option = options[index];
+        return _SalaryPresetOptionTile(
+          label: option.label,
+          selected: option.value == selectedValue,
+          onTap: () => onSelected(option.value),
+        );
+      },
+    );
+  }
+}
+
+class _FilterGridExpandButton extends StatelessWidget {
+  const _FilterGridExpandButton({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const Color color = Color(0xFF096DD9);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: 18,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              expanded ? '收起' : '显示全部',
+              style: TestStyle.medium(fontSize: 12, color: color),
+            ),
+            const SizedBox(width: 4),
+            AnimatedRotation(
+              turns: expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: const AppSvgIcon(
+                assetPath: 'assets/images/icon_arrow_down.svg',
+                fallback: Icons.arrow_drop_down,
+                size: 12,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SalaryPresetOptionTile extends StatelessWidget {
   const _SalaryPresetOptionTile({
-    required this.width,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  final double width;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -1413,7 +1534,7 @@ class _SalaryPresetOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color borderColor = selected
-        ? const Color(0xFF91C3FF)
+        ? const Color(0xFF096DD9)
         : const Color(0xFFBFBFBF);
     final Color backgroundColor = selected
         ? const Color(0xFFEDF4FF)
@@ -1425,13 +1546,13 @@ class _SalaryPresetOptionTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: width,
-        height: 34,
+        width: double.infinity,
+        height: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: borderColor),
+          border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Text(
           label,
