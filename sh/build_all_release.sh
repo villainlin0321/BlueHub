@@ -9,6 +9,7 @@ PUBSPEC_FILE="${PROJECT_ROOT}/pubspec.yaml"
 APK_OUTPUT_DIR="${PROJECT_ROOT}/build/app/outputs/flutter-apk"
 APK_OUTPUT_FILE="${APK_OUTPUT_DIR}/app-release.apk"
 IPA_OUTPUT_DIR="${PROJECT_ROOT}/build/ios/ipa"
+IOS_EXPORT_OPTIONS_PLIST="${PROJECT_ROOT}/sh/ios/ExportOptions.plist"
 APP_NAME_PREFIX="europepass"
 COMMIT_MESSAGE="chore: bump build version"
 IOS_EXPORT_METHOD="${IOS_EXPORT_METHOD:-ad-hoc}"
@@ -249,7 +250,11 @@ build_apk() {
 
 build_ipa() {
   cleanup_old_ipa_outputs
-  flutter build ipa --release --export-method "${IOS_EXPORT_METHOD}"
+  if [[ -f "${IOS_EXPORT_OPTIONS_PLIST}" ]]; then
+    flutter build ipa --release --export-options-plist "${IOS_EXPORT_OPTIONS_PLIST}"
+  else
+    flutter build ipa --release --export-method "${IOS_EXPORT_METHOD}"
+  fi
   [[ -n "$(resolve_ipa_path)" ]] || fail "Failed to generate a new IPA in ${IPA_OUTPUT_DIR}"
 }
 
