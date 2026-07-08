@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' show PathMetric;
+
 import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -390,6 +393,7 @@ class _LicenseUploadSection extends StatelessWidget {
   final bool isRequired;
   final String? optionalLabel;
 
+  /// 统一弹出营业执照样例图，便于用户对照上传材料格式。
   void _showSampleDialog(BuildContext context) {
     showGeneralDialog<void>(
       context: context,
@@ -431,45 +435,54 @@ class _LicenseUploadSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text(
-              title,
-              style: TestStyle.medium(fontSize: 14, color: Color(0xFF262626)),
+            Expanded(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: TestStyle.pingFangMedium(
+                      fontSize: 14,
+                      color: const Color(0xFF262626),
+                    ).copyWith(height: 20 / 14),
+                  ),
+                  if (isRequired)
+                    Text(
+                      '*',
+                      style: TestStyle.pingFangRegular(
+                        fontSize: 14,
+                        color: const Color(0xFFFF4D4F),
+                      ).copyWith(height: 20 / 14),
+                    ),
+                  if (optionalLabel != null)
+                    Text(
+                      '($optionalLabel)',
+                      style: TestStyle.pingFangRegular(
+                        fontSize: 14,
+                        color: const Color(0xFF8C8C8C),
+                      ).copyWith(height: 20 / 14),
+                    ),
+                ],
+              ),
             ),
-            if (isRequired) ...<Widget>[
-              const SizedBox(width: 4),
-              Text(
-                '*',
-                style: TestStyle.regular(
-                  fontSize: 14,
-                  color: Color(0xFFFF4D4F),
-                ),
-              ),
-            ],
-            if (optionalLabel != null) ...<Widget>[
-              const SizedBox(width: 4),
-              Text(
-                optionalLabel!,
-                style: TestStyle.regular(
-                  fontSize: 13,
-                  color: Color(0xFF8C8C8C),
-                ),
-              ),
-            ],
-            const Spacer(),
             TextButton(
               onPressed: () => _showSampleDialog(context),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: const Color(0xFF096DD9),
+                visualDensity: VisualDensity.compact,
               ),
               child: Text(
                 '认证流程.查看样例'.tr(),
                 style: TestStyle.pingFangRegular(
-                  fontSize: 14,
-                  color: Color(0xFF096DD9),
-                ),
+                  fontSize: 13,
+                  color: const Color(0xFF096DD9),
+                ).copyWith(height: 20 / 13),
               ),
             ),
           ],
@@ -499,72 +512,129 @@ class _UploadPlaceholder extends StatelessWidget {
   final PickedUploadFile? pickedFile;
   final bool isUploading;
 
+  /// 构建上传空态与已上传态共用的材料预览框，贴近设计稿的虚线描边和蒙层样式。
   @override
   Widget build(BuildContext context) {
+    final BorderRadius borderRadius = BorderRadius.circular(8);
     return InkWell(
       key: uploadKey,
       onTap: isUploading ? null : onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 180,
+      borderRadius: borderRadius,
+      child: SizedBox(
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFFD9D9D9),
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            QualificationPreviewImage(
-              previewPath: pickedFile?.path,
-              placeholderAsset:
-                  'assets/images/qualification_license_placeholder.png',
-              fit: BoxFit.cover,
-              placeholderFit: BoxFit.cover,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            Center(
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(
-                  color: Color(0x80000000),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: SvgPicture.asset(
-                  'assets/images/qualification_camera.svg',
-                  width: 24,
-                  height: 24,
-                ),
-              ),
-            ),
-            if (isUploading)
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0x66000000),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+        child: AspectRatio(
+          // 按设计稿 327x214 维持上传框比例，避免不同宽度下高度失真。
+          aspectRatio: 327 / 214,
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: borderRadius,
+                child: ColoredBox(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(1),
+                    child: QualificationPreviewImage(
+                      previewPath: pickedFile?.path,
+                      placeholderAsset:
+                          'assets/images/qualification_license_placeholder.png',
+                      fit: BoxFit.cover,
+                      placeholderFit: BoxFit.cover,
+                      borderRadius: BorderRadius.circular(7),
                     ),
                   ),
                 ),
               ),
-          ],
+              IgnorePointer(
+                // 通过前景画笔补齐虚线描边，避免为单页精修引入额外依赖。
+                child: CustomPaint(
+                  painter: const _DashedRoundedRectPainter(
+                    color: Color(0xFFD9D9D9),
+                    radius: 8,
+                  ),
+                ),
+              ),
+              Center(
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0x80000000),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: SvgPicture.asset(
+                    'assets/images/qualification_camera.svg',
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
+              ),
+              if (isUploading)
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x66000000),
+                    borderRadius: borderRadius,
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+/// 为上传框绘制圆角虚线边框，尽量贴近设计稿中的点状描边效果。
+class _DashedRoundedRectPainter extends CustomPainter {
+  const _DashedRoundedRectPainter({
+    required this.color,
+    required this.radius,
+  });
+
+  final Color color;
+  final double radius;
+
+  /// 逐段裁切圆角路径并绘制虚线，保证四角过渡平滑。
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double strokeWidth = 1;
+    const double dashLength = 4;
+    const double gapLength = 3;
+    final Paint paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final Rect rect = Offset.zero & size;
+    final RRect rRect = RRect.fromRectAndRadius(
+      rect.deflate(strokeWidth / 2),
+      Radius.circular(radius),
+    );
+    final Path borderPath = Path()..addRRect(rRect);
+
+    for (final PathMetric metric in borderPath.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final double end = math.min(distance + dashLength, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
+    return color != oldDelegate.color ||
+        radius != oldDelegate.radius;
   }
 }
