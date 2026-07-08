@@ -230,6 +230,7 @@ extension on VisaProviderListVO {
           title: latestPackage.name.trim().isEmpty
               ? '签证页.推荐套餐'.tr()
               : latestPackage.name,
+          currency: latestPackage.currency,
           price: _formatVisaListPrice(latestPackage.priceFrom),
         ),
       ],
@@ -238,12 +239,9 @@ extension on VisaProviderListVO {
   }
 }
 
-/// 格式化签证列表卡片价格，列表接口默认按人民币返回展示。
+/// 格式化签证列表卡片价格数值，货币符号由卡片组件统一渲染。
 String _formatVisaListPrice(double price) {
-  final String value = price % 1 == 0
-      ? price.toInt().toString()
-      : price.toStringAsFixed(1);
-  return '¥$value';
+  return price % 1 == 0 ? price.toInt().toString() : price.toStringAsFixed(1);
 }
 
 class _VisaHeroSection extends StatelessWidget {
