@@ -118,6 +118,7 @@ class PostJobInputField extends StatelessWidget {
     this.textInputAction,
     this.onChanged,
     this.onSubmitted,
+    this.centerText = false,
   });
 
   final TextEditingController controller;
@@ -129,6 +130,8 @@ class PostJobInputField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  // 控制输入内容和占位文案是否水平居中显示。
+  final bool centerText;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +160,8 @@ class PostJobInputField extends StatelessWidget {
             }) {
               return const SizedBox.shrink();
             },
+        // 薪资区间等场景需要输入内容和占位文案都居中显示。
+        textAlign: centerText ? TextAlign.center : TextAlign.start,
         style: PostJobPageStyles.optionText,
         decoration: InputDecoration(
           hintText: hintText,

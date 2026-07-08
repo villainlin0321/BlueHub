@@ -27,6 +27,8 @@ final _currentEmployerProfileProvider =
 class CompanyMePage extends ConsumerWidget {
   const CompanyMePage({super.key});
 
+  static const String _headerBackgroundAsset =
+      'assets/images/company_me_header_bg_figma.svg';
   static const String _settingsAsset = 'assets/images/mou4gf12-hem78nx.svg';
   static const String _avatarAsset = 'assets/images/mou64ult-sj15mxj.png';
 
@@ -40,22 +42,23 @@ class CompanyMePage extends ConsumerWidget {
   static const List<_MenuData> _menus = <_MenuData>[
     _MenuData(
       labelKey: '我的.企业资质',
-      iconAsset: 'assets/images/mou64ult-bsnw92y.svg',
+      iconAsset: 'assets/images/company_me_menu_qualification_figma.svg',
       fallbackIcon: Icons.assignment_ind_outlined,
     ),
     _MenuData(
       labelKey: '我的.应聘管理',
-      iconAsset: 'assets/images/mou64ulu-ebnjjum.svg',
+      iconAsset: 'assets/images/company_me_menu_application_figma.svg',
       fallbackIcon: Icons.business_center_outlined,
+      iconRenderSize: 20,
     ),
     _MenuData(
       labelKey: '我的.人才中心',
-      iconAsset: 'assets/images/mou64ulu-1l37egn.svg',
+      iconAsset: 'assets/images/company_me_menu_talent_figma.svg',
       fallbackIcon: Icons.groups_outlined,
     ),
     _MenuData(
       labelKey: '我的.订单管理',
-      iconAsset: 'assets/images/mou64ulu-l17h9p8.svg',
+      iconAsset: 'assets/images/company_me_menu_order_figma.svg',
       fallbackIcon: Icons.checklist_rounded,
     ),
   ];
@@ -142,62 +145,65 @@ class CompanyMePage extends ConsumerWidget {
 class _CompanyHeaderSection extends StatelessWidget {
   const _CompanyHeaderSection();
 
+  static const double _figmaSafeAreaHeight = 44;
+  static const double _figmaTotalHeight = 220;
+  static const double _statCardHeight = 88;
+  static const double _statCardOffset = 26;
+
+  /// 构建企业端“我的”页面头部，按设计稿 220 总高重排蓝底与统计卡。
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
+    final double contentHeight = _figmaTotalHeight - _figmaSafeAreaHeight;
+    final double headerHeight = topPadding + contentHeight;
+    final double totalHeaderHeight = headerHeight + _statCardOffset;
 
     return SizedBox(
-      height: 228,
+      height: totalHeaderHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
-          Container(
-            height: 200,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFF3F9BF7), Color(0xFF2F73E5)],
-              ),
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
             ),
-            child: Stack(
-              children: <Widget>[
-                Positioned(
-                  left: -36,
-                  top: -36,
-                  child: Container(
-                    width: 156,
-                    height: 156,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: <Color>[Color(0xFF1FDAFF), Color(0x003584EC)],
-                      ),
+            child: SizedBox(
+              height: headerHeight,
+              width: double.infinity,
+              child: Stack(
+                children: <Widget>[
+                  Positioned.fill(
+                    // 直接使用 Figma 头部背景切图，避免代码渐变带来的色差。
+                    child: SvgPicture.asset(
+                      CompanyMePage._headerBackgroundAsset,
+                      fit: BoxFit.fill,
                     ),
                   ),
-                ),
-                Positioned(
-                  left: 16,
-                  top: topPadding,
-                  right: 16,
-                  // 关键修复：顶部内容仅按自身高度布局，避免固定底部留白把可用高度挤爆。
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      _HeaderActions(),
-                      SizedBox(height: 15),
-                      _CompanyProfileRow(),
-                    ],
+                  Positioned(
+                    left: 16,
+                    top: topPadding + 10,
+                    right: 16,
+                    // 企业资料区与统计卡拉开距离，同时名称与副信息间距按设计稿收紧。
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        _HeaderActions(),
+                        SizedBox(height: 8),
+                        _CompanyProfileRow(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const Positioned(left: 12, right: 12, bottom: 0, child: _StatCard()),
+          const Positioned(
+            left: 12,
+            right: 12,
+            bottom: 0,
+            child: SizedBox(height: _statCardHeight, child: _StatCard()),
+          ),
         ],
       ),
     );
@@ -324,7 +330,7 @@ class _CompanyInfo extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TestStyle.semibold(fontSize: 17, color: Colors.white),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Row(
           children: <Widget>[
             Text(
@@ -430,7 +436,8 @@ class _StatCard extends ConsumerWidget {
 
     return Container(
       height: 88,
-      padding: const EdgeInsets.fromLTRB(9, 20, 10, 20),
+      // 在保持卡片总高 88 不变的前提下，收紧上下留白以容纳更大的数字字号。
+      padding: const EdgeInsets.fromLTRB(9, 16, 10, 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -458,12 +465,14 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
           value,
           textAlign: TextAlign.center,
-          style: TestStyle.semibold(fontSize: 18, color: Color(0xFF262626)),
+          style: TestStyle.semibold(fontSize: 20, color: Color(0xFF262626)),
         ),
+        const SizedBox(height: 8),
         Text(
           label,
           textAlign: TextAlign.center,
@@ -518,14 +527,16 @@ class _MenuTile extends StatelessWidget {
             SizedBox(
               width: 24,
               height: 24,
-              child: SvgPicture.asset(
-                item.iconAsset,
-                width: 24,
-                height: 24,
-                placeholderBuilder: (_) => Icon(
-                  item.fallbackIcon,
-                  size: 22,
-                  color: const Color(0xFF262626),
+              child: Center(
+                child: SvgPicture.asset(
+                  item.iconAsset,
+                  width: item.iconRenderSize,
+                  height: item.iconRenderSize,
+                  placeholderBuilder: (_) => Icon(
+                    item.fallbackIcon,
+                    size: item.iconRenderSize,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
               ),
             ),
@@ -562,9 +573,11 @@ class _MenuData {
     required this.labelKey,
     required this.iconAsset,
     required this.fallbackIcon,
+    this.iconRenderSize = 24,
   });
 
   final String labelKey;
   final String iconAsset;
   final IconData fallbackIcon;
+  final double iconRenderSize;
 }

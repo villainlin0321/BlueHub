@@ -121,20 +121,20 @@ class PostJobPageView extends StatelessWidget {
           ),
         ),
         title: Text(title, style: PostJobPageStyles.navTitle),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: TextButton(
-              onPressed: onSaveDraft,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(44, 32),
-                foregroundColor: PostJobPageStyles.titleText,
-                textStyle: PostJobPageStyles.navAction,
-              ),
-              child: Text('岗位发布.存草稿'.tr()),
-            ),
-          ),
-        ],
+        // actions: <Widget>[
+        //   Padding(
+        //     padding: const EdgeInsets.only(right: 16),
+        //     child: TextButton(
+        //       onPressed: onSaveDraft,
+        //       style: TextButton.styleFrom(
+        //         minimumSize: const Size(44, 32),
+        //         foregroundColor: PostJobPageStyles.titleText,
+        //         textStyle: PostJobPageStyles.navAction,
+        //       ),
+        //       child: Text('岗位发布.存草稿'.tr()),
+        //     ),
+        //   ),
+        // ],
       ),
       body: TapBlankToDismissKeyboard(
         child: LayoutBuilder(
@@ -237,6 +237,7 @@ class PostJobPageView extends StatelessWidget {
                                           hintText: '岗位发布.最低薪资'.tr(),
                                           keyboardType: TextInputType.number,
                                           textInputAction: TextInputAction.next,
+                                          centerText: true,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -251,6 +252,7 @@ class PostJobPageView extends StatelessWidget {
                                           hintText: '岗位发布.最高薪资'.tr(),
                                           keyboardType: TextInputType.number,
                                           textInputAction: TextInputAction.next,
+                                          centerText: true,
                                         ),
                                       ),
                                     ],
