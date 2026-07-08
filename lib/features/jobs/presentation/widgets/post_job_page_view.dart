@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../config/data/config_models.dart';
@@ -488,7 +489,7 @@ class _RequirementTagContent extends StatelessWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 8,
         mainAxisSpacing: 12,
-        childAspectRatio: 104 / 34,
+        childAspectRatio: 104 / PostJobPageStyles.chipHeight,
       ),
       itemBuilder: (BuildContext context, int index) {
         final TagItemVO tag = requirementTags[index];
@@ -510,25 +511,41 @@ class _CustomTagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
+      height: PostJobPageStyles.chipHeight,
       decoration: BoxDecoration(
-        color: PostJobPageStyles.inputFill,
-        borderRadius: BorderRadius.circular(PostJobPageStyles.fieldRadius),
+        color: PostJobPageStyles.chipSelectedBackground,
+        borderRadius: BorderRadius.circular(PostJobPageStyles.chipRadius),
+        border: Border.all(
+          color: PostJobPageStyles.chipSelectedBorder,
+          width: 0.5,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        // 与上方系统标签保持一致的字号节奏，并收紧删除按钮两侧留白。
+        padding: const EdgeInsets.fromLTRB(10, 0, 6, 0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(tag, style: PostJobPageStyles.fieldLabel),
-            const SizedBox(width: 8),
+            Text(
+              tag,
+              style: TestStyle.regular(
+                fontSize: 14,
+                color: PostJobPageStyles.chipSelectedText,
+              ),
+            ),
+            const SizedBox(width: 4),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onRemove,
-              child: const Icon(
-                Icons.close,
-                size: 18,
-                color: PostJobPageStyles.placeholderText,
+              child: Container(
+                alignment: Alignment.center,
+                constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                child: const Icon(
+                  Icons.close,
+                  size: 14,
+                  color: PostJobPageStyles.chipSelectedText,
+                ),
               ),
             ),
           ],
