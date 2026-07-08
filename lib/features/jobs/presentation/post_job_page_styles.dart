@@ -23,6 +23,7 @@ class PostJobPageStyles {
   static const double cardRadius = 12;
   static const double fieldRadius = 8;
   static const double chipRadius = 4;
+  static const double chipHeight = 35.8;
   static const double buttonRadius = 8;
 
   static const List<BoxShadow> cardShadow = <BoxShadow>[

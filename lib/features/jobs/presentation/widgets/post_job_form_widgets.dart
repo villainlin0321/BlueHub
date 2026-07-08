@@ -22,7 +22,6 @@ class PostJobSectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: PostJobPageStyles.surface,
         borderRadius: BorderRadius.circular(PostJobPageStyles.cardRadius),
-        boxShadow: PostJobPageStyles.cardShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
@@ -118,6 +117,7 @@ class PostJobInputField extends StatelessWidget {
     this.textInputAction,
     this.onChanged,
     this.onSubmitted,
+    this.centerText = false,
   });
 
   final TextEditingController controller;
@@ -129,6 +129,8 @@ class PostJobInputField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  // 控制输入内容和占位文案是否水平居中显示。
+  final bool centerText;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +159,8 @@ class PostJobInputField extends StatelessWidget {
             }) {
               return const SizedBox.shrink();
             },
+        // 薪资区间等场景需要输入内容和占位文案都居中显示。
+        textAlign: centerText ? TextAlign.center : TextAlign.start,
         style: PostJobPageStyles.optionText,
         decoration: InputDecoration(
           hintText: hintText,
@@ -247,7 +251,7 @@ class PostJobSelectableChip extends StatelessWidget {
             ? PostJobPageStyles.chipSelectedBackground.withValues(alpha: 0.9)
             : PostJobPageStyles.inputFill,
         child: Container(
-          height: 34,
+          height: PostJobPageStyles.chipHeight,
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(PostJobPageStyles.chipRadius),
