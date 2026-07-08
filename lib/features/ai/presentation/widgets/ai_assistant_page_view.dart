@@ -305,7 +305,7 @@ class _AssistantMessageItem extends StatelessWidget {
                       child: Text(
                         message.text,
                         style: TestStyle.regular(
-                          fontSize: 14,
+                          fontSize: 15,
                           color: AppColors.textPrimary,
                         ),
                       ),
