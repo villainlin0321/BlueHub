@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:scrollview_observer/scrollview_observer.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/me/data/user_models.dart';
@@ -41,7 +42,8 @@ class ChatPage extends ConsumerStatefulWidget {
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends ConsumerState<ChatPage> {
+class _ChatPageState extends ConsumerState<ChatPage>
+    with WidgetsBindingObserver {
   static const Color _pageBackground = Color(0xFFF5F7FA);
   static const Color _titleColor = Color(0xFF171A1D);
   static const Color _subtleTextColor = Color(0xFF8C8C8C);
@@ -60,6 +62,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  late final ListObserverController _listObserverController;
+  late final ChatScrollObserver _chatScrollObserver;
   final ChatBottomPanelContainerController<_ChatPanelType>
   _bottomPanelController = ChatBottomPanelContainerController<_ChatPanelType>();
   final Dio _dio = Dio();
@@ -73,6 +77,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _listObserverController =
+        ListObserverController(controller: _scrollController)
+          ..cacheJumpIndexOffset = false;
+    _chatScrollObserver = ChatScrollObserver(_listObserverController)
+      ..fixedPositionOffset = 5
+      ..toRebuildScrollViewCallback = () {
+        if (!mounted) {
+          return;
+        }
+        setState(() {});
+      };
     _chatController = ref.read(
       chatPageControllerProvider(widget.args).notifier,
     );
@@ -109,6 +125,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     final int conversationId = _activeConversationId;
     if (conversationId > 0) {
       unawaited(_chatController.markConversationReadById(conversationId));
@@ -123,6 +140,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _inputController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _chatScrollObserver.observeSwitchShrinkWrap();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (MediaQuery.of(context).viewInsets.bottom > 0) {
+        _scrollToLatest(animated: false);
+      }
+    });
   }
 
   void _handleScroll() {
@@ -537,7 +568,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (!mounted) {
             return;
           }
+          _chatScrollObserver.observeSwitchShrinkWrap();
           _scrollToLatest(animated: animated);
+        });
+      }
+      if (previous?.messages.length != next.messages.length ||
+          previous?.isLoadingMore != next.isLoadingMore ||
+          previous?.isInitialLoading != next.isInitialLoading) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          _chatScrollObserver.observeSwitchShrinkWrap();
         });
       }
     });
@@ -610,6 +652,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                   authUser?.nickname ?? '消息.我'.tr(),
                               currentUserAvatarUrl: authUser?.avatarUrl ?? '',
                               scrollController: _scrollController,
+                              listObserverController: _listObserverController,
+                              chatScrollObserver: _chatScrollObserver,
                               isLoadingMore: state.isLoadingMore,
                               playingMessageId: state.playingMessageId,
                               downloadingAudioMessageIds:
@@ -925,6 +969,8 @@ class _ChatMessageList extends StatelessWidget {
     required this.currentUserNickname,
     required this.currentUserAvatarUrl,
     required this.scrollController,
+    required this.listObserverController,
+    required this.chatScrollObserver,
     required this.isLoadingMore,
     required this.playingMessageId,
     required this.downloadingAudioMessageIds,
@@ -938,10 +984,14 @@ class _ChatMessageList extends StatelessWidget {
   final String currentUserNickname;
   final String currentUserAvatarUrl;
   final ScrollController scrollController;
+  final ListObserverController listObserverController;
+  final ChatScrollObserver chatScrollObserver;
   final bool isLoadingMore;
   final int? playingMessageId;
   final Set<int> downloadingAudioMessageIds;
   final Future<void> Function(MessageVO message) onTapFileMessage;
+
+  static const Duration _timeDividerThreshold = Duration(minutes: 2);
 
   @override
   Widget build(BuildContext context) {
@@ -966,32 +1016,69 @@ class _ChatMessageList extends StatelessWidget {
             ),
           ),
         Expanded(
-          child: ListView.separated(
-            controller: scrollController,
-            reverse: true,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            itemCount: messages.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (BuildContext context, int index) {
-              final MessageVO message = messages[index];
-              if (message.type == 'system') {
-                return _ChatSystemMessage(text: message.content);
-              }
-
-              final bool isMine =
-                  currentUserId > 0 && message.senderId == currentUserId;
-              return _ChatMessageRow(
-                message: message,
-                isMine: isMine,
-                avatarUrl: isMine ? currentUserAvatarUrl : targetAvatarUrl,
-                fallbackName: isMine ? currentUserNickname : targetNickname,
-                isPlaying: playingMessageId == message.messageId,
-                isDownloading: downloadingAudioMessageIds.contains(
-                  message.messageId,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ListViewObserver(
+              controller: listObserverController,
+              child: ListView.separated(
+                controller: scrollController,
+                physics: ChatObserverClampingScrollPhysics(
+                  observer: chatScrollObserver,
                 ),
-                onTapFileMessage: onTapFileMessage,
-              );
-            },
+                shrinkWrap: chatScrollObserver.isShrinkWrap,
+                reverse: true,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                itemCount: messages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (BuildContext context, int index) {
+                  final MessageVO message = messages[index];
+                  final bool shouldShowTimeDivider = _shouldShowTimeDivider(
+                    messages: messages,
+                    index: index,
+                    threshold: _timeDividerThreshold,
+                  );
+                  final Widget messageWidget;
+                  if (message.type == 'system') {
+                    messageWidget = _ChatSystemMessage(text: message.content);
+                  } else {
+                    final bool isMine =
+                        currentUserId > 0 && message.senderId == currentUserId;
+                    messageWidget = _ChatMessageRow(
+                      message: message,
+                      isMine: isMine,
+                      avatarUrl: isMine ? currentUserAvatarUrl : targetAvatarUrl,
+                      fallbackName: isMine
+                          ? currentUserNickname
+                          : targetNickname,
+                      isPlaying: playingMessageId == message.messageId,
+                      isDownloading: downloadingAudioMessageIds.contains(
+                        message.messageId,
+                      ),
+                      onTapFileMessage: onTapFileMessage,
+                    );
+                  }
+                  if (!shouldShowTimeDivider) {
+                    return KeyedSubtree(
+                      key: ValueKey<int>(message.messageId),
+                      child: messageWidget,
+                    );
+                  }
+                  return KeyedSubtree(
+                    key: ValueKey<int>(message.messageId),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        _ChatTimeDivider(
+                          label: _formatChatDateTime(message.sentAt),
+                        ),
+                        const SizedBox(height: 16),
+                        messageWidget,
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ],
@@ -1063,6 +1150,28 @@ class _ChatMessageRow extends StatelessWidget {
         if (isMine) const SizedBox(width: 12),
         if (isMine) avatar,
       ],
+    );
+  }
+}
+
+class _ChatTimeDivider extends StatelessWidget {
+  const _ChatTimeDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        softWrap: false,
+        style: TestStyle.regular(
+          fontSize: 11,
+          color: const Color(0xFF8C8C8C),
+        ).copyWith(height: 14 / 11),
+      ),
     );
   }
 }
@@ -1643,10 +1752,47 @@ String _resolveOrderStatusLabel(String status) {
 String _formatChatDateTime(String raw) {
   final DateTime? parsed = DateTime.tryParse(raw)?.toLocal();
   if (parsed == null) {
-    return raw;
+    final RegExpMatch? match = RegExp(
+      r'(?:(\d{2,4})[-/])?(\d{2})[-/](\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?',
+    ).firstMatch(raw.trim());
+    if (match == null) {
+      return raw;
+    }
+    final String month = match.group(2) ?? '';
+    final String day = match.group(3) ?? '';
+    final String hour = match.group(4) ?? '00';
+    final String minute = match.group(5) ?? '00';
+    final String second = match.group(6) ?? '00';
+    final bool hasTime =
+        match.group(4) != null && match.group(5) != null;
+    if (!hasTime) {
+      return '$month-$day 00:00:00';
+    }
+    return '$month-$day $hour:$minute:$second';
   }
-  return '${_twoDigits(parsed.month)}-${_twoDigits(parsed.day)} '
+  final Duration difference = DateTime.now().difference(parsed);
+  final String time =
       '${_twoDigits(parsed.hour)}:${_twoDigits(parsed.minute)}:${_twoDigits(parsed.second)}';
+  if (!difference.isNegative && difference < const Duration(hours: 24)) {
+    return time;
+  }
+  return '${_twoDigits(parsed.month)}-${_twoDigits(parsed.day)} $time';
+}
+
+bool _shouldShowTimeDivider({
+  required List<MessageVO> messages,
+  required int index,
+  required Duration threshold,
+}) {
+  if (index >= messages.length - 1) {
+    return false;
+  }
+  final DateTime? currentTime = DateTime.tryParse(messages[index].sentAt);
+  final DateTime? previousTime = DateTime.tryParse(messages[index + 1].sentAt);
+  if (currentTime == null || previousTime == null) {
+    return false;
+  }
+  return currentTime.difference(previousTime) > threshold;
 }
 
 String _buildAvatarFallbackText(String nickname) {

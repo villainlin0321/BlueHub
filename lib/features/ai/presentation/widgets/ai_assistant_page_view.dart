@@ -173,6 +173,8 @@ class _ChatMessageList extends StatelessWidget {
   final Future<void> Function(JobListVO job) onApplyJob;
   final void Function(JobListVO job) onOpenJobDetail;
 
+  static const Duration _timeDividerThreshold = Duration(minutes: 2);
+
   @override
   Widget build(BuildContext context) {
     final bool showLoading = isHistoryLoading && messages.isEmpty;
@@ -195,7 +197,7 @@ class _ChatMessageList extends StatelessWidget {
           );
         }
         final AiAssistantMessageVM message = messages[index];
-        return _ChatMessageItem(
+        final Widget messageWidget = _ChatMessageItem(
           key: ValueKey<String>(
             'chat-message-$index-'
             '${message.role.name}-'
@@ -210,7 +212,48 @@ class _ChatMessageList extends StatelessWidget {
           onApplyJob: onApplyJob,
           onOpenJobDetail: onOpenJobDetail,
         );
+        final bool shouldShowTimeDivider = _shouldShowAiTimeDivider(
+          messages: messages,
+          index: index,
+          threshold: _timeDividerThreshold,
+        );
+        if (!shouldShowTimeDivider) {
+          return messageWidget;
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _AiChatTimeDivider(label: _formatAiChatDateTime(message.sentAt)),
+            const SizedBox(height: 12),
+            messageWidget,
+          ],
+        );
       },
+    );
+  }
+}
+
+class _AiChatTimeDivider extends StatelessWidget {
+  const _AiChatTimeDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          softWrap: false,
+          style: TestStyle.regular(
+            fontSize: 11,
+            color: const Color(0xFF8C8C8C),
+          ).copyWith(height: 14 / 11),
+        ),
+      ),
     );
   }
 }
@@ -248,6 +291,58 @@ class _ChatMessageItem extends StatelessWidget {
     return _UserMessageItem(message: message);
   }
 }
+
+String _formatAiChatDateTime(String raw) {
+  final DateTime? parsed = DateTime.tryParse(raw)?.toLocal();
+  if (parsed == null) {
+    final RegExpMatch? match = RegExp(
+      r'(?:(\d{2,4})[-/])?(\d{2})[-/](\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?',
+    ).firstMatch(raw.trim());
+    if (match == null) {
+      return raw;
+    }
+    final String month = match.group(2) ?? '';
+    final String day = match.group(3) ?? '';
+    final String hour = match.group(4) ?? '00';
+    final String minute = match.group(5) ?? '00';
+    final String second = match.group(6) ?? '00';
+    final bool hasTime = match.group(4) != null && match.group(5) != null;
+    if (!hasTime) {
+      return '$month-$day 00:00:00';
+    }
+    return '$month-$day $hour:$minute:$second';
+  }
+  final Duration difference = DateTime.now().difference(parsed);
+  final String time =
+      '${_twoDigits(parsed.hour)}:${_twoDigits(parsed.minute)}:${_twoDigits(parsed.second)}';
+  if (!difference.isNegative && difference < const Duration(hours: 24)) {
+    return time;
+  }
+  return '${_twoDigits(parsed.month)}-${_twoDigits(parsed.day)} $time';
+}
+
+bool _shouldShowAiTimeDivider({
+  required List<AiAssistantMessageVM> messages,
+  required int index,
+  required Duration threshold,
+}) {
+  if (index <= 0) {
+    return false;
+  }
+  final String currentRaw = messages[index].sentAt.trim();
+  final String previousRaw = messages[index - 1].sentAt.trim();
+  if (currentRaw.isEmpty || previousRaw.isEmpty) {
+    return false;
+  }
+  final DateTime? currentTime = DateTime.tryParse(currentRaw);
+  final DateTime? previousTime = DateTime.tryParse(previousRaw);
+  if (currentTime == null || previousTime == null) {
+    return false;
+  }
+  return currentTime.difference(previousTime) > threshold;
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _AssistantMessageItem extends StatelessWidget {
   const _AssistantMessageItem({

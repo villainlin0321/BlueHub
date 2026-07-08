@@ -156,17 +156,19 @@ class AiAssistantController extends Notifier<AiAssistantState> {
     final List<AiAssistantMessageVM> nextMessages =
         List<AiAssistantMessageVM>.from(state.messages)
           ..add(
-            const AiAssistantMessageVM(
+            AiAssistantMessageVM(
               role: AiAssistantChatRole.user,
               text: '',
               footer: null,
+              sentAt: DateTime.now().toUtc().toIso8601String(),
             ).copyWith(text: text),
           )
           ..add(
-            const AiAssistantMessageVM(
+            AiAssistantMessageVM(
               role: AiAssistantChatRole.assistant,
               text: '',
               footer: '',
+              sentAt: DateTime.now().toUtc().toIso8601String(),
             ),
           );
     final int assistantIndex = nextMessages.length - 1;
@@ -464,6 +466,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         role: AiAssistantChatRole.assistant,
         text: 'AI.欢迎语'.tr(),
         footer: null,
+        sentAt: '',
       ),
     ];
   }
@@ -476,6 +479,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       role: role,
       text: message.content.trim(),
       footer: isAssistant ? 'AI.由西格玛AI提供'.tr() : null,
+      sentAt: message.createdAt,
       embeddedJobs: isAssistant
           ? _parseEmbeddedJobsFromCards(message.cards)
           : const <JobListVO>[],
