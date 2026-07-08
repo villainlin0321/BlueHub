@@ -1621,6 +1621,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     await showAppDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return SampleFileSelectionDialog(
           title: requirement.title,

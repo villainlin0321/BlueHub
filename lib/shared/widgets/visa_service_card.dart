@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../models/app_currency.dart';
 import 'app_svg_icon.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
@@ -37,12 +38,14 @@ class VisaServicePackageData {
   const VisaServicePackageData({
     required this.title,
     required this.price,
+    this.currency,
     this.priceHint,
     this.iconAssetPath,
   });
 
   final String title;
   final String price;
+  final String? currency;
   final String? priceHint;
   final String? iconAssetPath;
 }
@@ -319,6 +322,7 @@ class _VisaServicePackageRow extends StatelessWidget {
     final Color priceColor = muted
         ? const Color(0xFF8C8C8C)
         : const Color(0xFF262626);
+    final String displayPrice = _buildDisplayPrice(item.price, item.currency);
 
     return Container(
       height: 40,
@@ -351,11 +355,22 @@ class _VisaServicePackageRow extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Text(
-            item.price,
+            displayPrice,
             style: TestStyle.medium(fontSize: 14, color: priceColor),
           ),
         ],
       ),
     );
+  }
+
+  String _buildDisplayPrice(String rawPrice, String? currency) {
+    final String trimmedPrice = rawPrice.trim();
+    if (trimmedPrice.isEmpty) {
+      return AppCurrency.displayPrefixFor(currency);
+    }
+    if (RegExp(r'^[^\d]+').hasMatch(trimmedPrice)) {
+      return trimmedPrice;
+    }
+    return '${AppCurrency.displayPrefixFor(currency)}$trimmedPrice';
   }
 }

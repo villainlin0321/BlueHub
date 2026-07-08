@@ -1192,7 +1192,8 @@ extension on collection_models.VisaPackageVO {
           ? <VisaServicePackageData>[
               VisaServicePackageData(
                 title: '我的.默认档位'.tr(),
-                price: _formatFavoritePrice(0, currency),
+                currency: currency,
+                price: _formatFavoritePrice(0),
               ),
             ]
           : tiers
@@ -1201,7 +1202,8 @@ extension on collection_models.VisaPackageVO {
                     title: tier.name.trim().isEmpty
                         ? '服务详情.套餐档位'.tr()
                         : tier.name,
-                    price: _formatFavoritePrice(tier.price, currency),
+                    currency: currency,
+                    price: _formatFavoritePrice(tier.price),
                   ),
                 )
                 .toList(growable: false),
@@ -1229,18 +1231,9 @@ extension on collection_models.VisaPackageVO {
   }
 }
 
-/// 格式化收藏签证价格。
-String _formatFavoritePrice(double price, String currency) {
-  final String prefix = switch (currency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => currency.trim().isEmpty ? '¥' : '${currency.trim()} ',
-  };
-  final String value = price % 1 == 0
-      ? price.toInt().toString()
-      : price.toStringAsFixed(1);
-  return '$prefix$value';
+/// 格式化收藏签证价格数值，货币符号由卡片组件统一渲染。
+String _formatFavoritePrice(double price) {
+  return price % 1 == 0 ? price.toInt().toString() : price.toStringAsFixed(1);
 }
 
 /// 将收藏签证国家代码转为展示文案。
