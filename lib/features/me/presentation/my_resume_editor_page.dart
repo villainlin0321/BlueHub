@@ -1739,7 +1739,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
         _isSaving = false;
       });
       _didSave = true;
-      _openPreview();
+      await _openPreview();
     } catch (error) {
       if (!mounted) {
         return;
@@ -1876,11 +1876,18 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
     return '我的.简历保存失败'.tr();
   }
 
-  /// 替换当前编辑页进入简历预览页，避免返回栈保留已提交的编辑页。
-  void _openPreview() {
-    context.pushReplacement(
+  /// 打开预览页，并在关闭预览后把保存结果继续回传给上一页。
+  Future<void> _openPreview() async {
+    await context.push<bool>(
       RoutePaths.resumePreview,
       extra: _buildPreviewArgs(),
+    );
+    if (!mounted) {
+      return;
+    }
+    scheduleDirectPop(
+      result: _didSave,
+      onCannotPop: () => context.go(RoutePaths.myResume),
     );
   }
 

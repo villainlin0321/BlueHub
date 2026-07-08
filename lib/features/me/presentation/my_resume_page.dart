@@ -34,7 +34,9 @@ class MyResumePage extends ConsumerStatefulWidget {
 
 class _MyResumePageState extends ConsumerState<MyResumePage> {
   List<ResumeListItemVO> _resumes = const <ResumeListItemVO>[];
-  bool _isLoading = true;
+  bool _isInitialLoading = true;
+  bool _hasLoadedOnce = false;
+  bool _isRefreshing = false;
   bool _isManaging = false;
   int? _savingVisibilityResumeId;
   int? _settingDefaultResumeId;
@@ -62,9 +64,14 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
   /// 拉取当前登录用户的简历列表，并切换页面状态。
   Future<void> _loadResume() async {
+    final bool shouldShowInitialLoading = !_hasLoadedOnce;
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      if (shouldShowInitialLoading) {
+        _isInitialLoading = true;
+        _errorMessage = null;
+        return;
+      }
+      _isRefreshing = true;
     });
 
     try {
@@ -76,7 +83,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       }
       setState(() {
         _resumes = resumes;
-        _isLoading = false;
+        _isInitialLoading = false;
+        _isRefreshing = false;
+        _hasLoadedOnce = true;
         _errorMessage = null;
         _isManaging = resumes.isNotEmpty && _isManaging;
       });
@@ -85,10 +94,16 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         return;
       }
       setState(() {
-        _resumes = const <ResumeListItemVO>[];
-        _isLoading = false;
-        _errorMessage = _resolveErrorMessage(error);
+        _isInitialLoading = false;
+        _isRefreshing = false;
+        if (shouldShowInitialLoading) {
+          _resumes = const <ResumeListItemVO>[];
+          _errorMessage = _resolveErrorMessage(error);
+        }
       });
+      if (!shouldShowInitialLoading) {
+        AppToast.show(_resolveErrorMessage(error));
+      }
     }
   }
 
@@ -157,14 +172,15 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
 
   /// 构建页面主体内容，根据接口状态切换不同 UI。
   Widget _buildBody() {
-    if (_isLoading) {
+    if (_isInitialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_errorMessage != null) {
       return _ResumeErrorState(message: _errorMessage!, onRetry: _loadResume);
     }
+    final Widget content;
     if (_resumes.isEmpty) {
-      return ListView(
+      content = ListView(
         padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
         children: <Widget>[
           Text(
@@ -178,26 +194,39 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
           _buildEmptyState(),
         ],
       );
+    } else {
+      content = ListView.separated(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+        itemCount: _resumes.length + 1,
+        separatorBuilder: (_, index) =>
+            index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 8),
+        itemBuilder: (BuildContext context, int index) {
+          if (index == 0) {
+            return Text(
+              _isManaging ? '我的.管理我的简历'.tr() : '我的.选择默认展示简历'.tr(),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF262626),
+              ),
+            );
+          }
+          final ResumeListItemVO item = _resumes[index - 1];
+          return _buildResumeCard(item);
+        },
+      );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-      itemCount: _resumes.length + 1,
-      separatorBuilder: (_, index) =>
-          index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 8),
-      itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return Text(
-            _isManaging ? '我的.管理我的简历'.tr() : '我的.选择默认展示简历'.tr(),
-            style: TestStyle.pingFangRegular(
-              fontSize: 14,
-              color: Color(0xFF262626),
-            ),
-          );
-        }
-        final ResumeListItemVO item = _resumes[index - 1];
-        return _buildResumeCard(item);
-      },
+    return Stack(
+      children: <Widget>[
+        Positioned.fill(child: content),
+        if (_isRefreshing)
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+      ],
     );
   }
 
@@ -604,7 +633,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         _isCreatingResume = false;
       });
 
-      await context.push<bool>(
+      final bool? didSave = await context.push<bool>(
         RoutePaths.myResumeEditor,
         extra: ResumeEditorArgs.create(
           isPublic: _defaultCreateVisibility,
@@ -614,7 +643,9 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
       if (!mounted) {
         return;
       }
-      await _loadResume();
+      if (didSave == true) {
+        await _loadResume();
+      }
     } catch (error) {
       if (!mounted) {
         return;
