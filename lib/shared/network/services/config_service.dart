@@ -91,6 +91,24 @@ class ConfigService {
     return lookup;
   }
 
+  /// 构建按标签分类分组的查找表，便于通过 `TagCategory` 精准解析展示名。
+  static Map<TagCategory, Map<String, TagItemVO>> buildTagLookupByCategory(
+    Map<String, List<TagItemVO>> groupedTags,
+  ) {
+    final Map<TagCategory, Map<String, TagItemVO>> lookupByCategory =
+        <TagCategory, Map<String, TagItemVO>>{};
+
+    groupedTags.forEach((String key, List<TagItemVO> value) {
+      final TagCategory? category = TagCategory.fromValue(key);
+      if (category == null || value.isEmpty) {
+        return;
+      }
+      lookupByCategory[category] = buildTagLookup(value);
+    });
+
+    return lookupByCategory;
+  }
+
   /// 按当前语言环境解析标签展示文案，找不到映射时回退原始值。
   static String resolveTagLabel({
     required String rawLabel,
@@ -108,6 +126,35 @@ class ConfigService {
     }
 
     return resolveLocalizedTagLabel(matched, locale: locale);
+  }
+
+  /// 根据标签分类和值解析展示文案，无法匹配时回退原始值。
+  static String resolveTagLabelByCategory({
+    required String rawLabel,
+    required String? rawCategory,
+    required Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory,
+    required Locale locale,
+  }) {
+    final String normalizedLabel = rawLabel.trim();
+    if (normalizedLabel.isEmpty) {
+      return '';
+    }
+
+    final TagCategory? category = TagCategory.fromValue(rawCategory?.trim());
+    if (category == null) {
+      return normalizedLabel;
+    }
+
+    final Map<String, TagItemVO>? tagLookup = tagLookupByCategory[category];
+    if (tagLookup == null || tagLookup.isEmpty) {
+      return normalizedLabel;
+    }
+
+    return resolveTagLabel(
+      rawLabel: normalizedLabel,
+      tagLookup: tagLookup,
+      locale: locale,
+    );
   }
 
   /// 返回标签项在当前语言下应展示的文案。

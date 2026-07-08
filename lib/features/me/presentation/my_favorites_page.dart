@@ -911,18 +911,13 @@ class _FavoriteJobCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Map<String, TagItemVO> requirementTagLookup =
-        ConfigService.buildTagLookup(
-          ref
-                  .watch(tagDictionaryProvider(TagCategory.requirement))
-                  .asData
-                  ?.value ??
-              const <TagItemVO>[],
-        );
+    final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory =
+        ref.watch(jobCardTagLookupProvider).asData?.value ??
+        const <TagCategory, Map<String, TagItemVO>>{};
 
     return JobPositionCard(
       data: item.toCardData(),
-      requirementTagLookup: requirementTagLookup,
+      tagLookupByCategory: tagLookupByCategory,
       onTap: () => context.push(
         RoutePaths.jobDetail,
         extra: JobDetailPageArgs(jobId: item.jobId),
@@ -1124,16 +1119,32 @@ class _FavoritesManageBar extends StatelessWidget {
 extension on collection_models.JobListVO {
   /// 将收藏岗位接口返回的数据映射为职位卡片数据。
   JobPositionCardData toCardData() {
-    final List<String> tagLabels = tags
-        .map((collection_models.TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
+    final List<JobPositionCardTagData> apiTags = tags
+        .map(
+          (collection_models.TagVO tag) => JobPositionCardTagData(
+            label: tag.label.trim(),
+            type: tag.type.trim(),
+          ),
+        )
+        .where((JobPositionCardTagData tag) => tag.label.isNotEmpty)
         .toList(growable: false);
-    final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '招聘卡片.急招'.tr()),
-      if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
-        '招聘卡片.提供签证'.tr(),
+    final List<JobPositionCardTagData> requirementTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type != TagCategory.highlight.value,
+      ),
+      if (hasVisaSupport)
+        JobPositionCardTagData(label: '招聘卡片.提供签证'.tr(), type: null),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) '招聘卡片.急招'.tr()];
+    final List<JobPositionCardTagData> highlightTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type == TagCategory.highlight.value,
+      ),
+      if (isUrgent)
+        JobPositionCardTagData(
+          label: '招聘卡片.急招'.tr(),
+          type: TagCategory.highlight.value,
+        ),
+    ];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),

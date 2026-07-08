@@ -291,6 +291,7 @@ Future<T?> showFilterActionBottomSheet<T>({
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    useRootNavigator: true,
     isDismissible: true,
     enableDrag: true,
     isScrollControlled: true,

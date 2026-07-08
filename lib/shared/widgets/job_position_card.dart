@@ -6,6 +6,13 @@ import '../../features/config/data/config_models.dart';
 import '../network/services/config_service.dart';
 import 'package:europepass/shared/ui/test_style.dart';
 
+class JobPositionCardTagData {
+  const JobPositionCardTagData({required this.label, this.type});
+
+  final String label;
+  final String? type;
+}
+
 class JobPositionCardData {
   const JobPositionCardData({
     required this.title,
@@ -24,8 +31,8 @@ class JobPositionCardData {
 
   final String title;
   final String salary;
-  final List<String> requirementTags;
-  final List<String> highlightTags;
+  final List<JobPositionCardTagData> requirementTags;
+  final List<JobPositionCardTagData> highlightTags;
   final String company;
   final String location;
   final String? companyAvatarAssetPath;
@@ -40,7 +47,7 @@ class JobPositionCard extends StatelessWidget {
   const JobPositionCard({
     super.key,
     required this.data,
-    this.requirementTagLookup = const <String, TagItemVO>{},
+    this.tagLookupByCategory = const <TagCategory, Map<String, TagItemVO>>{},
     this.onApply,
     this.onTap,
     this.isApplying = false,
@@ -48,7 +55,7 @@ class JobPositionCard extends StatelessWidget {
   });
 
   final JobPositionCardData data;
-  final Map<String, TagItemVO> requirementTagLookup;
+  final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory;
   final VoidCallback? onApply;
   final VoidCallback? onTap;
   final bool isApplying;
@@ -101,15 +108,7 @@ class JobPositionCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: data.requirementTags
-                    .map(
-                      (tag) => const _JobPositionTagStyle.requirement().build(
-                        ConfigService.resolveTagLabel(
-                          rawLabel: tag,
-                          tagLookup: requirementTagLookup,
-                          locale: locale,
-                        ),
-                      ),
-                    )
+                    .map((tag) => _buildRequirementTag(tag, locale))
                     .toList(),
               ),
             ],
@@ -119,7 +118,7 @@ class JobPositionCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: data.highlightTags
-                    .map((tag) => _buildHighlightTag(tag))
+                    .map((tag) => _buildHighlightTag(tag, locale))
                     .toList(),
               ),
             ],
@@ -232,12 +231,28 @@ class JobPositionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightTag(String tag) {
+  Widget _buildRequirementTag(JobPositionCardTagData tag, Locale locale) {
+    return const _JobPositionTagStyle.requirement().build(
+      _resolveTagLabel(tag, locale),
+    );
+  }
+
+  Widget _buildHighlightTag(JobPositionCardTagData tag, Locale locale) {
+    final String resolvedLabel = _resolveTagLabel(tag, locale);
     final String urgentLabel = '招聘卡片.急招'.tr();
-    if (tag == urgentLabel) {
+    if (resolvedLabel == urgentLabel) {
       return _JobPositionTagStyle.urgent().build(urgentLabel);
     }
-    return const _JobPositionTagStyle.highlightBlue().build(tag);
+    return const _JobPositionTagStyle.highlightBlue().build(resolvedLabel);
+  }
+
+  String _resolveTagLabel(JobPositionCardTagData tag, Locale locale) {
+    return ConfigService.resolveTagLabelByCategory(
+      rawLabel: tag.label,
+      rawCategory: tag.type,
+      tagLookupByCategory: tagLookupByCategory,
+      locale: locale,
+    );
   }
 }
 
