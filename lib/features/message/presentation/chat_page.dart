@@ -1422,31 +1422,39 @@ class _ChatImagePreviewDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.black,
-      child: SafeArea(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 56, 12, 12),
-                child: InteractiveViewer(
-                  minScale: 1,
-                  maxScale: 12,
-                  child: Center(
-                    child: _ChatPreviewImage(path: path),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).pop(),
+        child: SafeArea(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 56, 12, 12),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 12,
+                      child: Center(
+                        child: _ChatPreviewImage(path: path),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
-                splashRadius: 20,
+              Positioned(
+                top: 4,
+                left: 4,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  splashRadius: 20,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
