@@ -1,0 +1,19 @@
+[Debug Server] Trying http://0.0.0.0:7777...
+[Debug Server] Listening on http://192.168.3.4:7777
+@@DEBUG_SERVER_INFO
+{
+  "base_url": "http://192.168.3.4:7777",
+  "api_url": "http://192.168.3.4:7777/event",
+  "session_id": "ai-voice-empty",
+  "log_dir": "/Users/xxq/StudioProjects/lw/BlueHub/BlueHub/.dbg",
+  "log_file": "/Users/xxq/StudioProjects/lw/BlueHub/BlueHub/.dbg/trae-debug-log-ai-voice-empty.ndjson",
+  "env_file": "/Users/xxq/StudioProjects/lw/BlueHub/BlueHub/.dbg/ai-voice-empty.env",
+  "endpoints": {
+    "POST /event": "Submit log event",
+    "GET /health": "Server health check",
+    "GET /logs": "Get all logs (supports ?last=N&hypothesisId=X&runId=Y)",
+    "DELETE /logs": "Clear all logs for this session"
+  }
+}
+@@END_DEBUG_SERVER_INFO
+[Debug Server] Idle for 1200s, exiting...

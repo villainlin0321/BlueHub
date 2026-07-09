@@ -11,6 +11,7 @@ import 'package:europepass/features/auth/presentation/login_phone_page.dart';
 import 'package:europepass/shared/auth/token_store.dart';
 import 'package:europepass/shared/localization/app_locales.dart';
 import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/providers.dart';
 import 'package:europepass/shared/network/services/auth_service.dart';
 import 'package:europepass/shared/ui/test_keys.dart';
 import 'package:europepass/shared/widgets/app_toast.dart';
@@ -39,18 +40,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(
-      authService.events,
-      <String>[
-        'sendEmailCode:oulu@example.com:login',
-        'emailLogin:oulu@example.com:123456',
-      ],
-    );
+    expect(authService.events, <String>[
+      'sendEmailCode:oulu@example.com:login',
+      'emailLogin:oulu@example.com:123456',
+    ]);
   });
 
-  testWidgets('测试登录服务商在获取验证码失败后不会继续登录', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('测试登录服务商在获取验证码失败后不会继续登录', (WidgetTester tester) async {
     final _RecordingAuthService authService = _RecordingAuthService(
       failSendEmailCode: true,
     );
@@ -65,10 +61,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(
-      authService.events,
-      <String>['sendEmailCode:oulu@example.com:login'],
-    );
+    expect(authService.events, <String>[
+      'sendEmailCode:oulu@example.com:login',
+    ]);
+  });
+
+  testWidgets('重新进入登录页会回填最近一次成功登录的邮箱账号', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'auth.last_login_account': 'restored@example.com',
+      'auth.last_login_mode': 'email',
+    });
+
+    await pumpLoginPhonePage(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('restored@example.com'), findsOneWidget);
+    expect(find.text('请输入邮箱'), findsNothing);
   });
 }
 
@@ -78,6 +86,7 @@ Future<void> pumpLoginPhonePage(
   AuthService? authService,
 }) async {
   AppToast.configure();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     EasyLocalization(
       supportedLocales: AppLocales.supported,
@@ -88,6 +97,7 @@ Future<void> pumpLoginPhonePage(
       useOnlyLangCode: true,
       child: ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           if (authService != null)
             authServiceProvider.overrideWithValue(authService),
         ],
