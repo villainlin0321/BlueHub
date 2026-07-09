@@ -24,6 +24,7 @@ import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../application/message_session/message_session_controller.dart';
@@ -268,10 +269,62 @@ class _ChatPageState extends ConsumerState<ChatPage>
       await _handleAudioMessageTap(message);
       return;
     }
-    final String label = message.type == 'image'
-        ? '消息.图片预览开发中'.tr()
-        : '消息.文件预览开发中'.tr();
-    AppToast.show(label);
+    if (message.type == 'image') {
+      await _showImagePreviewDialog(message);
+      return;
+    }
+    if (message.type != 'file') {
+      AppToast.show('附件预览.暂不支持该文件类型'.tr());
+      return;
+    }
+
+    final String previewPath = message.fileUrl.trim();
+    if (previewPath.isEmpty) {
+      AppToast.show('附件预览.文件地址无效'.tr());
+      return;
+    }
+
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: _resolveMessagePreviewTitle(message),
+      isImage: false,
+      isPdf:
+          UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(message.fileName),
+    );
+  }
+
+  Future<void> _showImagePreviewDialog(MessageVO message) async {
+    final String previewPath = message.fileUrl.trim();
+    if (previewPath.isEmpty) {
+      AppToast.show('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (BuildContext dialogContext) {
+        return _ChatImagePreviewDialog(
+          path: previewPath,
+        );
+      },
+    );
+  }
+
+  String _resolveMessagePreviewTitle(MessageVO message) {
+    final String fileName = message.fileName.trim();
+    if (fileName.isNotEmpty) {
+      return fileName;
+    }
+    final String fileUrl = message.fileUrl.trim();
+    if (fileUrl.isNotEmpty) {
+      return UploadPickerUtils.basename(fileUrl);
+    }
+    if (message.type == 'image') {
+      return '附件预览.标题'.tr();
+    }
+    return '消息.文件消息'.tr();
   }
 
   Future<void> _handleVoiceRecordStart() async {
@@ -1358,6 +1411,102 @@ bool _isRemoteFileUrl(String value) {
     return false;
   }
   return uri.scheme == 'http' || uri.scheme == 'https';
+}
+
+class _ChatImagePreviewDialog extends StatelessWidget {
+  const _ChatImagePreviewDialog({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black,
+      child: SafeArea(
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 56, 12, 12),
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 12,
+                  child: Center(
+                    child: _ChatPreviewImage(path: path),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              left: 4,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                splashRadius: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatPreviewImage extends StatelessWidget {
+  const _ChatPreviewImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isRemoteFileUrl(path)) {
+      return CachedNetworkImage(
+        imageUrl: path,
+        fit: BoxFit.contain,
+        progressIndicatorBuilder:
+            (BuildContext context, String url, DownloadProgress progress) =>
+                const Center(child: CircularProgressIndicator()),
+        errorWidget: (_, __, ___) => const _ChatPreviewError(
+          messageKey: '附件预览.图片加载失败',
+        ),
+      );
+    }
+
+    final File file = File(path);
+    if (!file.existsSync()) {
+      return const _ChatPreviewError(messageKey: '附件预览.文件地址无效');
+    }
+    return Image.file(
+      file,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) =>
+          const _ChatPreviewError(messageKey: '附件预览.图片加载失败'),
+    );
+  }
+}
+
+class _ChatPreviewError extends StatelessWidget {
+  const _ChatPreviewError({required this.messageKey});
+
+  final String messageKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Text(
+          messageKey.tr(),
+          textAlign: TextAlign.center,
+          style: TestStyle.pingFangRegular(
+            fontSize: 14,
+            color: Colors.white70,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ChatSystemMessage extends StatelessWidget {
