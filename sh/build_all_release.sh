@@ -473,10 +473,6 @@ sed -i '' "s/^version: .*/version: ${next_version}/" "${PUBSPEC_FILE}"
 
 echo "Version updated: ${current_version} -> ${next_version}"
 
-git add pubspec.yaml sh/build_all_release.sh
-git commit -m "${COMMIT_MESSAGE}"
-git push
-
 if [[ "${RUN_APK}" -eq 1 ]]; then
   if ( run_apk_release_flow "${next_version}" "${release_update_description}" "${apk_summary_file}" ); then
     apk_flow_succeeded=1
@@ -501,12 +497,11 @@ if [[ "${apk_flow_succeeded}" -eq 1 || "${ipa_flow_succeeded}" -eq 1 ]]; then
   echo "Release flows finished. Final summary:"
   print_release_summary_file "${apk_summary_file}"
   print_release_summary_file "${ipa_summary_file}"
+  git add pubspec.yaml sh/build_all_release.sh
+  git commit -m "${COMMIT_MESSAGE}"
+  git push
 fi
 
-if [[ "${RUN_APK}" -eq 1 && "${RUN_IPA}" -eq 1 ]]; then
-  [[ "${ipa_flow_succeeded}" -eq 1 ]] || fail "IPA release flow failed."
-elif [[ "${RUN_APK}" -eq 1 ]]; then
-  [[ "${apk_flow_succeeded}" -eq 1 ]] || fail "APK release flow failed."
-elif [[ "${RUN_IPA}" -eq 1 ]]; then
-  [[ "${ipa_flow_succeeded}" -eq 1 ]] || fail "IPA release flow failed."
+if [[ "${apk_flow_succeeded}" -eq 0 && "${ipa_flow_succeeded}" -eq 0 ]]; then
+  fail "No release flow succeeded."
 fi
