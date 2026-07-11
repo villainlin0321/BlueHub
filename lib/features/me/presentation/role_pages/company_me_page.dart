@@ -17,6 +17,7 @@ import '../../../home/data/home_providers.dart';
 import '../country_options_bottom_sheet.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
       final service = ref.watch(employerServiceProvider);
@@ -171,38 +172,33 @@ class _CompanyHeaderSection extends StatelessWidget {
             child: SizedBox(
               height: headerHeight,
               width: double.infinity,
-              child: Stack(
-                children: <Widget>[
-                  Positioned.fill(
-                    // 直接使用 Figma 头部背景切图，避免代码渐变带来的色差。
-                    child: SvgPicture.asset(
-                      CompanyMePage._headerBackgroundAsset,
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    top: topPadding + 10,
-                    right: 16,
-                    // 企业资料区与统计卡拉开距离，同时名称与副信息间距按设计稿收紧。
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        _HeaderActions(),
-                        SizedBox(height: 8),
-                        _CompanyProfileRow(),
-                      ],
-                    ),
-                  ),
-                ],
+              // 直接使用 Figma 头部背景切图，避免代码渐变带来的色差。
+              child: SvgPicture.asset(
+                CompanyMePage._headerBackgroundAsset,
+                fit: BoxFit.fill,
               ),
             ),
           ),
-          const Positioned(
-            left: 12,
-            right: 12,
-            bottom: 0,
-            child: SizedBox(height: _statCardHeight, child: _StatCard()),
+          Column(
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topPadding + 10, 16, 0),
+                // 企业资料区与统计卡拉开距离，同时名称与副信息间距按设计稿收紧。
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _HeaderActions(),
+                    SizedBox(height: 8),
+                    _CompanyProfileRow(),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(height: _statCardHeight, child: _StatCard()),
+              ),
+            ],
           ),
         ],
       ),
@@ -398,7 +394,10 @@ class _CompanyBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '通用.企业简称'.tr(),
-        style: TestStyle.pingFangSemibold(fontSize: 9, color: Color(0xFF784301)),
+        style: TestStyle.pingFangSemibold(
+          fontSize: 9,
+          color: Color(0xFF784301),
+        ),
       ),
     );
   }
@@ -544,7 +543,10 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item.labelKey.tr(),
-                style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+                style: TestStyle.regular(
+                  fontSize: 16,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
             const Icon(

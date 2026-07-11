@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:screenshot/screenshot.dart';
+
 import '../../../../shared/widgets/app_toast.dart';
 
 import 'package:flutter/material.dart';
@@ -150,26 +152,14 @@ class _HeaderSection extends StatelessWidget {
       topPadding = topPadding + 12;
     }
 
-    return SizedBox(
-      height: 248,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          Container(
-            height: 220,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              image: DecorationImage(
-                image: AssetImage(ServiceProviderMePage._headerBgAsset),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, topPadding, 16, 80),
+    return Stack(
+      children: <Widget>[
+        const Positioned.fill(bottom: 28, child: _HeaderBackground()),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -179,9 +169,33 @@ class _HeaderSection extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: _StatCard(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HeaderBackground extends StatelessWidget {
+  const _HeaderBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(ServiceProviderMePage._headerBgAsset),
+            fit: BoxFit.cover,
+            alignment: Alignment.bottomCenter,
           ),
-          const Positioned(left: 12, right: 12, bottom: 0, child: _StatCard()),
-        ],
+        ),
       ),
     );
   }
