@@ -8,7 +8,6 @@ import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import 'service_detail_package_tab.dart';
 
 class ServiceDetailApplyBottomSheet {
@@ -84,52 +83,25 @@ class _ApplyBottomSheetContent extends ConsumerStatefulWidget {
 }
 
 class _ApplyBottomSheetContentState
-    extends ConsumerState<_ApplyBottomSheetContent> with WidgetsBindingObserver {
+    extends ConsumerState<_ApplyBottomSheetContent> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final FocusNode _nameFocusNode;
-  late final FocusNode _phoneFocusNode;
+  final GlobalKey _nameInputKey = GlobalKey();
+  final GlobalKey _phoneInputKey = GlobalKey();
   bool _isSubmitting = false;
-  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
-    _nameFocusNode = FocusNode();
-    _phoneFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _phoneController.dispose();
-    _nameFocusNode.dispose();
-    _phoneFocusNode.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    super.didChangeMetrics();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-      final bool keyboardJustClosed =
-          _lastKeyboardInset > 0 && keyboardInset == 0;
-      _lastKeyboardInset = keyboardInset;
-      if (!keyboardJustClosed) {
-        return;
-      }
-      if (_nameFocusNode.hasFocus || _phoneFocusNode.hasFocus) {
-        FocusScope.of(context).unfocus();
-      }
-    });
   }
 
   @override
@@ -140,9 +112,11 @@ class _ApplyBottomSheetContentState
     final topSafeArea = MediaQuery.paddingOf(context).top;
     final maxSheetHeight = MediaQuery.sizeOf(context).height - topSafeArea - 12;
 
-    return TapBlankToDismissKeyboard(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _handlePointerDown,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxSheetHeight),
           child: Column(
@@ -151,7 +125,7 @@ class _ApplyBottomSheetContentState
               Flexible(
                 child: SingleChildScrollView(
                   keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
@@ -224,17 +198,25 @@ class _ApplyBottomSheetContentState
                           child: _ApplyApplicantSection(
                             nameController: _nameController,
                             phoneController: _phoneController,
-                            nameFocusNode: _nameFocusNode,
-                            phoneFocusNode: _phoneFocusNode,
+                            nameInputKey: _nameInputKey,
+                            phoneInputKey: _phoneInputKey,
                           ),
                         ),
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafeArea),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            12,
+                            16,
+                            12 + bottomSafeArea,
+                          ),
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             border: Border(
-                              top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
+                              top: BorderSide(
+                                color: Color(0xFFF0F0F0),
+                                width: 0.5,
+                              ),
                             ),
                           ),
                           child: FilledButton(
@@ -269,6 +251,32 @@ class _ApplyBottomSheetContentState
         ),
       ),
     );
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    final FocusNode? primaryFocus = FocusManager.instance.primaryFocus;
+    if (!(primaryFocus?.hasFocus ?? false)) {
+      return;
+    }
+    if (_isPointerInsideInput(_nameInputKey, event.position) ||
+        _isPointerInsideInput(_phoneInputKey, event.position)) {
+      return;
+    }
+    primaryFocus?.unfocus();
+  }
+
+  bool _isPointerInsideInput(GlobalKey key, Offset globalPosition) {
+    final BuildContext? fieldContext = key.currentContext;
+    if (fieldContext == null) {
+      return false;
+    }
+    final RenderObject? renderObject = fieldContext.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return false;
+    }
+    final Offset topLeft = renderObject.localToGlobal(Offset.zero);
+    final Rect bounds = topLeft & renderObject.size;
+    return bounds.contains(globalPosition);
   }
 
   Future<void> _handleGoPay() async {
@@ -430,14 +438,14 @@ class _ApplyApplicantSection extends StatelessWidget {
   const _ApplyApplicantSection({
     required this.nameController,
     required this.phoneController,
-    required this.nameFocusNode,
-    required this.phoneFocusNode,
+    required this.nameInputKey,
+    required this.phoneInputKey,
   });
 
   final TextEditingController nameController;
   final TextEditingController phoneController;
-  final FocusNode nameFocusNode;
-  final FocusNode phoneFocusNode;
+  final GlobalKey nameInputKey;
+  final GlobalKey phoneInputKey;
 
   @override
   Widget build(BuildContext context) {
@@ -459,17 +467,17 @@ class _ApplyApplicantSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _ApplyLabeledInput(
+          fieldKey: nameInputKey,
           label: '服务详情.姓名'.tr(),
           controller: nameController,
-          focusNode: nameFocusNode,
           textColor: const Color(0xFF262626),
           hintText: '通用.请输入'.tr(),
         ),
         const SizedBox(height: 12),
         _ApplyLabeledInput(
+          fieldKey: phoneInputKey,
           label: '认证.手机号'.tr(),
           controller: phoneController,
-          focusNode: phoneFocusNode,
           hintText: '通用.请输入'.tr(),
           keyboardType: TextInputType.phone,
         ),
@@ -480,17 +488,17 @@ class _ApplyApplicantSection extends StatelessWidget {
 
 class _ApplyLabeledInput extends StatelessWidget {
   const _ApplyLabeledInput({
+    required this.fieldKey,
     required this.label,
     required this.controller,
-    required this.focusNode,
     required this.hintText,
     this.keyboardType,
     this.textColor = const Color(0xFF262626),
   });
 
+  final GlobalKey fieldKey;
   final String label;
   final TextEditingController controller;
-  final FocusNode focusNode;
   final String hintText;
   final TextInputType? keyboardType;
   final Color textColor;
@@ -504,6 +512,7 @@ class _ApplyLabeledInput extends StatelessWidget {
     );
 
     return SizedBox(
+      key: fieldKey,
       height: 48,
       child: Stack(
         children: <Widget>[
@@ -533,7 +542,6 @@ class _ApplyLabeledInput extends StatelessWidget {
           Positioned.fill(
             child: TextField(
               controller: controller,
-              focusNode: focusNode,
               keyboardType: keyboardType,
               cursorColor: const Color(0xFF096DD9),
               style: theme.textTheme.bodyMedium?.copyWith(
