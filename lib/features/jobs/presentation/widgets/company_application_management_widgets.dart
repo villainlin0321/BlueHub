@@ -1,13 +1,16 @@
 import 'dart:ui';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../data/job_models.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../company_application_management_styles.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class CompanyApplicationCardData {
   const CompanyApplicationCardData({
     required this.positionTitle,
@@ -120,46 +123,255 @@ class CompanyApplicationJobFilterBar extends StatelessWidget {
   const CompanyApplicationJobFilterBar({
     super.key,
     required this.label,
-    required this.onTap,
+    required this.selectedJobId,
+    required this.jobs,
+    required this.isLoading,
+    required this.onChanged,
   });
 
   final String label;
-  final VoidCallback onTap;
+  final int? selectedJobId;
+  final List<JobDetailVO> jobs;
+  final bool isLoading;
+  final ValueChanged<JobDetailVO?> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    return _CompanyApplicationJobDropdownFilterBar(
+      label: label,
+      selectedJobId: selectedJobId,
+      jobs: jobs,
+      isLoading: isLoading,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _CompanyApplicationJobDropdownFilterBar extends StatefulWidget {
+  const _CompanyApplicationJobDropdownFilterBar({
+    required this.label,
+    required this.selectedJobId,
+    required this.jobs,
+    required this.isLoading,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int? selectedJobId;
+  final List<JobDetailVO> jobs;
+  final bool isLoading;
+  final ValueChanged<JobDetailVO?> onChanged;
+
+  @override
+  State<_CompanyApplicationJobDropdownFilterBar> createState() =>
+      _CompanyApplicationJobDropdownFilterBarState();
+}
+
+class _CompanyApplicationJobDropdownFilterBarState
+    extends State<_CompanyApplicationJobDropdownFilterBar> {
+  late final ValueNotifier<int?> _selectedJobIdNotifier;
+  bool _isMenuOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedJobIdNotifier = ValueNotifier<int?>(_effectiveSelectedJobId);
+  }
+
+  @override
+  void didUpdateWidget(
+    covariant _CompanyApplicationJobDropdownFilterBar oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+    final int? nextValue = _effectiveSelectedJobId;
+    if (_selectedJobIdNotifier.value != nextValue) {
+      _selectedJobIdNotifier.value = nextValue;
+    }
+  }
+
+  @override
+  void dispose() {
+    _selectedJobIdNotifier.dispose();
+    super.dispose();
+  }
+
+  int? get _effectiveSelectedJobId {
+    final int? selectedJobId = widget.selectedJobId;
+    if (selectedJobId == null) {
+      return null;
+    }
+
+    for (final JobDetailVO job in widget.jobs) {
+      if (job.jobId == selectedJobId) {
+        return selectedJobId;
+      }
+    }
+    return null;
+  }
+
+  JobDetailVO? _findJobById(int? jobId) {
+    if (jobId == null) {
+      return null;
+    }
+
+    for (final JobDetailVO job in widget.jobs) {
+      if (job.jobId == jobId) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final int? selectedJobId = _selectedJobIdNotifier.value;
+    final List<DropdownItem<int?>> items = <DropdownItem<int?>>[
+      _buildDropdownItem(
+        value: null,
+        label: '应聘管理.全部岗位'.tr(),
+        isSelected: selectedJobId == null,
+        key: const ValueKey<String>('company-application-job-all'),
+      ),
+      ...widget.jobs.map(
+        (JobDetailVO job) => _buildDropdownItem(
+          value: job.jobId,
+          label: _resolveJobTitle(job),
+          isSelected: selectedJobId == job.jobId,
+          key: ValueKey<int>(job.jobId),
+        ),
+      ),
+    ];
+
+    final double maxWidth = MediaQuery.sizeOf(context).width;
+
     return Container(
       color: CompanyApplicationManagementStyles.surface,
-      padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          overlayColor: const WidgetStatePropertyAll(
-            CompanyApplicationManagementStyles.actionOverlay,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton2<int?>(
+          items: items,
+          valueListenable: _selectedJobIdNotifier,
+          onChanged: (int? value) {
+            _selectedJobIdNotifier.value = value;
+            widget.onChanged(_findJobById(value));
+          },
+          onMenuStateChange: (bool isOpen) {
+            if (_isMenuOpen == isOpen) {
+              return;
+            }
+            setState(() {
+              _isMenuOpen = isOpen;
+            });
+          },
+          isExpanded: true,
+          isDense: true,
+          customButton: Container(
+            width: double.infinity,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(
-                  label,
-                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF171A1D)),
+                Opacity(
+                  opacity: widget.isLoading ? 0.6 : 1,
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TestStyle.regular(
+                      fontSize: 14,
+                      color: const Color(0xFF171A1D),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 4),
-                SvgPicture.asset(
-                  CompanyApplicationManagementStyles.filterArrowAssetPath,
-                  width: 12,
-                  height: 12,
+                RotatedBox(
+                  quarterTurns: _isMenuOpen ? 2 : 0,
+                  child: SvgPicture.asset(
+                    CompanyApplicationManagementStyles.filterArrowAssetPath,
+                    width: 12,
+                    height: 12,
+                  ),
                 ),
               ],
             ),
           ),
+          buttonStyleData: ButtonStyleData(
+            height: 48,
+            width: maxWidth,
+            padding: EdgeInsets.zero,
+            decoration: const BoxDecoration(
+              color: CompanyApplicationManagementStyles.surface,
+            ),
+            overlayColor: const WidgetStatePropertyAll(
+              CompanyApplicationManagementStyles.actionOverlay,
+            ),
+          ),
+          dropdownStyleData: const DropdownStyleData(
+            maxHeight: 320,
+            offset: Offset(0, 0),
+            decoration: BoxDecoration(color: Colors.white),
+            elevation: 0,
+            useRootNavigator: false,
+          ),
+          dropdownSeparator: const DropdownSeparator<int?>(
+            height: 0.5,
+            child: Divider(
+              height: 0.5,
+              thickness: 0.5,
+              color: Color(0xFFF0F0F0),
+            ),
+          ),
+          menuItemStyleData: const MenuItemStyleData(padding: EdgeInsets.zero),
         ),
       ),
     );
+  }
+
+  DropdownItem<int?> _buildDropdownItem({
+    required int? value,
+    required String label,
+    required bool isSelected,
+    required Key key,
+  }) {
+    final Color textColor = isSelected
+        ? const Color(0xFF096DD9)
+        : const Color(0xFF171A1D);
+
+    return DropdownItem<int?>(
+      key: key,
+      value: value,
+      height: 44,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.centerLeft,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: isSelected
+                    ? TestStyle.medium(fontSize: 14, color: textColor)
+                    : TestStyle.regular(fontSize: 14, color: textColor),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_rounded,
+                size: 20,
+                color: Color(0xFF1677FF),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _resolveJobTitle(JobDetailVO job) {
+    final String title = job.title.trim();
+    return title.isEmpty ? '招聘.未命名岗位'.tr() : title;
   }
 }
 
@@ -255,7 +467,10 @@ class _CardTopRow extends StatelessWidget {
               children: <InlineSpan>[
                 TextSpan(
                   text: '招聘.投递岗位'.tr(namedArgs: {'title': data.positionTitle}),
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: CompanyApplicationManagementStyles.textPrimary),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: CompanyApplicationManagementStyles.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -270,14 +485,20 @@ class _CardTopRow extends StatelessWidget {
           children: <Widget>[
             Text(
               data.matchText,
-              style: TestStyle.medium(fontSize: 16, color: CompanyApplicationManagementStyles.primary),
+              style: TestStyle.medium(
+                fontSize: 16,
+                color: CompanyApplicationManagementStyles.primary,
+              ),
             ),
             const SizedBox(width: 2),
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
                 '招聘.匹配度'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 10, color: CompanyApplicationManagementStyles.primary),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 10,
+                  color: CompanyApplicationManagementStyles.primary,
+                ),
               ),
             ),
           ],
@@ -315,7 +536,10 @@ class _CandidateInfoSection extends StatelessWidget {
                       data.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TestStyle.medium(fontSize: 16, color: CompanyApplicationManagementStyles.textPrimary),
+                      style: TestStyle.medium(
+                        fontSize: 16,
+                        color: CompanyApplicationManagementStyles.textPrimary,
+                      ),
                     ),
                   ),
                   if (data.ageGender.isNotEmpty) ...<Widget>[
@@ -325,7 +549,11 @@ class _CandidateInfoSection extends StatelessWidget {
                         data.ageGender,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TestStyle.regular(fontSize: 12, color: CompanyApplicationManagementStyles.textSecondary),
+                        style: TestStyle.regular(
+                          fontSize: 12,
+                          color:
+                              CompanyApplicationManagementStyles.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -384,7 +612,10 @@ class _CardFooter extends StatelessWidget {
           data.submittedText,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TestStyle.regular(fontSize: 12, color: CompanyApplicationManagementStyles.textSecondary),
+          style: TestStyle.regular(
+            fontSize: 12,
+            color: CompanyApplicationManagementStyles.textSecondary,
+          ),
         ),
         const SizedBox(width: 8),
         actions,
@@ -414,7 +645,10 @@ class CompanyApplicationTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TestStyle.regular(fontSize: 11, color: CompanyApplicationManagementStyles.tagText),
+        style: TestStyle.regular(
+          fontSize: 11,
+          color: CompanyApplicationManagementStyles.tagText,
+        ),
       ),
     );
   }
@@ -478,7 +712,11 @@ class CompanyApplicationActionButton extends StatelessWidget {
             child: Center(
               child: Text(
                 label,
-                style: TestStyle.regular(fontSize: 12, color: foregroundColor, letterSpacing: 0.2),
+                style: TestStyle.regular(
+                  fontSize: 12,
+                  color: foregroundColor,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ),
