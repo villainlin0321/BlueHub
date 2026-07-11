@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'resume_time_picker_bottom_sheet.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class SelectableSheetOption<T> {
   const SelectableSheetOption({required this.value, required this.label});
 
@@ -53,6 +54,13 @@ class _SelectableOptionsBottomSheetState<T>
     extends State<_SelectableOptionsBottomSheet<T>> {
   late final Set<T> _selected = widget.initialSelectedValues.toSet();
 
+  List<T> _buildSelectionResult() {
+    return widget.options
+        .where((option) => _selected.contains(option.value))
+        .map((option) => option.value)
+        .toList(growable: false);
+  }
+
   /// 构建可复用的选项列表弹层，并根据单选/多选模式展示对应控件。
   @override
   Widget build(BuildContext context) {
@@ -73,47 +81,64 @@ class _SelectableOptionsBottomSheetState<T>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      behavior: HitTestBehavior.opaque,
-                      child: const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 20,
-                          color: Color(0xFF171A1D),
-                        ),
-                      ),
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: widget.multiple
+                          ? GestureDetector(
+                              onTap: () => Navigator.of(context).pop(),
+                              behavior: HitTestBehavior.opaque,
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 20,
+                                color: Color(0xFF171A1D),
+                              ),
+                            )
+                          : null,
                     ),
                     Expanded(
                       child: Center(
                         child: Text(
                           widget.title,
-                          style: TestStyle.regular(fontSize: 17, color: Color(0xFF171A1D)),
+                          style: TestStyle.regular(
+                            fontSize: 17,
+                            color: Color(0xFF171A1D),
+                          ),
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop(
-                          widget.options
-                              .where(
-                                (option) => _selected.contains(option.value),
-                              )
-                              .map((option) => option.value)
-                              .toList(growable: false),
-                        );
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text(
-                          '通用.确定'.tr(),
-                          style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF096DD9)),
-                        ),
-                      ),
-                    ),
+                    widget.multiple
+                        ? GestureDetector(
+                            onTap: () {
+                              Navigator.of(
+                                context,
+                              ).pop(_buildSelectionResult());
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 14),
+                              child: Text(
+                                '通用.确定'.tr(),
+                                style: TestStyle.pingFangRegular(
+                                  fontSize: 16,
+                                  color: Color(0xFF096DD9),
+                                ),
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            behavior: HitTestBehavior.opaque,
+                            child: const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 20,
+                                color: Color(0xFF171A1D),
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),
@@ -130,18 +155,21 @@ class _SelectableOptionsBottomSheetState<T>
                     selected: selected,
                     multiple: widget.multiple,
                     onTap: () {
-                      setState(() {
-                        // 多选模式允许增删当前项；单选模式始终仅保留当前点击项。
-                        if (selected) {
-                          _selected.remove(option.value);
-                        } else if (widget.multiple) {
-                          _selected.add(option.value);
-                        } else {
-                          _selected
-                            ..clear()
-                            ..add(option.value);
-                        }
-                      });
+                      if (widget.multiple) {
+                        setState(() {
+                          if (selected) {
+                            _selected.remove(option.value);
+                          } else {
+                            _selected.add(option.value);
+                          }
+                        });
+                        return;
+                      }
+
+                      _selected
+                        ..clear()
+                        ..add(option.value);
+                      Navigator.of(context).pop(_buildSelectionResult());
                     },
                   );
                 },
@@ -197,12 +225,10 @@ class _SelectableOptionTile extends StatelessWidget {
             const SizedBox(width: 15),
             Icon(
               multiple
-                  ? (selected
-                      ? Icons.check_circle
-                      : Icons.panorama_fish_eye)
+                  ? (selected ? Icons.check_circle : Icons.panorama_fish_eye)
                   : (selected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off),
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off),
               size: 20,
               // 多选场景统一使用品牌蓝，保证全局勾选态视觉一致。
               color: selected
