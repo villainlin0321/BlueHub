@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../../shared/widgets/app_toast.dart';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -174,6 +175,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage>
 
   @override
   Widget build(BuildContext context) {
+    context.locale;
     ref.listen<AiAssistantState>(aiAssistantControllerProvider, (
       AiAssistantState? previous,
       AiAssistantState next,

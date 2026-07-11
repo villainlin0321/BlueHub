@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,15 +14,21 @@ class JobsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final Locale locale = context.locale;
     final ShellRole currentRole = ref.watch(shellRoleProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: switch (currentRole) {
-        ShellRole.jobSeeker => const JobSeekerJobsPage(),
-        ShellRole.company => const CompanyJobsPage(),
-        ShellRole.serviceProvider => const ServiceProviderJobsPage(),
-      },
+      body: KeyedSubtree(
+        key: ValueKey<String>(
+          '${currentRole.name}_${locale.languageCode}_${locale.countryCode ?? ''}',
+        ),
+        child: switch (currentRole) {
+          ShellRole.jobSeeker => const JobSeekerJobsPage(),
+          ShellRole.company => const CompanyJobsPage(),
+          ShellRole.serviceProvider => const ServiceProviderJobsPage(),
+        },
+      ),
     );
   }
 }
