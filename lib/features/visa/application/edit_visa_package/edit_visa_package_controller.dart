@@ -154,20 +154,28 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
     );
 
     try {
+      final int resolvedPackageId;
       if (packageId == null) {
-        await ref
+        final Map<String, dynamic> response = await ref
             .read(visaPackageServiceProvider)
             .createPackage(request: request);
+        resolvedPackageId = _parseCreatedPackageId(response);
       } else {
         await ref
             .read(visaPackageServiceProvider)
             .updatePackage(packageId: packageId, request: request);
+        resolvedPackageId = packageId;
       }
       _invalidateMyPackageLists();
+      ref.read(visaPackageListRefreshTickProvider.notifier).bump();
       state = state.copyWith(
         isSavingDraft: false,
         isPublishing: false,
         submitSuccessId: state.submitSuccessId + 1,
+        lastSubmittedPackageId: resolvedPackageId,
+        lastSubmitAction: isDraft
+            ? EditVisaPackageSubmitAction.draft
+            : EditVisaPackageSubmitAction.publish,
       );
       _emitFeedback(
         packageId == null
@@ -183,6 +191,32 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
         isError: true,
       );
     }
+  }
+
+  int _parseCreatedPackageId(Map<String, dynamic> response) {
+    final Object? packageId = response['packageId'];
+    final Object? fallbackId = response['id'];
+    final int resolvedId =
+        _tryParsePositiveInt(packageId) ??
+        _tryParsePositiveInt(fallbackId) ??
+        0;
+    if (resolvedId > 0) {
+      return resolvedId;
+    }
+    throw Exception('签证编辑.发布结果缺少套餐ID'.tr());
+  }
+
+  int? _tryParsePositiveInt(Object? value) {
+    if (value is int && value > 0) {
+      return value;
+    }
+    if (value is String) {
+      final int? parsed = int.tryParse(value.trim());
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+    return null;
   }
 
   CreateVisaPackageBO? _buildRequest(

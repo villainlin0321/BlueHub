@@ -9,6 +9,21 @@ final visaPackageServiceProvider = Provider<VisaPackageService>((ref) {
   return VisaPackageService(apiClient: ref.watch(apiClientProvider));
 });
 
+/// 我的签证套餐列表刷新信号：编辑、发布、草稿保存后递增，供套餐管理页统一刷新。
+final visaPackageListRefreshTickProvider =
+    NotifierProvider<VisaPackageListRefreshTickNotifier, int>(
+      VisaPackageListRefreshTickNotifier.new,
+    );
+
+class VisaPackageListRefreshTickNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() {
+    state = state + 1;
+  }
+}
+
 /// 根据套餐 ID 获取签证套餐详情，供签证详情页按需读取真实数据。
 final visaPackageDetailProvider = FutureProvider.autoDispose
     .family<VisaPackageVO, int>((ref, packageId) async {

@@ -16,6 +16,7 @@ import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../me/data/dictionary_providers.dart';
 import '../../../me/presentation/country_options_bottom_sheet.dart';
+import '../../../service_detail/presentation/visa_package_preview_page.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
 import '../../../../shared/network/models/dictionary_models.dart';
@@ -41,6 +42,7 @@ class _ServiceProviderJobsPageState
   )..addListener(_handleTabChanged);
 
   int _selectedTabIndex = 0;
+  int _packageListRefreshTick = 0;
 
   void _handleTabChanged() {
     if (!mounted || _tabController.indexIsChanging) {
@@ -54,6 +56,25 @@ class _ServiceProviderJobsPageState
     });
   }
 
+  Future<void> _openEditVisaPackagePage() async {
+    final Object? result = await context.push(RoutePaths.editVisaPackage);
+    if (!mounted || result != true) {
+      return;
+    }
+    setState(() {
+      _packageListRefreshTick++;
+    });
+  }
+
+  void _handlePackageMutationFinished() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _packageListRefreshTick++;
+    });
+  }
+
   @override
   void dispose() {
     _tabController
@@ -64,6 +85,15 @@ class _ServiceProviderJobsPageState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(visaPackageListRefreshTickProvider, (previous, next) {
+      if (previous == next || !mounted) {
+        return;
+      }
+      setState(() {
+        _packageListRefreshTick++;
+      });
+    });
+
     final double topPadding = MediaQuery.paddingOf(context).top;
 
     return Column(
@@ -71,7 +101,9 @@ class _ServiceProviderJobsPageState
       children: <Widget>[
         _PageHeader(
           topPadding: topPadding,
-          onPublishTap: () => context.push(RoutePaths.editVisaPackage),
+          onPublishTap: () {
+            _openEditVisaPackagePage();
+          },
         ),
         _PageTabBar(
           tabs: _PackageTab.values,
@@ -93,6 +125,8 @@ class _ServiceProviderJobsPageState
                       'service-provider-jobs-${tab.name}',
                     ),
                     tab: tab,
+                    refreshTick: _packageListRefreshTick,
+                    onMutationFinished: _handlePackageMutationFinished,
                   ),
                 )
                 .toList(growable: false),
@@ -136,9 +170,16 @@ enum _PackageTab {
 }
 
 class _PackageTabView extends ConsumerStatefulWidget {
-  const _PackageTabView({super.key, required this.tab});
+  const _PackageTabView({
+    super.key,
+    required this.tab,
+    required this.refreshTick,
+    required this.onMutationFinished,
+  });
 
   final _PackageTab tab;
+  final int refreshTick;
+  final VoidCallback onMutationFinished;
 
   @override
   ConsumerState<_PackageTabView> createState() => _PackageTabViewState();
@@ -161,6 +202,14 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   void initState() {
     super.initState();
     Future<void>.microtask(_loadPackages);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PackageTabView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTick != widget.refreshTick) {
+      Future<void>.microtask(_refreshPackages);
+    }
   }
 
   Future<void> _loadPackages() async {
@@ -431,6 +480,12 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
               widget.tab.secondaryActionStatus == null || isDeleting
               ? null
               : () => _handleSecondaryAction(package),
+          onCardTap: () {
+            context.push(
+              RoutePaths.serviceDetailPreview,
+              extra: VisaPackagePreviewPageArgs(packageId: package.packageId),
+            );
+          },
           onPrimaryAction: isDeleting
               ? null
               : () {
@@ -438,11 +493,10 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
                       .push(
                         '${RoutePaths.editVisaPackage}?packageId=${package.packageId}',
                       )
-                      .then((_) {
-                        if (!mounted) {
-                          return;
+                      .then((Object? result) {
+                        if (result == true) {
+                          widget.onMutationFinished();
                         }
-                        _refreshPackages();
                       });
                 },
           isDeleteActionLoading: isDeleting,
@@ -608,6 +662,7 @@ class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.data,
     required this.tabStatus,
+    this.onCardTap,
     this.onDeleteAction,
     this.onSecondaryAction,
     this.onPrimaryAction,
@@ -617,6 +672,7 @@ class _PackageCard extends StatelessWidget {
 
   final _PackageCardData data;
   final String tabStatus;
+  final VoidCallback? onCardTap;
   final VoidCallback? onDeleteAction;
   final VoidCallback? onSecondaryAction;
   final VoidCallback? onPrimaryAction;
@@ -637,62 +693,81 @@ class _PackageCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: Row(
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: onCardTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            data.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TestStyle.medium(
-                              fontSize: 16,
-                              color: Color(0xFF262626),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: Row(
+                                children: <Widget>[
+                                  Flexible(
+                                    child: Text(
+                                      data.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TestStyle.medium(
+                                        fontSize: 16,
+                                        color: Color(0xFF262626),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            const _MoreIcon(),
+                          ],
                         ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: <Widget>[
+                            ...data.tags.map(
+                              (String tag) => Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: _TagChip(label: tag),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              data.metaText,
+                              style: TestStyle.regular(
+                                fontSize: 12,
+                                color: Color(0xFF8C8C8C),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 11),
+                        if (data.packages.isEmpty)
+                          const _EmptyTierState()
+                        else
+                          ...List<Widget>.generate(data.packages.length, (
+                            int index,
+                          ) {
+                            final _PackagePriceItem item = data.packages[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: index == data.packages.length - 1
+                                    ? 0
+                                    : 8,
+                              ),
+                              child: _PackagePriceRow(item: item),
+                            );
+                          }),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const _MoreIcon(),
-                ],
+                ),
               ),
-              const SizedBox(height: 5),
-              Row(
-                children: <Widget>[
-                  ...data.tags.map(
-                    (String tag) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _TagChip(label: tag),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    data.metaText,
-                    style: TestStyle.regular(
-                      fontSize: 12,
-                      color: Color(0xFF8C8C8C),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 11),
-              if (data.packages.isEmpty)
-                const _EmptyTierState()
-              else
-                ...List<Widget>.generate(data.packages.length, (int index) {
-                  final _PackagePriceItem item = data.packages[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == data.packages.length - 1 ? 0 : 8,
-                    ),
-                    child: _PackagePriceRow(item: item),
-                  );
-                }),
               const SizedBox(height: 12),
               Row(
                 children: <Widget>[

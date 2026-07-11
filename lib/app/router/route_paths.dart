@@ -98,6 +98,9 @@ class RoutePaths {
   /// 服务详情页。
   static const serviceDetail = '/service-detail';
 
+  /// 签证套餐预览页。
+  static const serviceDetailPreview = '/service-detail/preview';
+
   /// 编辑签证套餐页。
   static const editVisaPackage = '/visa/package/edit';
 

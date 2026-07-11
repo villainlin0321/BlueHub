@@ -31,6 +31,7 @@ import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
 import '../data/visa_package_models.dart';
 import '../data/visa_package_providers.dart';
+import '../../service_detail/presentation/visa_package_preview_page.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
@@ -95,7 +96,9 @@ _EditVisaPackageSnapshot _buildEditVisaPackageSnapshot({
                         name: material.titleController.text.trim(),
                         description: material.descriptionController.text.trim(),
                         isRequired: material.isRequired,
-                        exampleFileIds: _collectSnapshotExampleFileIds(material),
+                        exampleFileIds: _collectSnapshotExampleFileIds(
+                          material,
+                        ),
                       );
                     })
                     .toList(growable: false)
@@ -116,15 +119,16 @@ _EditVisaPackageSnapshot _buildEditVisaPackageSnapshot({
 }
 
 /// 归一化材料示例文件 ID，和提交请求对齐，避免同值不同顺序造成误判。
-List<int> _collectSnapshotExampleFileIds(EditVisaPackageMaterialViewDraft material) {
+List<int> _collectSnapshotExampleFileIds(
+  EditVisaPackageMaterialViewDraft material,
+) {
   final List<int> fileIds = <int>{
     ...material.existingExampleFileIds,
     ...material.exampleFiles
         .where((PickedUploadFile file) => file.state == UploadItemState.success)
         .map((PickedUploadFile file) => file.uploadedFileId)
         .whereType<int>(),
-  }.toList(growable: false)
-    ..sort();
+  }.toList(growable: false)..sort();
   return fileIds;
 }
 
@@ -135,8 +139,9 @@ String _collectSnapshotCoverImageIdentity(PickedUploadFile? coverImage) {
   }
   // 这里必须和提交请求的封面收集逻辑保持一致，避免未提交值被误判为脏数据。
   final int? uploadedFileId = coverImage.uploadedFileId;
-  final String normalizedId =
-      uploadedFileId != null && uploadedFileId > 0 ? '$uploadedFileId' : '';
+  final String normalizedId = uploadedFileId != null && uploadedFileId > 0
+      ? '$uploadedFileId'
+      : '';
   final String resolvedUrl = (coverImage.uploadedFileUrl ?? coverImage.path)
       .trim();
   if (normalizedId.isEmpty && resolvedUrl.isEmpty) {
@@ -784,7 +789,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
 
   /// 从页面控制器和档位草稿构建提交所需的表单草稿。
   EditVisaPackageFormDraft _buildFormDraft() {
-    final EditVisaPackageState state = ref.read(editVisaPackageControllerProvider);
+    final EditVisaPackageState state = ref.read(
+      editVisaPackageControllerProvider,
+    );
     return EditVisaPackageFormDraft(
       name: _serviceNameController.text,
       estimatedDays: _durationController.text,
@@ -960,7 +967,10 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
   }
 
   /// 删除前先校验最小保留数量，再通过确认弹窗降低误删风险。
-  Future<void> _confirmAndDeleteMaterial(int tierIndex, int materialIndex) async {
+  Future<void> _confirmAndDeleteMaterial(
+    int tierIndex,
+    int materialIndex,
+  ) async {
     if (tierIndex < 0 || tierIndex >= _tiers.length) {
       return;
     }
@@ -991,8 +1001,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
     if (materialIndex < 0 || materialIndex >= latestMaterials.length) {
       return;
     }
-    final EditVisaPackageMaterialViewDraft material =
-        latestMaterials.removeAt(materialIndex);
+    final EditVisaPackageMaterialViewDraft material = latestMaterials.removeAt(
+      materialIndex,
+    );
     // 删除材料时同步释放 controller，避免残留输入状态和资源泄漏。
     material.dispose();
     setState(() {});
@@ -1152,7 +1163,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
       path: previewPath,
       title: file.name,
       isImage: file.isImage,
-      isPdf: UploadPickerUtils.isPdfPath(previewPath) ||
+      isPdf:
+          UploadPickerUtils.isPdfPath(previewPath) ||
           UploadPickerUtils.isPdfPath(file.name),
     );
   }
@@ -1304,6 +1316,29 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
     return message.isEmpty ? fallback : message;
   }
 
+  Future<void> _handleSubmitSuccess(EditVisaPackageState next) async {
+    _markSavedSnapshot();
+    if (next.lastSubmitAction == EditVisaPackageSubmitAction.publish) {
+      final int? packageId = next.lastSubmittedPackageId;
+      if (packageId == null || packageId <= 0) {
+        scheduleDirectPop(
+          result: true,
+          onCannotPop: () => context.go(RoutePaths.jobs),
+        );
+        return;
+      }
+      context.pushReplacement(
+        RoutePaths.serviceDetailPreview,
+        extra: VisaPackagePreviewPageArgs(packageId: packageId),
+      );
+      return;
+    }
+    scheduleDirectPop(
+      result: true,
+      onCannotPop: () => context.go(RoutePaths.jobs),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<EditVisaPackageState>(editVisaPackageControllerProvider, (
@@ -1318,11 +1353,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
 
       if (previous?.submitSuccessId != next.submitSuccessId &&
           next.submitSuccessId > 0) {
-        _markSavedSnapshot();
-        scheduleDirectPop(
-          result: true,
-          onCannotPop: () => context.go(RoutePaths.jobs),
-        );
+        Future<void>.microtask(() => _handleSubmitSuccess(next));
       }
     });
 
@@ -1368,13 +1399,19 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
               children: <Widget>[
                 Text(
                   '服务详情.套餐详情加载失败'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: Color(0xFF262626),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _packageDetailError!,
                   textAlign: TextAlign.center,
-                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: Color(0xFF8C8C8C),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -1471,14 +1508,14 @@ class _EditVisaPackageSnapshot {
 
   @override
   int get hashCode => Object.hash(
-        serviceName,
-        duration,
-        countryCode,
-        visaTypeCode,
-        currency,
-        coverImageId,
-        Object.hashAll(tiers),
-      );
+    serviceName,
+    duration,
+    countryCode,
+    visaTypeCode,
+    currency,
+    coverImageId,
+    Object.hashAll(tiers),
+  );
 }
 
 class _EditVisaPackageTierSnapshot {
@@ -1521,15 +1558,15 @@ class _EditVisaPackageTierSnapshot {
 
   @override
   int get hashCode => Object.hash(
-        tierId,
-        name,
-        price,
-        description,
-        showMaterials,
-        Object.hashAll(selectedServiceTagCodes),
-        Object.hashAll(customServices),
-        Object.hashAll(materials),
-      );
+    tierId,
+    name,
+    price,
+    description,
+    showMaterials,
+    Object.hashAll(selectedServiceTagCodes),
+    Object.hashAll(customServices),
+    Object.hashAll(materials),
+  );
 }
 
 class _EditVisaPackageMaterialSnapshot {
@@ -1557,11 +1594,11 @@ class _EditVisaPackageMaterialSnapshot {
 
   @override
   int get hashCode => Object.hash(
-        name,
-        description,
-        isRequired,
-        Object.hashAll(exampleFileIds),
-      );
+    name,
+    description,
+    isRequired,
+    Object.hashAll(exampleFileIds),
+  );
 }
 
 class _VisaPackageUploadTypeBottomSheet extends StatelessWidget {
@@ -1707,7 +1744,10 @@ class _VisaPackageUploadTypeAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 13,
+                color: const Color(0xFF595959),
+              ),
             ),
           ],
         ),

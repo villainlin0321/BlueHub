@@ -3,6 +3,9 @@ import '../../../../shared/models/app_currency.dart';
 
 const Object _feedbackSentinel = Object();
 const Object _serviceTagsErrorSentinel = Object();
+const Object _submitActionSentinel = Object();
+
+enum EditVisaPackageSubmitAction { draft, publish }
 
 class EditVisaPackageState {
   const EditVisaPackageState({
@@ -19,6 +22,8 @@ class EditVisaPackageState {
     this.feedbackIsError = false,
     this.feedbackId = 0,
     this.submitSuccessId = 0,
+    this.lastSubmittedPackageId,
+    this.lastSubmitAction,
   });
 
   final String? selectedCountryCode;
@@ -34,6 +39,8 @@ class EditVisaPackageState {
   final bool feedbackIsError;
   final int feedbackId;
   final int submitSuccessId;
+  final int? lastSubmittedPackageId;
+  final EditVisaPackageSubmitAction? lastSubmitAction;
 
   EditVisaPackageState copyWith({
     Object? selectedCountryCode = _feedbackSentinel,
@@ -49,6 +56,8 @@ class EditVisaPackageState {
     bool? feedbackIsError,
     int? feedbackId,
     int? submitSuccessId,
+    int? lastSubmittedPackageId,
+    Object? lastSubmitAction = _submitActionSentinel,
   }) {
     return EditVisaPackageState(
       selectedCountryCode: identical(selectedCountryCode, _feedbackSentinel)
@@ -72,6 +81,11 @@ class EditVisaPackageState {
       feedbackIsError: feedbackIsError ?? this.feedbackIsError,
       feedbackId: feedbackId ?? this.feedbackId,
       submitSuccessId: submitSuccessId ?? this.submitSuccessId,
+      lastSubmittedPackageId:
+          lastSubmittedPackageId ?? this.lastSubmittedPackageId,
+      lastSubmitAction: identical(lastSubmitAction, _submitActionSentinel)
+          ? this.lastSubmitAction
+          : lastSubmitAction as EditVisaPackageSubmitAction?,
     );
   }
 }
