@@ -11,6 +11,7 @@ class VisaPackageService {
   /// 创建签证套餐。
   ///
   /// 提交套餐基础信息、标签和价格配置后，返回接口原始结果。
+  /// 调用方需从返回体中继续解析新建套餐的资源 ID。
   Future<Map<String, dynamic>> createPackage({
     required CreateVisaPackageBO request,
   }) async {

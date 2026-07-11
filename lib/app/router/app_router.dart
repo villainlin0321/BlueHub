@@ -53,6 +53,7 @@ import '../../features/order/presentation/order_review_page.dart';
 import '../../features/me/presentation/self_evaluation_page.dart';
 import '../../features/service_detail/presentation/app_result_page.dart';
 import '../../features/service_detail/presentation/service_detail_page.dart';
+import '../../features/service_detail/presentation/visa_package_preview_page.dart';
 import '../../features/service_detail/presentation/service_detail_report_page.dart';
 import '../../features/me/presentation/my_orders_page.dart';
 import '../../features/shell/presentation/main_shell_page.dart';
@@ -280,6 +281,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           args:
               state.extra as ServiceDetailPageArgs? ??
               _buildServiceDetailArgsFromUri(state.uri),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.serviceDetailPreview,
+        builder: (context, state) => VisaPackagePreviewPage(
+          args:
+              state.extra as VisaPackagePreviewPageArgs? ??
+              VisaPackagePreviewPageArgs(
+                packageId:
+                    int.tryParse(
+                      state.uri.queryParameters['packageId'] ?? '',
+                    ) ??
+                    0,
+                providerId: int.tryParse(
+                  state.uri.queryParameters['providerId'] ?? '',
+                ),
+              ),
         ),
       ),
       GoRoute(
