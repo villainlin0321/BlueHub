@@ -509,6 +509,7 @@
     "下单提示": "An order will be created after submission. Please upload the required materials on the order details page.",
     "提交中": "Submitting...",
     "去支付": "Proceed to Pay",
+    "去申请": "Proceed to Apply",
     "创建订单失败": "Failed to create order. Please try again later.",
     "确认支付": "Confirm Payment",
     "支付中": "Paying...",

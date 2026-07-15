@@ -115,6 +115,9 @@ class _ApplyBottomSheetContentState
     final bottomSafeArea = MediaQuery.paddingOf(context).bottom;
     final topSafeArea = MediaQuery.paddingOf(context).top;
     final maxSheetHeight = MediaQuery.sizeOf(context).height - topSafeArea - 12;
+    final submitButtonText = _isSubmitting
+        ? '服务详情.提交中'.tr()
+        : (OrderPaymentConfig.isSkipMode ? '服务详情.去申请'.tr() : '服务详情.去支付'.tr());
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -235,7 +238,7 @@ class _ApplyBottomSheetContentState
                               shadowColor: Colors.transparent,
                             ),
                             child: Text(
-                              _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
+                              submitButtonText,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 color: Colors.white,
                                 fontSize: 16,
