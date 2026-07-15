@@ -15,7 +15,7 @@ import '../data/provider_models.dart';
 import '../data/provider_providers.dart';
 import 'widgets/visa_provider_search_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class VisaProviderSearchPage extends ConsumerStatefulWidget {
   const VisaProviderSearchPage({super.key});
 

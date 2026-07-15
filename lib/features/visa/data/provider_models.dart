@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class DocItemBO {
   const DocItemBO({
@@ -77,17 +77,20 @@ class PackageSimpleVO {
     required this.packageId,
     required this.name,
     required this.priceFrom,
+    required this.currency,
   });
 
   final int packageId;
   final String name;
   final double priceFrom;
+  final String currency;
 
   factory PackageSimpleVO.fromJson(JsonMap json) {
     return PackageSimpleVO(
       packageId: readInt(json, 'packageId'),
       name: readString(json, 'name'),
       priceFrom: readDouble(json, 'priceFrom'),
+      currency: readString(json, 'currency', fallback: 'CNY'),
     );
   }
 
@@ -96,6 +99,7 @@ class PackageSimpleVO {
       'packageId': packageId,
       'name': name,
       'priceFrom': priceFrom,
+      'currency': currency,
     };
   }
 }

@@ -11,7 +11,7 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 import '../data/finance_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class FinanceSettlementPage extends ConsumerStatefulWidget {
   const FinanceSettlementPage({super.key});
 

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 class TestStyle {
   const TestStyle._();
 
-  static const String pingFangFamily = 'PingFang';
+  // static const String pingFangFamily = 'PingFang';
+  static const String pingFangFamily = '';
   static const String sfUiTextFamily = 'SFUIText';
   static const String miSansLatinFamily = 'MiSansLatinVF';
   static const String alibabaPuHuiTiFamily = 'AlibabaPuHuiTi';

@@ -9,3 +9,5 @@ build/
 
 .idea/
 .vscode/
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugins.cmake

@@ -8,7 +8,7 @@ import '../../../shared/widgets/app_user_avatar.dart';
 import '../../me/presentation/service_provider_my_info_page.dart';
 import '../../visa/data/provider_models.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ServiceDetailMerchantTab extends StatelessWidget {
   const ServiceDetailMerchantTab({
     super.key,

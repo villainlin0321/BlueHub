@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class BlacklistBO {
   const BlacklistBO({required this.targetUserId, required this.action});
@@ -36,6 +36,52 @@ class DeviceTokenBO {
   }
 }
 
+class BindPhoneBO {
+  const BindPhoneBO({
+    required this.phone,
+    required this.countryCode,
+    required this.code,
+  });
+
+  final String phone;
+  final String countryCode;
+  final String code;
+
+  factory BindPhoneBO.fromJson(JsonMap json) {
+    return BindPhoneBO(
+      phone: readString(json, 'phone'),
+      countryCode: readString(json, 'countryCode'),
+      code: readString(json, 'code'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'phone': phone,
+      'countryCode': countryCode,
+      'code': code,
+    };
+  }
+}
+
+class BindEmailBO {
+  const BindEmailBO({required this.email, required this.code});
+
+  final String email;
+  final String code;
+
+  factory BindEmailBO.fromJson(JsonMap json) {
+    return BindEmailBO(
+      email: readString(json, 'email'),
+      code: readString(json, 'code'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{'email': email, 'code': code};
+  }
+}
+
 class RealNameVerifyBO {
   const RealNameVerifyBO({
     required this.realName,
@@ -64,6 +110,66 @@ class RealNameVerifyBO {
       'idCardNumber': idCardNumber,
       'idCardFrontUrl': idCardFrontUrl,
       'idCardBackUrl': idCardBackUrl,
+    };
+  }
+}
+
+class RealNameVerificationVO {
+  const RealNameVerificationVO({
+    required this.verifyId,
+    required this.realName,
+    required this.idCardNumber,
+    required this.idCardFront,
+    required this.idCardBack,
+    required this.status,
+    required this.statusLabel,
+    required this.rejectReason,
+    required this.createdAt,
+    required this.reviewedAt,
+    required this.updatedAt,
+  });
+
+  final int verifyId;
+  final String realName;
+  final String idCardNumber;
+  final String idCardFront;
+  final String idCardBack;
+  final String status;
+  final String statusLabel;
+  final String rejectReason;
+  final String createdAt;
+  final String reviewedAt;
+  final String updatedAt;
+
+  factory RealNameVerificationVO.fromJson(JsonMap json) {
+    return RealNameVerificationVO(
+      verifyId: readInt(json, 'verifyId'),
+      realName: readString(json, 'realName'),
+      idCardNumber: readString(json, 'idCardNumber'),
+      idCardFront: readString(json, 'idCardFront'),
+      idCardBack: readString(json, 'idCardBack'),
+      status: readString(json, 'status'),
+      statusLabel: readString(json, 'statusLabel'),
+      rejectReason: readString(json, 'rejectReason'),
+      createdAt: readString(json, 'createdAt'),
+      reviewedAt: readString(json, 'reviewedAt'),
+      updatedAt: readString(json, 'updatedAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'verifyId': verifyId,
+      'realName': realName,
+      'idCardNumber': idCardNumber,
+      'idCardFront': idCardFront,
+      'idCardBack': idCardBack,
+      'status': status,
+      'statusLabel': statusLabel,
+      'rejectReason': rejectReason,
+      'createdAt': createdAt,
+      'reviewedAt': reviewedAt,
+      'updatedAt': updatedAt,
     };
   }
 }
@@ -136,6 +242,7 @@ class UserVO {
     required this.role,
     required this.currentLocation,
     required this.isVerified,
+    this.realName = '',
     required this.blacklistCount,
     required this.createdAt,
   });
@@ -150,6 +257,7 @@ class UserVO {
   final String role;
   final String currentLocation;
   final bool isVerified;
+  final String realName;
   final int blacklistCount;
   final String createdAt;
 
@@ -165,6 +273,7 @@ class UserVO {
       role: readString(json, 'role'),
       currentLocation: readString(json, 'currentLocation'),
       isVerified: readBool(json, 'isVerified'),
+      realName: readString(json, 'realName'),
       blacklistCount: readInt(json, 'blacklistCount'),
       createdAt: readString(json, 'createdAt'),
     );
@@ -182,6 +291,7 @@ class UserVO {
       'role': role,
       'currentLocation': currentLocation,
       'isVerified': isVerified,
+      'realName': realName,
       'blacklistCount': blacklistCount,
       'createdAt': createdAt,
     };

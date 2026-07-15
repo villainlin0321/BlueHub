@@ -5,11 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 import 'filter_bottom_sheet_chip.dart';
+import '../../../../shared/network/services/config_service.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class CompanyApplicationJobFilterResult {
   const CompanyApplicationJobFilterResult({
     required this.jobId,
@@ -36,21 +40,21 @@ showCompanyApplicationJobFilterBottomSheet({
 
   final Future<CompanyApplicationJobFilterResult?> future =
       showFilterActionBottomSheet<CompanyApplicationJobFilterResult?>(
-    context: context,
-    title: '应聘管理.岗位筛选'.tr(),
-    onReset: () {
-      selectionNotifier.value = const CompanyApplicationJobFilterResult(
-        jobId: null,
-        jobTitle: null,
+        context: context,
+        title: '应聘管理.岗位筛选'.tr(),
+        onReset: () {
+          selectionNotifier.value = const CompanyApplicationJobFilterResult(
+            jobId: null,
+            jobTitle: null,
+          );
+        },
+        onConfirm: () {
+          Navigator.of(context).pop(selectionNotifier.value);
+        },
+        child: _CompanyApplicationJobFilterSheet(
+          selectionNotifier: selectionNotifier,
+        ),
       );
-    },
-    onConfirm: () {
-      Navigator.of(context).pop(selectionNotifier.value);
-    },
-    child: _CompanyApplicationJobFilterSheet(
-      selectionNotifier: selectionNotifier,
-    ),
-  );
   future.whenComplete(selectionNotifier.dispose);
   return future;
 }
@@ -150,10 +154,20 @@ class _CompanyApplicationJobFilterSheetState
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, TagItemVO> requirementTagLookup =
+        ConfigService.buildTagLookup(
+          ref
+                  .watch(tagDictionaryProvider(TagCategory.requirement))
+                  .asData
+                  ?.value ??
+              const <TagItemVO>[],
+        );
+
     return _CompanyApplicationJobFilterSheetLayout(
       isLoading: _isLoading,
       errorMessage: _errorMessage,
       jobs: _jobs,
+      requirementTagLookup: requirementTagLookup,
       selectedJobId: _draftSelectedJobId,
       onRetryTap: _loadJobs,
       onJobTap: _handleSelectJob,
@@ -166,6 +180,7 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
     required this.isLoading,
     required this.errorMessage,
     required this.jobs,
+    required this.requirementTagLookup,
     required this.selectedJobId,
     required this.onRetryTap,
     required this.onJobTap,
@@ -174,6 +189,7 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
   final bool isLoading;
   final String? errorMessage;
   final List<JobDetailVO> jobs;
+  final Map<String, TagItemVO> requirementTagLookup;
   final int? selectedJobId;
   final Future<void> Function() onRetryTap;
   final ValueChanged<JobDetailVO> onJobTap;
@@ -201,13 +217,13 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
               Text(
                 errorMessage!,
                 textAlign: TextAlign.center,
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF8C8C8C),
+                ),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: onRetryTap,
-                child: Text('通用.重试'.tr()),
-              ),
+              TextButton(onPressed: onRetryTap, child: Text('通用.重试'.tr())),
             ],
           ),
         ),
@@ -217,9 +233,7 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
     if (jobs.isEmpty) {
       return SizedBox(
         height: 320,
-        child: Center(
-          child: AppEmptyState(message: '招聘.暂无发布岗位'.tr()),
-        ),
+        child: Center(child: AppEmptyState(message: '招聘.暂无发布岗位'.tr())),
       );
     }
 
@@ -232,6 +246,7 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
         final JobDetailVO job = jobs[index];
         return _CompanyApplicationJobFilterCard(
           job: job,
+          requirementTagLookup: requirementTagLookup,
           isSelected: selectedJobId == job.jobId,
           onTap: () => onJobTap(job),
         );
@@ -243,11 +258,13 @@ class _CompanyApplicationJobFilterSheetLayout extends StatelessWidget {
 class _CompanyApplicationJobFilterCard extends StatelessWidget {
   const _CompanyApplicationJobFilterCard({
     required this.job,
+    required this.requirementTagLookup,
     required this.isSelected,
     required this.onTap,
   });
 
   final JobDetailVO job;
+  final Map<String, TagItemVO> requirementTagLookup;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -276,13 +293,16 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   job.title.trim().isEmpty ? '招聘.未命名岗位'.tr() : job.title,
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: Color(0xFF262626),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: _buildTags(job)
+                    children: _buildTags(context, job)
                         .map(
                           (String tag) => Padding(
                             padding: const EdgeInsets.only(right: 4),
@@ -297,7 +317,10 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       _formatSalary(job),
-                      style: TestStyle.pingFangMedium(fontSize: 14, color: Color(0xFFFE5815)),
+                      style: TestStyle.pingFangMedium(
+                        fontSize: 14,
+                        color: Color(0xFFFE5815),
+                      ),
                     ),
                     const Spacer(),
                     Text(
@@ -306,7 +329,10 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                           'count': job.viewCount.toString(),
                         },
                       ),
-                      style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                      style: TestStyle.pingFangRegular(
+                        fontSize: 12,
+                        color: Color(0xFF8C8C8C),
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Text(
@@ -315,7 +341,10 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                           'count': job.applyCount.toString(),
                         },
                       ),
-                      style: TestStyle.regular(fontSize: 12, color: Color(0xFF096DD9)),
+                      style: TestStyle.regular(
+                        fontSize: 12,
+                        color: Color(0xFF096DD9),
+                      ),
                     ),
                   ],
                 ),
@@ -325,7 +354,10 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
                     '企业岗位.发布时间'.tr(
                       namedArgs: <String, String>{'time': job.publishedAt},
                     ),
-                    style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 12,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ],
               ],
@@ -336,7 +368,7 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
     );
   }
 
-  List<String> _buildTags(JobDetailVO job) {
+  List<String> _buildTags(BuildContext context, JobDetailVO job) {
     final List<String> tags = <String>[];
 
     void addTag(String value) {
@@ -347,32 +379,23 @@ class _CompanyApplicationJobFilterCard extends StatelessWidget {
       tags.add(tag);
     }
 
-    addTag(job.employmentType);
-    addTag(_formatLocation(job));
     if (job.hasVisaSupport) {
       addTag('招聘卡片.提供签证'.tr());
     }
     for (final TagVO tag in job.tags) {
-      addTag(tag.label);
+      addTag(
+        ConfigService.resolveTagLabel(
+          rawLabel: tag.label,
+          tagLookup: requirementTagLookup,
+          locale: context.locale,
+        ),
+      );
       if (tags.length >= 4) {
         break;
       }
     }
 
     return tags;
-  }
-
-  String _formatLocation(JobDetailVO job) {
-    if (job.country.isEmpty && job.city.isEmpty) {
-      return '';
-    }
-    if (job.country.isEmpty) {
-      return job.city;
-    }
-    if (job.city.isEmpty) {
-      return job.country;
-    }
-    return '${job.country}·${job.city}';
   }
 
   String _formatSalary(JobDetailVO job) {

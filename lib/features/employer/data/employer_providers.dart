@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/shared/network/providers.dart';
 import '../../auth/application/auth_session_provider.dart';
 import 'employer_models.dart';
 import '../../../shared/network/services/employer_service.dart';

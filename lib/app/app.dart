@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/app_icon/app_icon_switcher.dart';
 import '../shared/localization/app_locales.dart';
+import '../shared/logging/app_lifecycle_logger.dart';
+import '../shared/network/providers.dart';
 import '../shared/widgets/app_toast.dart';
 import 'router/app_router.dart';
 
@@ -21,22 +23,30 @@ class App extends ConsumerWidget {
     AppToast.configure();
 
     return _AppIconInitialSync(
-      child: MaterialApp.router(
-        title: title,
-        debugShowCheckedModeBanner: false,
-        locale: context.locale,
-        supportedLocales: AppLocales.supported,
-        localizationsDelegates: context.localizationDelegates,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF186CFF)),
-          scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-          useMaterial3: true,
+      child: AppLifecycleLogger(
+        child: MaterialApp.router(
+          key: const Key('app-root'),
+          title: title,
+          debugShowCheckedModeBanner: false,
+          locale: context.locale,
+          supportedLocales: AppLocales.supported,
+          localizationsDelegates: context.localizationDelegates,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF186CFF),
+            ),
+            scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+            useMaterial3: true,
+          ),
+          builder: (BuildContext context, Widget? child) {
+            final TransitionBuilder easyLoadingBuilder = EasyLoading.init();
+            return easyLoadingBuilder(
+              context,
+              child ?? const SizedBox.shrink(),
+            );
+          },
+          routerConfig: router,
         ),
-        builder: (BuildContext context, Widget? child) {
-          final TransitionBuilder easyLoadingBuilder = EasyLoading.init();
-          return easyLoadingBuilder(context, child ?? const SizedBox.shrink());
-        },
-        routerConfig: router,
       ),
     );
   }
@@ -65,6 +75,9 @@ class _AppIconInitialSyncState extends State<_AppIconInitialSync> {
     _didSync = true;
 
     final locale = context.locale;
+    ProviderScope.containerOf(context, listen: false)
+        .read(appLanguageStoreProvider)
+        .syncLanguageCode(AppLocales.toLanguageCode(locale));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppIconSwitcher.syncByLocale(locale);
     });

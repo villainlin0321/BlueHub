@@ -11,7 +11,7 @@ import '../data/complaint_models.dart';
 import '../data/complaint_providers.dart';
 import 'complaint_detail_page.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class MyComplaintsPage extends ConsumerWidget {
   const MyComplaintsPage({super.key});
 

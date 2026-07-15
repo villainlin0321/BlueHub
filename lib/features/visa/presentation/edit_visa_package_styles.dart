@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 /// “编辑/签证套餐”页面的样式常量，集中管理以便复用。
 abstract final class EditVisaPackageStyles {

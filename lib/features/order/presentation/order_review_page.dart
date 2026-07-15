@@ -9,11 +9,11 @@ import '../../visa/data/review_providers.dart';
 import '../../files/data/file_models.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class OrderReviewPageArgs {
   const OrderReviewPageArgs({
     required this.orderId,
@@ -74,10 +74,12 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     return '评价.很棒'.tr();
   }
 
+  /// 统一弹出页面内的轻提示，便于后续替换提示组件。
   void _showPlaceholder(String message) {
     AppToast.show(message);
   }
 
+  /// 提交评价内容，并在成功后返回上一页通知刷新。
   Future<void> _handlePublish() async {
     if (!_canPublish || _isSubmitting) {
       return;
@@ -112,12 +114,89 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     }
   }
 
+  /// 规范化接口异常文案，避免直接向用户暴露冗余前缀。
   String _normalizeError(Object error) {
     final String message = error.toString().trim();
     if (message.startsWith('Exception: ')) {
       return message.substring('Exception: '.length);
     }
     return message.isEmpty ? '评价.评价发布失败'.tr() : message;
+  }
+
+  /// 构建评价主体区域，按设计稿控制留白、评分行与输入区比例。
+  Widget _buildReviewPanel() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '评价.综合评价'.tr(),
+            style: TestStyle.pingFangMedium(
+              fontSize: 14,
+              color: const Color(0xFF000000),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _RatingRow(
+            rating: _rating,
+            ratingLabel: _ratingLabel,
+            onRatingChanged: (double value) {
+              setState(() => _rating = value);
+            },
+          ),
+          const SizedBox(height: 16),
+          _ReviewCommentInput(
+            controller: _commentController,
+            currentCount: _commentController.text.characters.length,
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: UploadImageGrid(
+              scene: FileScene.review,
+              maxImages: 1,
+              uploadLabel: '上传.上传图片'.tr(),
+              onChanged: (List<String> imageUrls) {
+                _uploadedImageUrls = imageUrls;
+              },
+              onUploadingChanged: (bool isUploading) {
+                setState(() {
+                  _isUploadingImages = isUploading;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建底部发布栏，单独控制禁用态颜色与底部安全区留白。
+  Widget _buildBottomBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: _PublishActionButton(
+            label: '评价.发布'.tr(),
+            enabled: _canPublish && !_isSubmitting,
+            onPressed: _handlePublish,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -130,136 +209,48 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              _showPlaceholder('订单.暂无可返回页面'.tr());
-            }
-          },
-          icon: const AppSvgIcon(
-            assetPath: 'assets/images/service_detail_back.svg',
-            fallback: Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: Color(0xE6000000),
+        toolbarHeight: 44,
+        leadingWidth: 44,
+        leading: Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                _showPlaceholder('订单.暂无可返回页面'.tr());
+              }
+            },
+            padding: EdgeInsets.zero,
+            splashRadius: 20,
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+            icon: const AppSvgIcon(
+              assetPath: 'assets/images/service_detail_back.svg',
+              fallback: Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Color(0xE6000000),
+            ),
           ),
         ),
         title: Text(
           '评价.标题'.tr(),
-          style: TestStyle.pingFangMedium(fontSize: 17, color: const Color(0xE6000000)),
+          style: TestStyle.pingFangMedium(
+            fontSize: 17,
+            color: const Color(0xE6000000),
+          ),
         ),
       ),
       body: TapBlankToDismissKeyboard(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
           children: <Widget>[
             _ReviewOrderCard(args: widget.args),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    '评价.综合评价'.tr(),
-                    style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.black),
-                  ),
-                  const SizedBox(height: 12),
-                  _RatingRow(
-                    rating: _rating,
-                    ratingLabel: _ratingLabel,
-                    onRatingChanged: (value) {
-                      setState(() => _rating = value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 264,
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: <Widget>[
-                        Expanded(
-                          child: TextField(
-                            controller: _commentController,
-                            maxLength: 500,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            decoration: InputDecoration(
-                              hintText: '评价.写评论'.tr(),
-                              hintStyle: TestStyle.pingFangRegular(fontSize: 13, color: Color(0xFF8C8C8C)),
-                              border: InputBorder.none,
-                              counterText: '',
-                              isCollapsed: true,
-                            ),
-                            style: TestStyle.regular(fontSize: 13, color: Color(0xFF262626)),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            '${_commentController.text.characters.length}/500',
-                            style: TestStyle.regular(fontSize: 12, color: Color(0xFFBFBFBF)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: UploadImageGrid(
-                      scene: FileScene.review,
-                      onChanged: (List<String> imageUrls) {
-                        _uploadedImageUrls = imageUrls;
-                      },
-                      onUploadingChanged: (bool isUploading) {
-                        setState(() {
-                          _isUploadingImages = isUploading;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildReviewPanel(),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        color: Colors.white,
-        child: SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
-              ),
-            ),
-            child: Opacity(
-              opacity: _canPublish && !_isSubmitting ? 1 : 0.3,
-              child: IgnorePointer(
-                ignoring: !_canPublish || _isSubmitting,
-                child: PrimaryButton(
-                  label: '评价.发布'.tr(),
-                  onPressed: _handlePublish,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 }
@@ -270,6 +261,7 @@ class _ReviewOrderCard extends StatelessWidget {
   final OrderReviewPageArgs args;
 
   @override
+  /// 构建订单摘要卡片，保持与设计稿一致的边距和信息密度。
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 14, 11, 14),
@@ -299,6 +291,7 @@ class _ReviewTitleRow extends StatelessWidget {
   final String price;
 
   @override
+  /// 构建订单标题与价格区域，右侧价格保持单行紧凑展示。
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
@@ -325,14 +318,15 @@ class _ReviewInfoRow extends StatelessWidget {
   final String value;
 
   @override
+  /// 构建订单信息行，超长内容在右侧省略避免撑破布局。
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
         Text(
           label,
           style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
         ),
-        const Spacer(),
         Flexible(
           child: Text(
             value,
@@ -359,6 +353,7 @@ class _RatingRow extends StatelessWidget {
   final ValueChanged<double> onRatingChanged;
 
   @override
+  /// 构建评分行，使用固定星级区域宽度来锁定视觉间距。
   Widget build(BuildContext context) {
     return SizedBox(
       height: 24,
@@ -366,39 +361,162 @@ class _RatingRow extends StatelessWidget {
         children: <Widget>[
           Text(
             '评价.服务评价'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 13,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
           const SizedBox(width: 16),
-          ...List<Widget>.generate(5, (index) {
-            final starNumber = index + 1.0;
-            IconData icon;
-            Color color;
+          SizedBox(
+            width: 184,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List<Widget>.generate(5, (int index) {
+                final double starNumber = index + 1.0;
+                late final IconData icon;
+                late final Color color;
 
-            if (rating >= starNumber) {
-              icon = Icons.star_rounded;
-              color = const Color(0xFFFFC53D);
-            } else if (rating >= starNumber - 0.5) {
-              icon = Icons.star_half_rounded;
-              color = const Color(0xFFFFC53D);
-            } else {
-              icon = Icons.star_border_rounded;
-              color = const Color(0xFFD9D9D9);
-            }
+                if (rating >= starNumber) {
+                  icon = Icons.star_rounded;
+                  color = const Color(0xFFFFC53D);
+                } else if (rating >= starNumber - 0.5) {
+                  icon = Icons.star_half_rounded;
+                  color = const Color(0xFFFFC53D);
+                } else {
+                  icon = Icons.star_border_rounded;
+                  color = const Color(0xFFD9D9D9);
+                }
 
-            return Padding(
-              padding: EdgeInsets.only(right: index == 4 ? 0 : 16),
-              child: GestureDetector(
-                onTap: () => onRatingChanged(index + 1.0),
-                child: Icon(icon, size: 24, color: color),
-              ),
-            );
-          }),
+                return SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onRatingChanged(index + 1.0),
+                    child: Icon(icon, size: 20, color: color),
+                  ),
+                );
+              }),
+            ),
+          ),
           const Spacer(),
           Text(
             ratingLabel,
-            style: TestStyle.regular(fontSize: 13, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 13,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReviewCommentInput extends StatelessWidget {
+  const _ReviewCommentInput({
+    required this.controller,
+    required this.currentCount,
+  });
+
+  final TextEditingController controller;
+  final int currentCount;
+
+  @override
+  /// 构建评论输入区域，固定高度以还原设计稿中的大面积留白。
+  Widget build(BuildContext context) {
+    return Container(
+      height: 264,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: controller,
+              maxLength: 500,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              cursorColor: const Color(0xFF262626),
+              decoration: InputDecoration(
+                hintText: '评价.写评论'.tr(),
+                hintStyle: TestStyle.pingFangRegular(
+                  fontSize: 13,
+                  color: const Color(0xFF8C8C8C),
+                ),
+                border: InputBorder.none,
+                counterText: '',
+                isCollapsed: true,
+              ),
+              style: TestStyle.pingFangRegular(
+                fontSize: 13,
+                color: const Color(0xFF262626),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              '$currentCount/500',
+              style: TestStyle.pingFangRegular(
+                fontSize: 12,
+                color: const Color(0xFFBFBFBF),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PublishActionButton extends StatelessWidget {
+  const _PublishActionButton({
+    required this.label,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  /// 构建页面专用发布按钮，单独控制禁用态底色以贴近视觉稿。
+  Widget build(BuildContext context) {
+    final Color backgroundColor = enabled
+        ? const Color(0xFF096DD9)
+        : const Color(0xFFA8C7E8);
+
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              // 禁用态保留白字，确保与设计稿中的浅蓝底一致。
+              child: Text(
+                label,
+                style: TestStyle.pingFangMedium(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

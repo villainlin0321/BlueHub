@@ -1,6 +1,6 @@
-import 'package:bluehub_app/features/jobs/data/job_models.dart';
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/features/jobs/data/job_models.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 import '../../../features/home/data/home_models.dart';
 

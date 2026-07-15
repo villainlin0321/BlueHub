@@ -10,7 +10,7 @@ import '../../../../shared/widgets/visa_service_card.dart';
 import '../../application/search_page/visa_provider_search_state.dart';
 import '../../data/provider_models.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class VisaProviderSearchPageView extends StatelessWidget {
   const VisaProviderSearchPageView({
@@ -309,6 +309,7 @@ class _SearchResultSection extends StatelessWidget {
           title: item.latestPackage.name.trim().isEmpty
               ? '签证页.推荐套餐'.tr()
               : item.latestPackage.name,
+          currency: item.latestPackage.currency,
           price: _formatVisaListPrice(item.latestPackage.priceFrom),
         ),
       ],
@@ -317,10 +318,7 @@ class _SearchResultSection extends StatelessWidget {
   }
 
   String _formatVisaListPrice(double price) {
-    final String value = price % 1 == 0
-        ? price.toInt().toString()
-        : price.toStringAsFixed(1);
-    return '¥$value';
+    return price % 1 == 0 ? price.toInt().toString() : price.toStringAsFixed(1);
   }
 
   String _resolveVisaProviderErrorMessage(Object error) {

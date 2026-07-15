@@ -5,12 +5,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/ui/test_keys.dart';
 import '../../../config/data/config_models.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../edit_visa_package_styles.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
+/// 收起当前页面输入焦点，避免切换到其他交互后键盘继续占用页面。
+void dismissEditVisaPackageKeyboard(BuildContext context) {
+  FocusManager.instance.primaryFocus?.unfocus();
+}
+
+/// 先收起键盘，再执行后续点击回调。
+VoidCallback dismissKeyboardThen(BuildContext context, VoidCallback onTap) {
+  return () {
+    dismissEditVisaPackageKeyboard(context);
+    onTap();
+  };
+}
 
 class EditVisaPackageTierViewDraft {
   EditVisaPackageTierViewDraft({
@@ -109,6 +123,7 @@ class _EditVisaPackageCustomServiceDialogState
       title: '签证编辑.添加自定义服务'.tr(),
       content: TextField(
         controller: _controller,
+        onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
         maxLines: 1,
         maxLength: 12,
         inputFormatters: <TextInputFormatter>[
@@ -177,7 +192,8 @@ class EditVisaPackageHeader extends StatelessWidget
       leading: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onBackTap,
+          key: AppTestKeys.actionEditVisaPackageBack,
+          onTap: dismissKeyboardThen(context, onBackTap),
           child: Center(
             child: SvgPicture.asset(
               'assets/images/visa_package_back.svg',
@@ -192,7 +208,10 @@ class EditVisaPackageHeader extends StatelessWidget
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: TextButton(
-            onPressed: actionsEnabled ? onSaveDraftTap : null,
+            key: AppTestKeys.actionEditVisaPackageSaveDraft,
+            onPressed: actionsEnabled
+                ? dismissKeyboardThen(context, onSaveDraftTap)
+                : null,
             style: TextButton.styleFrom(
               foregroundColor: EditVisaPackageStyles.textPrimary,
               padding: EdgeInsets.zero,
@@ -261,7 +280,9 @@ class EditVisaPackageSectionTitle extends StatelessWidget {
         const Spacer(),
         if (showAction)
           TextButton(
-            onPressed: onActionTap,
+            onPressed: onActionTap == null
+                ? null
+                : dismissKeyboardThen(context, onActionTap!),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF096DD9),
               padding: EdgeInsets.zero,
@@ -280,18 +301,20 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
     super.key,
     required this.file,
     required this.onUploadTap,
+    this.onPreviewTap,
     this.onDeleteTap,
   });
 
   final PickedUploadFile? file;
   final VoidCallback onUploadTap;
+  final VoidCallback? onPreviewTap;
   final VoidCallback? onDeleteTap;
 
   @override
   Widget build(BuildContext context) {
     if (file == null) {
       return InkWell(
-        onTap: onUploadTap,
+        onTap: dismissKeyboardThen(context, onUploadTap),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           width: double.infinity,
@@ -311,12 +334,18 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '签证编辑.上传封面'.tr(),
-                style: TestStyle.pingFangMedium(fontSize: 14, color: const Color(0xFF171A1D)),
+                style: TestStyle.pingFangMedium(
+                  fontSize: 14,
+                  color: const Color(0xFF171A1D),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 '签证编辑.封面图提示'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 12,
+                  color: const Color(0xFF8C8C8C),
+                ),
               ),
             ],
           ),
@@ -335,98 +364,113 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
         children: <Widget>[
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            child: SizedBox(
-              height: 148,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  _CoverPreviewImage(file: file!),
-                  if (file!.state == UploadItemState.uploading)
-                    _CoverPreviewOverlay(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              value: file!.progress > 0 ? file!.progress : null,
-                              strokeWidth: 2,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '签证编辑.封面上传中'.tr(),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPreviewTap == null
+                    ? null
+                    : dismissKeyboardThen(context, onPreviewTap!),
+                child: SizedBox(
+                  height: 148,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      _CoverPreviewImage(file: file!),
+                      if (file!.state == UploadItemState.uploading)
+                        _CoverPreviewOverlay(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  value: file!.progress > 0
+                                      ? file!.progress
+                                      : null,
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                 ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (file!.state == UploadItemState.failure)
-                    _CoverPreviewOverlay(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            '签证编辑.封面上传失败'.tr(),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextButton(
-                            onPressed: onUploadTap,
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
                               ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text('签证编辑.重新上传封面'.tr()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (onDeleteTap != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: InkWell(
-                        onTap: onDeleteTap,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/images/order_upload_remove.svg',
-                            width: 8,
-                            height: 8,
+                              const SizedBox(height: 8),
+                              Text(
+                                '签证编辑.封面上传中'.tr(),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                      if (file!.state == UploadItemState.failure)
+                        _CoverPreviewOverlay(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                '签证编辑.封面上传失败'.tr(),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextButton(
+                                onPressed: dismissKeyboardThen(
+                                  context,
+                                  onUploadTap,
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  minimumSize: Size.zero,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text('签证编辑.重新上传封面'.tr()),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (onDeleteTap != null)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: InkWell(
+                            onTap: dismissKeyboardThen(context, onDeleteTap!),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/images/order_upload_remove.svg',
+                                width: 8,
+                                height: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -439,12 +483,15 @@ class EditVisaPackageCoverPreview extends StatelessWidget {
                     file!.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.medium(fontSize: 14, color: const Color(0xFF171A1D)),
+                    style: TestStyle.medium(
+                      fontSize: 14,
+                      color: const Color(0xFF171A1D),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 TextButton(
-                  onPressed: onUploadTap,
+                  onPressed: dismissKeyboardThen(context, onUploadTap),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF096DD9),
                     minimumSize: Size.zero,
@@ -566,7 +613,9 @@ class EditVisaPackageTierHeader extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: onDeleteTap,
+                onTap: onDeleteTap == null
+                    ? null
+                    : dismissKeyboardThen(context, onDeleteTap!),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
@@ -642,6 +691,7 @@ class EditVisaPackageInputField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
+    this.fieldKey,
     this.trailing,
     this.readOnly = false,
     this.onTap,
@@ -651,6 +701,7 @@ class EditVisaPackageInputField extends StatelessWidget {
 
   final TextEditingController controller;
   final String hintText;
+  final Key? fieldKey;
   final Widget? trailing;
   final bool readOnly;
   final VoidCallback? onTap;
@@ -660,7 +711,9 @@ class EditVisaPackageInputField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      key: fieldKey,
       controller: controller,
+      onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
       readOnly: readOnly,
       onTap: onTap,
       keyboardType: keyboardType,
@@ -703,11 +756,13 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     required this.text,
     required this.hintText,
     required this.onTap,
+    this.buttonKey,
   });
 
   final String? text;
   final String hintText;
   final VoidCallback onTap;
+  final Key? buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +770,8 @@ class EditVisaPackageSelectorField extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        key: buttonKey,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.fieldRadius,
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 14, 8, 14),
@@ -759,6 +815,7 @@ class EditVisaPackageMultilineField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onTapOutside: (_) => dismissEditVisaPackageKeyboard(context),
       maxLength: maxLength,
       minLines: 3,
       maxLines: 3,
@@ -914,7 +971,7 @@ class EditVisaPackageServiceChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null ? null : dismissKeyboardThen(context, onTap!),
         borderRadius: EditVisaPackageStyles.chipRadius,
         hoverColor: selected
             ? EditVisaPackageStyles.primarySoft.withValues(alpha: 0.8)
@@ -970,21 +1027,22 @@ class EditVisaPackageCustomTagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       decoration: BoxDecoration(
-        color: EditVisaPackageStyles.fieldBackground,
+        color: EditVisaPackageStyles.primarySoft,
         borderRadius: EditVisaPackageStyles.chipRadius,
+        border: Border.all(color: EditVisaPackageStyles.primary, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(label, style: EditVisaPackageStyles.fieldLabel),
+          Text(label, style: EditVisaPackageStyles.selectedChip),
           const SizedBox(width: 6),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: onRemove,
+            onTap: dismissKeyboardThen(context, onRemove),
             child: const Icon(
               Icons.close,
               size: 16,
-              color: EditVisaPackageStyles.textSecondary,
+              color: EditVisaPackageStyles.primary,
             ),
           ),
         ],
@@ -1003,7 +1061,7 @@ class EditVisaPackageAddCustomServiceChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.chipRadius,
         child: Container(
           height: 34,
@@ -1077,7 +1135,7 @@ class EditVisaPackageRadioOption extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1123,7 +1181,11 @@ class EditVisaPackageSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onChanged(!value),
+      onTap: () {
+        // 开关切换前先收起键盘，避免输入框在 rebuild 后重新抢焦点。
+        dismissEditVisaPackageKeyboard(context);
+        onChanged(!value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: 34,
@@ -1165,7 +1227,7 @@ class EditVisaPackageAddMaterialButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: EditVisaPackageStyles.chipRadius,
         child: Container(
           width: double.infinity,
@@ -1207,7 +1269,7 @@ class EditVisaPackageSecondaryButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: dismissKeyboardThen(context, onTap),
         borderRadius: BorderRadius.circular(6),
         child: Container(
           width: double.infinity,
@@ -1272,6 +1334,7 @@ class EditVisaPackageBottomBar extends StatelessWidget {
                   width: double.infinity,
                   height: 44,
                   child: ElevatedButton(
+                    key: AppTestKeys.actionEditVisaPackagePublish,
                     onPressed: enabled ? onTap : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EditVisaPackageStyles.primary,

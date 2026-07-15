@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,7 +11,11 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -26,10 +31,125 @@ import '../application/edit_visa_package/edit_visa_package_controller.dart';
 import '../application/edit_visa_package/edit_visa_package_state.dart';
 import '../data/visa_package_models.dart';
 import '../data/visa_package_providers.dart';
+import '../../service_detail/presentation/visa_package_preview_page.dart';
 import 'widgets/edit_visa_package_form_widgets.dart';
 import 'widgets/edit_visa_package_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
+/// 供测试复用页面快照构建逻辑，确保断言与提交态脏数据判断保持一致。
+@visibleForTesting
+Object buildEditVisaPackageSnapshotForTest({
+  required EditVisaPackageState state,
+  required TextEditingController serviceNameController,
+  required TextEditingController durationController,
+  required PickedUploadFile? coverImage,
+  required List<EditVisaPackageTierViewDraft> tiers,
+}) {
+  return _buildEditVisaPackageSnapshot(
+    state: state,
+    serviceNameController: serviceNameController,
+    durationController: durationController,
+    coverImage: coverImage,
+    tiers: tiers,
+  );
+}
+
+/// 按照实际提交结果会使用到的字段构建快照，统一未保存拦截的比较口径。
+_EditVisaPackageSnapshot _buildEditVisaPackageSnapshot({
+  required EditVisaPackageState state,
+  required TextEditingController serviceNameController,
+  required TextEditingController durationController,
+  required PickedUploadFile? coverImage,
+  required List<EditVisaPackageTierViewDraft> tiers,
+}) {
+  return _EditVisaPackageSnapshot(
+    serviceName: serviceNameController.text.trim(),
+    duration: durationController.text.trim(),
+    countryCode: state.selectedCountryCode,
+    visaTypeCode: state.selectedVisaTypeCode,
+    currency: state.selectedCurrency.apiValue,
+    coverImageId: _collectSnapshotCoverImageIdentity(coverImage),
+    tiers: tiers
+        .map((EditVisaPackageTierViewDraft tier) {
+          final List<String> normalizedSelectedServiceTagCodes =
+              tier.selectedServiceTagCodes
+                  .map((String item) => item.trim())
+                  .where((String item) => item.isNotEmpty)
+                  .toSet()
+                  .toList(growable: false)
+                ..sort();
+          final List<String> normalizedCustomServices = <String>[];
+          final Set<String> seenCustomServices = <String>{};
+          for (final String item in tier.customServices) {
+            final String normalized = item.trim();
+            if (normalized.isEmpty || !seenCustomServices.add(normalized)) {
+              continue;
+            }
+            normalizedCustomServices.add(normalized);
+          }
+          final List<_EditVisaPackageMaterialSnapshot> materialSnapshots =
+              tier.showMaterials
+              ? tier.materials
+                    .map((EditVisaPackageMaterialViewDraft material) {
+                      return _EditVisaPackageMaterialSnapshot(
+                        name: material.titleController.text.trim(),
+                        description: material.descriptionController.text.trim(),
+                        isRequired: material.isRequired,
+                        exampleFileIds: _collectSnapshotExampleFileIds(
+                          material,
+                        ),
+                      );
+                    })
+                    .toList(growable: false)
+              : const <_EditVisaPackageMaterialSnapshot>[];
+          return _EditVisaPackageTierSnapshot(
+            tierId: tier.tierId,
+            name: tier.nameController.text.trim(),
+            price: tier.priceController.text.trim(),
+            description: tier.descriptionController.text.trim(),
+            showMaterials: tier.showMaterials,
+            selectedServiceTagCodes: normalizedSelectedServiceTagCodes,
+            customServices: normalizedCustomServices,
+            materials: materialSnapshots,
+          );
+        })
+        .toList(growable: false),
+  );
+}
+
+/// 归一化材料示例文件 ID，和提交请求对齐，避免同值不同顺序造成误判。
+List<int> _collectSnapshotExampleFileIds(
+  EditVisaPackageMaterialViewDraft material,
+) {
+  final List<int> fileIds = <int>{
+    ...material.existingExampleFileIds,
+    ...material.exampleFiles
+        .where((PickedUploadFile file) => file.state == UploadItemState.success)
+        .map((PickedUploadFile file) => file.uploadedFileId)
+        .whereType<int>(),
+  }.toList(growable: false)..sort();
+  return fileIds;
+}
+
+/// 归一化封面图快照口径，只统计真实会进入请求体的 success 封面状态。
+String _collectSnapshotCoverImageIdentity(PickedUploadFile? coverImage) {
+  if (coverImage == null || coverImage.state != UploadItemState.success) {
+    return '';
+  }
+  // 这里必须和提交请求的封面收集逻辑保持一致，避免未提交值被误判为脏数据。
+  final int? uploadedFileId = coverImage.uploadedFileId;
+  final String normalizedId = uploadedFileId != null && uploadedFileId > 0
+      ? '$uploadedFileId'
+      : '';
+  final String resolvedUrl = (coverImage.uploadedFileUrl ?? coverImage.path)
+      .trim();
+  if (normalizedId.isEmpty && resolvedUrl.isEmpty) {
+    return '';
+  }
+  return '$normalizedId|$resolvedUrl';
+}
+
 class EditVisaPackagePage extends ConsumerStatefulWidget {
   const EditVisaPackagePage({super.key, this.packageId});
 
@@ -40,13 +160,16 @@ class EditVisaPackagePage extends ConsumerStatefulWidget {
       _EditVisaPackagePageState();
 }
 
-class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
+class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
+    with GuardedPopScopeMixin {
   late final TextEditingController _serviceNameController;
   late final TextEditingController _durationController;
   late final List<EditVisaPackageTierViewDraft> _tiers;
   PickedUploadFile? _coverImage;
   bool _isLoadingPackageDetail = false;
   String? _packageDetailError;
+  late _EditVisaPackageSnapshot _initialSnapshot;
+  bool _hasInitialSnapshot = false;
 
   bool get _isEditMode => widget.packageId != null;
 
@@ -63,8 +186,42 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       ref.read(editVisaPackageControllerProvider.notifier).loadServiceTags();
       if (_isEditMode) {
         _loadPackageDetail();
+        return;
       }
+      _initialSnapshot = _buildCurrentSnapshot();
+      _hasInitialSnapshot = true;
     });
+  }
+
+  /// 汇总会影响提交结果的字段，作为页面未保存状态的判断基线。
+  _EditVisaPackageSnapshot _buildCurrentSnapshot() {
+    return _buildEditVisaPackageSnapshot(
+      state: ref.read(editVisaPackageControllerProvider),
+      serviceNameController: _serviceNameController,
+      durationController: _durationController,
+      coverImage: _coverImage,
+      tiers: _tiers,
+    );
+  }
+
+  /// 提交成功后刷新基线，确保后续返回判断基于最新已提交的数据。
+  void _markSavedSnapshot() {
+    _initialSnapshot = _buildCurrentSnapshot();
+    _hasInitialSnapshot = true;
+  }
+
+  /// 统一处理头部返回和系统返回，在存在未保存改动时弹出确认框。
+  Future<void> _handleAttemptLeave() async {
+    final bool hasUnsavedChanges =
+        _hasInitialSnapshot && _buildCurrentSnapshot() != _initialSnapshot;
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges: hasUnsavedChanges,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+    scheduleDirectPop();
   }
 
   EditVisaPackageTierViewDraft _createTierDraft({
@@ -280,6 +437,8 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       setState(() {
         _coverImage = coverImage;
         _isLoadingPackageDetail = false;
+        _initialSnapshot = _buildCurrentSnapshot();
+        _hasInitialSnapshot = true;
       });
     } catch (error) {
       if (!mounted) {
@@ -384,6 +543,27 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   Future<void> _handleCoverUploadTap() async {
     FocusScope.of(context).unfocus();
     await _pickCoverFromGallery();
+  }
+
+  /// 预览当前封面图，优先使用上传后的远程地址，缺失时回退到本地裁剪结果。
+  Future<void> _handleCoverPreviewTap() async {
+    final PickedUploadFile? coverImage = _coverImage;
+    if (coverImage == null) {
+      return;
+    }
+    final String previewPath = (coverImage.uploadedFileUrl ?? coverImage.path)
+        .trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: coverImage.name,
+      isImage: true,
+      isPdf: false,
+    );
   }
 
   Future<void> _pickCoverFromGallery() async {
@@ -609,7 +789,9 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
 
   /// 从页面控制器和档位草稿构建提交所需的表单草稿。
   EditVisaPackageFormDraft _buildFormDraft() {
-    final EditVisaPackageState state = ref.read(editVisaPackageControllerProvider);
+    final EditVisaPackageState state = ref.read(
+      editVisaPackageControllerProvider,
+    );
     return EditVisaPackageFormDraft(
       name: _serviceNameController.text,
       estimatedDays: _durationController.text,
@@ -779,6 +961,54 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     });
   }
 
+  /// 处理材料删除入口：统一执行“至少保留一个”校验和删除确认弹窗。
+  void _handleDeleteMaterial(int tierIndex, int materialIndex) {
+    _confirmAndDeleteMaterial(tierIndex, materialIndex);
+  }
+
+  /// 删除前先校验最小保留数量，再通过确认弹窗降低误删风险。
+  Future<void> _confirmAndDeleteMaterial(
+    int tierIndex,
+    int materialIndex,
+  ) async {
+    if (tierIndex < 0 || tierIndex >= _tiers.length) {
+      return;
+    }
+    final List<EditVisaPackageMaterialViewDraft> materials =
+        _tiers[tierIndex].materials;
+    if (materialIndex < 0 || materialIndex >= materials.length) {
+      return;
+    }
+    if (materials.length <= 1) {
+      AppToast.show('至少保留 1 个材料');
+      return;
+    }
+    final bool confirmed = await showAppDeleteConfirmDialog(
+      context: context,
+      title: '确认删除材料',
+      message: '删除后不可恢复，是否继续删除该材料？',
+      cancelLabel: '通用.取消'.tr(),
+      confirmLabel: '通用.删除'.tr(),
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    if (tierIndex < 0 || tierIndex >= _tiers.length) {
+      return;
+    }
+    final List<EditVisaPackageMaterialViewDraft> latestMaterials =
+        _tiers[tierIndex].materials;
+    if (materialIndex < 0 || materialIndex >= latestMaterials.length) {
+      return;
+    }
+    final EditVisaPackageMaterialViewDraft material = latestMaterials.removeAt(
+      materialIndex,
+    );
+    // 删除材料时同步释放 controller，避免残留输入状态和资源泄漏。
+    material.dispose();
+    setState(() {});
+  }
+
   void _handleToggleServiceTag(int tierIndex, String tagCode) {
     setState(() {
       final Set<String> selected = _tiers[tierIndex].selectedServiceTagCodes;
@@ -907,7 +1137,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
   ) async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showToast('订单.未能读取所选文件'.tr());
         return;
@@ -919,6 +1149,24 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       }
       _showToast('订单.选择文件失败'.tr());
     }
+  }
+
+  /// 预览材料示例文件，兼容本地已选文件与上传后的远程地址。
+  Future<void> _handlePreviewExampleFile(PickedUploadFile file) async {
+    final String previewPath = (file.uploadedFileUrl ?? file.path).trim();
+    if (previewPath.isEmpty) {
+      _showToast('附件预览.文件地址无效'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: file.name,
+      isImage: file.isImage,
+      isPdf:
+          UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(file.name),
+    );
   }
 
   Future<void> _appendExampleFiles(
@@ -1068,6 +1316,29 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
     return message.isEmpty ? fallback : message;
   }
 
+  Future<void> _handleSubmitSuccess(EditVisaPackageState next) async {
+    _markSavedSnapshot();
+    if (next.lastSubmitAction == EditVisaPackageSubmitAction.publish) {
+      final int? packageId = next.lastSubmittedPackageId;
+      if (packageId == null || packageId <= 0) {
+        scheduleDirectPop(
+          result: true,
+          onCannotPop: () => context.go(RoutePaths.jobs),
+        );
+        return;
+      }
+      context.pushReplacement(
+        RoutePaths.serviceDetailPreview,
+        extra: VisaPackagePreviewPageArgs(packageId: packageId),
+      );
+      return;
+    }
+    scheduleDirectPop(
+      result: true,
+      onCannotPop: () => context.go(RoutePaths.jobs),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<EditVisaPackageState>(editVisaPackageControllerProvider, (
@@ -1082,11 +1353,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
 
       if (previous?.submitSuccessId != next.submitSuccessId &&
           next.submitSuccessId > 0) {
-        if (Navigator.of(context).canPop()) {
-          context.pop(true);
-        } else {
-          context.go(RoutePaths.jobs);
-        }
+        Future<void>.microtask(() => _handleSubmitSuccess(next));
       }
     });
 
@@ -1132,13 +1399,19 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
               children: <Widget>[
                 Text(
                   '服务详情.套餐详情加载失败'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: Color(0xFF262626),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _packageDetailError!,
                   textAlign: TextAlign.center,
-                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: Color(0xFF8C8C8C),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -1152,44 +1425,180 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage> {
       );
     }
 
-    return EditVisaPackagePageView(
-      bottomPadding: mediaQuery.padding.bottom,
-      serviceNameController: _serviceNameController,
-      durationController: _durationController,
-      coverImage: _coverImage,
-      selectedCountryLabel: state.selectedCountryCode == null
-          ? null
-          : resolveCountryLabel(state.selectedCountryCode!, countryLabelMap),
-      selectedVisaTypeLabel: _findLabel(
-        visaTypeOptions,
-        state.selectedVisaTypeCode,
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
+      child: EditVisaPackagePageView(
+        bottomPadding: mediaQuery.padding.bottom,
+        serviceNameController: _serviceNameController,
+        durationController: _durationController,
+        coverImage: _coverImage,
+        selectedCountryLabel: state.selectedCountryCode == null
+            ? null
+            : resolveCountryLabel(state.selectedCountryCode!, countryLabelMap),
+        selectedVisaTypeLabel: _findLabel(
+          visaTypeOptions,
+          state.selectedVisaTypeCode,
+        ),
+        selectedCurrencyLabel: state.selectedCurrency.labelKey.tr(),
+        state: state,
+        tiers: _tiers,
+        // 统一走页面级离开判断，避免头部返回绕过未保存拦截。
+        onBackTap: () {
+          _handleAttemptLeave();
+        },
+        onSaveDraftTap: _handleSaveDraft,
+        onPublishTap: _handlePublish,
+        onCoverUploadTap: _handleCoverUploadTap,
+        onCoverPreviewTap: _handleCoverPreviewTap,
+        onDeleteCoverTap: _handleDeleteCover,
+        onCountryTap: _openCountrySheet,
+        onVisaTypeTap: _openVisaTypeSheet,
+        onCurrencyTap: _openCurrencySheet,
+        onRetryLoadServiceTags: () => controller.loadServiceTags(force: true),
+        onAddTier: _handleAddTier,
+        onDeleteTier: _handleDeleteTier,
+        onAddMaterial: _handleAddMaterial,
+        onDeleteMaterial: _handleDeleteMaterial,
+        onAddCustomService: _handleAddCustomService,
+        onRemoveCustomService: _handleRemoveCustomService,
+        onToggleServiceTag: _handleToggleServiceTag,
+        onShowMaterialsChanged: _handleShowMaterialsChanged,
+        onMaterialRequiredChanged: _handleMaterialRequiredChanged,
+        onMaterialTypeTap: _openMaterialTypeSheet,
+        onExampleUploadTap: _openExampleUploadSheet,
+        onPreviewExampleFile: _handlePreviewExampleFile,
+        onDeleteExampleFile: _handleDeleteExampleFile,
+        tagLabelBuilder: controller.tagLabel,
       ),
-      selectedCurrencyLabel: state.selectedCurrency.labelKey.tr(),
-      state: state,
-      tiers: _tiers,
-      onBackTap: () => Navigator.of(context).maybePop(),
-      onSaveDraftTap: _handleSaveDraft,
-      onPublishTap: _handlePublish,
-      onCoverUploadTap: _handleCoverUploadTap,
-      onDeleteCoverTap: _handleDeleteCover,
-      onCountryTap: _openCountrySheet,
-      onVisaTypeTap: _openVisaTypeSheet,
-      onCurrencyTap: _openCurrencySheet,
-      onRetryLoadServiceTags: () => controller.loadServiceTags(force: true),
-      onAddTier: _handleAddTier,
-      onDeleteTier: _handleDeleteTier,
-      onAddMaterial: _handleAddMaterial,
-      onAddCustomService: _handleAddCustomService,
-      onRemoveCustomService: _handleRemoveCustomService,
-      onToggleServiceTag: _handleToggleServiceTag,
-      onShowMaterialsChanged: _handleShowMaterialsChanged,
-      onMaterialRequiredChanged: _handleMaterialRequiredChanged,
-      onMaterialTypeTap: _openMaterialTypeSheet,
-      onExampleUploadTap: _openExampleUploadSheet,
-      onDeleteExampleFile: _handleDeleteExampleFile,
-      tagLabelBuilder: controller.tagLabel,
     );
   }
+}
+
+class _EditVisaPackageSnapshot {
+  const _EditVisaPackageSnapshot({
+    required this.serviceName,
+    required this.duration,
+    required this.countryCode,
+    required this.visaTypeCode,
+    required this.currency,
+    required this.coverImageId,
+    required this.tiers,
+  });
+
+  final String serviceName;
+  final String duration;
+  final String? countryCode;
+  final String? visaTypeCode;
+  final String currency;
+  final String coverImageId;
+  final List<_EditVisaPackageTierSnapshot> tiers;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _EditVisaPackageSnapshot &&
+            serviceName == other.serviceName &&
+            duration == other.duration &&
+            countryCode == other.countryCode &&
+            visaTypeCode == other.visaTypeCode &&
+            currency == other.currency &&
+            coverImageId == other.coverImageId &&
+            listEquals(tiers, other.tiers);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    serviceName,
+    duration,
+    countryCode,
+    visaTypeCode,
+    currency,
+    coverImageId,
+    Object.hashAll(tiers),
+  );
+}
+
+class _EditVisaPackageTierSnapshot {
+  const _EditVisaPackageTierSnapshot({
+    required this.tierId,
+    required this.name,
+    required this.price,
+    required this.description,
+    required this.showMaterials,
+    required this.selectedServiceTagCodes,
+    required this.customServices,
+    required this.materials,
+  });
+
+  final int tierId;
+  final String name;
+  final String price;
+  final String description;
+  final bool showMaterials;
+  final List<String> selectedServiceTagCodes;
+  final List<String> customServices;
+  final List<_EditVisaPackageMaterialSnapshot> materials;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _EditVisaPackageTierSnapshot &&
+            tierId == other.tierId &&
+            name == other.name &&
+            price == other.price &&
+            description == other.description &&
+            showMaterials == other.showMaterials &&
+            listEquals(
+              selectedServiceTagCodes,
+              other.selectedServiceTagCodes,
+            ) &&
+            listEquals(customServices, other.customServices) &&
+            listEquals(materials, other.materials);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    tierId,
+    name,
+    price,
+    description,
+    showMaterials,
+    Object.hashAll(selectedServiceTagCodes),
+    Object.hashAll(customServices),
+    Object.hashAll(materials),
+  );
+}
+
+class _EditVisaPackageMaterialSnapshot {
+  const _EditVisaPackageMaterialSnapshot({
+    required this.name,
+    required this.description,
+    required this.isRequired,
+    required this.exampleFileIds,
+  });
+
+  final String name;
+  final String description;
+  final bool isRequired;
+  final List<int> exampleFileIds;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _EditVisaPackageMaterialSnapshot &&
+            name == other.name &&
+            description == other.description &&
+            isRequired == other.isRequired &&
+            listEquals(exampleFileIds, other.exampleFileIds);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    name,
+    description,
+    isRequired,
+    Object.hashAll(exampleFileIds),
+  );
 }
 
 class _VisaPackageUploadTypeBottomSheet extends StatelessWidget {
@@ -1335,7 +1744,10 @@ class _VisaPackageUploadTypeAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 13,
+                color: const Color(0xFF595959),
+              ),
             ),
           ],
         ),

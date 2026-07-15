@@ -6,18 +6,24 @@ import '../../auth/application/auth_user.dart';
 class CurrentUserViewData {
   const CurrentUserViewData({
     required this.nickname,
+    required this.realNameText,
     required this.avatarUrl,
     required this.phone,
     required this.maskedPhone,
+    required this.email,
+    required this.emailText,
     required this.genderText,
     required this.birthdayText,
     required this.isVerified,
   });
 
   final String nickname;
+  final String realNameText;
   final String avatarUrl;
   final String phone;
   final String maskedPhone;
+  final String email;
+  final String emailText;
   final String genderText;
   final String birthdayText;
   final bool isVerified;
@@ -26,14 +32,22 @@ class CurrentUserViewData {
   factory CurrentUserViewData.fromAuthUser(AuthUser? user) {
     final String phone = user?.phone.trim() ?? '';
     final String nickname = user?.nickname.trim() ?? '';
+    final String email = user?.email.trim() ?? '';
+    final String realName = user?.realName.trim() ?? '';
+    final bool isVerified = user?.isVerified ?? false;
     return CurrentUserViewData(
-      nickname: nickname.isEmpty ? '我的.未设置昵称'.tr() : nickname,
+      nickname: nickname.isEmpty ? '我的.点击修改昵称'.tr() : nickname,
+      realNameText: isVerified
+          ? (realName.isEmpty ? '我的.已完成实名认证'.tr() : realName)
+          : '我的.去实名'.tr(),
       avatarUrl: user?.avatarUrl.trim() ?? '',
       phone: phone,
       maskedPhone: _maskPhone(phone),
+      email: email,
+      emailText: email.isEmpty ? '我的.未绑定邮箱'.tr() : email,
       genderText: _formatGender(user?.gender ?? ''),
       birthdayText: _formatBirthday(user?.birthday ?? ''),
-      isVerified: user?.isVerified ?? false,
+      isVerified: isVerified,
     );
   }
 

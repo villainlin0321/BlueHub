@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
-import 'package:bluehub_app/shared/network/page_result.dart';
+import 'package:europepass/shared/network/providers.dart';
+import 'package:europepass/shared/network/page_result.dart';
 
 import 'job_models.dart';
 import '../../../shared/network/services/job_service.dart';

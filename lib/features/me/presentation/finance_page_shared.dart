@@ -6,7 +6,7 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class FinanceStateView extends StatelessWidget {
   const FinanceStateView({
     super.key,

@@ -18,7 +18,7 @@ import 'order_detail_page.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class OrderManagementPage extends ConsumerStatefulWidget {
   const OrderManagementPage({super.key});
@@ -679,6 +679,9 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 已完成或已取消订单仅保留联系动作，不再展示继续处理入口。
+    final bool shouldShowProcessButton = _shouldShowProcessButton(order);
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -799,12 +802,14 @@ class _OrderCard extends StatelessWidget {
                     outlined: true,
                     onTap: onContactTap,
                   ),
-                  const SizedBox(width: 8),
-                  _ActionButton(
-                    label: '订单.处理订单'.tr(),
-                    outlined: false,
-                    onTap: onProcessTap,
-                  ),
+                  if (shouldShowProcessButton) ...<Widget>[
+                    const SizedBox(width: 8),
+                    _ActionButton(
+                      label: '订单.处理订单'.tr(),
+                      outlined: false,
+                      onTap: onProcessTap,
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -832,6 +837,12 @@ class _OrderCard extends StatelessWidget {
       return tierName;
     }
     return '订单.签证服务'.tr();
+  }
+
+  /// 仅当订单未进入完成态或取消态时，才展示“处理订单”按钮。
+  static bool _shouldShowProcessButton(VisaOrderVO order) {
+    final String normalizedStatus = order.status.trim().toLowerCase();
+    return normalizedStatus != 'completed' && normalizedStatus != 'cancelled';
   }
 
   static _OrderStatusStyle _statusStyleFor(String status) {

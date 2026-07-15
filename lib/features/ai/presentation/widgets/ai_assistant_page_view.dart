@@ -13,7 +13,8 @@ import '../../../../shared/widgets/tag_chip.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../application/ai_assistant/ai_assistant_state.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class AiAssistantPageView extends StatelessWidget {
   const AiAssistantPageView({
     super.key,
@@ -21,6 +22,7 @@ class AiAssistantPageView extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.scrollController,
+    required this.isVoiceInputEnabled,
     required this.onOpenHistory,
     required this.onToggleComposerMode,
     required this.onSend,
@@ -41,6 +43,7 @@ class AiAssistantPageView extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final ScrollController scrollController;
+  final bool isVoiceInputEnabled;
   final VoidCallback onOpenHistory;
   final VoidCallback onToggleComposerMode;
   final Future<void> Function() onSend;
@@ -56,28 +59,13 @@ class AiAssistantPageView extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        title: Text(
-          'AI.AI助手'.tr(),
-          style: TestStyle.numberBold(fontSize: 22, color: AppColors.textPrimary),
-        ),
-        actions: <Widget>[
-          TextButton(onPressed: onOpenHistory, child: Text('AI.历史记录'.tr())),
-          const SizedBox(width: AppSpacing.pagePadding - 4),
-        ],
-      ),
       body: TapBlankToDismissKeyboard(
         child: JobSeekerPageBackground(
           fit: BoxFit.fitWidth,
           alignment: Alignment.topCenter,
           child: Column(
             children: <Widget>[
+              _Header(onOpenHistory: onOpenHistory),
               Expanded(
                 child: _ChatMessageList(
                   scrollController: scrollController,
@@ -94,6 +82,7 @@ class AiAssistantPageView extends StatelessWidget {
                 controller: controller,
                 focusNode: focusNode,
                 isSending: state.isSending,
+                isVoiceInputEnabled: isVoiceInputEnabled,
                 isVoiceMode: state.isVoiceMode,
                 voiceInputState: state.voiceInputState,
                 voiceSeconds: state.voiceSeconds,
@@ -107,6 +96,56 @@ class AiAssistantPageView extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onOpenHistory});
+
+  final VoidCallback onOpenHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        // height: kToolbarHeight,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.pagePadding,
+          vertical: 10,
+        ),
+        color: Colors.transparent,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                'AI.AI助手'.tr(),
+                style: TestStyle.pingFangMedium(
+                  fontSize: 17,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onOpenHistory,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'AI.历史记录'.tr(),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -134,6 +173,8 @@ class _ChatMessageList extends StatelessWidget {
   final Future<void> Function(JobListVO job) onApplyJob;
   final void Function(JobListVO job) onOpenJobDetail;
 
+  static const Duration _timeDividerThreshold = Duration(minutes: 2);
+
   @override
   Widget build(BuildContext context) {
     final bool showLoading = isHistoryLoading && messages.isEmpty;
@@ -156,7 +197,7 @@ class _ChatMessageList extends StatelessWidget {
           );
         }
         final AiAssistantMessageVM message = messages[index];
-        return _ChatMessageItem(
+        final Widget messageWidget = _ChatMessageItem(
           key: ValueKey<String>(
             'chat-message-$index-'
             '${message.role.name}-'
@@ -171,7 +212,48 @@ class _ChatMessageList extends StatelessWidget {
           onApplyJob: onApplyJob,
           onOpenJobDetail: onOpenJobDetail,
         );
+        final bool shouldShowTimeDivider = _shouldShowAiTimeDivider(
+          messages: messages,
+          index: index,
+          threshold: _timeDividerThreshold,
+        );
+        if (!shouldShowTimeDivider) {
+          return messageWidget;
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _AiChatTimeDivider(label: _formatAiChatDateTime(message.sentAt)),
+            const SizedBox(height: 12),
+            messageWidget,
+          ],
+        );
       },
+    );
+  }
+}
+
+class _AiChatTimeDivider extends StatelessWidget {
+  const _AiChatTimeDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          softWrap: false,
+          style: TestStyle.regular(
+            fontSize: 11,
+            color: const Color(0xFF8C8C8C),
+          ).copyWith(height: 14 / 11),
+        ),
+      ),
     );
   }
 }
@@ -209,6 +291,58 @@ class _ChatMessageItem extends StatelessWidget {
     return _UserMessageItem(message: message);
   }
 }
+
+String _formatAiChatDateTime(String raw) {
+  final DateTime? parsed = DateTime.tryParse(raw)?.toLocal();
+  if (parsed == null) {
+    final RegExpMatch? match = RegExp(
+      r'(?:(\d{2,4})[-/])?(\d{2})[-/](\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?',
+    ).firstMatch(raw.trim());
+    if (match == null) {
+      return raw;
+    }
+    final String month = match.group(2) ?? '';
+    final String day = match.group(3) ?? '';
+    final String hour = match.group(4) ?? '00';
+    final String minute = match.group(5) ?? '00';
+    final String second = match.group(6) ?? '00';
+    final bool hasTime = match.group(4) != null && match.group(5) != null;
+    if (!hasTime) {
+      return '$month-$day 00:00:00';
+    }
+    return '$month-$day $hour:$minute:$second';
+  }
+  final Duration difference = DateTime.now().difference(parsed);
+  final String time =
+      '${_twoDigits(parsed.hour)}:${_twoDigits(parsed.minute)}:${_twoDigits(parsed.second)}';
+  if (!difference.isNegative && difference < const Duration(hours: 24)) {
+    return time;
+  }
+  return '${_twoDigits(parsed.month)}-${_twoDigits(parsed.day)} $time';
+}
+
+bool _shouldShowAiTimeDivider({
+  required List<AiAssistantMessageVM> messages,
+  required int index,
+  required Duration threshold,
+}) {
+  if (index <= 0) {
+    return false;
+  }
+  final String currentRaw = messages[index].sentAt.trim();
+  final String previousRaw = messages[index - 1].sentAt.trim();
+  if (currentRaw.isEmpty || previousRaw.isEmpty) {
+    return false;
+  }
+  final DateTime? currentTime = DateTime.tryParse(currentRaw);
+  final DateTime? previousTime = DateTime.tryParse(previousRaw);
+  if (currentTime == null || previousTime == null) {
+    return false;
+  }
+  return currentTime.difference(previousTime) > threshold;
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _AssistantMessageItem extends StatelessWidget {
   const _AssistantMessageItem({
@@ -265,7 +399,10 @@ class _AssistantMessageItem extends StatelessWidget {
                       ),
                       child: Text(
                         message.text,
-                        style: TestStyle.regular(fontSize: 14, color: AppColors.textPrimary),
+                        style: TestStyle.regular(
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -276,7 +413,10 @@ class _AssistantMessageItem extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       message.footer!,
-                      style: TestStyle.semibold(fontSize: 11, color: AppColors.textTertiary),
+                      style: TestStyle.semibold(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   ),
                 ],
@@ -424,7 +564,10 @@ class _UserMessageItem extends StatelessWidget {
                 maxWidth: MediaQuery.sizeOf(context).width * 0.75,
               ),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.brand,
                   borderRadius: BorderRadius.circular(16),
@@ -493,12 +636,18 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.title,
-                    style: TestStyle.numberBold(fontSize: 16, color: AppColors.textPrimary),
+                    style: TestStyle.numberBold(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 Text(
                   job.formatAiSalary(),
-                  style: TestStyle.numberBold(fontSize: 16, color: AppColors.warning),
+                  style: TestStyle.numberBold(
+                    fontSize: 16,
+                    color: AppColors.warning,
+                  ),
                 ),
               ],
             ),
@@ -534,7 +683,10 @@ class _EmbeddedJobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     job.employer.name,
-                    style: TestStyle.numberBold(fontSize: 12, color: AppColors.textSecondary),
+                    style: TestStyle.numberBold(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 SizedBox(
@@ -574,7 +726,10 @@ class _EmbeddedJobCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   locationParts.join('·'),
-                  style: TestStyle.semibold(fontSize: 12, color: AppColors.textSecondary),
+                  style: TestStyle.semibold(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -601,6 +756,7 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.isSending,
+    required this.isVoiceInputEnabled,
     required this.isVoiceMode,
     required this.voiceInputState,
     required this.voiceSeconds,
@@ -614,6 +770,7 @@ class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isSending;
+  final bool isVoiceInputEnabled;
   final bool isVoiceMode;
   final AiAssistantVoiceInputState voiceInputState;
   final int voiceSeconds;
@@ -626,6 +783,8 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool effectiveIsVoiceMode = isVoiceInputEnabled && isVoiceMode;
+
     return SafeArea(
       top: false,
       child: Material(
@@ -642,27 +801,33 @@ class _Composer extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: InkWell(
-                    onTap: isSending ? null : onVoiceTap,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        isVoiceMode
-                            ? AiAssistantPageView._keyboardAsset
-                            : AiAssistantPageView._voiceAsset,
-                        width: 24,
-                        height: 24,
+                if (isVoiceInputEnabled) ...<Widget>[
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: InkWell(
+                      key: const ValueKey<String>('ai_assistant_voice_toggle'),
+                      onTap: isSending ? null : onVoiceTap,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          effectiveIsVoiceMode
+                              ? AiAssistantPageView._keyboardAsset
+                              : AiAssistantPageView._voiceAsset,
+                          width: 24,
+                          height: 24,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
-                  child: isVoiceMode
+                  child: effectiveIsVoiceMode
                       ? _VoiceRecordButton(
+                          key: const ValueKey<String>(
+                            'ai_assistant_voice_record_button',
+                          ),
                           isSending: isSending,
                           voiceInputState: voiceInputState,
                           voiceSeconds: voiceSeconds,
@@ -671,6 +836,9 @@ class _Composer extends StatelessWidget {
                           onRecordMoveUpdate: onVoiceRecordMoveUpdate,
                         )
                       : TextField(
+                          key: const ValueKey<String>(
+                            'ai_assistant_text_input',
+                          ),
                           controller: controller,
                           focusNode: focusNode,
                           minLines: 1,
@@ -686,13 +854,19 @@ class _Composer extends StatelessWidget {
                                 border: InputBorder.none,
                               ).copyWith(
                                 hintText: '消息.发消息'.tr(),
-                                hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: AiAssistantPageView._subtleTextColor),
+                                hintStyle: TestStyle.pingFangRegular(
+                                  fontSize: 15,
+                                  color: AiAssistantPageView._subtleTextColor,
+                                ),
                               ),
-                          style: TestStyle.regular(fontSize: 15, color: AiAssistantPageView._titleColor),
+                          style: TestStyle.regular(
+                            fontSize: 15,
+                            color: AiAssistantPageView._titleColor,
+                          ),
                         ),
                 ),
                 const SizedBox(width: 12),
-                if (!isVoiceMode)
+                if (!effectiveIsVoiceMode)
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: controller,
                     builder:
@@ -730,6 +904,7 @@ class _Composer extends StatelessWidget {
 
 class _VoiceRecordButton extends StatelessWidget {
   const _VoiceRecordButton({
+    super.key,
     required this.isSending,
     required this.voiceInputState,
     required this.voiceSeconds,

@@ -1,8 +1,8 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'package:bluehub_app/shared/network/page_result.dart';
-import 'package:bluehub_app/shared/network/sse_client.dart';
-import 'package:bluehub_app/shared/network/sse_models.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/page_result.dart';
+import 'package:europepass/shared/network/sse_client.dart';
+import 'package:europepass/shared/network/sse_models.dart';
 import '../../logging/app_logger.dart';
 import '../../../features/messages/data/message_models.dart';
 

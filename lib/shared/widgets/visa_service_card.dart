@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../models/app_currency.dart';
 import 'app_svg_icon.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class VisaServiceCardData {
   const VisaServiceCardData({
     required this.title,
@@ -36,12 +38,14 @@ class VisaServicePackageData {
   const VisaServicePackageData({
     required this.title,
     required this.price,
+    this.currency,
     this.priceHint,
     this.iconAssetPath,
   });
 
   final String title;
   final String price;
+  final String? currency;
   final String? priceHint;
   final String? iconAssetPath;
 }
@@ -89,7 +93,10 @@ class VisaServiceCard extends StatelessWidget {
                                         data.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                                        style: TestStyle.medium(
+                                          fontSize: 16,
+                                          color: Color(0xFF262626),
+                                        ),
                                       ),
                                     ),
                                     if (data.verified) ...<Widget>[
@@ -103,7 +110,10 @@ class VisaServiceCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   data.statusText!,
-                                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
+                                  style: TestStyle.regular(
+                                    fontSize: 14,
+                                    color: Color(0xFF8C8C8C),
+                                  ),
                                 ),
                               ],
                             ],
@@ -121,12 +131,18 @@ class VisaServiceCard extends StatelessWidget {
                                 const SizedBox(width: 2),
                                 Text(
                                   data.rating,
-                                  style: TestStyle.medium(fontSize: 12, color: Color(0xFFFE5815)),
+                                  style: TestStyle.medium(
+                                    fontSize: 12,
+                                    color: Color(0xFFFE5815),
+                                  ),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   data.cases,
-                                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                                  style: TestStyle.regular(
+                                    fontSize: 12,
+                                    color: Color(0xFF8C8C8C),
+                                  ),
                                 ),
                                 ...data.tags
                                     .take(2)
@@ -151,7 +167,10 @@ class VisaServiceCard extends StatelessWidget {
                   data.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TestStyle.regular(fontSize: 12, color: Color(0xFF595959)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: Color(0xFF595959),
+                  ),
                 ),
                 if (data.packages.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 16),
@@ -203,6 +222,9 @@ class VisaServiceCard extends StatelessWidget {
 class _VisaServiceAvatar extends StatelessWidget {
   const _VisaServiceAvatar({this.assetPath, this.avatarUrl});
 
+  static const String _defaultAvatarAssetPath =
+      'assets/images/image_servicer_avatar.png';
+
   final String? assetPath;
   final String? avatarUrl;
 
@@ -233,16 +255,16 @@ class _VisaServiceAvatar extends StatelessWidget {
     return _buildAssetFallback();
   }
 
-  /// 渲染本地头像资源，资源缺失时回退默认图标。
+  /// 渲染本地头像资源，资源缺失时回退默认头像。
   Widget _buildAssetFallback() {
     if (assetPath == null) {
-      return const Icon(Icons.person_outline, color: Color(0xFF8C8C8C));
+      return Image.asset(_defaultAvatarAssetPath, fit: BoxFit.cover);
     }
     return Image.asset(
       assetPath!,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) {
-        return const Icon(Icons.person_outline, color: Color(0xFF8C8C8C));
+        return Image.asset(_defaultAvatarAssetPath, fit: BoxFit.cover);
       },
     );
   }
@@ -300,6 +322,7 @@ class _VisaServicePackageRow extends StatelessWidget {
     final Color priceColor = muted
         ? const Color(0xFF8C8C8C)
         : const Color(0xFF262626);
+    final String displayPrice = _buildDisplayPrice(item.price, item.currency);
 
     return Container(
       height: 40,
@@ -310,19 +333,11 @@ class _VisaServicePackageRow extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          if (item.iconAssetPath == null)
-            Icon(
-              Icons.work_outline_rounded,
-              size: 16,
-              color: const Color(0xFF556EA3).withValues(alpha: 0.4),
-            )
-          else
-            AppSvgIcon(
-              assetPath: item.iconAssetPath!,
-              fallback: Icons.work_outline_rounded,
-              size: 16,
-              color: const Color(0xFF556EA3),
-            ),
+          const AppSvgIcon(
+            assetPath: 'assets/images/icon_gong_package.svg',
+            fallback: Icons.work_outline_rounded,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -340,11 +355,22 @@ class _VisaServicePackageRow extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Text(
-            item.price,
+            displayPrice,
             style: TestStyle.medium(fontSize: 14, color: priceColor),
           ),
         ],
       ),
     );
+  }
+
+  String _buildDisplayPrice(String rawPrice, String? currency) {
+    final String trimmedPrice = rawPrice.trim();
+    if (trimmedPrice.isEmpty) {
+      return AppCurrency.displayPrefixFor(currency);
+    }
+    if (RegExp(r'^[^\d]+').hasMatch(trimmedPrice)) {
+      return trimmedPrice;
+    }
+    return '${AppCurrency.displayPrefixFor(currency)}$trimmedPrice';
   }
 }

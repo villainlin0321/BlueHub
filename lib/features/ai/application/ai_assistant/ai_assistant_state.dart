@@ -15,6 +15,7 @@ class AiAssistantMessageVM {
     required this.role,
     required this.text,
     required this.footer,
+    required this.sentAt,
     this.embeddedJobs = const <JobListVO>[],
     this.isEmbeddedJobLoading = false,
   });
@@ -22,6 +23,7 @@ class AiAssistantMessageVM {
   final AiAssistantChatRole role;
   final String text;
   final String? footer;
+  final String sentAt;
   final List<JobListVO> embeddedJobs;
   final bool isEmbeddedJobLoading;
 
@@ -29,6 +31,7 @@ class AiAssistantMessageVM {
     AiAssistantChatRole? role,
     String? text,
     Object? footer = _aiAssistantMessageSentinel,
+    String? sentAt,
     Object? embeddedJobs = _aiAssistantMessageSentinel,
     bool? isEmbeddedJobLoading,
   }) {
@@ -38,6 +41,7 @@ class AiAssistantMessageVM {
       footer: identical(footer, _aiAssistantMessageSentinel)
           ? this.footer
           : footer as String?,
+      sentAt: sentAt ?? this.sentAt,
       embeddedJobs: identical(embeddedJobs, _aiAssistantMessageSentinel)
           ? this.embeddedJobs
           : embeddedJobs as List<JobListVO>,

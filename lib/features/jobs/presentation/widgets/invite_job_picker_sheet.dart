@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 Future<JobDetailVO?> showInviteJobPickerSheet(BuildContext context) {
   return showModalBottomSheet<JobDetailVO>(
     context: context,

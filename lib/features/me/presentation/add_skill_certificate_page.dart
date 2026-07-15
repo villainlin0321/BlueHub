@@ -12,7 +12,7 @@ import '../../../shared/widgets/resume_time_picker_bottom_sheet.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../shared/widgets/upload_image_grid.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class AddSkillCertificatePage extends ConsumerStatefulWidget {
   const AddSkillCertificatePage({super.key, this.args});
 

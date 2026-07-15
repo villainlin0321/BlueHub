@@ -16,12 +16,13 @@ import '../../../jobs/application/company_applications/company_application_lists
 import '../../../jobs/data/application_models.dart';
 import '../../../jobs/presentation/widgets/company_application_management_widgets.dart';
 import '../../../me/data/resume_providers.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 final _currentEmployerProfileProvider =
     FutureProvider.autoDispose<EmployerProfileVO>((ref) async {
@@ -82,12 +83,14 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     });
   }
 
+  /// 重新拉取待处理应聘列表，用于空态重试。
   Future<void> _reloadPendingApplications() async {
     await ref
         .read(companyApplicationListsControllerProvider.notifier)
         .loadInitial(status: _pendingStatus, force: true);
   }
 
+  /// 统一显示页面提示消息。
   void _showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
@@ -95,10 +98,12 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     AppToast.show(message);
   }
 
+  /// 打开简历预览页。
   Future<void> _openResumePreview(int userId) async {
     await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
+  /// 弹出备注输入框，供状态流转时填写备注。
   Future<String?> _showRemarkDialog(String actionLabel) async {
     final TextEditingController controller = TextEditingController();
     final String? result = await showAppDialog<String>(
@@ -133,6 +138,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     return result;
   }
 
+  /// 处理应聘状态变更，并在完成后刷新对应列表状态。
   Future<void> _handleApplicationAction(
     _ResumeCardItem item,
     EmployerApplicationUpdateStatus nextStatus,
@@ -153,6 +159,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     _showMessage(result.message, isError: !result.success);
   }
 
+  /// 根据候选人当前状态分发次要操作。
   Future<void> _handleSecondaryAction(_ResumeCardItem item) async {
     if (item.status == EmployerApplicationFilterStatus.pending.value) {
       await _handleApplicationAction(
@@ -164,6 +171,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     await _handlePhoneCall(item);
   }
 
+  /// 获取候选人手机号并发起拨号。
   Future<void> _handlePhoneCall(_ResumeCardItem item) async {
     final String fallbackName = item.name.trim().isEmpty
         ? '应聘管理.候选人'.tr()
@@ -203,6 +211,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     }
   }
 
+  /// 规整动作失败提示，优先透传接口返回文案。
   String _normalizeActionError(Object error, String fallbackName) {
     final String message = error.toString().trim();
     if (message.startsWith('Exception: ')) {
@@ -270,6 +279,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     );
   }
 
+  /// 根据当前加载状态构建简历预览区域。
   Widget _buildPendingResumeSection({
     required CompanyApplicationListState pendingState,
     required List<_ResumeCardItem> resumeItems,
@@ -283,7 +293,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
     if (resumeItems.isEmpty) {
       return _ResumeStateCard(
-        message: pendingState.errorMessage ?? '招聘.未找到待处理应聘记录'.tr(),
+        message: pendingState.errorMessage ?? '暂无数据'.tr(),
         buttonLabel: pendingState.errorMessage == null ? null : '通用.重试'.tr(),
         onTap: pendingState.errorMessage == null
             ? null
@@ -311,6 +321,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     );
   }
 
+  /// 将接口返回的应聘记录映射为首页卡片所需数据。
   _ResumeCardItem _mapResumeCardItem(ApplicationVO item) {
     final String name = item.applicant.nickname.trim().isEmpty
         ? '招聘.匿名候选人'.tr()
@@ -333,6 +344,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     );
   }
 
+  /// 解析简历卡片右下角的次操作文案。
   String _resolveSecondaryActionLabel(String status) {
     if (status == EmployerApplicationFilterStatus.pending.value) {
       return '招聘.邀约面试'.tr();
@@ -340,6 +352,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     return '应聘管理.电话联系'.tr();
   }
 
+  /// 组装候选人标签，优先展示接口关键标签。
   List<String> _buildTags(ApplicantVO applicant) {
     final List<String> tags = <String>[];
 
@@ -375,6 +388,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     return tags.take(3).toList(growable: false);
   }
 
+  /// 组合年龄与性别文案。
   String _formatAgeGender(int age, String gender) {
     final List<String> parts = <String>[];
     if (age > 0) {
@@ -391,6 +405,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     return parts.join('·');
   }
 
+  /// 将接口性别值规整为页面展示文案。
   String _normalizeGender(String value) {
     switch (value.trim().toLowerCase()) {
       case 'male':
@@ -408,6 +423,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     }
   }
 
+  /// 格式化投递时间，优先展示相对时间。
   String _formatSubmittedText(String raw) {
     final String trimmed = raw.trim();
     if (trimmed.isEmpty) {
@@ -460,12 +476,14 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     );
   }
 
+  /// 判断两个时间是否处于同一天。
   bool _isSameDay(DateTime left, DateTime right) {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
   }
 
+  /// 将数字补足为两位字符串。
   String _twoDigits(int value) {
     return value < 10 ? '0$value' : value.toString();
   }
@@ -474,52 +492,100 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 class _HeroSection extends StatelessWidget {
   const _HeroSection({this.profile});
 
+  static const double _figmaSafeAreaHeight = 44;
+  static const double _figmaContentHeight = 176 - _figmaSafeAreaHeight;
+  static const BorderRadius _heroBorderRadius = BorderRadius.only(
+    bottomLeft: Radius.circular(28),
+    bottomRight: Radius.circular(28),
+  );
+
   final EmployerProfileVO? profile;
 
+  /// 构建企业首页顶部卡片，补足蓝色主渐变与白色柔光层。
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.paddingOf(context).top;
+    // 设计稿总高 176，其中顶部 44 为安全区，因此非安全区内容高固定为 132。
+    final double heroHeight = topPadding + _figmaContentHeight;
 
-    return Container(
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF3F9BF7), Color(0xFF2F73E5)],
-        ),
-      ),
-      child: Stack(
-        children: <Widget>[
-          Positioned(
-            left: -36,
-            top: -36,
-            child: Container(
-              width: 156,
-              height: 156,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: <Color>[Color(0xFF1FDAFF), Color(0x003584EC)],
+    return SizedBox(
+      height: heroHeight,
+      child: ClipRRect(
+        borderRadius: _heroBorderRadius,
+        child: Container(
+          decoration: _buildHeroDecoration(),
+          child: Stack(
+            children: <Widget>[
+              // 按设计稿叠加两层蓝色径向高光，避免出现偏白的蒙层。
+              Positioned(
+                left: -124,
+                top: -42,
+                child: _HeroGlow(
+                  width: 290,
+                  height: 230,
+                  decoration: _buildTopGlowDecoration(),
                 ),
               ),
-            ),
+              Positioned(
+                right: -112,
+                bottom: -80,
+                child: _HeroGlow(
+                  width: 304,
+                  height: 232,
+                  decoration: _buildBottomGlowDecoration(),
+                ),
+              ),
+              Padding(
+                // 头部总高已按 44 安全区 + 132 内容区固定，这里同步收紧内容区上下留白。
+                padding: EdgeInsets.fromLTRB(14, topPadding + 8, 14, 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _CompanyHeroTopRow(profile: profile),
+                    const SizedBox(height: 12),
+                    const _CompanyHeroStatsRow(),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(14, topPadding + 10, 14, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _CompanyHeroTopRow(profile: profile),
-                const SizedBox(height: 18),
-                const _CompanyHeroStatsRow(),
-              ],
-            ),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  /// 蓝色主渐变底图，匹配设计稿从亮到深的层次过渡。
+  BoxDecoration _buildHeroDecoration() {
+    return const BoxDecoration(
+      borderRadius: _heroBorderRadius,
+      gradient: LinearGradient(
+        begin: Alignment(-0.91, -0.03),
+        end: Alignment(-0.25, 1.6),
+        colors: <Color>[Color(0xFF3F9BF7), Color(0xFF2F73E5)],
+      ),
+    );
+  }
+
+  /// 左上角青蓝色高光，对应 Figma 导出的第二层径向渐变。
+  BoxDecoration _buildTopGlowDecoration() {
+    return const BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        center: Alignment(-0.86, -0.92),
+        radius: 1.02,
+        colors: <Color>[Color(0xFF1FDAFF), Color(0x033584EC)],
+      ),
+    );
+  }
+
+  /// 右下角深蓝色高光，对应 Figma 导出的第一层径向渐变。
+  BoxDecoration _buildBottomGlowDecoration() {
+    return const BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        center: Alignment(0.94, 0.86),
+        radius: 1.08,
+        colors: <Color>[Color(0xFF456DFF), Color(0x033584EC)],
       ),
     );
   }
@@ -556,11 +622,11 @@ class _CompanyHeroTopRow extends StatelessWidget {
               ),
               child: Center(
                 child: Container(
-                  width: 28,
-                  height: 28,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: const Color(0xFFE53935),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -587,8 +653,8 @@ class _CompanyHeroTopRow extends StatelessWidget {
                       companyName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TestStyle.semibold(
-                        fontSize: 17,
+                      style: TestStyle.pingFangSemibold(
+                        fontSize: 18,
                         color: Colors.white,
                       ),
                     ),
@@ -604,15 +670,18 @@ class _CompanyHeroTopRow extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     industry,
-                    style: TestStyle.regular(fontSize: 11, color: Colors.white),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.92),
+                    ),
                   ),
                   if (location.isNotEmpty) ...<Widget>[
                     const SizedBox(width: 6),
                     Text(
                       location,
-                      style: TestStyle.regular(
+                      style: TestStyle.pingFangRegular(
                         fontSize: 11,
-                        color: Colors.white,
+                        color: Colors.white.withValues(alpha: 0.92),
                       ),
                     ),
                   ],
@@ -649,10 +718,11 @@ class _CompanyHeroTopRow extends StatelessWidget {
 class _EnterpriseBadge extends StatelessWidget {
   const _EnterpriseBadge();
 
+  /// 企业认证角标，尽量贴近设计稿中的金色小标识。
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 14,
+      width: 15,
       height: 14,
       decoration: BoxDecoration(
         color: const Color(0xFFFED86B),
@@ -709,7 +779,7 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
                 children: <Widget>[
                   Text(
                     item.value,
-                    style: TestStyle.semibold(
+                    style: TestStyle.pingFangSemibold(
                       fontSize: 18,
                       color: Colors.white,
                     ),
@@ -718,7 +788,10 @@ class _CompanyHeroStatsRow extends ConsumerWidget {
                   Text(
                     item.labelKey.tr(),
                     textAlign: TextAlign.center,
-                    style: TestStyle.regular(fontSize: 12, color: Colors.white),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.96),
+                    ),
                   ),
                 ],
               ),
@@ -767,47 +840,59 @@ class _QuickActionButton extends StatelessWidget {
       _ => null,
     };
 
-    return SizedBox(
-      width: 72,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          children: <Widget>[
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEBF4FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: AppSvgIcon(
-                  assetPath: item.assetPath,
-                  fallback: item.fallback,
-                  size: 24,
-                  color: const Color(0xFF262626),
+    return Material(
+      color: Colors.transparent,
+      child: SizedBox(
+        width: 74,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F3F6),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: AppSvgIcon(
+                    assetPath: item.assetPath,
+                    fallback: item.fallback,
+                    size: 24,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              item.labelKey.tr(),
-              textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 12, color: Color(0xFF171A1D)),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Text(
+                item.labelKey.tr(),
+                textAlign: TextAlign.center,
+                style: TestStyle.pingFangMedium(
+                  fontSize: 12,
+                  color: Color(0xFF171A1D),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _AiAssistantBanner extends StatelessWidget {
+class _AiAssistantBanner extends ConsumerWidget {
   const _AiAssistantBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final String aiContent = stats?.aiContent?.trim() ?? '';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -839,14 +924,14 @@ class _AiAssistantBanner extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           '招聘.AI业务助手'.tr(),
-                          style: TestStyle.pingFangRegular(
+                          style: TestStyle.pingFangSemibold(
                             fontSize: 15,
                             color: Colors.white,
                           ),
                         ),
                         SizedBox(height: 2),
                         Text(
-                          '招聘.AI推荐文案'.tr(),
+                          aiContent,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TestStyle.pingFangRegular(
@@ -907,7 +992,7 @@ class _ResumeSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             '首页.最新收到简历'.tr(),
-            style: TestStyle.pingFangMedium(
+            style: TestStyle.pingFangSemibold(
               fontSize: 16,
               color: Color(0xFF262626),
             ),
@@ -929,7 +1014,11 @@ class _ResumeSectionHeader extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 2),
-                Icon(Icons.keyboard_arrow_right, size: 18),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Color(0xFFB8B8B8),
+                ),
               ],
             ),
           ),
@@ -946,25 +1035,67 @@ class _ResumeStateCard extends StatelessWidget {
   final String? buttonLabel;
   final VoidCallback? onTap;
 
+  /// 构建“最新收到简历”空态或异常态卡片。
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      height: buttonLabel == null ? 236 : 268,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: <Widget>[
-          Text(
-            message,
-            style: TestStyle.regular(fontSize: 13, color: Color(0xFF8C8C8C)),
+          const Spacer(),
+          AppEmptyState(
+            message: buttonLabel == null ? message : '暂无数据'.tr(),
+            imageWidth: 112,
+            imageHeight: 112,
+            textTopSpacing: 12,
+            textStyle: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: Color(0xFF999999),
+            ),
           ),
+          const Spacer(),
           if (buttonLabel != null && onTap != null) ...<Widget>[
-            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TestStyle.pingFangRegular(
+                fontSize: 12,
+                color: Color(0xFF8C8C8C),
+              ),
+            ),
+            const SizedBox(height: 10),
             TextButton(onPressed: onTap, child: Text(buttonLabel!)),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _HeroGlow extends StatelessWidget {
+  const _HeroGlow({
+    required this.width,
+    required this.height,
+    required this.decoration,
+  });
+
+  final double width;
+  final double height;
+  final Decoration decoration;
+
+  /// 渲染顶部卡片的柔光圆斑，用于增强设计稿的渐变层次。
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: width,
+        height: height,
+        decoration: decoration,
       ),
     );
   }

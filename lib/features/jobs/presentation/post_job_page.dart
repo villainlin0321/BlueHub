@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,17 +6,21 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../config/data/config_models.dart';
-import '../../../shared/logging/app_logger.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../application/post_job/post_job_controller.dart';
 import '../application/post_job/post_job_state.dart';
 import 'widgets/post_job_page_view.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 enum PostJobPageMode { create, edit }
 
 class PostJobPageArgs {
@@ -48,7 +53,8 @@ class PostJobPage extends ConsumerStatefulWidget {
   ConsumerState<PostJobPage> createState() => _PostJobPageState();
 }
 
-class _PostJobPageState extends ConsumerState<PostJobPage> {
+class _PostJobPageState extends ConsumerState<PostJobPage>
+    with GuardedPopScopeMixin {
   static const List<String> _jobTypes = <String>[
     'any',
     'full_time',
@@ -71,25 +77,21 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   bool _isLoadingEditData = false;
   bool _hasHydratedEditData = false;
   String? _editLoadError;
+  late _PostJobPageSnapshot _initialSnapshot;
 
   @override
   void initState() {
     super.initState();
-    final PostJobState currentState = ref.read(postJobControllerProvider);
-    AppLogger.instance.info(
-      'POST_JOB',
-      'PostJobPage initState 触发标签加载',
-      context: <String, Object?>{
-        'isLoadingRequirementTags': currentState.isLoadingRequirementTags,
-        'hasLoadedRequirementTags': currentState.hasLoadedRequirementTags,
-        'tagCount': currentState.requirementTags.length,
-      },
+    _initialSnapshot = _buildCurrentSnapshot(
+      ref.read(postJobControllerProvider),
     );
+    _logPageEvent(event: 'POST_JOB_PAGE_ENTER', message: '进入岗位发布页面');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      AppLogger.instance.info('POST_JOB', '首帧完成，开始触发标签加载');
+      // 首帧日志要早于后续异步加载，便于区分渲染慢还是接口慢。
+      _logPageEvent(event: 'POST_JOB_FIRST_FRAME', message: '岗位发布页面首帧完成');
       _bootstrapPage();
     });
   }
@@ -165,6 +167,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     _maxSalaryController.text = initialData.maxSalary;
     _descriptionController.text = initialData.description;
     _customTagController.clear();
+    _markSavedSnapshot();
 
     setState(() {
       _isLoadingEditData = false;
@@ -183,10 +186,10 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
   Future<void> _openSalaryCurrencySheet() async {
     final PostJobState state = ref.read(postJobControllerProvider);
     final AppCurrency? result = await showAppCurrencyOptionsBottomSheet(
-          context: context,
-          initialValue: state.selectedSalaryCurrency,
-          title: '通用.选择货币'.tr(),
-        );
+      context: context,
+      initialValue: state.selectedSalaryCurrency,
+      title: '通用.选择货币'.tr(),
+    );
     if (result == null) {
       return;
     }
@@ -204,12 +207,84 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
     );
   }
 
+  void _markSavedSnapshot() {
+    _initialSnapshot = _buildCurrentSnapshot(
+      ref.read(postJobControllerProvider),
+    );
+  }
+
+  _PostJobPageSnapshot _buildCurrentSnapshot(PostJobState state) {
+    return _PostJobPageSnapshot(
+      title: _packageNameController.text,
+      countryOrCity: _countryController.text,
+      headcount: _headcountController.text,
+      minSalary: _minSalaryController.text,
+      maxSalary: _maxSalaryController.text,
+      description: _descriptionController.text,
+      selectedJobType: state.selectedJobType,
+      selectedSalaryUnit: state.selectedSalaryUnit,
+      selectedSalaryCurrency: state.selectedSalaryCurrency.apiValue,
+      selectedRequirementTagCodes: state.selectedRequirementTagCodes.toList(
+        growable: false,
+      )..sort(),
+      customTags: List<String>.of(state.customTags),
+    );
+  }
+
+  Future<void> _handleAttemptLeave() async {
+    FocusScope.of(context).unfocus();
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges:
+          _buildCurrentSnapshot(ref.read(postJobControllerProvider)) !=
+          _initialSnapshot,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+    scheduleDirectPop(onCannotPop: () => context.go(RoutePaths.jobs));
+  }
+
+  /// 统一生成页面级日志上下文，避免页面进入、首帧和点击发布的字段不一致。
+  Map<String, Object?> _buildPageLogContext() {
+    return <String, Object?>{
+      'route': RoutePaths.postJob,
+      'module': 'jobs',
+      'feature': 'post_job',
+      'mode': widget.args.isEdit ? 'edit' : 'create',
+      'isEdit': widget.args.isEdit,
+      if (widget.args.jobId != null) 'editingJobId': widget.args.jobId,
+    };
+  }
+
+  /// 记录页面级关键事件，统一输出岗位发布页进入和首帧日志。
+  void _logPageEvent({required String event, required String message}) {
+    ActionLog.log(
+      event: event,
+      message: message,
+      context: _buildPageLogContext(),
+    );
+  }
+
   Future<void> _handlePublish() async {
     FocusScope.of(context).unfocus();
     _submitCustomTag();
-    await ref
-        .read(postJobControllerProvider.notifier)
-        .publish(_buildFormDraft(), editingJobId: widget.args.jobId);
+    final PostJobFormDraft draft = _buildFormDraft();
+    final Map<String, Object?> logContext = <String, Object?>{
+      ..._buildPageLogContext(),
+      'action': 'POST_JOB_SUBMIT_TAP',
+    };
+    await AppLogScope.run<Future<void>>(
+      traceId: buildAppTraceId('post_job_submit'),
+      fields: logContext,
+      action: () async {
+        // 点击日志必须早于控制器调用，后续请求与失败日志才能自动继承同一条链路。
+        ActionLog.log(event: 'POST_JOB_SUBMIT_TAP', message: '用户点击发布岗位');
+        await ref
+            .read(postJobControllerProvider.notifier)
+            .publish(draft, editingJobId: widget.args.jobId);
+      },
+    );
   }
 
   @override
@@ -227,11 +302,11 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       if (previous?.publishSuccessId != next.publishSuccessId &&
           next.publishSuccessId > 0) {
         ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
-        if (Navigator.of(context).canPop()) {
-          context.pop(true);
-        } else {
-          context.go(RoutePaths.jobs);
-        }
+        _markSavedSnapshot();
+        scheduleDirectPop(
+          result: true,
+          onCannotPop: () => context.go(RoutePaths.jobs),
+        );
       }
     });
 
@@ -273,7 +348,10 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
                 Text(
                   _editLoadError!,
                   textAlign: TextAlign.center,
-                  style: TestStyle.regular(fontSize: 14, color: Color(0xFF8C8C8C)),
+                  style: TestStyle.regular(
+                    fontSize: 14,
+                    color: Color(0xFF8C8C8C),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -287,39 +365,105 @@ class _PostJobPageState extends ConsumerState<PostJobPage> {
       );
     }
 
-    return PostJobPageView(
-      title: widget.args.isEdit ? '岗位发布.编辑岗位'.tr() : '岗位发布.发布岗位'.tr(),
-      publishButtonLabel: '岗位发布.立即发布'.tr(),
-      packageNameController: _packageNameController,
-      countryController: _countryController,
-      headcountController: _headcountController,
-      minSalaryController: _minSalaryController,
-      maxSalaryController: _maxSalaryController,
-      customTagController: _customTagController,
-      descriptionController: _descriptionController,
-      jobTypes: _jobTypes,
-      salaryUnits: _salaryUnits,
-      selectedJobType: state.selectedJobType,
-      selectedSalaryUnit: state.selectedSalaryUnit,
-      selectedSalaryCurrencyLabel: state.selectedSalaryCurrency.labelKey.tr(),
-      requirementTags: state.requirementTags,
-      selectedRequirementTagCodes: state.selectedRequirementTagCodes,
-      customTags: state.customTags,
-      isLoadingRequirementTags: state.isLoadingRequirementTags,
-      requirementTagsError: state.requirementTagsError,
-      isPublishing: state.isPublishing,
-      onBack: () => Navigator.of(context).maybePop(),
-      onSaveDraft: controller.saveDraft,
-      onPublish: _handlePublish,
-      onRetryLoadRequirementTags: () =>
-          controller.loadRequirementTags(force: true),
-      onJobTypeChanged: controller.setJobType,
-      onSalaryUnitChanged: controller.setSalaryUnit,
-      onSalaryCurrencyTap: _openSalaryCurrencySheet,
-      onRequirementTagTap: controller.toggleRequirementTag,
-      onRemoveCustomTag: controller.removeCustomTag,
-      onCustomTagSubmitted: (_) => _submitCustomTag(),
-      tagLabelBuilder: controller.tagLabel,
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
+      child: PostJobPageView(
+        title: widget.args.isEdit ? '岗位发布.编辑岗位'.tr() : '岗位发布.发布岗位'.tr(),
+        publishButtonLabel: '岗位发布.立即发布'.tr(),
+        packageNameController: _packageNameController,
+        countryController: _countryController,
+        headcountController: _headcountController,
+        minSalaryController: _minSalaryController,
+        maxSalaryController: _maxSalaryController,
+        customTagController: _customTagController,
+        descriptionController: _descriptionController,
+        jobTypes: _jobTypes,
+        salaryUnits: _salaryUnits,
+        selectedJobType: state.selectedJobType,
+        selectedSalaryUnit: state.selectedSalaryUnit,
+        selectedSalaryCurrencyLabel: state.selectedSalaryCurrency.labelKey.tr(),
+        requirementTags: state.requirementTags,
+        selectedRequirementTagCodes: state.selectedRequirementTagCodes,
+        customTags: state.customTags,
+        isLoadingRequirementTags: state.isLoadingRequirementTags,
+        requirementTagsError: state.requirementTagsError,
+        isPublishing: state.isPublishing,
+        onBack: _handleAttemptLeave,
+        onSaveDraft: controller.saveDraft,
+        onPublish: _handlePublish,
+        onRetryLoadRequirementTags: () =>
+            controller.loadRequirementTags(force: true),
+        onJobTypeChanged: controller.setJobType,
+        onSalaryUnitChanged: controller.setSalaryUnit,
+        onSalaryCurrencyTap: _openSalaryCurrencySheet,
+        onRequirementTagTap: controller.toggleRequirementTag,
+        onRemoveCustomTag: controller.removeCustomTag,
+        onCustomTagSubmitted: (_) => _submitCustomTag(),
+        tagLabelBuilder: controller.tagLabel,
+      ),
     );
   }
+}
+
+class _PostJobPageSnapshot {
+  const _PostJobPageSnapshot({
+    required this.title,
+    required this.countryOrCity,
+    required this.headcount,
+    required this.minSalary,
+    required this.maxSalary,
+    required this.description,
+    required this.selectedJobType,
+    required this.selectedSalaryUnit,
+    required this.selectedSalaryCurrency,
+    required this.selectedRequirementTagCodes,
+    required this.customTags,
+  });
+
+  final String title;
+  final String countryOrCity;
+  final String headcount;
+  final String minSalary;
+  final String maxSalary;
+  final String description;
+  final String selectedJobType;
+  final String selectedSalaryUnit;
+  final String selectedSalaryCurrency;
+  final List<String> selectedRequirementTagCodes;
+  final List<String> customTags;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _PostJobPageSnapshot &&
+            title == other.title &&
+            countryOrCity == other.countryOrCity &&
+            headcount == other.headcount &&
+            minSalary == other.minSalary &&
+            maxSalary == other.maxSalary &&
+            description == other.description &&
+            selectedJobType == other.selectedJobType &&
+            selectedSalaryUnit == other.selectedSalaryUnit &&
+            selectedSalaryCurrency == other.selectedSalaryCurrency &&
+            listEquals(
+              selectedRequirementTagCodes,
+              other.selectedRequirementTagCodes,
+            ) &&
+            listEquals(customTags, other.customTags);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    title,
+    countryOrCity,
+    headcount,
+    minSalary,
+    maxSalary,
+    description,
+    selectedJobType,
+    selectedSalaryUnit,
+    selectedSalaryCurrency,
+    Object.hashAll(selectedRequirementTagCodes),
+    Object.hashAll(customTags),
+  );
 }

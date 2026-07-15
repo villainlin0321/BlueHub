@@ -11,6 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
@@ -18,7 +19,10 @@ import '../../../features/files/data/file_providers.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../shell/application/shell_role_provider.dart';
+import '../../../shared/logging/app_log_facade.dart';
+import '../../../shared/logging/app_log_scope.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/providers.dart';
 import '../../../shared/network/services/file_service.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -27,6 +31,7 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/progress_stepper.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -36,7 +41,7 @@ import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import 'order_payment_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class OrderDetailPageArgs {
   const OrderDetailPageArgs({required this.orderId});
@@ -181,12 +186,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       requiredMaterials,
     );
     setState(() {
-      final Map<String, List<PickedUploadFile>> next =
-          materials == null
+      final Map<String, List<PickedUploadFile>> next = materials == null
           ? <String, List<PickedUploadFile>>{
               for (final _MaterialRequirement requirement in requirements)
                 requirement.id:
-                    _uploadsByRequirement[requirement.id] ?? <PickedUploadFile>[],
+                    _uploadsByRequirement[requirement.id] ??
+                    <PickedUploadFile>[],
             }
           : _buildEditableUploadsByRequirement(
               requirements: requirements,
@@ -321,7 +326,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         <String, List<PickedUploadFile>>{
           for (final _MaterialRequirement requirement in requirements)
             requirement.id: <PickedUploadFile>[
-              ...(_uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[]),
+              ...(_uploadsByRequirement[requirement.id] ??
+                  const <PickedUploadFile>[]),
             ],
         };
     final Map<String, _MaterialRequirement> requirementByTitle =
@@ -341,7 +347,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (requirement == null) {
         continue;
       }
-      final PickedUploadFile file = _buildPickedUploadFileFromMaterial(material);
+      final PickedUploadFile file = _buildPickedUploadFileFromMaterial(
+        material,
+      );
       final String dedupeKey =
           '${(file.uploadedFileUrl ?? '').trim()}|${file.name.trim()}';
       if (!existingKeys.add(dedupeKey)) {
@@ -374,12 +382,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (requirement == null) {
         continue;
       }
+      final String normalizedPath = _normalizedPathFromUrl(material.fileUrl);
       final String rejectReason = (material.rejectReason ?? '').trim();
       uploadsByRequirement[requirement.id]!.add(
         PickedUploadFile(
           id: '${requirement.id}_${material.fileUrl.hashCode}_${material.uploadedAt}',
           name: _materialDisplayName(material),
-          path: material.fileUrl,
+          path: normalizedPath.isEmpty ? material.fileUrl : normalizedPath,
           sourceType: UploadSourceType.file,
           state: rejectReason.isEmpty
               ? UploadItemState.success
@@ -389,6 +398,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               ? UploadPickerUtils.formatFileSize(material.fileSize)
               : null,
           errorMessage: rejectReason.isEmpty ? null : rejectReason,
+          uploadedFileUrl: material.fileUrl,
         ),
       );
     }
@@ -564,6 +574,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
   void _noopAction() {}
 
+  /// 构建订单详情页支付交互的统一日志上下文，避免点击事件缺少关键订单定位字段。
+  Map<String, Object?> _buildPaymentInteractionLogContext(VisaOrderVO detail) {
+    return <String, Object?>{
+      'route': RoutePaths.orderDetail,
+      'module': 'order',
+      'feature': 'order_detail',
+      'source': 'order_detail_pay_now',
+      'orderId': detail.orderId,
+      'paymentMethod': _selectedPaymentMethod.apiValue,
+      if (detail.status.trim().isNotEmpty) 'orderStatus': detail.status.trim(),
+      if (detail.currentStep > 0) 'currentStep': detail.currentStep,
+    };
+  }
+
   Future<void> _handlePayNow() async {
     if (_isSubmitting) {
       return;
@@ -575,42 +599,43 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     setState(() => _isSubmitting = true);
     try {
-      if (_selectedPaymentMethod == AppPaymentMethod.wechat) {
-        await ref
-            .read(visaOrderServiceProvider)
-            .payOrder(orderId: detail.orderId);
-        if (!mounted) {
-          return;
-        }
-        await _handlePaymentSuccess();
-        return;
-      }
-      final PaymentFlowResult result = await ref
-          .read(paymentFlowCoordinatorProvider)
-          .startPayment(
-            orderId: detail.orderId,
-            method: _selectedPaymentMethod,
+      await AppLogScope.run<Future<void>>(
+        traceId: buildAppTraceId('order_detail_payment'),
+        fields: _buildPaymentInteractionLogContext(detail),
+        action: () async {
+          // 订单详情页直接支付没有二次弹层，因此点击日志必须落在真正发起支付前。
+          ActionLog.tap(
+            event: 'ORDER_PAYMENT_CONFIRM_TAP',
+            message: '用户在订单详情页点击立即支付',
           );
-      if (!mounted) {
-        return;
-      }
-      switch (result.status) {
-        case PaymentFlowStatus.success:
-          await _handlePaymentSuccess();
-          return;
-        case PaymentFlowStatus.cancel:
-        case PaymentFlowStatus.failed:
-        case PaymentFlowStatus.pending:
-          setState(() => _isSubmitting = false);
-          _showMessage(result.message);
-          return;
-      }
+          final PaymentFlowResult result = await ref
+              .read(paymentFlowCoordinatorProvider)
+              .startPayment(
+                orderId: detail.orderId,
+                method: _selectedPaymentMethod,
+              );
+          if (!mounted) {
+            return;
+          }
+          switch (result.status) {
+            case PaymentFlowStatus.success:
+              await _handlePaymentSuccess();
+              return;
+            case PaymentFlowStatus.cancel:
+            case PaymentFlowStatus.failed:
+            case PaymentFlowStatus.pending:
+              setState(() => _isSubmitting = false);
+              _showMessage(result.message);
+              return;
+          }
+        },
+      );
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() => _isSubmitting = false);
-      _showMessage(resolveOrderPaymentErrorMessage(error));
+      _showMessage(resolveOrderPaymentErrorMessage(context, error));
     }
   }
 
@@ -714,7 +739,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Future<void> _pickFromFiles(_MaterialRequirement requirement) async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('订单.未能读取所选文件'.tr());
         return;
@@ -764,7 +789,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Future<void> _pickVisaDocumentsFromFiles() async {
     try {
       final List<PickedUploadFile> pickedFiles =
-          await UploadPickerUtils.pickFromFiles();
+          await UploadPickerUtils.pickPdfFiles();
       if (pickedFiles.isEmpty) {
         _showMessage('订单.未能读取所选文件'.tr());
         return;
@@ -1179,18 +1204,36 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
   Future<Directory> _resolveDownloadDirectory() async {
     final List<Directory> candidates = <Directory>[];
-    try {
-      final Directory? downloadsDirectory = await getDownloadsDirectory();
-      if (downloadsDirectory != null) {
-        candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
-      }
-    } catch (_) {}
-
-    try {
-      final Directory documentsDirectory =
-          await getApplicationDocumentsDirectory();
-      candidates.add(Directory('${documentsDirectory.path}/downloads'));
-    } catch (_) {}
+    if (Platform.isAndroid) {
+      try {
+        final Directory? downloadsDirectory = await getDownloadsDirectory();
+        if (downloadsDirectory != null) {
+          candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
+        }
+      } catch (_) {}
+      try {
+        final Directory documentsDirectory =
+            await getApplicationDocumentsDirectory();
+        candidates.add(Directory('${documentsDirectory.path}/downloads'));
+      } catch (_) {}
+    } else if (Platform.isIOS) {
+      try {
+        final Directory temporaryDirectory = await getTemporaryDirectory();
+        candidates.add(Directory('${temporaryDirectory.path}/downloads'));
+      } catch (_) {}
+    } else {
+      try {
+        final Directory? downloadsDirectory = await getDownloadsDirectory();
+        if (downloadsDirectory != null) {
+          candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
+        }
+      } catch (_) {}
+      try {
+        final Directory documentsDirectory =
+            await getApplicationDocumentsDirectory();
+        candidates.add(Directory('${documentsDirectory.path}/downloads'));
+      } catch (_) {}
+    }
 
     final Directory temporaryDirectory = await getTemporaryDirectory();
     candidates.add(Directory('${temporaryDirectory.path}/downloads'));
@@ -1314,6 +1357,247 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return 'application/octet-stream';
   }
 
+  /// 判断材料 MIME 是否属于图片，优先复用后端返回的文件类型信息。
+  bool _isImageFileType(String fileType) {
+    return fileType.trim().toLowerCase().startsWith('image/');
+  }
+
+  /// 判断材料 MIME 或路径是否属于 PDF，兼容后端未稳定返回扩展名的场景。
+  bool _isPdfMaterial({
+    required String fileType,
+    required String fileUrl,
+    required String fileName,
+  }) {
+    final String normalizedType = fileType.trim().toLowerCase();
+    if (normalizedType == 'application/pdf' ||
+        normalizedType.endsWith('/pdf')) {
+      return true;
+    }
+    return UploadPickerUtils.isPdfPath(fileUrl) ||
+        UploadPickerUtils.isPdfPath(fileName);
+  }
+
+  /// 打开订单材料预览，图片和 PDF 都优先使用应用内预览。
+  Future<void> _openMaterialPreview(MaterialVO material) async {
+    final String fileUrl = material.fileUrl.trim();
+    if (fileUrl.isEmpty) {
+      _showMessage('订单.文件地址不存在'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: fileUrl,
+      title: _materialDisplayName(material),
+      isImage: _isImageFileType(material.fileType),
+      isPdf: _isPdfMaterial(
+        fileType: material.fileType,
+        fileUrl: fileUrl,
+        fileName: _materialDisplayName(material),
+      ),
+    );
+  }
+
+  /// 打开本地或远程已选文件预览，优先使用上传后的 URL，缺失时回退到本地路径。
+  Future<void> _openPickedFilePreview(PickedUploadFile file) async {
+    final String previewPath = (file.uploadedFileUrl ?? file.path).trim();
+    if (previewPath.isEmpty) {
+      _showMessage('订单.文件地址不存在'.tr());
+      return;
+    }
+    await openAttachmentPreview(
+      context,
+      path: previewPath,
+      title: file.name,
+      isImage: file.isImage,
+      isPdf:
+          UploadPickerUtils.isPdfPath(previewPath) ||
+          UploadPickerUtils.isPdfPath(file.name),
+    );
+  }
+
+  /// 生成已选文件的下载状态键，优先使用服务端 URL，缺失时回退到本地路径。
+  String _pickedFileDownloadKey(PickedUploadFile file) {
+    final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+    if (uploadedFileUrl.isNotEmpty) {
+      return uploadedFileUrl;
+    }
+    return file.path.trim();
+  }
+
+  /// 解析已选文件的扩展名，避免下载后丢失原始文件类型。
+  String _pickedFileExtension(PickedUploadFile file) {
+    final String fileName = file.name.trim();
+    final int fileNameDotIndex = fileName.lastIndexOf('.');
+    if (fileNameDotIndex > 0) {
+      return fileName.substring(fileNameDotIndex);
+    }
+
+    final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+    if (uploadedFileUrl.isNotEmpty) {
+      final String remotePath =
+          Uri.tryParse(uploadedFileUrl)?.path ?? uploadedFileUrl;
+      final String remoteName = UploadPickerUtils.basename(remotePath);
+      final int remoteDotIndex = remoteName.lastIndexOf('.');
+      if (remoteDotIndex > 0) {
+        return remoteName.substring(remoteDotIndex);
+      }
+    }
+
+    final String localPath = file.path.trim();
+    final String localName = UploadPickerUtils.basename(localPath);
+    final int localDotIndex = localName.lastIndexOf('.');
+    if (localDotIndex > 0) {
+      return localName.substring(localDotIndex);
+    }
+    return '';
+  }
+
+  /// 判断下载地址是否指向外部对象存储；这类预签名 URL 不能附带业务鉴权头。
+  bool _shouldUseAnonymousDownloadDio(String url) {
+    final Uri? downloadUri = Uri.tryParse(url);
+    final Uri? apiBaseUri = Uri.tryParse(ref.read(appConfigProvider).baseUrl);
+    if (downloadUri == null || !downloadUri.hasScheme || apiBaseUri == null) {
+      return false;
+    }
+    return downloadUri.host.isNotEmpty &&
+        apiBaseUri.host.isNotEmpty &&
+        downloadUri.host != apiBaseUri.host;
+  }
+
+  /// 为下载场景选择合适的 Dio；对象存储预签名链接使用无鉴权客户端，避免 400。
+  (Dio dio, bool shouldClose) _createDownloadDio(String url) {
+    if (_shouldUseAnonymousDownloadDio(url)) {
+      return (
+        Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 60),
+            sendTimeout: const Duration(seconds: 60),
+          ),
+        ),
+        true,
+      );
+    }
+    return (ref.read(dioProvider), false);
+  }
+
+  /// iOS 下载完成后拉起系统分享/保存面板，由用户选择保存到“文件 App”中的位置。
+  Future<void> _presentIosSavePanel({
+    required String savePath,
+    required String fileName,
+  }) async {
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        title: fileName,
+        subject: fileName,
+        files: <XFile>[XFile(savePath, name: fileName)],
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
+  /// 下载已选文件；远程文件走鉴权下载，本地文件复制到目标目录，统一沉淀到系统文件夹。
+  Future<bool> _downloadPickedUploadFile(PickedUploadFile file) async {
+    final String downloadKey = _pickedFileDownloadKey(file);
+    if (downloadKey.isEmpty) {
+      _showMessage('订单.文件地址不存在'.tr());
+      return false;
+    }
+    if (_downloadingMaterialUrls.contains(downloadKey)) {
+      return false;
+    }
+
+    setState(() {
+      _downloadingMaterialUrls.add(downloadKey);
+    });
+
+    final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+    final String filePath = file.path.trim();
+    final String remoteFileUrl = uploadedFileUrl.isNotEmpty
+        ? uploadedFileUrl
+        : _isNetworkFilePath(filePath)
+        ? filePath
+        : '';
+    final String downloadUrl = remoteFileUrl.isNotEmpty
+        ? remoteFileUrl
+        : filePath;
+    final (Dio dio, bool shouldCloseDio) = _createDownloadDio(downloadUrl);
+    try {
+      final Directory directory = await _resolveDownloadDirectory();
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
+      }
+
+      final String extension = _pickedFileExtension(file);
+      final String normalizedName = file.name.contains('.') || extension.isEmpty
+          ? file.name
+          : '${file.name}$extension';
+      final String sanitizedName = _sanitizeFileName(normalizedName);
+      String savePath = '${directory.path}/$sanitizedName';
+      if (File(savePath).existsSync()) {
+        final String timestamp = DateTime.now().millisecondsSinceEpoch
+            .toString();
+        final int nameDotIndex = sanitizedName.lastIndexOf('.');
+        final String uniqueName = nameDotIndex > 0
+            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
+            : '${sanitizedName}_$timestamp';
+        savePath = '${directory.path}/$uniqueName';
+      }
+
+      if (remoteFileUrl.isNotEmpty) {
+        await dio.download(
+          remoteFileUrl,
+          savePath,
+          options: Options(
+            responseType: ResponseType.bytes,
+            receiveTimeout: const Duration(seconds: 60),
+          ),
+          deleteOnError: true,
+        );
+      } else {
+        final File localFile = File(filePath);
+        if (!localFile.existsSync()) {
+          _showMessage('订单.文件地址不存在'.tr());
+          return false;
+        }
+        await localFile.copy(savePath);
+      }
+
+      if (!mounted) {
+        return false;
+      }
+      if (Platform.isIOS) {
+        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
+        return true;
+      }
+      _showMessage('${'订单.已下载到本地'.tr()}\n$savePath');
+      return true;
+    } on DioException {
+      if (!mounted) {
+        return false;
+      }
+      _showMessage('订单.文件下载失败'.tr());
+    } catch (error) {
+      if (!mounted) {
+        return false;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '订单.文件下载失败'.tr()));
+    } finally {
+      if (shouldCloseDio) {
+        dio.close(force: true);
+      }
+      if (mounted) {
+        setState(() {
+          _downloadingMaterialUrls.remove(downloadKey);
+        });
+      }
+    }
+    return false;
+  }
+
   Future<void> _handleRequirementPreview(
     _MaterialRequirement requirement,
   ) async {
@@ -1337,6 +1621,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     await showAppDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return SampleFileSelectionDialog(
           title: requirement.title,
@@ -1352,11 +1637,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 subtitle: UploadPickerUtils.formatFileSize(material.fileSize),
                 fileUrl: material.fileUrl,
                 fileType: material.fileType,
+                onTap: () async {
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                  await _openMaterialPreview(material);
+                },
                 isDownloading: _downloadingMaterialUrls.contains(
                   material.fileUrl.trim(),
                 ),
                 onDownloadTap: () async {
-                  final bool success = await _downloadAndOpenMaterial(
+                  final bool success = await _downloadMaterialFile(
                     material,
                     showPageLoading: true,
                   );
@@ -1391,13 +1682,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       _downloadingMaterialUrls.add(fileUrl);
     });
 
-    final Dio dio = Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 60),
-        sendTimeout: const Duration(seconds: 60),
-      ),
-    );
+    final (Dio dio, bool shouldCloseDio) = _createDownloadDio(fileUrl);
     bool didShowPageLoading = false;
 
     Future<void> dismissPageLoading() async {
@@ -1450,6 +1735,11 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         await dismissPageLoading();
         return false;
       }
+      if (Platform.isIOS && !openAfterDownload) {
+        await dismissPageLoading();
+        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
+        return true;
+      }
       if (openAfterDownload) {
         await dismissPageLoading();
         final OpenResult openResult = await OpenFilex.open(savePath);
@@ -1476,7 +1766,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
       _showMessage(_resolveErrorMessage(error, fallback: '订单.文件下载失败'.tr()));
     } finally {
-      dio.close(force: true);
+      if (shouldCloseDio) {
+        dio.close(force: true);
+      }
       if (mounted) {
         setState(() {
           _downloadingMaterialUrls.remove(fileUrl);
@@ -1485,17 +1777,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       await dismissPageLoading();
     }
     return false;
-  }
-
-  Future<bool> _downloadAndOpenMaterial(
-    MaterialVO material, {
-    bool showPageLoading = false,
-  }) {
-    return _downloadMaterialFile(
-      material,
-      openAfterDownload: true,
-      showPageLoading: showPageLoading,
-    );
   }
 
   Future<_RejectReasonSubmitResult?> _showRejectReasonDialog(
@@ -1637,7 +1918,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         title: Text(
           '订单.订单详情'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: const Color(0xE6000000),
+          ),
         ),
         actions: isServiceProvider
             ? const <Widget>[]
@@ -1646,7 +1930,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   onPressed: _handleConsultTap,
                   child: Text(
                     '订单.联系商家'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF262626)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: const Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -1816,8 +2103,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     ? _ProviderMaterialReviewCard(
                         materials: detail.materials,
                         downloadingFileUrls: _downloadingMaterialUrls,
+                        onPreviewTap: _openMaterialPreview,
                         onDownloadTap: (MaterialVO material) async {
-                          await _downloadAndOpenMaterial(material);
+                          await _downloadMaterialFile(material);
                         },
                       )
                     : const SizedBox.shrink()
@@ -1825,22 +2113,28 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               ? _MaterialUploadCard(
                   requirements: requirements,
                   uploadsByRequirement: displayedUploadsByRequirement,
+                  downloadingFileKeys: _downloadingMaterialUrls,
                   allowUpload: isUploadMaterialsStage,
                   allowDelete: isUploadMaterialsStage,
                   onPreviewTap: _handleRequirementPreview,
+                  onPreviewFile: _openPickedFilePreview,
+                  onDownloadFile: _downloadPickedUploadFile,
                   onUploadTap: _openUploadSheet,
                   onDeleteFile: _removeUploadFile,
                 )
               : const SizedBox.shrink(),
         ),
-        if (isServiceProvider && (isEmbassySubmittedStage || isVisaIssuedStage))
+        if (isEmbassySubmittedStage || isVisaIssuedStage)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: _ProviderVisaDocumentUploadCard(
               files: _visaDocumentUploads,
-              allowUpload: isEmbassySubmittedStage,
-              allowDelete: isEmbassySubmittedStage,
+              downloadingFileKeys: _downloadingMaterialUrls,
+              allowUpload: isServiceProvider && isEmbassySubmittedStage,
+              allowDelete: isServiceProvider && isEmbassySubmittedStage,
               onUploadTap: _openVisaDocumentUploadSheet,
+              onPreviewFile: _openPickedFilePreview,
+              onDownloadFile: _downloadPickedUploadFile,
               onDeleteFile: _removeVisaDocumentFile,
             ),
           ),
@@ -1928,14 +2222,20 @@ class _OrderInfoRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+          style: TestStyle.regular(
+            fontSize: 12,
+            color: const Color(0xFF8C8C8C),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
         ),
       ],
@@ -1947,18 +2247,24 @@ class _MaterialUploadCard extends StatelessWidget {
   const _MaterialUploadCard({
     required this.requirements,
     required this.uploadsByRequirement,
+    required this.downloadingFileKeys,
     required this.allowUpload,
     required this.allowDelete,
     required this.onPreviewTap,
+    required this.onPreviewFile,
+    required this.onDownloadFile,
     required this.onUploadTap,
     required this.onDeleteFile,
   });
 
   final List<_MaterialRequirement> requirements;
   final Map<String, List<PickedUploadFile>> uploadsByRequirement;
+  final Set<String> downloadingFileKeys;
   final bool allowUpload;
   final bool allowDelete;
   final ValueChanged<_MaterialRequirement> onPreviewTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
+  final ValueChanged<PickedUploadFile> onDownloadFile;
   final ValueChanged<_MaterialRequirement> onUploadTap;
   final void Function(_MaterialRequirement, PickedUploadFile) onDeleteFile;
 
@@ -1982,9 +2288,12 @@ class _MaterialUploadCard extends StatelessWidget {
             child: _MaterialUploadItem(
               requirement: item,
               files: files,
+              downloadingFileKeys: downloadingFileKeys,
               allowUpload: allowUpload,
               allowDelete: allowDelete,
               onPreviewTap: () => onPreviewTap(item),
+              onPreviewFile: onPreviewFile,
+              onDownloadFile: onDownloadFile,
               onUploadTap: allowUpload ? () => onUploadTap(item) : null,
               onDeleteFile: allowDelete
                   ? (PickedUploadFile file) => onDeleteFile(item, file)
@@ -2000,16 +2309,22 @@ class _MaterialUploadCard extends StatelessWidget {
 class _ProviderVisaDocumentUploadCard extends StatelessWidget {
   const _ProviderVisaDocumentUploadCard({
     required this.files,
+    required this.downloadingFileKeys,
     required this.allowUpload,
     required this.allowDelete,
     required this.onUploadTap,
+    required this.onPreviewFile,
+    required this.onDownloadFile,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
+  final Set<String> downloadingFileKeys;
   final bool allowUpload;
   final bool allowDelete;
   final VoidCallback onUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
+  final ValueChanged<PickedUploadFile> onDownloadFile;
   final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
@@ -2024,15 +2339,22 @@ class _ProviderVisaDocumentUploadCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '订单.添加出证材料'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
+            allowUpload ? '订单.添加出证材料'.tr() : '订单.出证材料'.tr(),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: const Color(0xFF171A1D),
+            ),
           ),
           const SizedBox(height: 12),
           _MaterialUploadContent(
             files: files,
+            downloadingFileKeys: downloadingFileKeys,
             allowUpload: allowUpload,
             allowDelete: allowDelete,
+            emptyReadonlyText: '订单.暂无出证材料'.tr(),
             onAddTap: onUploadTap,
+            onPreviewFile: onPreviewFile,
+            onDownloadFile: onDownloadFile,
             onDeleteFile: onDeleteFile,
           ),
         ],
@@ -2045,11 +2367,13 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
   const _ProviderMaterialReviewCard({
     required this.materials,
     required this.downloadingFileUrls,
+    this.onPreviewTap,
     this.onDownloadTap,
   });
 
   final List<MaterialVO> materials;
   final Set<String> downloadingFileUrls;
+  final Future<void> Function(MaterialVO)? onPreviewTap;
   final Future<void> Function(MaterialVO)? onDownloadTap;
 
   @override
@@ -2068,7 +2392,10 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '订单.客户上传材料'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
               ),
               Text(
@@ -2077,7 +2404,10 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                     'count': materials.length.toString(),
                   },
                 ),
-                style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+                style: TestStyle.regular(
+                  fontSize: 14,
+                  color: const Color(0xFF8C8C8C),
+                ),
               ),
             ],
           ),
@@ -2108,6 +2438,9 @@ class _ProviderMaterialReviewCard extends StatelessWidget {
                   subtitle: UploadPickerUtils.formatFileSize(material.fileSize),
                   fileUrl: material.fileUrl,
                   fileType: material.fileType,
+                  onTap: onPreviewTap == null
+                      ? null
+                      : () => onPreviewTap!(material),
                   isDownloading: downloadingFileUrls.contains(
                     material.fileUrl.trim(),
                   ),
@@ -2127,18 +2460,24 @@ class _MaterialUploadItem extends StatelessWidget {
   const _MaterialUploadItem({
     required this.requirement,
     required this.files,
+    required this.downloadingFileKeys,
     required this.allowUpload,
     required this.allowDelete,
     required this.onPreviewTap,
+    required this.onPreviewFile,
+    required this.onDownloadFile,
     required this.onUploadTap,
     required this.onDeleteFile,
   });
 
   final _MaterialRequirement requirement;
   final List<PickedUploadFile> files;
+  final Set<String> downloadingFileKeys;
   final bool allowUpload;
   final bool allowDelete;
   final VoidCallback onPreviewTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
+  final ValueChanged<PickedUploadFile> onDownloadFile;
   final VoidCallback? onUploadTap;
   final ValueChanged<PickedUploadFile>? onDeleteFile;
 
@@ -2156,7 +2495,10 @@ class _MaterialUploadItem extends StatelessWidget {
                   Flexible(
                     child: Text(
                       requirement.title,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF171A1D)),
+                      style: TestStyle.regular(
+                        fontSize: 14,
+                        color: const Color(0xFF171A1D),
+                      ),
                     ),
                   ),
                   if (requirement.required) ...<Widget>[
@@ -2174,7 +2516,10 @@ class _MaterialUploadItem extends StatelessWidget {
               onTap: onPreviewTap,
               child: Text(
                 '服务详情.查看样例'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 13, color: const Color(0xFF096DD9)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 13,
+                  color: const Color(0xFF096DD9),
+                ),
               ),
             ),
           ],
@@ -2182,9 +2527,12 @@ class _MaterialUploadItem extends StatelessWidget {
         const SizedBox(height: 12),
         _MaterialUploadContent(
           files: files,
+          downloadingFileKeys: downloadingFileKeys,
           allowUpload: allowUpload,
           allowDelete: allowDelete,
           onAddTap: onUploadTap,
+          onPreviewFile: onPreviewFile,
+          onDownloadFile: onDownloadFile,
           onDeleteFile: onDeleteFile,
         ),
       ],
@@ -2195,16 +2543,24 @@ class _MaterialUploadItem extends StatelessWidget {
 class _MaterialUploadContent extends StatelessWidget {
   const _MaterialUploadContent({
     required this.files,
+    required this.downloadingFileKeys,
     required this.allowUpload,
     required this.allowDelete,
+    this.emptyReadonlyText = '',
     required this.onAddTap,
+    this.onPreviewFile,
+    this.onDownloadFile,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
+  final Set<String> downloadingFileKeys;
   final bool allowUpload;
   final bool allowDelete;
+  final String emptyReadonlyText;
   final VoidCallback? onAddTap;
+  final ValueChanged<PickedUploadFile>? onPreviewFile;
+  final ValueChanged<PickedUploadFile>? onDownloadFile;
   final ValueChanged<PickedUploadFile>? onDeleteFile;
 
   @override
@@ -2213,7 +2569,11 @@ class _MaterialUploadContent extends StatelessWidget {
       if (allowUpload && onAddTap != null) {
         return _UploadPlaceholder(onTap: onAddTap!);
       }
-      return _ReadonlyUploadPlaceholder(text: '订单.待求职者上传材料'.tr());
+      return _ReadonlyUploadPlaceholder(
+        text: emptyReadonlyText.isNotEmpty
+            ? emptyReadonlyText
+            : '订单.待求职者上传材料'.tr(),
+      );
     }
 
     return Column(
@@ -2224,6 +2584,17 @@ class _MaterialUploadContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
               file: file,
+              isDownloading: downloadingFileKeys.contains(
+                (file.uploadedFileUrl ?? '').trim().isNotEmpty
+                    ? file.uploadedFileUrl!.trim()
+                    : file.path.trim(),
+              ),
+              onPreviewTap: onPreviewFile == null
+                  ? null
+                  : () => onPreviewFile!(file),
+              onDownloadTap: onDownloadFile == null
+                  ? null
+                  : () => onDownloadFile!(file),
               showRemoveButton: allowDelete && onDeleteFile != null,
               onRemoveTap: onDeleteFile == null
                   ? null
@@ -2241,119 +2612,200 @@ class _MaterialUploadContent extends StatelessWidget {
 class _UploadFileCard extends StatelessWidget {
   const _UploadFileCard({
     required this.file,
+    this.isDownloading = false,
+    this.onPreviewTap,
+    this.onDownloadTap,
     this.onRemoveTap,
     this.showRemoveButton = true,
   });
 
   final PickedUploadFile file;
+  final bool isDownloading;
+  final VoidCallback? onPreviewTap;
+  final VoidCallback? onDownloadTap;
   final VoidCallback? onRemoveTap;
   final bool showRemoveButton;
+
+  bool get _showsRemoveButton => showRemoveButton && onRemoveTap != null;
+
+  bool get _showsDownloadButton {
+    if (onDownloadTap == null ||
+        file.state == UploadItemState.uploading ||
+        _showsRemoveButton) {
+      return false;
+    }
+    if (file.state == UploadItemState.success) {
+      return true;
+    }
+    return _hasRemoteDownloadSource(file);
+  }
+
+  /// 将统一的卡片内容按需包装为可点击预览的交互容器。
+  Widget _wrapPreviewTap(Widget child) {
+    if (onPreviewTap == null) {
+      return child;
+    }
+    return InkWell(
+      onTap: onPreviewTap,
+      borderRadius: BorderRadius.circular(8),
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     switch (file.state) {
       case UploadItemState.uploading:
-        return _UploadFileCardFrame(
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
-                    ),
-                    const SizedBox(height: 9),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: file.progress,
-                        minHeight: 4,
-                        backgroundColor: Colors.white,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF096DD9),
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.regular(
+                          fontSize: 14,
+                          color: const Color(0xFF333333),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 9),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: file.progress,
+                          minHeight: 4,
+                          backgroundColor: Colors.white,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF096DD9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       case UploadItemState.success:
-        return _UploadFileCardFrame(
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.regular(fontSize: 14, color: const Color(0xFF333333)),
-                    ),
-                    if (file.sizeLabel != null) ...<Widget>[
-                      const SizedBox(height: 2),
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
                       Text(
-                        file.sizeLabel!,
-                        style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.regular(
+                          fontSize: 14,
+                          color: const Color(0xFF333333),
+                        ),
                       ),
+                      if (file.sizeLabel != null) ...<Widget>[
+                        const SizedBox(height: 2),
+                        Text(
+                          file.sizeLabel!,
+                          style: TestStyle.regular(
+                            fontSize: 12,
+                            color: const Color(0xFF8C8C8C),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (showRemoveButton && onRemoveTap != null)
-                _RemoveUploadButton(onTap: onRemoveTap!),
-            ],
+                if (_showsDownloadButton) ...<Widget>[
+                  _DownloadUploadButton(
+                    onTap: onDownloadTap!,
+                    isDownloading: isDownloading,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (_showsRemoveButton)
+                  _RemoveUploadButton(onTap: onRemoveTap!),
+              ],
+            ),
           ),
         );
       case UploadItemState.failure:
-        return _UploadFileCardFrame(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
-          child: Row(
-            children: <Widget>[
-              _UploadFileLeading(file: file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFFFF3141)),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TestStyle.pingFangRegular(fontSize: 11, color: const Color(0xFFFF3141)),
-                    ),
-                  ],
+        return _wrapPreviewTap(
+          _UploadFileCardFrame(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
+            child: Row(
+              children: <Widget>[
+                _UploadFileLeading(file: file),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 14,
+                          color: const Color(0xFFFF3141),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        (file.errorMessage ?? '订单.上传失败请重试'.tr()).trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 11,
+                          color: const Color(0xFFFF3141),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (showRemoveButton && onRemoveTap != null)
-                _RemoveUploadButton(onTap: onRemoveTap!),
-            ],
+                if (_showsDownloadButton) ...<Widget>[
+                  _DownloadUploadButton(
+                    onTap: onDownloadTap!,
+                    isDownloading: isDownloading,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (_showsRemoveButton)
+                  _RemoveUploadButton(onTap: onRemoveTap!),
+              ],
+            ),
           ),
         );
     }
   }
+}
+
+bool _isNetworkFilePath(String value) {
+  final String normalizedValue = value.trim().toLowerCase();
+  return normalizedValue.startsWith('http://') ||
+      normalizedValue.startsWith('https://');
+}
+
+bool _hasRemoteDownloadSource(PickedUploadFile file) {
+  final String uploadedFileUrl = (file.uploadedFileUrl ?? '').trim();
+  if (uploadedFileUrl.isNotEmpty) {
+    return true;
+  }
+  return _isNetworkFilePath(file.path);
 }
 
 class _UploadFileCardFrame extends StatelessWidget {
@@ -2427,6 +2879,47 @@ class _RemoveUploadButton extends StatelessWidget {
   }
 }
 
+class _DownloadUploadButton extends StatelessWidget {
+  const _DownloadUploadButton({
+    required this.onTap,
+    required this.isDownloading,
+  });
+
+  final VoidCallback onTap;
+  final bool isDownloading;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isDownloading ? null : onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          // 下载过程中用小尺寸 loading 替代图标，避免重复点击。
+          child: isDownloading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF262626),
+                    ),
+                  ),
+                )
+              : SvgPicture.asset(
+                  'assets/images/order_detail_download.svg',
+                  width: 15,
+                  height: 15,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
 class _UploadPlaceholder extends StatelessWidget {
   const _UploadPlaceholder({required this.onTap});
 
@@ -2451,13 +2944,16 @@ class _UploadPlaceholder extends StatelessWidget {
               children: <Widget>[
                 SvgPicture.asset(
                   'assets/images/order_upload_add_inline.svg',
-                  width: 16,
-                  height: 16,
+                  width: 11,
+                  height: 11,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '订单.上传文件'.tr(),
-                  style: TestStyle.pingFangRegular(fontSize: 14, color: const Color(0xFF171A1D)),
+                  style: TestStyle.pingFangRegular(
+                    fontSize: 14,
+                    color: const Color(0xFF171A1D),
+                  ),
                 ),
               ],
             ),
@@ -3049,7 +3545,10 @@ class _UploadTypeAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 13, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 13,
+                color: const Color(0xFF595959),
+              ),
             ),
           ],
         ),
@@ -3080,7 +3579,10 @@ class _OrderDetailStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
+              style: TestStyle.regular(
+                fontSize: 14,
+                color: const Color(0xFF595959),
+              ),
             ),
             const SizedBox(height: 16),
             PrimaryButton(label: buttonLabel, onPressed: onTap, enabled: true),
@@ -3164,7 +3666,10 @@ class _RejectedStatusBar extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               '订单.已驳回'.tr(),
-              style: TestStyle.pingFangRegular(fontSize: 16, color: const Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 16,
+                color: const Color(0xFF8C8C8C),
+              ),
             ),
           ),
         ),

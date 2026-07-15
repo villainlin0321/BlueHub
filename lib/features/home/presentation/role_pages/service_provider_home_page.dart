@@ -19,6 +19,7 @@ import '../../../../features/visa/data/provider_models.dart'
     show VisaProviderProfileVO;
 import '../../../../features/visa/data/provider_providers.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -26,7 +27,7 @@ import '../../../../shared/widgets/message_center_icon_button.dart';
 import '../../data/home_models.dart';
 import '../../data/home_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 final _currentProviderProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
@@ -70,6 +71,7 @@ class ServiceProviderHomePage extends ConsumerWidget {
     final double bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return SingleChildScrollView(
+      key: AppTestKeys.pageServiceProviderHome,
       padding: EdgeInsets.only(bottom: bottomPadding + 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -469,11 +471,17 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-class _AiAssistantBanner extends StatelessWidget {
+class _AiAssistantBanner extends ConsumerWidget {
   const _AiAssistantBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HomeDashboardStatsVO? stats = ref
+        .watch(homeDashboardStatsProvider)
+        .asData
+        ?.value;
+    final String aiContent = stats?.aiContent?.trim() ?? '';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -512,7 +520,7 @@ class _AiAssistantBanner extends StatelessWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          '首页.德国工签人才提示'.tr(),
+                          aiContent,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TestStyle.pingFangRegular(

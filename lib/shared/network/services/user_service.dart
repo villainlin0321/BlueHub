@@ -1,6 +1,6 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'package:bluehub_app/shared/network/page_result.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/page_result.dart';
 import '../../../features/me/data/user_models.dart';
 
 class UserService {
@@ -33,6 +33,16 @@ class UserService {
   /// 更新当前登录用户的个人资料。
   Future<void> updateMe({required UpdateUserBO request}) async {
     return _apiClient.putVoid('/users/me', data: request.toJson());
+  }
+
+  /// 绑定或修改当前登录用户的手机号。
+  Future<void> bindPhone({required BindPhoneBO request}) async {
+    return _apiClient.putVoid('/users/me/phone', data: request.toJson());
+  }
+
+  /// 绑定或修改当前登录用户的邮箱。
+  Future<void> bindEmail({required BindEmailBO request}) async {
+    return _apiClient.putVoid('/users/me/email', data: request.toJson());
   }
 
   /// 分页获取当前用户的黑名单列表。
@@ -74,6 +84,17 @@ class UserService {
     return _apiClient.postVoid(
       '/users/me/real-name-verify',
       data: request.toJson(),
+    );
+  }
+
+  /// 查询当前用户的实名认证记录。
+  Future<List<RealNameVerificationVO>> listMyRealNameVerifications() async {
+    return _apiClient.get<List<RealNameVerificationVO>>(
+      '/users/me/real-name-verifications',
+      decode: (data) => decodeModelList<RealNameVerificationVO>(
+        data,
+        RealNameVerificationVO.fromJson,
+      ),
     );
   }
 

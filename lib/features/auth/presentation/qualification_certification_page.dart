@@ -1,22 +1,24 @@
-import 'dart:io';
 import '../../../shared/widgets/app_toast.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
-import '../application/qualification_upload_helper.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
+import 'qualification_preview_resolver.dart';
+import 'widgets/qualification_preview_image.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 
 class QualificationCertificationPage extends ConsumerStatefulWidget {
   const QualificationCertificationPage({super.key, required this.args});
@@ -58,8 +60,7 @@ class _QualificationCertificationPageState
   PickedUploadFile? _idCardPortraitImage;
   String? _selectedCompanyCountry;
   String? _selectedCompanyCountryCode;
-  bool _isUploadingEmblem = false;
-  bool _isUploadingPortrait = false;
+  late String _initialSnapshotSignature;
 
   QualificationCertificationRole get _role => widget.args.role;
   bool get _isCompany => _role == QualificationCertificationRole.company;
@@ -69,19 +70,6 @@ class _QualificationCertificationPageState
     tr('认证流程.资质证明'),
     tr('认证流程.服务信息'),
   ];
-
-  bool get _isCompanyNextEnabled {
-    return _companyNameController.text.trim().isNotEmpty &&
-        _companyIndustryController.text.trim().isNotEmpty &&
-        _companySizeController.text.trim().isNotEmpty &&
-        _companyWebsiteController.text.trim().isNotEmpty &&
-        _isValidFoundedYear(_companyFoundedYearController.text) &&
-        (_selectedCompanyCountry?.trim().isNotEmpty ?? false) &&
-        _companyCityController.text.trim().isNotEmpty &&
-        _companyManagerNameController.text.trim().isNotEmpty &&
-        _companyPhoneController.text.trim().isNotEmpty &&
-        _isValidEmail(_companyEmailController.text);
-  }
 
   @override
   void initState() {
@@ -110,26 +98,38 @@ class _QualificationCertificationPageState
         ? null
         : _draft.companyCountryCode.trim();
     if (_draft.idCardEmblemDoc != null) {
-      _idCardEmblemImage = PickedUploadFile(
-        id: 'qualification-id-emblem',
-        path: _draft.idCardEmblemDoc!.localPath,
-        name: _draft.idCardEmblemDoc!.docName,
-        isImage: true,
-        sizeLabel: '',
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-      );
+      final String? previewPath =
+          QualificationPreviewResolver.resolvePreviewPath(
+            _draft.idCardEmblemDoc,
+          );
+      if (previewPath != null) {
+        _idCardEmblemImage = PickedUploadFile(
+          id: 'qualification-id-emblem',
+          path: previewPath,
+          name: _draft.idCardEmblemDoc!.docName,
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
+      }
     }
     if (_draft.idCardPortraitDoc != null) {
-      _idCardPortraitImage = PickedUploadFile(
-        id: 'qualification-id-portrait',
-        path: _draft.idCardPortraitDoc!.localPath,
-        name: _draft.idCardPortraitDoc!.docName,
-        isImage: true,
-        sizeLabel: '',
-        sourceType: UploadSourceType.gallery,
-        state: UploadItemState.success,
-      );
+      final String? previewPath =
+          QualificationPreviewResolver.resolvePreviewPath(
+            _draft.idCardPortraitDoc,
+          );
+      if (previewPath != null) {
+        _idCardPortraitImage = PickedUploadFile(
+          id: 'qualification-id-portrait',
+          path: previewPath,
+          name: _draft.idCardPortraitDoc!.docName,
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
+      }
     }
     _companyNameController.addListener(_handleCompanyFormChanged);
     _companyIndustryController.addListener(_handleCompanyFormChanged);
@@ -140,6 +140,7 @@ class _QualificationCertificationPageState
     _companyManagerNameController.addListener(_handleCompanyFormChanged);
     _companyPhoneController.addListener(_handleCompanyFormChanged);
     _companyEmailController.addListener(_handleCompanyFormChanged);
+    _initialSnapshotSignature = _buildCurrentSnapshotSignature();
   }
 
   @override
@@ -164,22 +165,130 @@ class _QualificationCertificationPageState
   }
 
   void _handleCompanyFormChanged() {
-    if (_isCompany && mounted) {
+    if (mounted) {
       setState(() {});
     }
   }
 
-  bool _isValidEmail(String value) {
-    final String trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return false;
-    }
-    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed);
+  /// 汇总第一页所有会影响提交结果的字段，统一作为未保存改动的比较口径。
+  String _buildCurrentSnapshotSignature() {
+    final List<String> values = <String>[
+      _serviceProviderCompanyNameController.text.trim(),
+      _creditCodeController.text.trim(),
+      _legalPersonController.text.trim(),
+      _contactPersonController.text.trim(),
+      _phoneController.text.trim(),
+      _emailController.text.trim(),
+      _websiteController.text.trim(),
+      _companyNameController.text.trim(),
+      _companyIndustryController.text.trim(),
+      _companySizeController.text.trim(),
+      _companyWebsiteController.text.trim(),
+      _companyFoundedYearController.text.trim(),
+      _companyCityController.text.trim(),
+      _companyManagerNameController.text.trim(),
+      _companyPhoneController.text.trim(),
+      _companyEmailController.text.trim(),
+      _selectedCompanyCountry?.trim() ?? '',
+      _selectedCompanyCountryCode?.trim() ?? '',
+      _idCardEmblemImage?.path ?? '',
+      _idCardPortraitImage?.path ?? '',
+    ];
+    return values.join('||');
   }
 
-  bool _isValidFoundedYear(String value) {
-    final int? foundedYear = int.tryParse(value.trim());
-    return foundedYear != null && foundedYear > 0;
+  /// 统一同步第一页输入内容到流程草稿，确保后续步骤拿到的是最新状态。
+  void _syncDraftFromForm() {
+    _draft.serviceProviderCompanyName = _serviceProviderCompanyNameController
+        .text
+        .trim();
+    _draft.unifiedCreditCode = _creditCodeController.text.trim();
+    _draft.legalPerson = _legalPersonController.text.trim();
+    _draft.contactPerson = _contactPersonController.text.trim();
+    _draft.contactPhone = _phoneController.text.trim();
+    _draft.contactEmail = _emailController.text.trim();
+    _draft.website = _websiteController.text.trim();
+
+    _draft.companyName = _companyNameController.text.trim();
+    _draft.companyIndustry = _companyIndustryController.text.trim();
+    _draft.companySize = _companySizeController.text.trim();
+    _draft.companyWebsite = _companyWebsiteController.text.trim();
+    _draft.companyFoundedYear = _companyFoundedYearController.text.trim();
+    _draft.companyManagerName = _companyManagerNameController.text.trim();
+    _draft.companyPhone = _companyPhoneController.text.trim();
+    _draft.companyEmail = _companyEmailController.text.trim();
+    _draft.companyCountryLabel = _selectedCompanyCountry?.trim() ?? '';
+    _draft.companyCountryCode = _selectedCompanyCountryCode?.trim() ?? '';
+    _draft.companyCity = _companyCityController.text.trim();
+  }
+
+  /// 统一处理离开第一页页面的动作，存在未保存改动时先弹确认框。
+  Future<void> _handleAttemptLeave() async {
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges:
+          _buildCurrentSnapshotSignature() != _initialSnapshotSignature,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+    context.go(RoutePaths.me);
+  }
+
+  /// 仅供测试注入已选身份证图片，避免测试依赖真实系统相册或相机。
+  void debugSetIdentityImagesForTest({
+    String? emblemPath,
+    String? portraitPath,
+  }) {
+    setState(() {
+      if (emblemPath != null) {
+        _idCardEmblemImage = PickedUploadFile(
+          id: 'qualification-id-emblem-debug',
+          path: emblemPath,
+          name: 'id-emblem.png',
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
+        _draft.idCardEmblemDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.idCard,
+          docName: tr('认证流程.法人身份证国徽面'),
+          localPath: emblemPath,
+        );
+      }
+      if (portraitPath != null) {
+        _idCardPortraitImage = PickedUploadFile(
+          id: 'qualification-id-portrait-debug',
+          path: portraitPath,
+          name: 'id-portrait.png',
+          isImage: true,
+          sizeLabel: '',
+          sourceType: UploadSourceType.gallery,
+          state: UploadItemState.success,
+        );
+        _draft.idCardPortraitDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.idCard,
+          docName: tr('认证流程.法人身份证人像面'),
+          localPath: portraitPath,
+        );
+      }
+    });
+  }
+
+  /// 校验第一页当前角色的必填项，命中缺失项后给出对应提示。
+  bool _validateCurrentStepRequiredFields() {
+    // 先同步当前输入，再基于统一草稿执行校验，确保“下一步”和“提交”口径一致。
+    _syncDraftFromForm();
+    final String? errorMessage = validateQualificationStepOneRequiredFields(
+      role: _role,
+      draft: _draft,
+    );
+    if (errorMessage == null) {
+      return true;
+    }
+    AppToast.show(errorMessage, position: AppToastPosition.center);
+    return false;
   }
 
   Future<void> _pickIdentityCardImage({required bool isEmblemSide}) async {
@@ -198,48 +307,21 @@ class _QualificationCertificationPageState
     );
     setState(() {
       if (isEmblemSide) {
-        _isUploadingEmblem = true;
+        _idCardEmblemImage = pickedFile;
+        _draft.idCardEmblemDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.idCard,
+          docName: tr('认证流程.法人身份证国徽面'),
+          localPath: pickedFile.path,
+        );
       } else {
-        _isUploadingPortrait = true;
+        _idCardPortraitImage = pickedFile;
+        _draft.idCardPortraitDoc = UploadedQualificationDoc(
+          docType: QualificationDocType.idCard,
+          docName: tr('认证流程.法人身份证人像面'),
+          localPath: pickedFile.path,
+        );
       }
     });
-    try {
-      final UploadedQualificationDoc uploadedDoc =
-          await QualificationUploadHelper.uploadQualificationImage(
-            ref: ref,
-            role: _role,
-            file: pickedFile,
-            docType: QualificationDocType.idCard,
-            docName: isEmblemSide ? tr('认证流程.法人身份证国徽面') : tr('认证流程.法人身份证人像面'),
-          );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        if (isEmblemSide) {
-          _idCardEmblemImage = pickedFile;
-          _draft.idCardEmblemDoc = uploadedDoc;
-        } else {
-          _idCardPortraitImage = pickedFile;
-          _draft.idCardPortraitDoc = uploadedDoc;
-        }
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      AppToast.show(_resolveErrorMessage(error));
-    } finally {
-      if (mounted) {
-        setState(() {
-          if (isEmblemSide) {
-            _isUploadingEmblem = false;
-          } else {
-            _isUploadingPortrait = false;
-          }
-        });
-      }
-    }
   }
 
   Future<void> _selectCompanyCountry() async {
@@ -262,168 +344,148 @@ class _QualificationCertificationPageState
   }
 
   void _handleNext() {
-    if (_isCompany && !_isCompanyNextEnabled) {
+    if (!_validateCurrentStepRequiredFields()) {
       return;
     }
 
-    _draft.serviceProviderCompanyName = _serviceProviderCompanyNameController
-        .text
-        .trim();
-    _draft.unifiedCreditCode = _creditCodeController.text.trim();
-    _draft.legalPerson = _legalPersonController.text.trim();
-    _draft.contactPerson = _contactPersonController.text.trim();
-    _draft.contactPhone = _phoneController.text.trim();
-    _draft.contactEmail = _emailController.text.trim();
-    _draft.website = _websiteController.text.trim();
-
-    _draft.companyName = _companyNameController.text.trim();
-    _draft.companyIndustry = _companyIndustryController.text.trim();
-    _draft.companySize = _companySizeController.text.trim();
-    _draft.companyWebsite = _companyWebsiteController.text.trim();
-    _draft.companyFoundedYear = _companyFoundedYearController.text.trim();
-    _draft.companyManagerName = _companyManagerNameController.text.trim();
-    _draft.companyPhone = _companyPhoneController.text.trim();
-    _draft.companyEmail = _companyEmailController.text.trim();
-    _draft.companyCountryLabel = _selectedCompanyCountry?.trim() ?? '';
-    _draft.companyCountryCode = _selectedCompanyCountryCode?.trim() ?? '';
-    _draft.companyCity = _companyCityController.text.trim();
-
-    context.push(
+    context.go(
       RoutePaths.qualificationCertificationStepTwo,
       extra: widget.args,
     );
   }
 
-  String _resolveErrorMessage(Object error) {
-    final String message = error.toString();
-    if (message.startsWith('ApiException(') ||
-        message.startsWith('Exception: ')) {
-      return tr('认证流程.上传失败');
-    }
-    return message;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const AppSvgIcon(
-            assetPath: 'assets/images/service_detail_back.svg',
-            fallback: Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: Color(0xE6000000),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) {
+          return;
+        }
+        await _handleAttemptLeave();
+      },
+      child: Scaffold(
+        key: AppTestKeys.pageQualificationCertificationStepOne,
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: _handleAttemptLeave,
+            icon: const AppSvgIcon(
+              assetPath: 'assets/images/service_detail_back.svg',
+              fallback: Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Color(0xE6000000),
+            ),
+          ),
+          title: Text(
+            '认证流程.资质认证'.tr(),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: Color(0xE6000000),
+            ),
           ),
         ),
-        title: Text(
-          '认证流程.资质认证'.tr(),
-          style: TestStyle.pingFangMedium(
-            fontSize: 17,
-            color: Color(0xE6000000),
-          ),
-        ),
-      ),
-      body: TapBlankToDismissKeyboard(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '认证流程.实名认证提示'.tr(),
-                  style: TestStyle.pingFangRegular(
-                    fontSize: 14,
-                    color: Color(0xFF8C8C8C),
+        body: TapBlankToDismissKeyboard(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '认证流程.实名认证提示'.tr(),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: QualificationProgressStepper(
-                  labels: _steps,
-                  currentStep: 1,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: QualificationProgressStepper(
+                    labels: _steps,
+                    currentStep: 1,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: _FormCard(
-                  child: _isCompany
-                      ? _CompanyBasicInfoForm(
-                          companyNameController: _companyNameController,
-                          industryController: _companyIndustryController,
-                          companySizeController: _companySizeController,
-                          websiteController: _companyWebsiteController,
-                          foundedYearController: _companyFoundedYearController,
-                          managerNameController: _companyManagerNameController,
-                          phoneController: _companyPhoneController,
-                          emailController: _companyEmailController,
-                          selectedCountry: _selectedCompanyCountry,
-                          cityController: _companyCityController,
-                          onCountryTap: _selectCompanyCountry,
-                        )
-                      : _ServiceProviderBasicInfoForm(
-                          companyNameController:
-                              _serviceProviderCompanyNameController,
-                          creditCodeController: _creditCodeController,
-                          legalPersonController: _legalPersonController,
-                          contactPersonController: _contactPersonController,
-                          phoneController: _phoneController,
-                          emailController: _emailController,
-                          websiteController: _websiteController,
-                          idCardEmblemImage: _idCardEmblemImage,
-                          idCardPortraitImage: _idCardPortraitImage,
-                          isEmblemUploading: _isUploadingEmblem,
-                          isPortraitUploading: _isUploadingPortrait,
-                          onEmblemTap: () =>
-                              _pickIdentityCardImage(isEmblemSide: true),
-                          onPortraitTap: () =>
-                              _pickIdentityCardImage(isEmblemSide: false),
-                        ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: _FormCard(
+                    child: _isCompany
+                        ? _CompanyBasicInfoForm(
+                            companyNameController: _companyNameController,
+                            industryController: _companyIndustryController,
+                            companySizeController: _companySizeController,
+                            websiteController: _companyWebsiteController,
+                            foundedYearController:
+                                _companyFoundedYearController,
+                            managerNameController:
+                                _companyManagerNameController,
+                            phoneController: _companyPhoneController,
+                            emailController: _companyEmailController,
+                            selectedCountry: _selectedCompanyCountry,
+                            cityController: _companyCityController,
+                            onCountryTap: _selectCompanyCountry,
+                          )
+                        : _ServiceProviderBasicInfoForm(
+                            companyNameController:
+                                _serviceProviderCompanyNameController,
+                            creditCodeController: _creditCodeController,
+                            legalPersonController: _legalPersonController,
+                            contactPersonController: _contactPersonController,
+                            phoneController: _phoneController,
+                            emailController: _emailController,
+                            websiteController: _websiteController,
+                            idCardEmblemImage: _idCardEmblemImage,
+                            idCardPortraitImage: _idCardPortraitImage,
+                            isEmblemUploading: false,
+                            isPortraitUploading: false,
+                            onEmblemTap: () =>
+                                _pickIdentityCardImage(isEmblemSide: true),
+                            onPortraitTap: () =>
+                                _pickIdentityCardImage(isEmblemSide: false),
+                          ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: SizedBox(
-            height: 48,
-            child: FilledButton(
-              onPressed: _isCompany
-                  ? (_isCompanyNextEnabled ? _handleNext : null)
-                  : _handleNext,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF096DD9),
-                disabledBackgroundColor: const Color(0xFFD9D9D9),
-                disabledForegroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: SizedBox(
+              height: 48,
+              child: FilledButton(
+                key: AppTestKeys.actionQualificationStepOneNext,
+                  onPressed: _handleNext,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF096DD9),
+                  disabledBackgroundColor: const Color(0xFFD9D9D9),
+                  disabledForegroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: Text(
-                '认证流程.下一步'.tr(),
-                style: TestStyle.pingFangMedium(
-                  fontSize: 16,
-                  color: Colors.white,
+                child: Text(
+                  '认证流程.下一步'.tr(),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -474,6 +536,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.企业名称'.tr(),
           hintText: '认证流程.营业执照企业全称'.tr(),
           controller: companyNameController,
+          fieldKey: AppTestKeys.fieldQualificationCompanyName,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -481,6 +544,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.统一社会信用代码'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: creditCodeController,
+          fieldKey: AppTestKeys.fieldQualificationCreditCode,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -488,6 +552,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.法人姓名'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: legalPersonController,
+          fieldKey: AppTestKeys.fieldQualificationLegalPerson,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -497,6 +562,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: _UploadCard(
+                cardKey: AppTestKeys.actionQualificationIdCardEmblemUpload,
                 pickedFile: idCardEmblemImage,
                 imageAsset: 'assets/images/qualification_id_emblem.png',
                 label: '认证流程.上传国徽面'.tr(),
@@ -507,6 +573,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _UploadCard(
+                cardKey: AppTestKeys.actionQualificationIdCardPortraitUpload,
                 pickedFile: idCardPortraitImage,
                 imageAsset: 'assets/images/qualification_id_portrait.png',
                 label: '认证流程.上传人像面'.tr(),
@@ -521,6 +588,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.官方联系人'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: contactPersonController,
+          fieldKey: AppTestKeys.fieldQualificationContactPerson,
           required: true,
         ),
         const SizedBox(height: 16),
@@ -528,6 +596,7 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.联系电话'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: phoneController,
+          fieldKey: AppTestKeys.fieldQualificationContactPhone,
           required: true,
           keyboardType: TextInputType.phone,
         ),
@@ -536,14 +605,17 @@ class _ServiceProviderBasicInfoForm extends StatelessWidget {
           label: '认证流程.邮箱'.tr(),
           hintText: '通用.请输入'.tr(),
           controller: emailController,
+          fieldKey: AppTestKeys.fieldQualificationContactEmail,
           required: true,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 16),
         _QualificationTextField(
           label: '认证流程.公司官网'.tr(),
-          hintText: '通用.选填'.tr(),
+          hintText: '通用.请输入'.tr(),
           controller: websiteController,
+          fieldKey: AppTestKeys.fieldQualificationWebsite,
+          required: true,
           keyboardType: TextInputType.url,
         ),
       ],
@@ -716,6 +788,7 @@ class _QualificationTextField extends StatelessWidget {
     required this.controller,
     this.required = false,
     this.keyboardType,
+    this.fieldKey,
   });
 
   final String label;
@@ -723,6 +796,7 @@ class _QualificationTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool required;
   final TextInputType? keyboardType;
+  final Key? fieldKey;
 
   @override
   Widget build(BuildContext context) {
@@ -739,6 +813,7 @@ class _QualificationTextField extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: TextField(
+              key: fieldKey,
               controller: controller,
               keyboardType: keyboardType,
               textAlignVertical: TextAlignVertical.center,
@@ -832,6 +907,7 @@ class _UploadCard extends StatelessWidget {
     required this.imageAsset,
     required this.label,
     required this.onTap,
+    this.cardKey,
     this.pickedFile,
     this.isUploading = false,
   });
@@ -839,12 +915,14 @@ class _UploadCard extends StatelessWidget {
   final String imageAsset;
   final String label;
   final VoidCallback onTap;
+  final Key? cardKey;
   final PickedUploadFile? pickedFile;
   final bool isUploading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: cardKey,
       onTap: isUploading ? null : onTap,
       borderRadius: BorderRadius.circular(8),
       child: Column(
@@ -892,32 +970,12 @@ class _UploadCard extends StatelessWidget {
   }
 
   Widget _buildPreview() {
-    final String? path = pickedFile?.path;
-    if (path == null || path.isEmpty) {
-      return Image.asset(
-        imageAsset,
-        width: 159,
-        height: 116,
-        fit: BoxFit.contain,
-      );
-    }
-
-    return ClipRRect(
+    return QualificationPreviewImage(
+      previewPath: pickedFile?.path,
+      placeholderAsset: imageAsset,
+      fit: BoxFit.cover,
+      placeholderFit: BoxFit.contain,
       borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(path),
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
-          return Image.asset(
-            imageAsset,
-            width: 159,
-            height: 116,
-            fit: BoxFit.contain,
-          );
-        },
-      ),
     );
   }
 }

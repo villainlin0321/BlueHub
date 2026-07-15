@@ -16,7 +16,8 @@ import '../../../shared/logging/app_logger.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../application/shell_role_provider.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 /// 主框架页：承载底部 5 个 Tab（go_router 的 StatefulShellRoute）。
 class MainShellPage extends ConsumerStatefulWidget {
   const MainShellPage({super.key, required this.navigationShell, this.role});
@@ -86,6 +87,7 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
   @override
   /// 构建主壳层，并在 Tab 切换时记录当前角色和目标索引。
   Widget build(BuildContext context) {
+    final Locale locale = context.locale;
     ref.listen(authSessionProvider, (previous, next) {
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
         unawaited(
@@ -109,7 +111,9 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
         backgroundColor: AppColors.background,
         body: widget.navigationShell,
         bottomNavigationBar: _BottomBar(
-          key: ValueKey(currentRole),
+          key: ValueKey<String>(
+            '${currentRole.name}_${locale.languageCode}_${locale.countryCode ?? ''}',
+          ),
           role: currentRole,
           currentIndex: widget.navigationShell.currentIndex,
           onTap: (index) {
@@ -268,7 +272,9 @@ class _BottomBar extends StatelessWidget {
                       Text(
                         item.labelKey.tr(),
                         textAlign: TextAlign.center,
-                        style: TestStyle.medium(fontSize: 10).copyWith(color: textColor),
+                        style: TestStyle.medium(
+                          fontSize: 10,
+                        ).copyWith(color: textColor),
                       ),
                     ],
                   ),

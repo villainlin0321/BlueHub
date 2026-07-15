@@ -1,4 +1,4 @@
-name: bluehub_app
+name: europepass
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+8
+version: 1.0.0+34
 
 environment:
   sdk: ^3.9.2
@@ -47,6 +47,7 @@ dependencies:
   path_provider: ^2.1.5
   image_picker: ^1.2.1
   image_cropper: ^12.2.1
+  flutter_image_compress: ^2.4.0
   permission_handler: ^12.0.1
   file_picker: ^11.0.2
   record: 6.1.2
@@ -56,12 +57,14 @@ dependencies:
   flutter_easyloading: ^3.0.5
   cached_network_image: ^3.4.1
   chat_bottom_container: ^0.5.0
+  scrollview_observer: ^1.27.0
   dropdown_button2: ^3.1.0
   url_launcher: ^6.3.2
   package_info_plus: ^9.0.1
   open_filex: ^4.7.0
   share_plus: ^12.0.1
   screenshot: ^3.0.0
+  syncfusion_flutter_pdfviewer: ^33.2.13
   tobias: ^5.3.4
   fluwx: ^5.7.5
 
@@ -76,8 +79,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  patrol: ^4.6.1
 
 dependency_overrides:
+  audio_session:
+    path: third_party/audio_session
   file_picker:
     path: third_party/file_picker
   tobias:
@@ -86,11 +92,16 @@ dependency_overrides:
 tobias:
   url_scheme: com.europepass.europepass.alipay
 
+patrol:
+  test_directory: patrol_test
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  config:
+    enable-swift-package-manager: true
   generate: true
 
   # The following line ensures that the Material Icons font is
@@ -107,12 +118,14 @@ flutter:
   fonts:
     - family: PingFang
       fonts:
-        - asset: assets/font/ping_fang/PingFang.ttc
+        - asset: assets/font/ping_fang/PingFangSC-Regular.ttf
           weight: 400
+        - asset: assets/font/ping_fang/PingFangSC-Medium.ttf
+          weight: 500
+        - asset: assets/font/ping_fang/PingFangSC-Semibold.ttf
+          weight: 600
     - family: SFUIText
       fonts:
-        - asset: assets/font/sf_ui_text/SFUIText-Light.otf
-          weight: 300
         - asset: assets/font/sf_ui_text/SFUIText-Regular.otf
           weight: 400
         - asset: assets/font/sf_ui_text/SFUIText-Medium.otf
@@ -127,8 +140,6 @@ flutter:
           weight: 700
     - family: AlibabaPuHuiTi
       fonts:
-        - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Medium.otf
-          weight: 500
         - asset: assets/font/alibaba_puhuiti/Alibaba-PuHuiTi-Bold.otf
           weight: 700
 

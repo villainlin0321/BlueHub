@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class HomeHotPackageVO {
   const HomeHotPackageVO({
@@ -75,6 +75,7 @@ class HomeDashboardStatsVO {
     this.inProgressOrders,
     required this.monthlyIncome,
     required this.incomeCurrency,
+    this.aiContent,
     this.activeJobs,
     this.receivedResumes,
     this.pendingInterviews,
@@ -89,6 +90,7 @@ class HomeDashboardStatsVO {
   final int? inProgressOrders;
   final String monthlyIncome;
   final String incomeCurrency;
+  final String? aiContent;
   final int? activeJobs;
   final int? receivedResumes;
   final int? pendingInterviews;
@@ -104,6 +106,7 @@ class HomeDashboardStatsVO {
       inProgressOrders: _readNullableInt(json['inProgressOrders']),
       monthlyIncome: _readNumberAsString(json['monthlyIncome']) ?? '0',
       incomeCurrency: readString(json, 'incomeCurrency', fallback: 'CNY'),
+      aiContent: _readNullableString(json['aiContent']),
       activeJobs: _readNullableInt(json['activeJobs']),
       receivedResumes: _readNullableInt(json['receivedResumes']),
       pendingInterviews: _readNullableInt(json['pendingInterviews']),
@@ -121,6 +124,7 @@ class HomeDashboardStatsVO {
       'inProgressOrders': inProgressOrders,
       'monthlyIncome': monthlyIncome,
       'incomeCurrency': incomeCurrency,
+      'aiContent': aiContent,
       'activeJobs': activeJobs,
       'receivedResumes': receivedResumes,
       'pendingInterviews': pendingInterviews,
@@ -183,4 +187,14 @@ String? _readNumberAsString(dynamic value) {
         : normalized.toString();
   }
   return null;
+}
+
+String? _readNullableString(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    return value;
+  }
+  return value.toString();
 }

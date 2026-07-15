@@ -8,16 +8,20 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/services/config_service.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/job_position_card.dart';
 import '../../../shared/widgets/visa_service_card.dart';
+import '../../config/data/config_models.dart';
+import '../../config/data/config_providers.dart';
 import '../../jobs/presentation/job_apply_helper.dart';
 import '../../jobs/presentation/job_detail_page.dart';
 import '../../service_detail/presentation/service_detail_page.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class MyFavoritesPage extends ConsumerStatefulWidget {
   const MyFavoritesPage({super.key});
 
@@ -28,7 +32,6 @@ class MyFavoritesPage extends ConsumerStatefulWidget {
 class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     with SingleTickerProviderStateMixin {
   static const String _backAsset = 'assets/images/service_detail_back.svg';
-  static const String _mapAsset = 'assets/images/job_detail_map-56586a.png';
   static const int _pageSize = 50;
   late final TabController _tabController = TabController(
     length: 2,
@@ -541,7 +544,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         ),
         title: Text(
           '我的.我的收藏'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6000000)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: Color(0xE6000000),
+          ),
         ),
         actions: <Widget>[
           Padding(
@@ -556,7 +562,10 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
               ),
               child: Text(
                 _isManaging ? '我的.退出管理'.tr() : '我的.管理'.tr(),
-                style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 14,
+                  color: Color(0xFF262626),
+                ),
               ),
             ),
           ),
@@ -626,7 +635,6 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         items: _jobItems,
         isManaging: _isManaging,
         selectedIds: _selectedJobIds,
-        mapAssetPath: _mapAsset,
         onItemSelectionToggle: _toggleJobSelection,
         applyingJobIds: _submittingJobIds,
         appliedJobIds: _appliedJobIds,
@@ -731,7 +739,6 @@ class _FavoriteJobList extends StatelessWidget {
     required this.items,
     required this.isManaging,
     required this.selectedIds,
-    required this.mapAssetPath,
     required this.onItemSelectionToggle,
     required this.applyingJobIds,
     required this.appliedJobIds,
@@ -742,7 +749,6 @@ class _FavoriteJobList extends StatelessWidget {
   final List<collection_models.JobListVO> items;
   final bool isManaging;
   final Set<String> selectedIds;
-  final String mapAssetPath;
   final ValueChanged<String> onItemSelectionToggle;
   final Set<String> applyingJobIds;
   final Set<String> appliedJobIds;
@@ -767,7 +773,6 @@ class _FavoriteJobList extends StatelessWidget {
           onDelete: () => onDeleteItem(item.jobId),
           child: _FavoriteJobCard(
             item: item,
-            mapAssetPath: mapAssetPath,
             isApplying: applyingJobIds.contains(itemId),
             isApplied: appliedJobIds.contains(itemId),
             onApplyTap: onApplyTap,
@@ -816,7 +821,10 @@ class _SelectableWrapper extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -847,23 +855,21 @@ class _SelectionIcon extends StatelessWidget {
 
   final bool selected;
 
+  /// 构建收藏管理态的多选图标，并与全局多选视觉保持一致。
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
+    return AnimatedSwitcher(
       duration: const Duration(milliseconds: 160),
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: selected ? const Color(0xFF186CFF) : Colors.white,
-        border: Border.all(
-          color: selected ? const Color(0xFF186CFF) : const Color(0xFFD9D9D9),
-          width: 1.5,
-        ),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return ScaleTransition(scale: animation, child: child);
+      },
+      child: Icon(
+        selected ? Icons.check_circle : Icons.panorama_fish_eye,
+        key: ValueKey<bool>(selected),
+        size: 20,
+        // 收藏管理态属于多选入口，图标与公共多选弹层统一为品牌蓝。
+        color: selected ? const Color(0xFF096DD9) : const Color(0xFFBFBFBF),
       ),
-      child: selected
-          ? const Icon(Icons.check, size: 14, color: Colors.white)
-          : null,
     );
   }
 }
@@ -888,25 +894,28 @@ class _FavoriteServiceCard extends StatelessWidget {
   }
 }
 
-class _FavoriteJobCard extends StatelessWidget {
+class _FavoriteJobCard extends ConsumerWidget {
   const _FavoriteJobCard({
     required this.item,
-    required this.mapAssetPath,
     required this.isApplying,
     required this.isApplied,
     required this.onApplyTap,
   });
 
   final collection_models.JobListVO item;
-  final String mapAssetPath;
   final bool isApplying;
   final bool isApplied;
   final Future<void> Function(collection_models.JobListVO item) onApplyTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory =
+        ref.watch(jobCardTagLookupProvider).asData?.value ??
+        const <TagCategory, Map<String, TagItemVO>>{};
+
     return JobPositionCard(
-      data: item.toCardData(mapAssetPath: mapAssetPath),
+      data: item.toCardData(),
+      tagLookupByCategory: tagLookupByCategory,
       onTap: () => context.push(
         RoutePaths.jobDetail,
         extra: JobDetailPageArgs(jobId: item.jobId),
@@ -931,7 +940,10 @@ class _FavoriteServicesEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏签证服务'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+        style: TestStyle.pingFangRegular(
+          fontSize: 14,
+          color: Color(0xFF8C8C8C),
+        ),
       ),
     );
   }
@@ -958,7 +970,10 @@ class _FavoriteServicesErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF8C8C8C),
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: onRetry, child: Text('通用.重试'.tr())),
@@ -978,7 +993,10 @@ class _FavoriteJobsEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '我的.还没有收藏岗位'.tr(),
-        style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+        style: TestStyle.pingFangRegular(
+          fontSize: 14,
+          color: Color(0xFF8C8C8C),
+        ),
       ),
     );
   }
@@ -1059,7 +1077,10 @@ class _FavoritesManageBar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '我的.全选'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ],
               ),
@@ -1079,7 +1100,10 @@ class _FavoritesManageBar extends StatelessWidget {
                 ),
                 child: Text(
                   '我的.删除'.tr(),
-                  style: TestStyle.pingFangMedium(fontSize: 14, color: Colors.white),
+                  style: TestStyle.pingFangMedium(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -1092,17 +1116,33 @@ class _FavoritesManageBar extends StatelessWidget {
 
 extension on collection_models.JobListVO {
   /// 将收藏岗位接口返回的数据映射为职位卡片数据。
-  JobPositionCardData toCardData({required String mapAssetPath}) {
-    final List<String> tagLabels = tags
-        .map((collection_models.TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
+  JobPositionCardData toCardData() {
+    final List<JobPositionCardTagData> apiTags = tags
+        .map(
+          (collection_models.TagVO tag) => JobPositionCardTagData(
+            label: tag.label.trim(),
+            type: tag.type.trim(),
+          ),
+        )
+        .where((JobPositionCardTagData tag) => tag.label.isNotEmpty)
         .toList(growable: false);
-    final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != '招聘卡片.急招'.tr()),
-      if (hasVisaSupport && !tagLabels.contains('招聘卡片.提供签证'.tr()))
-        '招聘卡片.提供签证'.tr(),
+    final List<JobPositionCardTagData> requirementTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type != TagCategory.highlight.value,
+      ),
+      if (hasVisaSupport)
+        JobPositionCardTagData(label: '招聘卡片.提供签证'.tr(), type: null),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) '招聘卡片.急招'.tr()];
+    final List<JobPositionCardTagData> highlightTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type == TagCategory.highlight.value,
+      ),
+      if (isUrgent)
+        JobPositionCardTagData(
+          label: '招聘卡片.急招'.tr(),
+          type: TagCategory.highlight.value,
+        ),
+    ];
     final List<String> parts = <String>[
       country.trim(),
       city.trim(),
@@ -1126,7 +1166,6 @@ extension on collection_models.JobListVO {
       company: employer.name,
       location: parts.join('·'),
       showApplyButton: true,
-      previewImageAssetPath: mapAssetPath,
     );
   }
 }
@@ -1153,7 +1192,8 @@ extension on collection_models.VisaPackageVO {
           ? <VisaServicePackageData>[
               VisaServicePackageData(
                 title: '我的.默认档位'.tr(),
-                price: _formatFavoritePrice(0, currency),
+                currency: currency,
+                price: _formatFavoritePrice(0),
               ),
             ]
           : tiers
@@ -1162,7 +1202,8 @@ extension on collection_models.VisaPackageVO {
                     title: tier.name.trim().isEmpty
                         ? '服务详情.套餐档位'.tr()
                         : tier.name,
-                    price: _formatFavoritePrice(tier.price, currency),
+                    currency: currency,
+                    price: _formatFavoritePrice(tier.price),
                   ),
                 )
                 .toList(growable: false),
@@ -1190,18 +1231,9 @@ extension on collection_models.VisaPackageVO {
   }
 }
 
-/// 格式化收藏签证价格。
-String _formatFavoritePrice(double price, String currency) {
-  final String prefix = switch (currency.trim().toUpperCase()) {
-    'CNY' || 'RMB' => '¥',
-    'EUR' => '€',
-    'USD' => '\$',
-    _ => currency.trim().isEmpty ? '¥' : '${currency.trim()} ',
-  };
-  final String value = price % 1 == 0
-      ? price.toInt().toString()
-      : price.toStringAsFixed(1);
-  return '$prefix$value';
+/// 格式化收藏签证价格数值，货币符号由卡片组件统一渲染。
+String _formatFavoritePrice(double price) {
+  return price % 1 == 0 ? price.toInt().toString() : price.toStringAsFixed(1);
 }
 
 /// 将收藏签证国家代码转为展示文案。

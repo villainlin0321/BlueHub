@@ -2,7 +2,17 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import '../../features/config/data/config_models.dart';
+import '../network/services/config_service.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
+class JobPositionCardTagData {
+  const JobPositionCardTagData({required this.label, this.type});
+
+  final String label;
+  final String? type;
+}
+
 class JobPositionCardData {
   const JobPositionCardData({
     required this.title,
@@ -21,8 +31,8 @@ class JobPositionCardData {
 
   final String title;
   final String salary;
-  final List<String> requirementTags;
-  final List<String> highlightTags;
+  final List<JobPositionCardTagData> requirementTags;
+  final List<JobPositionCardTagData> highlightTags;
   final String company;
   final String location;
   final String? companyAvatarAssetPath;
@@ -37,6 +47,7 @@ class JobPositionCard extends StatelessWidget {
   const JobPositionCard({
     super.key,
     required this.data,
+    this.tagLookupByCategory = const <TagCategory, Map<String, TagItemVO>>{},
     this.onApply,
     this.onTap,
     this.isApplying = false,
@@ -44,6 +55,7 @@ class JobPositionCard extends StatelessWidget {
   });
 
   final JobPositionCardData data;
+  final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory;
   final VoidCallback? onApply;
   final VoidCallback? onTap;
   final bool isApplying;
@@ -56,6 +68,7 @@ class JobPositionCard extends StatelessWidget {
     final String resolvedApplyButtonText = applyButtonText.trim().isEmpty
         ? '招聘卡片.一键投递'.tr()
         : applyButtonText;
+    final Locale locale = context.locale;
     final Widget cardBody = Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -73,13 +86,19 @@ class JobPositionCard extends StatelessWidget {
                     data.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TestStyle.medium(fontSize: 16, color: Color(0xFF262626)),
+                    style: TestStyle.medium(
+                      fontSize: 16,
+                      color: Color(0xFF262626),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   data.salary,
-                  style: TestStyle.medium(fontSize: 14, color: Color(0xFFFE5815)),
+                  style: TestStyle.medium(
+                    fontSize: 14,
+                    color: Color(0xFFFE5815),
+                  ),
                 ),
               ],
             ),
@@ -89,10 +108,7 @@ class JobPositionCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: data.requirementTags
-                    .map(
-                      (tag) =>
-                          const _JobPositionTagStyle.requirement().build(tag),
-                    )
+                    .map((tag) => _buildRequirementTag(tag, locale))
                     .toList(),
               ),
             ],
@@ -102,7 +118,7 @@ class JobPositionCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: data.highlightTags
-                    .map((tag) => _buildHighlightTag(tag))
+                    .map((tag) => _buildHighlightTag(tag, locale))
                     .toList(),
               ),
             ],
@@ -135,7 +151,10 @@ class JobPositionCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     data.statusText!,
-                    style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                    style: TestStyle.regular(
+                      fontSize: 12,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ] else if (data.showApplyButton) ...<Widget>[
                   const SizedBox(width: 12),
@@ -154,25 +173,28 @@ class JobPositionCard extends StatelessWidget {
                       ),
                       child: Text(
                         resolvedApplyButtonText,
-                        style: TestStyle.medium(fontSize: 12, color: Colors.white),
+                        style: TestStyle.medium(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ],
             ),
-            if (data.previewImageAssetPath != null) ...<Widget>[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  data.previewImageAssetPath!,
-                  width: double.infinity,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
+            // if (data.previewImageAssetPath != null) ...<Widget>[
+            //   const SizedBox(height: 12),
+            //   ClipRRect(
+            //     borderRadius: BorderRadius.circular(12),
+            //     child: Image.asset(
+            //       data.previewImageAssetPath!,
+            //       width: double.infinity,
+            //       height: 120,
+            //       fit: BoxFit.cover,
+            //     ),
+            //   ),
+            // ],
           ],
         ),
       ),
@@ -209,12 +231,28 @@ class JobPositionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightTag(String tag) {
+  Widget _buildRequirementTag(JobPositionCardTagData tag, Locale locale) {
+    return const _JobPositionTagStyle.requirement().build(
+      _resolveTagLabel(tag, locale),
+    );
+  }
+
+  Widget _buildHighlightTag(JobPositionCardTagData tag, Locale locale) {
+    final String resolvedLabel = _resolveTagLabel(tag, locale);
     final String urgentLabel = '招聘卡片.急招'.tr();
-    if (tag == urgentLabel) {
+    if (resolvedLabel == urgentLabel) {
       return _JobPositionTagStyle.urgent().build(urgentLabel);
     }
-    return const _JobPositionTagStyle.highlightBlue().build(tag);
+    return const _JobPositionTagStyle.highlightBlue().build(resolvedLabel);
+  }
+
+  String _resolveTagLabel(JobPositionCardTagData tag, Locale locale) {
+    return ConfigService.resolveTagLabelByCategory(
+      rawLabel: tag.label,
+      rawCategory: tag.type,
+      tagLookupByCategory: tagLookupByCategory,
+      locale: locale,
+    );
   }
 }
 

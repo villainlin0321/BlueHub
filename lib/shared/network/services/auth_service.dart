@@ -1,6 +1,6 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
-import 'package:bluehub_app/shared/auth/token_store.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
+import 'package:europepass/shared/auth/token_store.dart';
 import '../../../features/auth/data/auth_models.dart';
 
 class AuthService {
@@ -13,9 +13,16 @@ class AuthService {
 
   /// 使用邮箱登录信息换取登录态，并在成功后写入本地令牌。
   Future<LoginVO> emailLogin({required EmailLoginBO request}) async {
+    final Map<String, dynamic> payload = Map<String, dynamic>.from(
+      request.toJson(),
+    );
+    final String? password = payload['password'] as String?;
+    if (password == null || password.isEmpty) {
+      payload.remove('password');
+    }
     final response = await _apiClient.post<LoginVO>(
       '/auth/email/login',
-      data: request.toJson(),
+      data: payload,
       decode: (data) => LoginVO.fromJson(asJsonMap(data)),
     );
     if (response.accessToken.isNotEmpty) {
@@ -27,7 +34,12 @@ class AuthService {
     return response;
   }
 
-  /// 向指定邮箱发送登录验证码。
+  /// 向指定邮箱发送验证码。
+  ///
+  /// `scene` 支持 `login`、`register`、`bind`：
+  /// - `login`：邮箱验证码登录
+  /// - `register`：注册流程发码
+  /// - `bind`：绑定或修改邮箱时给新邮箱发码
   ///
   /// 返回值通常包含发送结果或冷却时间等整数字段。
   Future<Map<String, int>> sendEmailCode({required SendEmailBO request}) async {
@@ -97,6 +109,11 @@ class AuthService {
   }
 
   /// 向指定手机号发送短信验证码。
+  ///
+  /// `scene` 支持 `login`、`register`、`bind`：
+  /// - `login`：手机号验证码登录
+  /// - `register`：注册流程发码
+  /// - `bind`：绑定或修改手机号时给新手机号发码
   ///
   /// 返回值通常包含发送结果或剩余冷却时间等整数字段。
   Future<Map<String, int>> sendSms({required SendSmsBO request}) async {

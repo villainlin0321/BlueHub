@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
+import '../../../../shared/logging/app_log_event.dart';
+import '../../../../shared/logging/app_log_facade.dart';
 import '../../../../shared/logging/app_logger.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../data/job_models.dart';
@@ -256,12 +258,17 @@ class PostJobController extends Notifier<PostJobState> {
       return;
     }
 
-    final CreateJobBO? request = _buildPublishRequest(draft);
+    _logPublishValidationStart(draft: draft, editingJobId: editingJobId);
+    final CreateJobBO? request = _buildPublishRequest(
+      draft,
+      editingJobId: editingJobId,
+    );
     if (request == null) {
       return;
     }
 
     state = state.copyWith(isPublishing: true);
+    _logPublishRequestStart(editingJobId: editingJobId);
 
     try {
       if (editingJobId == null) {
@@ -278,8 +285,13 @@ class PostJobController extends Notifier<PostJobState> {
       _emitFeedback(
         editingJobId == null ? '岗位发布.岗位发布成功'.tr() : '岗位发布.岗位更新成功'.tr(),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
       state = state.copyWith(isPublishing: false);
+      _logPublishRequestFail(
+        editingJobId: editingJobId,
+        error: error,
+        stackTrace: stackTrace,
+      );
       _emitFeedback(
         editingJobId == null ? '岗位发布.岗位发布失败'.tr() : '岗位发布.岗位更新失败'.tr(),
         isError: true,
@@ -368,10 +380,18 @@ class PostJobController extends Notifier<PostJobState> {
     return tag.tagNameEn.trim();
   }
 
-  /// 构建发布请求，并在校验失败时直接给页面抛出可展示的国际化提示。
-  CreateJobBO? _buildPublishRequest(PostJobFormDraft draft) {
+  /// 构建发布请求，并在校验失败时直接输出结构化失败日志与可展示提示。
+  CreateJobBO? _buildPublishRequest(
+    PostJobFormDraft draft, {
+    int? editingJobId,
+  }) {
     final String title = draft.title.trim();
     if (title.isEmpty) {
+      _logPublishValidationFail(
+        editingJobId: editingJobId,
+        reason: 'title_required',
+        field: 'title',
+      );
       _emitFeedback('岗位发布.请填写套餐名称'.tr(), isError: true);
       return null;
     }
@@ -379,12 +399,22 @@ class PostJobController extends Notifier<PostJobState> {
     final _JobLocationDraft location = _parseLocation(draft.countryOrCity);
     final String countryCode = _normalizeCountryCode(location.countryText);
     if (countryCode.isEmpty) {
+      _logPublishValidationFail(
+        editingJobId: editingJobId,
+        reason: 'country_required',
+        field: 'countryOrCity',
+      );
       _emitFeedback('岗位发布.请填写服务国家'.tr(), isError: true);
       return null;
     }
 
     final int? headcount = int.tryParse(draft.headcount.trim());
     if (headcount == null || headcount <= 0) {
+      _logPublishValidationFail(
+        editingJobId: editingJobId,
+        reason: 'headcount_invalid',
+        field: 'headcount',
+      );
       _emitFeedback('岗位发布.请填写正确的招聘人数'.tr(), isError: true);
       return null;
     }
@@ -392,10 +422,20 @@ class PostJobController extends Notifier<PostJobState> {
     final double? salaryMin = double.tryParse(draft.minSalary.trim());
     final double? salaryMax = double.tryParse(draft.maxSalary.trim());
     if (salaryMin == null || salaryMax == null) {
+      _logPublishValidationFail(
+        editingJobId: editingJobId,
+        reason: 'salary_incomplete',
+        field: 'salaryRange',
+      );
       _emitFeedback('岗位发布.请填写完整的薪资范围'.tr(), isError: true);
       return null;
     }
     if (salaryMin > salaryMax) {
+      _logPublishValidationFail(
+        editingJobId: editingJobId,
+        reason: 'salary_range_invalid',
+        field: 'salaryRange',
+      );
       _emitFeedback('岗位发布.最低薪资不能大于最高薪资'.tr(), isError: true);
       return null;
     }
@@ -518,6 +558,99 @@ class PostJobController extends Notifier<PostJobState> {
       feedbackIsError: isError,
       feedbackId: state.feedbackId + 1,
     );
+  }
+
+  /// 记录岗位发布校验开始事件，便于回放一次发布是从哪个模式进入校验流程。
+  void _logPublishValidationStart({
+    required PostJobFormDraft draft,
+    required int? editingJobId,
+  }) {
+    StateLog.transition(
+      event: 'POST_JOB_VALIDATE_START',
+      message: '开始校验岗位发布表单',
+      result: AppLogResult.pending,
+      context: _buildPublishLogContext(
+        draft: draft,
+        editingJobId: editingJobId,
+      ),
+    );
+  }
+
+  /// 记录岗位发布校验失败事件，只保留失败原因和字段名等安全上下文。
+  void _logPublishValidationFail({
+    required int? editingJobId,
+    required String reason,
+    required String field,
+  }) {
+    StateLog.transition(
+      event: 'POST_JOB_VALIDATE_FAIL',
+      message: '岗位发布表单校验失败',
+      level: AppLogLevel.warn,
+      result: AppLogResult.fail,
+      context: _buildPublishLogContext(
+        editingJobId: editingJobId,
+        reason: reason,
+        field: field,
+      ),
+    );
+  }
+
+  /// 记录岗位发布请求开始事件，确保后续请求成功或失败都能挂到同一条链路上。
+  void _logPublishRequestStart({required int? editingJobId}) {
+    StateLog.transition(
+      event: 'POST_JOB_SUBMIT_REQUEST_START',
+      message: editingJobId == null ? '开始请求岗位发布接口' : '开始请求岗位更新接口',
+      result: AppLogResult.pending,
+      context: _buildPublishLogContext(editingJobId: editingJobId),
+    );
+  }
+
+  /// 记录岗位发布请求失败事件，保留编辑态与异常信息方便本地排障。
+  void _logPublishRequestFail({
+    required int? editingJobId,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'POST_JOB_SUBMIT_REQUEST_FAIL',
+      message: editingJobId == null ? '岗位发布请求失败' : '岗位更新请求失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      context: _buildPublishLogContext(editingJobId: editingJobId),
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// 统一构建岗位发布日志上下文，只输出排障所需且不含表单原文的安全字段。
+  Map<String, Object?> _buildPublishLogContext({
+    PostJobFormDraft? draft,
+    required int? editingJobId,
+    String? reason,
+    String? field,
+  }) {
+    final bool isEdit = editingJobId != null;
+    return <String, Object?>{
+      'mode': isEdit ? 'edit' : 'create',
+      'isEdit': isEdit,
+      if (editingJobId != null) 'editingJobId': editingJobId,
+      'selectedJobType': state.selectedJobType,
+      'salaryUnit': state.selectedSalaryUnit,
+      'salaryCurrency': state.selectedSalaryCurrency.apiValue,
+      'selectedRequirementTagCount': state.selectedRequirementTagCodes.length,
+      'customTagCount': state.customTags.length,
+      if (draft != null) ...<String, Object?>{
+        // 这里仅记录“是否填写/数量”类安全信息，避免把表单原文写进日志。
+        'titleFilled': draft.title.trim().isNotEmpty,
+        'locationFilled': draft.countryOrCity.trim().isNotEmpty,
+        'headcountFilled': draft.headcount.trim().isNotEmpty,
+        'salaryRangeFilled':
+            draft.minSalary.trim().isNotEmpty && draft.maxSalary.trim().isNotEmpty,
+        'descriptionLength': draft.description.trim().length,
+      },
+      if (reason != null) 'reason': reason,
+      if (field != null) 'field': field,
+    };
   }
 }
 

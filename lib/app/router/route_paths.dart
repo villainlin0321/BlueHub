@@ -23,6 +23,9 @@ class RoutePaths {
   /// 岗位搜索页。
   static const jobSearch = '/jobs/search';
 
+  /// 人才搜索页。
+  static const talentSearch = '/jobs/talent-search';
+
   /// 岗位详情页。
   static const jobDetail = '/jobs/detail';
 
@@ -37,6 +40,12 @@ class RoutePaths {
 
   /// 我的信息页。
   static const myInfo = '/me/info';
+
+  /// 我的信息联系方式编辑页。
+  static const myInfoContactEdit = '/me/info/contact-edit';
+
+  /// 求职者实名认证页。
+  static const jobSeekerRealNameVerification = '/me/real-name-verification';
 
   /// 企业端我的信息页。
   static const companyMyInfo = '/me/company-info';
@@ -58,6 +67,9 @@ class RoutePaths {
 
   /// 简历预览页。
   static const resumePreview = '/resume/preview';
+
+  /// 附件预览页。
+  static const attachmentPreview = '/attachment/preview';
 
   /// 简历编辑页。
   static const myResumeEditor = '/me/resume/editor';
@@ -85,6 +97,9 @@ class RoutePaths {
 
   /// 服务详情页。
   static const serviceDetail = '/service-detail';
+
+  /// 签证套餐预览页。
+  static const serviceDetailPreview = '/service-detail/preview';
 
   /// 编辑签证套餐页。
   static const editVisaPackage = '/visa/package/edit';

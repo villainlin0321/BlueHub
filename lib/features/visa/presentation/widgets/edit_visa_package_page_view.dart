@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../shared/ui/app_colors.dart';
+import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/widgets/field_trailing_selector.dart';
 import '../../../../utils/upload_picker_utils.dart';
 import '../../../config/data/config_models.dart';
@@ -13,7 +14,7 @@ import '../../application/edit_visa_package/edit_visa_package_state.dart';
 import '../edit_visa_package_styles.dart';
 import 'edit_visa_package_form_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class EditVisaPackagePageView extends StatelessWidget {
   const EditVisaPackagePageView({
     super.key,
@@ -30,6 +31,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onSaveDraftTap,
     required this.onPublishTap,
     required this.onCoverUploadTap,
+    required this.onCoverPreviewTap,
     required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
@@ -38,6 +40,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onAddTier,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -45,6 +48,7 @@ class EditVisaPackagePageView extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -62,6 +66,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onSaveDraftTap;
   final VoidCallback onPublishTap;
   final VoidCallback onCoverUploadTap;
+  final VoidCallback onCoverPreviewTap;
   final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
@@ -70,6 +75,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -78,6 +84,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -85,6 +92,7 @@ class EditVisaPackagePageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: AppTestKeys.pageEditVisaPackage,
       backgroundColor: EditVisaPackageStyles.pageBackground,
       appBar: EditVisaPackageHeader(
         onBackTap: onBackTap,
@@ -103,6 +111,8 @@ class EditVisaPackagePageView extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Center(
                     child: SizedBox(
                       width: contentWidth,
@@ -117,6 +127,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                               selectedCountryLabel: selectedCountryLabel,
                               selectedVisaTypeLabel: selectedVisaTypeLabel,
                               onCoverUploadTap: onCoverUploadTap,
+                              onCoverPreviewTap: onCoverPreviewTap,
                               onDeleteCoverTap: onDeleteCoverTap,
                               onCountryTap: onCountryTap,
                               onVisaTypeTap: onVisaTypeTap,
@@ -131,6 +142,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                               onAddTier: onAddTier,
                               onDeleteTier: onDeleteTier,
                               onAddMaterial: onAddMaterial,
+                              onDeleteMaterial: onDeleteMaterial,
                               onAddCustomService: onAddCustomService,
                               onRemoveCustomService: onRemoveCustomService,
                               onToggleServiceTag: onToggleServiceTag,
@@ -139,6 +151,7 @@ class EditVisaPackagePageView extends StatelessWidget {
                                   onMaterialRequiredChanged,
                               onMaterialTypeTap: onMaterialTypeTap,
                               onExampleUploadTap: onExampleUploadTap,
+                              onPreviewExampleFile: onPreviewExampleFile,
                               onDeleteExampleFile: onDeleteExampleFile,
                               tagLabelBuilder: tagLabelBuilder,
                             ),
@@ -172,6 +185,7 @@ class _BasicInfoSection extends StatelessWidget {
     required this.selectedCountryLabel,
     required this.selectedVisaTypeLabel,
     required this.onCoverUploadTap,
+    required this.onCoverPreviewTap,
     required this.onDeleteCoverTap,
     required this.onCountryTap,
     required this.onVisaTypeTap,
@@ -183,6 +197,7 @@ class _BasicInfoSection extends StatelessWidget {
   final String? selectedCountryLabel;
   final String? selectedVisaTypeLabel;
   final VoidCallback onCoverUploadTap;
+  final VoidCallback onCoverPreviewTap;
   final VoidCallback onDeleteCoverTap;
   final VoidCallback onCountryTap;
   final VoidCallback onVisaTypeTap;
@@ -202,6 +217,7 @@ class _BasicInfoSection extends StatelessWidget {
           EditVisaPackageCoverPreview(
             file: coverImage,
             onUploadTap: onCoverUploadTap,
+            onPreviewTap: coverImage == null ? null : onCoverPreviewTap,
             onDeleteTap: coverImage == null ? null : onDeleteCoverTap,
           ),
           const SizedBox(height: 16),
@@ -209,6 +225,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.套餐总名称'.tr(),
             required: true,
             child: EditVisaPackageInputField(
+              fieldKey: AppTestKeys.fieldEditVisaPackageName,
               controller: serviceNameController,
               hintText: '签证编辑.套餐总名称示例'.tr(),
             ),
@@ -218,6 +235,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.服务国家'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
+              buttonKey: AppTestKeys.actionEditVisaPackageCountry,
               text: selectedCountryLabel,
               hintText: '通用.请选择'.tr(),
               onTap: onCountryTap,
@@ -228,6 +246,7 @@ class _BasicInfoSection extends StatelessWidget {
             label: '签证编辑.签证类型'.tr(),
             required: true,
             child: EditVisaPackageSelectorField(
+              buttonKey: AppTestKeys.actionEditVisaPackageVisaType,
               text: selectedVisaTypeLabel,
               hintText: '通用.请选择'.tr(),
               onTap: onVisaTypeTap,
@@ -262,6 +281,7 @@ class _TierConfigSection extends StatelessWidget {
     required this.onAddTier,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -269,6 +289,7 @@ class _TierConfigSection extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -281,6 +302,7 @@ class _TierConfigSection extends StatelessWidget {
   final VoidCallback onAddTier;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -289,6 +311,7 @@ class _TierConfigSection extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -318,6 +341,7 @@ class _TierConfigSection extends StatelessWidget {
                 onCurrencyTap: onCurrencyTap,
                 onDeleteTier: onDeleteTier,
                 onAddMaterial: onAddMaterial,
+                onDeleteMaterial: onDeleteMaterial,
                 onAddCustomService: onAddCustomService,
                 onRemoveCustomService: onRemoveCustomService,
                 onToggleServiceTag: onToggleServiceTag,
@@ -325,6 +349,7 @@ class _TierConfigSection extends StatelessWidget {
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
                 onMaterialTypeTap: onMaterialTypeTap,
                 onExampleUploadTap: onExampleUploadTap,
+                onPreviewExampleFile: onPreviewExampleFile,
                 onDeleteExampleFile: onDeleteExampleFile,
                 tagLabelBuilder: tagLabelBuilder,
               ),
@@ -351,6 +376,7 @@ class _TierCard extends StatelessWidget {
     required this.onCurrencyTap,
     required this.onDeleteTier,
     required this.onAddMaterial,
+    required this.onDeleteMaterial,
     required this.onAddCustomService,
     required this.onRemoveCustomService,
     required this.onToggleServiceTag,
@@ -358,6 +384,7 @@ class _TierCard extends StatelessWidget {
     required this.onMaterialRequiredChanged,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
     required this.tagLabelBuilder,
   });
@@ -370,6 +397,7 @@ class _TierCard extends StatelessWidget {
   final VoidCallback onCurrencyTap;
   final ValueChanged<int> onDeleteTier;
   final ValueChanged<int> onAddMaterial;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final ValueChanged<int> onAddCustomService;
   final void Function(int tierIndex, String tag) onRemoveCustomService;
   final void Function(int tierIndex, String tagCode) onToggleServiceTag;
@@ -378,6 +406,7 @@ class _TierCard extends StatelessWidget {
   onMaterialRequiredChanged;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
   final String Function(TagItemVO tag) tagLabelBuilder;
@@ -468,9 +497,12 @@ class _TierCard extends StatelessWidget {
                 tierIndex: tierIndex,
                 materialIndex: entry.key,
                 material: entry.value,
+                canDelete: tier.materials.length > 1,
                 onMaterialRequiredChanged: onMaterialRequiredChanged,
+                onDeleteMaterial: onDeleteMaterial,
                 onMaterialTypeTap: onMaterialTypeTap,
                 onExampleUploadTap: onExampleUploadTap,
+                onPreviewExampleFile: onPreviewExampleFile,
                 onDeleteExampleFile: onDeleteExampleFile,
               ),
             );
@@ -491,19 +523,25 @@ class _MaterialCard extends StatelessWidget {
     required this.tierIndex,
     required this.materialIndex,
     required this.material,
+    required this.canDelete,
     required this.onMaterialRequiredChanged,
+    required this.onDeleteMaterial,
     required this.onMaterialTypeTap,
     required this.onExampleUploadTap,
+    required this.onPreviewExampleFile,
     required this.onDeleteExampleFile,
   });
 
   final int tierIndex;
   final int materialIndex;
   final EditVisaPackageMaterialViewDraft material;
+  final bool canDelete;
   final void Function(int tierIndex, int materialIndex, bool value)
   onMaterialRequiredChanged;
+  final void Function(int tierIndex, int materialIndex) onDeleteMaterial;
   final void Function(int tierIndex, int materialIndex) onMaterialTypeTap;
   final void Function(int tierIndex, int materialIndex) onExampleUploadTap;
+  final ValueChanged<PickedUploadFile> onPreviewExampleFile;
   final void Function(int tierIndex, int materialIndex, PickedUploadFile file)
   onDeleteExampleFile;
 
@@ -514,16 +552,36 @@ class _MaterialCard extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Expanded(
-              child: Text(
-                '签证编辑.材料序号'.tr(
-                  namedArgs: <String, String>{
-                    'index': (materialIndex + 1).toString(),
-                  },
-                ),
-                style: EditVisaPackageStyles.fieldLabel,
+            Text(
+              '签证编辑.材料序号'.tr(
+                namedArgs: <String, String>{
+                  'index': (materialIndex + 1).toString(),
+                },
               ),
+              style: EditVisaPackageStyles.fieldLabel,
             ),
+            if (canDelete) ...<Widget>[
+              const SizedBox(width: 6),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: dismissKeyboardThen(
+                    context,
+                    () => onDeleteMaterial(tierIndex, materialIndex),
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset(
+                      'assets/images/visa_package_delete.svg',
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
             Text(
               material.isRequired ? '签证编辑.必填'.tr() : '通用.选填'.tr(),
               style: EditVisaPackageStyles.materialMeta,
@@ -556,6 +614,7 @@ class _MaterialCard extends StatelessWidget {
         _ExampleUploadContent(
           files: material.exampleFiles,
           onAddTap: () => onExampleUploadTap(tierIndex, materialIndex),
+          onPreviewFile: onPreviewExampleFile,
           onDeleteFile: (PickedUploadFile file) =>
               onDeleteExampleFile(tierIndex, materialIndex, file),
         ),
@@ -568,11 +627,13 @@ class _ExampleUploadContent extends StatelessWidget {
   const _ExampleUploadContent({
     required this.files,
     required this.onAddTap,
+    required this.onPreviewFile,
     required this.onDeleteFile,
   });
 
   final List<PickedUploadFile> files;
   final VoidCallback onAddTap;
+  final ValueChanged<PickedUploadFile> onPreviewFile;
   final ValueChanged<PickedUploadFile> onDeleteFile;
 
   @override
@@ -592,6 +653,7 @@ class _ExampleUploadContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _UploadFileCard(
               file: file,
+              onPreviewTap: () => onPreviewFile(file),
               onRemoveTap: () => onDeleteFile(file),
             ),
           );
@@ -606,16 +668,33 @@ class _ExampleUploadContent extends StatelessWidget {
 }
 
 class _UploadFileCard extends StatelessWidget {
-  const _UploadFileCard({required this.file, this.onRemoveTap});
+  const _UploadFileCard({
+    required this.file,
+    this.onPreviewTap,
+    this.onRemoveTap,
+  });
 
   final PickedUploadFile file;
+  final VoidCallback? onPreviewTap;
   final VoidCallback? onRemoveTap;
+
+  /// 将文件卡片包装成可点击预览的交互区域，保持视觉结构不变。
+  Widget _wrapPreviewTap(Widget child) {
+    if (onPreviewTap == null) {
+      return child;
+    }
+    return InkWell(
+      onTap: onPreviewTap,
+      borderRadius: BorderRadius.circular(8),
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     switch (file.state) {
       case UploadItemState.uploading:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -648,9 +727,9 @@ class _UploadFileCard extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ));
       case UploadItemState.success:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -679,9 +758,9 @@ class _UploadFileCard extends StatelessWidget {
               if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
       case UploadItemState.failure:
-        return _UploadFileCardFrame(
+        return _wrapPreviewTap(_UploadFileCardFrame(
           child: Row(
             children: <Widget>[
               _UploadFileLeading(file: file),
@@ -710,7 +789,7 @@ class _UploadFileCard extends StatelessWidget {
               if (onRemoveTap != null) _RemoveUploadButton(onTap: onRemoveTap!),
             ],
           ),
-        );
+        ));
     }
   }
 }

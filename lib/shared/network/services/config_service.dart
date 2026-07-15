@@ -1,5 +1,7 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'dart:ui' show Locale;
+
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 import '../../../features/config/data/config_models.dart';
 
 /// 标签字典分类枚举。
@@ -68,6 +70,121 @@ class ConfigService {
 
   final ApiClient _apiClient;
 
+  /// 构建标签查找表，支持通过 code / 中文 / 英文反查标签项。
+  static Map<String, TagItemVO> buildTagLookup(Iterable<TagItemVO> tags) {
+    final Map<String, TagItemVO> lookup = <String, TagItemVO>{};
+
+    void addKey(String value, TagItemVO item) {
+      final String key = _normalizeTagKey(value);
+      if (key.isEmpty || lookup.containsKey(key)) {
+        return;
+      }
+      lookup[key] = item;
+    }
+
+    for (final TagItemVO item in tags) {
+      addKey(item.tagCode, item);
+      addKey(item.tagNameZh, item);
+      addKey(item.tagNameEn, item);
+    }
+
+    return lookup;
+  }
+
+  /// 构建按标签分类分组的查找表，便于通过 `TagCategory` 精准解析展示名。
+  static Map<TagCategory, Map<String, TagItemVO>> buildTagLookupByCategory(
+    Map<String, List<TagItemVO>> groupedTags,
+  ) {
+    final Map<TagCategory, Map<String, TagItemVO>> lookupByCategory =
+        <TagCategory, Map<String, TagItemVO>>{};
+
+    groupedTags.forEach((String key, List<TagItemVO> value) {
+      final TagCategory? category = TagCategory.fromValue(key);
+      if (category == null || value.isEmpty) {
+        return;
+      }
+      lookupByCategory[category] = buildTagLookup(value);
+    });
+
+    return lookupByCategory;
+  }
+
+  /// 按当前语言环境解析标签展示文案，找不到映射时回退原始值。
+  static String resolveTagLabel({
+    required String rawLabel,
+    required Map<String, TagItemVO> tagLookup,
+    required Locale locale,
+  }) {
+    final String normalizedLabel = rawLabel.trim();
+    if (normalizedLabel.isEmpty) {
+      return '';
+    }
+
+    final TagItemVO? matched = tagLookup[_normalizeTagKey(normalizedLabel)];
+    if (matched == null) {
+      return normalizedLabel;
+    }
+
+    return resolveLocalizedTagLabel(matched, locale: locale);
+  }
+
+  /// 根据标签分类和值解析展示文案，无法匹配时回退原始值。
+  static String resolveTagLabelByCategory({
+    required String rawLabel,
+    required String? rawCategory,
+    required Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory,
+    required Locale locale,
+  }) {
+    final String normalizedLabel = rawLabel.trim();
+    if (normalizedLabel.isEmpty) {
+      return '';
+    }
+
+    final TagCategory? category = TagCategory.fromValue(rawCategory?.trim());
+    if (category == null) {
+      return normalizedLabel;
+    }
+
+    final Map<String, TagItemVO>? tagLookup = tagLookupByCategory[category];
+    if (tagLookup == null || tagLookup.isEmpty) {
+      return normalizedLabel;
+    }
+
+    return resolveTagLabel(
+      rawLabel: normalizedLabel,
+      tagLookup: tagLookup,
+      locale: locale,
+    );
+  }
+
+  /// 返回标签项在当前语言下应展示的文案。
+  static String resolveLocalizedTagLabel(
+    TagItemVO item, {
+    required Locale locale,
+  }) {
+    if (isChineseLocale(locale)) {
+      final String zh = item.tagNameZh.trim();
+      if (zh.isNotEmpty) {
+        return zh;
+      }
+      final String en = item.tagNameEn.trim();
+      return en.isNotEmpty ? en : item.tagCode.trim();
+    }
+
+    final String en = item.tagNameEn.trim();
+    if (en.isNotEmpty) {
+      return en;
+    }
+
+    final String zh = item.tagNameZh.trim();
+    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  }
+
+  /// 统一判断是否中文语言环境。
+  static bool isChineseLocale(Locale locale) {
+    return locale.languageCode.toLowerCase().startsWith('zh');
+  }
+
   /// 获取系统标签字典。
   ///
   /// 不传 `category` 时，返回服务端支持的全部标签分类字典。
@@ -102,5 +219,9 @@ class ConfigService {
       decode: (data) => TagDictVO.fromJson(asJsonMap(data)),
     );
     return response;
+  }
+
+  static String _normalizeTagKey(String value) {
+    return value.trim().toLowerCase();
   }
 }

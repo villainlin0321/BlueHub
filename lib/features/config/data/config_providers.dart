@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/shared/network/providers.dart';
 import '../../../shared/network/services/config_service.dart';
 import '../../../shared/logging/app_logger.dart';
 import 'config_models.dart';
@@ -27,6 +27,18 @@ final tagDictionaryProvider =
           .read(tagDictionaryCacheControllerProvider)
           .getTagsForCategory(category);
       return tags;
+    });
+
+final jobCardTagLookupProvider =
+    FutureProvider<Map<TagCategory, Map<String, TagItemVO>>>((ref) async {
+      return ref
+          .read(tagDictionaryCacheControllerProvider)
+          .getLookupsForCategories(const <TagCategory>[
+            TagCategory.requirement,
+            TagCategory.highlight,
+            TagCategory.service,
+            TagCategory.benefit,
+          ]);
     });
 
 class TagDictionaryCacheController {
@@ -72,8 +84,48 @@ class TagDictionaryCacheController {
     return _sortTags(response.tags[category.value] ?? const <TagItemVO>[]);
   }
 
+  Future<Map<TagCategory, Map<String, TagItemVO>>> getLookupsForCategories(
+    Iterable<TagCategory> categories,
+  ) async {
+    final List<TagCategory> categoryList = categories.toList(growable: false);
+    final TagDictVO? cached = loadCached();
+    final bool hasAllCached = cached != null &&
+        categoryList.every((TagCategory category) {
+          final List<TagItemVO>? tags = cached.tags[category.value];
+          return tags != null && tags.isNotEmpty;
+        });
+
+    if (hasAllCached) {
+      return _buildLookups(cached, categoryList);
+    }
+
+    final TagDictVO response = await _service.getTags();
+    await _store.save(response);
+    return _buildLookups(response, categoryList);
+  }
+
   List<TagItemVO> _sortTags(List<TagItemVO> tags) {
     return List<TagItemVO>.from(tags)
       ..sort((TagItemVO a, TagItemVO b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+
+  Map<TagCategory, Map<String, TagItemVO>> _buildLookups(
+    TagDictVO source,
+    List<TagCategory> categories,
+  ) {
+    final Map<TagCategory, Map<String, TagItemVO>> lookups =
+        <TagCategory, Map<String, TagItemVO>>{};
+
+    for (final TagCategory category in categories) {
+      final List<TagItemVO> tags = _sortTags(
+        source.tags[category.value] ?? const <TagItemVO>[],
+      );
+      if (tags.isEmpty) {
+        continue;
+      }
+      lookups[category] = ConfigService.buildTagLookup(tags);
+    }
+
+    return lookups;
   }
 }

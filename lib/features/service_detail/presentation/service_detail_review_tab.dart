@@ -4,17 +4,23 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../visa/data/provider_models.dart';
+import '../../visa/data/provider_providers.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class ServiceDetailReviewTab extends StatefulWidget {
   const ServiceDetailReviewTab({
     super.key,
     required this.review,
+    required this.selectedSort,
+    required this.onSortChanged,
     this.isLoading = false,
     this.errorMessage,
   });
 
   final ReviewVO? review;
+  final VisaProviderReviewSort selectedSort;
+  final ValueChanged<VisaProviderReviewSort> onSortChanged;
   final bool isLoading;
   final String? errorMessage;
 
@@ -24,6 +30,14 @@ class ServiceDetailReviewTab extends StatefulWidget {
 
 class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
   final Set<int> _expandedReviewIndexes = <int>{};
+
+  @override
+  void didUpdateWidget(covariant ServiceDetailReviewTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.review, widget.review)) {
+      _expandedReviewIndexes.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +62,11 @@ class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
         if (index == 0) {
           return Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _ReviewSummaryCard(summary: review.summary),
+            child: _ReviewSummaryCard(
+              summary: review.summary,
+              selectedSort: widget.selectedSort,
+              onSortChanged: widget.onSortChanged,
+            ),
           );
         }
 
@@ -69,9 +87,15 @@ class _ServiceDetailReviewTabState extends State<ServiceDetailReviewTab> {
 }
 
 class _ReviewSummaryCard extends StatelessWidget {
-  const _ReviewSummaryCard({required this.summary});
+  const _ReviewSummaryCard({
+    required this.summary,
+    required this.selectedSort,
+    required this.onSortChanged,
+  });
 
   final SummaryVO summary;
+  final VisaProviderReviewSort selectedSort;
+  final ValueChanged<VisaProviderReviewSort> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +105,10 @@ class _ReviewSummaryCard extends StatelessWidget {
         children: <Widget>[
           _ReviewSummaryScore(summary: summary),
           const Spacer(),
-          const _ReviewSortSwitch(),
+          _ReviewSortSwitch(
+            selectedSort: selectedSort,
+            onChanged: onSortChanged,
+          ),
         ],
       ),
     );
@@ -95,8 +122,14 @@ class _ReviewSummaryScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scoreTextStyle = TestStyle.regular(fontSize: 34, color: const Color(0xFFFE5815));
-    final labelTextStyle = TestStyle.regular(fontSize: 12, color: const Color(0xFFFE5815));
+    final scoreTextStyle = TestStyle.regular(
+      fontSize: 34,
+      color: const Color(0xFFFE5815),
+    );
+    final labelTextStyle = TestStyle.regular(
+      fontSize: 12,
+      color: const Color(0xFFFE5815),
+    );
 
     return SizedBox(
       width: 128,
@@ -147,49 +180,107 @@ class _ReviewSummaryStarRow extends StatelessWidget {
 }
 
 class _ReviewSortSwitch extends StatelessWidget {
-  const _ReviewSortSwitch();
+  const _ReviewSortSwitch({
+    required this.selectedSort,
+    required this.onChanged,
+  });
+
+  final VisaProviderReviewSort selectedSort;
+  final ValueChanged<VisaProviderReviewSort> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final selectedTextStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
-    final normalTextStyle = TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C));
+    final selectedTextStyle = TestStyle.medium(
+      fontSize: 14,
+      color: const Color(0xFF262626),
+    );
+    final normalTextStyle = TestStyle.regular(
+      fontSize: 14,
+      color: const Color(0xFF8C8C8C),
+    );
+    final bool isHotSelected = selectedSort == VisaProviderReviewSort.hot;
 
     return SizedBox(
       width: 90,
       height: 32,
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.circular(16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          children: <Widget>[
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              left: isHotSelected ? 1 : 45,
+              top: 1,
+              child: Container(
+                width: 44,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: 1,
-            top: 1,
-            child: Container(
-              width: 44,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _ReviewSortSwitchAction(
+                    label: '服务详情.最热'.tr(),
+                    isSelected: isHotSelected,
+                    selectedTextStyle: selectedTextStyle,
+                    normalTextStyle: normalTextStyle,
+                    onTap: () => onChanged(VisaProviderReviewSort.hot),
+                  ),
+                ),
+                Expanded(
+                  child: _ReviewSortSwitchAction(
+                    label: '服务详情.最新'.tr(),
+                    isSelected: !isHotSelected,
+                    selectedTextStyle: selectedTextStyle,
+                    normalTextStyle: normalTextStyle,
+                    onTap: () => onChanged(VisaProviderReviewSort.latest),
+                  ),
+                ),
+              ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReviewSortSwitchAction extends StatelessWidget {
+  const _ReviewSortSwitchAction({
+    required this.label,
+    required this.isSelected,
+    required this.selectedTextStyle,
+    required this.normalTextStyle,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final TextStyle selectedTextStyle;
+  final TextStyle normalTextStyle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Center(
+          child: Text(
+            label,
+            style: isSelected ? selectedTextStyle : normalTextStyle,
           ),
-          Positioned(
-            left: 9,
-            top: 6,
-            child: Text('服务详情.最热'.tr(), style: selectedTextStyle),
-          ),
-          Positioned(
-            left: 53,
-            top: 6,
-            child: Text('服务详情.最新'.tr(), style: normalTextStyle),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -243,8 +334,14 @@ class _ReviewHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nameStyle = TestStyle.medium(fontSize: 14, color: const Color(0xFF262626));
-    final timeStyle = TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C));
+    final nameStyle = TestStyle.medium(
+      fontSize: 14,
+      color: const Color(0xFF262626),
+    );
+    final timeStyle = TestStyle.regular(
+      fontSize: 14,
+      color: const Color(0xFF8C8C8C),
+    );
 
     return SizedBox(
       height: 34,
@@ -306,7 +403,10 @@ class _ReviewAvatar extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: TestStyle.numberBold(fontSize: 11, color: const Color(0xFF096DD9)),
+        style: TestStyle.numberBold(
+          fontSize: 11,
+          color: const Color(0xFF096DD9),
+        ),
       ),
     );
   }
@@ -349,8 +449,14 @@ class _ExpandableReviewText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TestStyle.regular(fontSize: 15, color: const Color(0xFF262626));
-    final expandStyle = TestStyle.regular(fontSize: 15, color: const Color(0xFF096DD9));
+    final textStyle = TestStyle.regular(
+      fontSize: 15,
+      color: const Color(0xFF262626),
+    );
+    final expandStyle = TestStyle.regular(
+      fontSize: 15,
+      color: const Color(0xFF096DD9),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {

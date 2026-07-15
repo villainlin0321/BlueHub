@@ -1,6 +1,6 @@
-import 'package:bluehub_app/shared/network/models/dictionary_models.dart';
-import 'package:bluehub_app/shared/network/page_result.dart';
-import 'package:bluehub_app/shared/network/providers.dart';
+import 'package:europepass/shared/network/models/dictionary_models.dart';
+import 'package:europepass/shared/network/page_result.dart';
+import 'package:europepass/shared/network/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/network/services/country_service.dart';

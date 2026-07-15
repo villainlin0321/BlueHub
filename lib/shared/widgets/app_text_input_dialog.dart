@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_dialog.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 const String _kAppTextInputDialogClearIconAsset =
     'assets/images/ai_history_rename_clear.svg';
 

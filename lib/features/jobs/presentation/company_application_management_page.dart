@@ -12,11 +12,14 @@ import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
+import '../data/job_models.dart';
+import '../data/job_providers.dart';
+import '../../../shared/network/page_result.dart';
 import 'company_application_management_styles.dart';
-import 'widgets/company_application_job_filter_bottom_sheet.dart';
 import 'widgets/company_application_management_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
   const CompanyApplicationManagementPage({super.key});
 
@@ -29,30 +32,101 @@ class _CompanyApplicationManagementPageState
     extends ConsumerState<CompanyApplicationManagementPage> {
   int? _selectedJobId;
   String? _selectedJobTitle;
+  List<JobDetailVO> _jobFilterJobs = const <JobDetailVO>[];
+  bool _isJobFilterLoading = false;
 
   String get _jobFilterLabel {
     final String title = _selectedJobTitle?.trim() ?? '';
     return title.isEmpty ? '应聘管理.全部岗位'.tr() : title;
   }
 
-  Future<void> _handleJobFilterTap() async {
-    final CompanyApplicationJobFilterResult? result =
-        await showCompanyApplicationJobFilterBottomSheet(
-          context: context,
-          initialJobId: _selectedJobId,
-          initialJobTitle: _selectedJobTitle,
-        );
-    if (!mounted || result == null) {
-      return;
-    }
-    if (result.jobId == _selectedJobId &&
-        (result.jobTitle ?? '') == (_selectedJobTitle ?? '')) {
-      return;
-    }
-    setState(() {
-      _selectedJobId = result.jobId;
-      _selectedJobTitle = result.jobTitle;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadJobFilterJobs();
     });
+  }
+
+  Future<void> _loadJobFilterJobs() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isJobFilterLoading = true;
+    });
+
+    try {
+      final PageResult<JobDetailVO> response = await ref
+          .read(jobServiceProvider)
+          .listMyJobs(page: 1, pageSize: 100, status: 'active');
+      if (!mounted) {
+        return;
+      }
+
+      final List<JobDetailVO> jobs = response.list;
+      final JobDetailVO? selectedJob = _findJobById(jobs, _selectedJobId);
+      setState(() {
+        _jobFilterJobs = jobs;
+        _isJobFilterLoading = false;
+        if (_selectedJobId != null && selectedJob == null) {
+          _selectedJobId = null;
+          _selectedJobTitle = null;
+        } else if (selectedJob != null) {
+          _selectedJobTitle = _resolveJobTitle(selectedJob);
+        }
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isJobFilterLoading = false;
+      });
+      AppToast.show(_normalizeJobFilterError(error));
+    }
+  }
+
+  void _handleJobFilterChanged(JobDetailVO? job) {
+    final int? nextJobId = job?.jobId;
+    final String? nextJobTitle = job == null ? null : _resolveJobTitle(job);
+    if (nextJobId == _selectedJobId &&
+        (nextJobTitle ?? '') == (_selectedJobTitle ?? '')) {
+      return;
+    }
+
+    setState(() {
+      _selectedJobId = nextJobId;
+      _selectedJobTitle = nextJobTitle;
+    });
+  }
+
+  JobDetailVO? _findJobById(List<JobDetailVO> jobs, int? jobId) {
+    if (jobId == null) {
+      return null;
+    }
+
+    for (final JobDetailVO job in jobs) {
+      if (job.jobId == jobId) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  String _resolveJobTitle(JobDetailVO job) {
+    final String title = job.title.trim();
+    return title.isEmpty ? '招聘.未命名岗位'.tr() : title;
+  }
+
+  String _normalizeJobFilterError(Object error) {
+    final String message = error.toString().trim();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length).trim();
+    }
+    return message.isEmpty ? '企业岗位.加载失败'.tr() : message;
   }
 
   @override
@@ -80,7 +154,10 @@ class _CompanyApplicationManagementPageState
           ),
           title: Text(
             '我的.应聘管理'.tr(),
-            style: TestStyle.pingFangSemibold(fontSize: 17, color: Colors.black),
+            style: TestStyle.pingFangSemibold(
+              fontSize: 17,
+              color: Colors.black,
+            ),
           ),
         ),
         body: Column(
@@ -92,20 +169,24 @@ class _CompanyApplicationManagementPageState
             ),
             CompanyApplicationJobFilterBar(
               label: _jobFilterLabel,
-              onTap: _handleJobFilterTap,
+              selectedJobId: _selectedJobId,
+              jobs: _jobFilterJobs,
+              isLoading: _isJobFilterLoading,
+              onChanged: _handleJobFilterChanged,
             ),
             Expanded(
               child: TabBarView(
                 children: _CompanyApplicationTab.values
                     .map(
-                      (_CompanyApplicationTab tab) =>
-                          _CompanyApplicationTabView(
-                            key: PageStorageKey<String>(
-                              'company-applications-${tab.name}-${_selectedJobId ?? 'all'}',
-                            ),
-                            tab: tab,
-                            selectedJobId: _selectedJobId,
-                          ),
+                      (
+                        _CompanyApplicationTab tab,
+                      ) => _CompanyApplicationTabView(
+                        key: PageStorageKey<String>(
+                          'company-applications-${tab.name}-${_selectedJobId ?? 'all'}',
+                        ),
+                        tab: tab,
+                        selectedJobId: _selectedJobId,
+                      ),
                     )
                     .toList(growable: false),
               ),
@@ -183,10 +264,9 @@ class _CompanyApplicationTabViewState
       if (!mounted) {
         return;
       }
-      ref.read(companyApplicationListsControllerProvider.notifier).loadInitial(
-        status: widget.tab.status,
-        jobId: widget.selectedJobId,
-      );
+      ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .loadInitial(status: widget.tab.status, jobId: widget.selectedJobId);
     });
   }
 
@@ -222,12 +302,11 @@ class _CompanyApplicationTabViewState
 
     final CompanyApplicationListState latestState = ref.read(
       companyApplicationListsControllerProvider.select(
-        (Map<String, CompanyApplicationListState> states) => states[
-              buildCompanyApplicationListStateKey(
-                status: widget.tab.status,
-                jobId: widget.selectedJobId,
-              )
-            ] ??
+        (Map<String, CompanyApplicationListState> states) =>
+            states[buildCompanyApplicationListStateKey(
+              status: widget.tab.status,
+              jobId: widget.selectedJobId,
+            )] ??
             const CompanyApplicationListState(),
       ),
     );
@@ -245,12 +324,11 @@ class _CompanyApplicationTabViewState
     super.build(context);
     final CompanyApplicationListState listState = ref.watch(
       companyApplicationListsControllerProvider.select(
-        (Map<String, CompanyApplicationListState> states) => states[
-              buildCompanyApplicationListStateKey(
-                status: widget.tab.status,
-                jobId: widget.selectedJobId,
-              )
-            ] ??
+        (Map<String, CompanyApplicationListState> states) =>
+            states[buildCompanyApplicationListStateKey(
+              status: widget.tab.status,
+              jobId: widget.selectedJobId,
+            )] ??
             const CompanyApplicationListState(),
       ),
     );

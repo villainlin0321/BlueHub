@@ -13,7 +13,8 @@ import '../application/chat/chat_page_args.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 /// 消息中心页，按 Figma 设计稿还原顶部导航、Tab 及系统通知列表。
 class MessageCenterPage extends ConsumerStatefulWidget {
   const MessageCenterPage({super.key});
@@ -48,13 +49,24 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
+    // 自定义 Tab 文案颜色依赖 controller.index，切换时主动刷新页面以同步选中态。
+    _tabController.addListener(_handleTabChanged);
     _systemItems = _buildInitialSystemItems();
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// 监听 Tab 切换，确保自定义 Tab 文字颜色和红点位置能跟随选中状态即时刷新。
+  void _handleTabChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
   }
 
   bool get _hasUnreadSystem => _systemItems.any((item) => item.isUnread);
@@ -197,7 +209,7 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMarkAllRead;
 
   @override
-  Size get preferredSize => const Size.fromHeight(48);
+  Size get preferredSize => const Size.fromHeight(44);
 
   @override
   Widget build(BuildContext context) {
@@ -205,14 +217,14 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      toolbarHeight: 48,
+      toolbarHeight: 44,
       centerTitle: true,
       titleSpacing: 0,
       leadingWidth: 44,
       leading: IconButton(
         onPressed: onBack,
         padding: EdgeInsets.zero,
-        splashRadius: 22,
+        splashRadius: 20,
         icon: SvgPicture.asset(
           _MessageCenterPageState._backAsset,
           width: 12,
@@ -222,19 +234,22 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         '消息.消息中心'.tr(),
         textAlign: TextAlign.center,
-        style: TestStyle.pingFangMedium(fontSize: 17, color: Colors.black.withValues(alpha: 0.9)),
+        style: TestStyle.pingFangMedium(
+          fontSize: 17,
+          color: Colors.black.withValues(alpha: 0.9),
+        ),
       ),
       actions: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.only(right: 16),
           child: SizedBox(
-            width: 92,
+            height: 44,
             child: TextButton(
               onPressed: onMarkAllRead,
               style: TextButton.styleFrom(
                 foregroundColor: _MessageCenterPageState._secondaryText,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                minimumSize: const Size(80, 32),
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 44),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Row(
@@ -248,7 +263,10 @@ class _MessageHeader extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 6),
                   Text(
                     '消息.全部已读'.tr(),
-                    style: TestStyle.pingFangRegular(fontSize: 14, color: _MessageCenterPageState._secondaryText),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: _MessageCenterPageState._secondaryText,
+                    ),
                   ),
                 ],
               ),
@@ -273,30 +291,33 @@ class _MessageTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TabBar(
-      controller: controller,
-      indicator: _FixedWidthUnderlineIndicator(
-        color: _MessageCenterPageState._primaryBlue,
-        width: 20,
-        thickness: 2,
+    return SizedBox(
+      height: 44,
+      child: TabBar(
+        controller: controller,
+        indicator: _FixedWidthUnderlineIndicator(
+          color: _MessageCenterPageState._primaryBlue,
+          width: 20,
+          thickness: 2,
+        ),
+        indicatorPadding: EdgeInsets.zero,
+        dividerColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        padding: const EdgeInsets.only(top: 10),
+        labelPadding: EdgeInsets.zero,
+        tabs: <Widget>[
+          _MessageTab(
+            label: '消息.聊天'.tr(),
+            isSelected: controller.index == 0,
+            hasUnread: hasUnreadChat,
+          ),
+          _MessageTab(
+            label: '消息.系统通知'.tr(),
+            isSelected: controller.index == 1,
+            hasUnread: hasUnreadSystem,
+          ),
+        ],
       ),
-      indicatorPadding: const EdgeInsets.only(bottom: 0.5),
-      dividerColor: Colors.transparent,
-      overlayColor: WidgetStateProperty.all(Colors.transparent),
-      padding: const EdgeInsets.only(top: 10),
-      labelPadding: EdgeInsets.zero,
-      tabs: <Widget>[
-        _MessageTab(
-          label: '消息.聊天'.tr(),
-          isSelected: controller.index == 0,
-          hasUnread: hasUnreadChat,
-        ),
-        _MessageTab(
-          label: '消息.系统通知'.tr(),
-          isSelected: controller.index == 1,
-          hasUnread: hasUnreadSystem,
-        ),
-      ],
     );
   }
 }
@@ -315,39 +336,44 @@ class _MessageTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
-      child: Column(
-        children: <Widget>[
-          SizedBox(
-            height: 22,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: TestStyle.medium(fontSize: 14, color: isSelected
-                        ? _MessageCenterPageState._primaryBlue
-                        : _MessageCenterPageState._titleColor),
-                ),
-                if (hasUnread) ...<Widget>[
-                  const SizedBox(width: 2),
-                  Container(
-                    margin: const EdgeInsets.only(top: 1),
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
+      height: 34,
+      child: Center(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Text(
+                label,
+                style: (isSelected
+                        ? TestStyle.pingFangMedium(
+                            fontSize: 14,
+                            color: _MessageCenterPageState._primaryBlue,
+                          )
+                        : TestStyle.pingFangRegular(
+                            fontSize: 14,
+                            color: _MessageCenterPageState._titleColor,
+                          ))
+                    .copyWith(height: 22 / 14),
+              ),
+            ),
+            if (hasUnread)
+              const Positioned(
+                top: -1,
+                right: -8,
+                child: SizedBox(
+                  width: 8,
+                  height: 8,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
                       color: _MessageCenterPageState._dangerDot,
                       shape: BoxShape.circle,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -416,77 +442,92 @@ class _ChatConversationTile extends StatelessWidget {
       color: Colors.white,
       child: InkWell(
         onTap: onTap,
-        child: Stack(
-          children: <Widget>[
-            Positioned(
-              left: 72,
-              right: 0,
-              bottom: 0,
-              child: Container(height: 0.5, color: const Color(0xFFF0F0F0)),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 16),
-              child: Row(
-                children: <Widget>[
-                  AppUserAvatar(
-                    imageUrl: item.avatarUrl,
-                    size: 44,
-                    backgroundColor: const Color(0xFF487BFE),
-                    borderRadius: BorderRadius.circular(22),
-                    placeholder: _AvatarFallbackText(
-                      text: item.avatarFallbackText,
+        child: SizedBox(
+          height: 72,
+          child: Stack(
+            children: <Widget>[
+              Positioned(
+                left: 72,
+                right: 0,
+                bottom: 0,
+                child: Container(height: 0.5, color: const Color(0xFFF0F0F0)),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Row(
+                  children: <Widget>[
+                    AppUserAvatar(
+                      imageUrl: item.avatarUrl,
+                      size: 44,
+                      backgroundColor: const Color(0xFF487BFE),
+                      borderRadius: BorderRadius.circular(22),
+                      placeholder: _AvatarFallbackText(
+                        text: item.avatarFallbackText,
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 13, 16, 13),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Expanded(
+                      child: SizedBox(
+                        height: 72,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 13, 16, 13),
+                          child: Stack(
                             children: <Widget>[
-                              Expanded(
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 84,
                                 child: Text(
                                   item.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TestStyle.regular(fontSize: 16, color: _MessageCenterPageState._titleColor),
+                                  style: TestStyle.pingFangRegular(
+                                    fontSize: 16,
+                                    color: _MessageCenterPageState._titleColor,
+                                  ).copyWith(height: 22 / 16),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                item.time,
-                                style: TestStyle.regular(fontSize: 12, color: const Color(0xFFBFBFBF)),
+                              Positioned(
+                                top: 2,
+                                right: 0,
+                                child: Text(
+                                  item.time,
+                                  textAlign: TextAlign.right,
+                                  style: TestStyle.regular(
+                                    fontSize: 12,
+                                    color: const Color(0xFFBFBFBF),
+                                  ).copyWith(height: 18 / 12),
+                                ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: <Widget>[
-                              Expanded(
+                              Positioned(
+                                top: 28,
+                                left: 0,
+                                right: item.isUnread ? 30 : 0,
                                 child: Text(
                                   item.preview,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TestStyle.regular(fontSize: 14, color: _MessageCenterPageState._hintText),
+                                  style: TestStyle.pingFangRegular(
+                                    fontSize: 14,
+                                    color: _MessageCenterPageState._hintText,
+                                  ).copyWith(height: 18 / 14),
                                 ),
                               ),
-                              if (item.isUnread) ...<Widget>[
-                                SizedBox(width: 8),
-                                _UnreadBadge(count: item.unreadCount),
-                              ],
+                              if (item.isUnread)
+                                Positioned(
+                                  right: 0,
+                                  top: 28,
+                                  child: _UnreadBadge(count: item.unreadCount),
+                                ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -502,8 +543,8 @@ class _UnreadBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final String text = count > 99 ? '99+' : '$count';
     return Container(
-      constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         color: _MessageCenterPageState._dangerDot,
         borderRadius: BorderRadius.circular(9),
@@ -511,7 +552,10 @@ class _UnreadBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: TestStyle.regular(fontSize: 12, color: Colors.white),
+        style: TestStyle.regular(
+          fontSize: 12,
+          color: Colors.white,
+        ).copyWith(height: 14 / 12),
       ),
     );
   }
@@ -529,7 +573,10 @@ class _AvatarFallbackText extends StatelessWidget {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TestStyle.regular(fontSize: 14, color: Colors.white),
+        style: TestStyle.pingFangRegular(
+          fontSize: 14,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -566,7 +613,10 @@ class _ChatStatusView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TestStyle.regular(fontSize: 14, color: _MessageCenterPageState._hintText),
+              style: TestStyle.regular(
+                fontSize: 14,
+                color: _MessageCenterPageState._hintText,
+              ),
             ),
             if (actionLabel != null && onAction != null) ...<Widget>[
               const SizedBox(height: 12),
@@ -594,13 +644,13 @@ class _SystemTabView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
-        12,
-        12,
-        12,
+        0,
+        0,
+        0,
         MediaQuery.paddingOf(context).bottom + 24,
       ),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: 0),
       itemBuilder: (BuildContext context, int index) {
         final _SystemNoticeItem item = items[index];
         return _SystemNoticeCard(
@@ -628,78 +678,90 @@ class _SystemNoticeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final BorderRadius radius = BorderRadius.circular(19.2);
 
-    return ClipRRect(
-      borderRadius: radius,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Stack(
-            children: <Widget>[
-              Positioned.fill(
-                child: SvgPicture.asset(item.cardAssetPath, fit: BoxFit.fill),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: <Widget>[
-                        SvgPicture.asset(
-                          noticeIconAsset,
-                          width: 32,
-                          height: 32,
-                        ),
-                        if (item.isUnread)
-                          Positioned(
-                            top: 3,
-                            right: 2,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: _MessageCenterPageState._dangerDot,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: SvgPicture.asset(item.cardAssetPath, fit: BoxFit.fill),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Stack(
+                        clipBehavior: Clip.none,
                         children: <Widget>[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  style: TestStyle.medium(fontSize: 14, color: _MessageCenterPageState._titleColor),
+                          SvgPicture.asset(
+                            noticeIconAsset,
+                            width: 32,
+                            height: 32,
+                          ),
+                          if (item.isUnread)
+                            Positioned(
+                              top: 3,
+                              right: 2,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: _MessageCenterPageState._dangerDot,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                item.time,
-                                style: TestStyle.regular(fontSize: 12, color: _MessageCenterPageState._hintText),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            item.content,
-                            style: TestStyle.regular(fontSize: 12, color: _MessageCenterPageState._secondaryText),
-                          ),
+                            ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    item.title,
+                                    style: TestStyle.pingFangMedium(
+                                      fontSize: 14,
+                                      color: _MessageCenterPageState._titleColor,
+                                    ).copyWith(height: 20 / 14),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  item.time,
+                                  style: TestStyle.regular(
+                                    fontSize: 12,
+                                    color: _MessageCenterPageState._hintText,
+                                  ).copyWith(height: 18 / 12),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.content,
+                              style: TestStyle.pingFangRegular(
+                                fontSize: 12,
+                                color: _MessageCenterPageState._secondaryText,
+                              ).copyWith(height: 18 / 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

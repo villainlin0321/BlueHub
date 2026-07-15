@@ -168,6 +168,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -230,6 +240,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -304,6 +324,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -394,6 +424,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -458,6 +498,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -550,6 +600,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -634,6 +694,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -688,6 +758,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -766,6 +846,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -828,6 +918,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -908,6 +1008,180 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/phone": {
+      "put": {
+        "tags": [
+          "用户模块"
+        ],
+        "summary": "绑定/修改手机号",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "bindPhone",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindPhoneBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/email": {
+      "put": {
+        "tags": [
+          "用户模块"
+        ],
+        "summary": "绑定/修改邮箱",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "bindEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindEmailBO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -974,6 +1248,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1065,6 +1349,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1129,6 +1423,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1211,6 +1515,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1265,6 +1579,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1343,6 +1667,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1409,6 +1743,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1499,6 +1843,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1563,6 +1917,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1655,6 +2019,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1709,6 +2083,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1779,6 +2163,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -1861,6 +2255,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1927,6 +2331,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -2019,6 +2433,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2102,6 +2526,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2166,6 +2600,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -2246,6 +2690,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2310,6 +2764,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -2402,6 +2866,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2476,6 +2950,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2542,6 +3026,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -2634,6 +3128,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2706,6 +3210,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2770,6 +3284,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -2864,6 +3388,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2926,6 +3460,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3006,6 +3550,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3060,6 +3614,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3140,6 +3704,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3194,6 +3768,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3272,6 +3856,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3336,6 +3930,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3494,6 +4098,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3556,6 +4170,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3636,6 +4260,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3708,6 +4342,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3772,6 +4416,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -3866,6 +4520,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3928,6 +4592,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4031,6 +4705,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4113,6 +4797,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4177,6 +4871,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4257,6 +4961,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4319,6 +5033,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4399,6 +5123,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4463,6 +5197,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4543,6 +5287,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4607,6 +5361,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4687,6 +5451,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4741,6 +5515,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4821,6 +5605,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4885,6 +5679,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -4999,6 +5803,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5061,6 +5875,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -5141,6 +5965,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5205,6 +6039,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -5349,6 +6193,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5455,6 +6309,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5529,6 +6393,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5595,6 +6469,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -5698,6 +6582,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5772,6 +6666,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -5838,6 +6742,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -5951,6 +6865,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -6047,12 +6971,94 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AppResultPageResultVisaOrderVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/real-name-verifications": {
+      "get": {
+        "tags": [
+          "用户模块"
+        ],
+        "summary": "查询本人实名认证记录",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listMyRealNameVerifications",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultListRealNameVerificationVO"
                 }
               }
             }
@@ -6170,6 +7176,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "分页人才 VO 列表",
             "content": {
@@ -6274,6 +7290,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "分页学校列表",
             "content": {
@@ -6348,6 +7374,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -6402,6 +7438,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -6472,6 +7518,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -6526,6 +7582,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -6620,6 +7686,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -6706,6 +7782,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -6760,6 +7846,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -6841,6 +7937,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "分类列表，每项包含该分类下的职位列表",
             "content": {
@@ -6907,6 +8013,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7010,6 +8126,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -7064,6 +8190,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7157,6 +8293,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "岗位列表",
             "content": {
@@ -7224,6 +8370,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7305,6 +8461,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -7371,6 +8537,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7474,6 +8650,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "分页国家列表",
             "content": {
@@ -7528,6 +8714,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7598,6 +8794,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -7652,6 +8858,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7764,6 +8980,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -7829,6 +9055,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7903,6 +9139,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -7997,6 +9243,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8083,6 +9339,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8161,6 +9427,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -8265,6 +9541,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8350,6 +9636,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8404,6 +9700,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -8497,6 +9803,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8571,6 +9887,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -8637,6 +9963,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "*/*": {
                 "schema": {
@@ -9029,6 +10365,52 @@
         },
         "required": [
           "role"
+        ]
+      },
+      "BindPhoneBO": {
+        "type": "object",
+        "description": "绑定/修改手机号请求",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "新手机号",
+            "minLength": 1
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "国际区号，如 +86",
+            "example": "+86"
+          },
+          "code": {
+            "type": "string",
+            "description": "新手机号收到的短信验证码",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "phone"
+        ]
+      },
+      "BindEmailBO": {
+        "type": "object",
+        "description": "绑定/修改邮箱请求",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "新邮箱",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "description": "新邮箱收到的邮件验证码",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "email"
         ]
       },
       "EducationBO": {
@@ -12188,6 +13570,95 @@
           }
         }
       },
+      "AppResultListRealNameVerificationVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "array",
+            "description": "响应数据",
+            "items": {
+              "$ref": "#/components/schemas/RealNameVerificationVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "RealNameVerificationVO": {
+        "type": "object",
+        "description": "实名认证记录",
+        "properties": {
+          "verifyId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "认证记录 ID"
+          },
+          "realName": {
+            "type": "string",
+            "description": "真实姓名"
+          },
+          "idCardNumber": {
+            "type": "string",
+            "description": "身份证号（脱敏）"
+          },
+          "idCardFront": {
+            "type": "string",
+            "description": "身份证正面图 URL"
+          },
+          "idCardBack": {
+            "type": "string",
+            "description": "身份证背面图 URL"
+          },
+          "status": {
+            "type": "string",
+            "description": "认证状态：unverified / pending / verified / rejected"
+          },
+          "statusLabel": {
+            "type": "string",
+            "description": "状态展示文案（按请求语言）"
+          },
+          "rejectReason": {
+            "type": "string",
+            "description": "驳回原因，status=rejected 时有值"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "提交时间"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "审核时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
       "AppResultPageResultUserVO": {
         "type": "object",
         "description": "统一响应体",
@@ -13777,6 +15248,11 @@
           "incomeCurrency": {
             "type": "string",
             "description": "收入币种，固定 CNY"
+          },
+          "aiContent": {
+            "type": "string",
+            "description": "AI 业务助手提示文案",
+            "example": 3
           }
         }
       },
@@ -13803,6 +15279,11 @@
             "type": "integer",
             "format": "int64",
             "description": "已录用数"
+          },
+          "aiContent": {
+            "type": "string",
+            "description": "AI 业务助手提示文案",
+            "example": "有 2 位候选人待面试，及时处理提升入职率"
           }
         }
       },
@@ -13829,6 +15310,11 @@
             "type": "integer",
             "format": "int64",
             "description": "我的收藏总数"
+          },
+          "aiContent": {
+            "type": "string",
+            "description": "AI 业务助手提示文案",
+            "example": "发现 3 个可能需要德国工签的岗位"
           }
         }
       },

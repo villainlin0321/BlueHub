@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 const double _kAppDialogMaxWidth = 276;
 const double _kAppDialogRadius = 8;
 const double _kAppDialogActionRadius = 6;
@@ -47,22 +47,36 @@ Future<T?> showAppDialog<T>({
             dialogContext,
           ).bottom;
           return themes.wrap(
-            AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: EdgeInsets.fromLTRB(20, 20, 20, min(80, bottomInset)),
-              child: SafeArea(
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    return SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: barrierDismissible
+                  ? () => Navigator.of(
+                      dialogContext,
+                      rootNavigator: useRootNavigator,
+                    ).maybePop()
+                  : null,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.fromLTRB(20, 20, 20, min(80, bottomInset)),
+                child: SafeArea(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () {},
+                              child: Builder(builder: builder),
+                            ),
+                          ),
                         ),
-                        child: Center(child: Builder(builder: builder)),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

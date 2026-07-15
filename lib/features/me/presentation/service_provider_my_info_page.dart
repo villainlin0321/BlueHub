@@ -20,7 +20,7 @@ import '../data/dictionary_providers.dart';
 import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 final _serviceProviderMyInfoProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -99,6 +99,7 @@ class _ServiceProviderMyInfoPageState
     final AsyncValue<ProviderVO>? providerAsync = args.isReadonly
         ? ref.watch(_serviceProviderDetailProvider(args.providerId!))
         : null;
+    final VisaProviderProfileVO? editableProfile = profileAsync?.asData?.value;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -147,12 +148,15 @@ class _ServiceProviderMyInfoPageState
                 if (args.showBottomAction)
                   _BottomActionBar(
                     bottomInset: bottomInset,
-                    onTap: () => context.push(
-                      RoutePaths.qualificationCertification,
-                      extra: QualificationCertificationPageArgs(
-                        role: QualificationCertificationRole.serviceProvider,
-                      ),
-                    ),
+                    onTap: editableProfile == null
+                        ? null
+                        : () => context.push(
+                            RoutePaths.qualificationCertification,
+                            extra: _buildQualificationArgs(
+                              editableProfile,
+                              countryLabelMap,
+                            ),
+                          ),
                   ),
               ],
             ),
@@ -209,6 +213,22 @@ class _ServiceProviderMyInfoPageState
           },
         );
       },
+    );
+  }
+
+  /// 基于当前服务商资料构建认证流程参数，确保编辑时可以回填历史内容。
+  QualificationCertificationPageArgs _buildQualificationArgs(
+    VisaProviderProfileVO profile,
+    Map<String, String> countryLabelMap,
+  ) {
+    final QualificationCertificationDraft draft = QualificationCertificationDraft()
+      ..fillFromProviderProfile(
+        profile,
+        countryLabelMap: countryLabelMap,
+      );
+    return QualificationCertificationPageArgs(
+      role: QualificationCertificationRole.serviceProvider,
+      draft: draft,
     );
   }
 
@@ -797,7 +817,7 @@ class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({required this.bottomInset, required this.onTap});
 
   final double bottomInset;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

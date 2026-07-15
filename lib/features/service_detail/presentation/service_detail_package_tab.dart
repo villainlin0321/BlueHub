@@ -10,7 +10,7 @@ import '../../../shared/localization/app_locales.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/ui/app_spacing.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 class ServicePackageData {
   const ServicePackageData({
     required this.packageId,

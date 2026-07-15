@@ -19,7 +19,7 @@ import '../../messages/data/message_providers.dart';
 import '../../me/presentation/company_my_info_page.dart';
 import 'job_apply_helper.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 职位详情页参数：当前至少透传岗位 ID，供“投递简历”调用真实接口。
 class JobDetailPageArgs {
   const JobDetailPageArgs({required this.jobId});
@@ -283,7 +283,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -637,15 +637,15 @@ class _LocationSection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              mapAssetPath,
-              width: double.infinity,
-              height: 180,
-              fit: BoxFit.cover,
-            ),
-          ),
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(12),
+          //   child: Image.asset(
+          //     mapAssetPath,
+          //     width: double.infinity,
+          //     height: 180,
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
         ],
       ),
     );

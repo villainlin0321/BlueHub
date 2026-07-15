@@ -1,13 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:europepass/shared/ui/test_keys.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/widgets/guarded_pop_scope.dart';
+import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../application/qualification_upload_helper.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import '../../employer/data/employer_providers.dart';
 import '../../service_detail/presentation/app_result_page.dart';
@@ -15,7 +20,32 @@ import '../../visa/data/provider_providers.dart';
 import 'qualification_certification_flow.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
+/// 记录第三步表单的关键字段快照，用于判断当前页面是否存在未保存改动。
+class _QualificationStepThreeSnapshot {
+  const _QualificationStepThreeSnapshot({
+    required this.selectedCountries,
+    required this.yearsOfService,
+  });
+
+  final List<String> selectedCountries;
+  final String yearsOfService;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is _QualificationStepThreeSnapshot &&
+        listEquals(other.selectedCountries, selectedCountries) &&
+        other.yearsOfService == yearsOfService;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(Object.hashAll(selectedCountries), yearsOfService);
+}
 
 class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
   const QualificationCertificationStepThreePage({
@@ -31,10 +61,13 @@ class QualificationCertificationStepThreePage extends ConsumerStatefulWidget {
 }
 
 class _QualificationCertificationStepThreePageState
-    extends ConsumerState<QualificationCertificationStepThreePage> {
+    extends ConsumerState<QualificationCertificationStepThreePage>
+    with GuardedPopScopeMixin {
   final TextEditingController _experienceController = TextEditingController();
   late final List<String> _selectedCountries;
+  late _QualificationStepThreeSnapshot _initialSnapshot;
   bool _isSubmitting = false;
+  bool _skipSuccessNavigationForTest = false;
 
   QualificationCertificationRole get _role => widget.args.role;
   QualificationCertificationDraft get _draft => widget.args.draft;
@@ -53,12 +86,34 @@ class _QualificationCertificationStepThreePageState
     if (_draft.yearsOfService > 0) {
       _experienceController.text = _draft.yearsOfService.toString();
     }
+    _initialSnapshot = _buildCurrentSnapshot();
   }
 
   @override
   void dispose() {
     _experienceController.dispose();
     super.dispose();
+  }
+
+  /// 采集当前表单关键字段，用于和初始值做快照比对。
+  _QualificationStepThreeSnapshot _buildCurrentSnapshot() {
+    return _QualificationStepThreeSnapshot(
+      selectedCountries: List<String>.of(_selectedCountries),
+      yearsOfService: _experienceController.text.trim(),
+    );
+  }
+
+  /// 统一处理离开第三步页面的动作，存在未保存改动时先弹确认框。
+  Future<void> _handleAttemptLeave() async {
+    final bool canLeave = await confirmDiscardChangesIfNeeded(
+      context: context,
+      hasUnsavedChanges: _buildCurrentSnapshot() != _initialSnapshot,
+    );
+    if (!mounted || !canLeave) {
+      return;
+    }
+    // 优先执行真实返回；若当前路由栈不可返回，则兜底回到“我的”页。
+    scheduleDirectPop(onCannotPop: () => context.go(RoutePaths.me));
   }
 
   Future<void> _openExpectedCountrySheet() async {
@@ -84,8 +139,66 @@ class _QualificationCertificationStepThreePageState
     });
   }
 
+  /// 提交前兜底校验第一页基础信息，避免跨步骤返回后遗留空值仍然提交成功。
+  bool _validateStepOneRequiredFieldsBeforeSubmit() {
+    final String? errorMessage = validateQualificationStepOneRequiredFields(
+      role: _role,
+      draft: _draft,
+    );
+    if (errorMessage == null) {
+      return true;
+    }
+    AppToast.show(errorMessage, position: AppToastPosition.center);
+    return false;
+  }
+
+  /// 在最终提交前兜底校验必填资质图片，避免用户绕过前序步骤直接提交。
+  bool _validateRequiredImagesBeforeSubmit() {
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardEmblemDoc == null) {
+      AppToast.show('请上传身份证国徽面'.tr(), position: AppToastPosition.center);
+      return false;
+    }
+    if (_role == QualificationCertificationRole.serviceProvider &&
+        _draft.idCardPortraitDoc == null) {
+      AppToast.show('请上传身份证人像面'.tr(), position: AppToastPosition.center);
+      return false;
+    }
+    if (_draft.businessLicenseDoc == null) {
+      AppToast.show('认证流程.请上传营业执照'.tr(), position: AppToastPosition.center);
+      return false;
+    }
+    return true;
+  }
+
+  /// 提交前校验第三步服务信息必填项，避免空国家或非法年限直接进入审核。
+  bool _validateServiceInfoBeforeSubmit() {
+    if (_selectedCountries.isEmpty) {
+      AppToast.show('请选择服务国家'.tr(), position: AppToastPosition.center);
+      return false;
+    }
+    final int? yearsOfService = int.tryParse(_experienceController.text.trim());
+    if (yearsOfService == null || yearsOfService <= 0) {
+      AppToast.show(
+        '认证流程.请填写有效从业年限'.tr(),
+        position: AppToastPosition.center,
+      );
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
     if (_isSubmitting) {
+      return;
+    }
+    if (!_validateStepOneRequiredFieldsBeforeSubmit()) {
+      return;
+    }
+    if (!_validateRequiredImagesBeforeSubmit()) {
+      return;
+    }
+    if (!_validateServiceInfoBeforeSubmit()) {
       return;
     }
 
@@ -101,6 +214,11 @@ class _QualificationCertificationStepThreePageState
       );
       _draft.yearsOfService =
           int.tryParse(_experienceController.text.trim()) ?? 0;
+      await QualificationUploadHelper.uploadDraftQualifications(
+        ref: ref,
+        role: _role,
+        draft: _draft,
+      );
       if (_role == QualificationCertificationRole.company) {
         await ref
             .read(employerServiceProvider)
@@ -113,7 +231,12 @@ class _QualificationCertificationStepThreePageState
       if (!mounted) {
         return;
       }
-      context.push(
+      // 提交成功后允许页面继续跳转，避免被未保存拦截误伤。
+      allowDirectPop();
+      if (_skipSuccessNavigationForTest) {
+        return;
+      }
+      context.go(
         RoutePaths.appResult,
         extra: AppResultPageArgs(
           pageTitle: tr('认证流程.资质认证'),
@@ -121,13 +244,16 @@ class _QualificationCertificationStepThreePageState
           tipText: tr('认证流程.审核提示'),
           actionLabel: tr('认证流程.进入首页'),
           action: AppResultAction.go(RoutePaths.home),
+          backAction: AppResultAction.go(RoutePaths.me),
+          countdownSeconds: 5,
+          countdownAction: AppResultAction.go(RoutePaths.home),
         ),
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
-      AppToast.show('认证流程.提交失败'.tr());
+      AppToast.show('认证流程.提交失败'.tr(), position: AppToastPosition.center);
     } finally {
       if (mounted) {
         setState(() {
@@ -137,258 +263,284 @@ class _QualificationCertificationStepThreePageState
     }
   }
 
+  /// 仅供测试直接触发最终提交，避免测试依赖真实路由跳转。
+  Future<void> debugSubmitForTest() async {
+    _skipSuccessNavigationForTest = true;
+    try {
+      await _handleSubmit();
+    } finally {
+      _skipSuccessNavigationForTest = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const AppSvgIcon(
-            assetPath: 'assets/images/service_detail_back.svg',
-            fallback: Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: Color(0xE6000000),
+    return buildGuardedPopScope(
+      onInterceptPop: _handleAttemptLeave,
+      child: Scaffold(
+        key: AppTestKeys.pageQualificationCertificationStepThree,
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: _handleAttemptLeave,
+            icon: const AppSvgIcon(
+              assetPath: 'assets/images/service_detail_back.svg',
+              fallback: Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Color(0xE6000000),
+            ),
+          ),
+          title: Text(
+            '认证流程.资质认证'.tr(),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: Color(0xE6000000),
+            ),
           ),
         ),
-        title: Text(
-          '认证流程.资质认证'.tr(),
-          style: TestStyle.pingFangMedium(
-            fontSize: 17,
-            color: Color(0xE6000000),
-          ),
-        ),
-      ),
-      body: TapBlankToDismissKeyboard(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(height: 16),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '认证流程.实名认证提示'.tr(),
-                  style: TestStyle.pingFangRegular(
-                    fontSize: 14,
-                    color: Color(0xFF8C8C8C),
+        body: TapBlankToDismissKeyboard(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(height: 16),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '认证流程.实名认证提示'.tr(),
+                    style: TestStyle.pingFangRegular(
+                      fontSize: 14,
+                      color: Color(0xFF8C8C8C),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: QualificationProgressStepper(
-                  labels: _steps,
-                  currentStep: 3,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: QualificationProgressStepper(
+                    labels: _steps,
+                    currentStep: 3,
                   ),
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            qualificationCountryLabel(_role),
-                            style: TestStyle.pingFangRegular(
-                              fontSize: 14,
-                              color: Color(0xFF262626),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Text(
+                              qualificationCountryLabel(_role),
+                              style: TestStyle.pingFangRegular(
+                                fontSize: 14,
+                                color: Color(0xFF262626),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '认证流程.可多选'.tr(),
-                            style: TestStyle.pingFangRegular(
-                              fontSize: 13,
-                              color: Color(0xFF8C8C8C),
+                            const SizedBox(width: 4),
+                            Text(
+                              '认证流程.可多选'.tr(),
+                              style: TestStyle.pingFangRegular(
+                                fontSize: 13,
+                                color: Color(0xFF8C8C8C),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '*',
-                            style: TestStyle.regular(
-                              fontSize: 14,
-                              color: Color(0xFFFF4D4F),
+                            const SizedBox(width: 4),
+                            Text(
+                              '*',
+                              style: TestStyle.regular(
+                                fontSize: 14,
+                                color: Color(0xFFFF4D4F),
+                              ),
                             ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: _openExpectedCountrySheet,
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Center(
-                                child: SvgPicture.asset(
-                                  'assets/images/add_circle.svg',
-                                  width: 20,
-                                  height: 20,
-                                  colorFilter: const ColorFilter.mode(
-                                    Color(0x99262626),
-                                    BlendMode.srcIn,
+                            const Spacer(),
+                            GestureDetector(
+                              key: AppTestKeys
+                                  .actionQualificationServiceCountrySelect,
+                              onTap: _openExpectedCountrySheet,
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Center(
+                                  child: SvgPicture.asset(
+                                    'assets/images/add_circle.svg',
+                                    width: 20,
+                                    height: 20,
+                                    colorFilter: const ColorFilter.mode(
+                                      Color(0x99262626),
+                                      BlendMode.srcIn,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          // 空态时保留一行标签区高度，避免下方“从业年限”整体上移。
+                          constraints: const BoxConstraints(minHeight: 34),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedCountries
+                                .map(
+                                  (String country) => _CountryTag(
+                                    label: country,
+                                    onTap: () => _removeSelectedCountry(country),
+                                  ),
+                                )
+                                .toList(),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _selectedCountries
-                            .map(
-                              (String country) => _CountryTag(
-                                label: country,
-                                onTap: () => _removeSelectedCountry(country),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: <Widget>[
+                            Text(
+                              '认证流程.从业年限'.tr(),
+                              style: TestStyle.pingFangRegular(
+                                fontSize: 14,
+                                color: Color(0xFF262626),
                               ),
-                            )
-                            .toList(),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            '认证流程.从业年限'.tr(),
-                            style: TestStyle.pingFangRegular(
-                              fontSize: 14,
-                              color: Color(0xFF262626),
                             ),
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            '*',
-                            style: TestStyle.regular(
-                              fontSize: 14,
-                              color: Color(0xFFFF4D4F),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Container(
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F7FA),
-                                borderRadius: BorderRadius.circular(8),
+                            SizedBox(width: 4),
+                            Text(
+                              '*',
+                              style: TestStyle.regular(
+                                fontSize: 14,
+                                color: Color(0xFFFF4D4F),
                               ),
-                              alignment: Alignment.center,
-                              child: TextField(
-                                controller: _experienceController,
-                                keyboardType: TextInputType.number,
-                                textAlignVertical: TextAlignVertical.center,
-                                style: TestStyle.pingFangRegular(
-                                  fontSize: 14,
-                                  color: Color(0xFF262626),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Container(
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5F7FA),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                decoration: InputDecoration(
-                                  hintText: '通用.请输入'.tr(),
-                                  hintStyle: TestStyle.pingFangRegular(
+                                alignment: Alignment.center,
+                                child: TextField(
+                                  key: AppTestKeys
+                                      .fieldQualificationYearsOfService,
+                                  controller: _experienceController,
+                                  keyboardType: TextInputType.number,
+                                  textAlignVertical: TextAlignVertical.center,
+                                  style: TestStyle.pingFangRegular(
                                     fontSize: 14,
-                                    color: Color(0xFFBFBFBF),
+                                    color: Color(0xFF262626),
                                   ),
-                                  border: InputBorder.none,
-                                  isCollapsed: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 14,
+                                  decoration: InputDecoration(
+                                    hintText: '通用.请输入'.tr(),
+                                    hintStyle: TestStyle.pingFangRegular(
+                                      fontSize: 14,
+                                      color: Color(0xFFBFBFBF),
+                                    ),
+                                    border: InputBorder.none,
+                                    isCollapsed: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '认证流程.年'.tr(),
-                            style: TestStyle.pingFangMedium(
-                              fontSize: 14,
-                              color: Color(0xFF262626),
+                            const SizedBox(width: 12),
+                            Text(
+                              '认证流程.年'.tr(),
+                              style: TestStyle.pingFangMedium(
+                                fontSize: 14,
+                                color: Color(0xFF262626),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFD9D9D9)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () => context.go(
+                        RoutePaths.qualificationCertificationStepTwo,
+                        extra: widget.args,
                       ),
-                    ),
-                    child: Text(
-                      '认证流程.上一步'.tr(),
-                      style: TestStyle.pingFangRegular(
-                        fontSize: 16,
-                        color: Color(0xFF171A1D),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD9D9D9)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: FilledButton(
-                    onPressed: _isSubmitting ? null : _handleSubmit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF096DD9),
-                      disabledBackgroundColor: const Color(0xFFD9D9D9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      '认证流程.提交审核'.tr(),
-                      style: TestStyle.pingFangRegular(
-                        fontSize: 16,
-                        color: Colors.white,
+                      child: Text(
+                        '认证流程.上一步'.tr(),
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: Color(0xFF171A1D),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      key: AppTestKeys.actionQualificationSubmit,
+                      onPressed: _isSubmitting ? null : _handleSubmit,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF096DD9),
+                        disabledBackgroundColor: const Color(0xFFD9D9D9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        '认证流程.提交审核'.tr(),
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

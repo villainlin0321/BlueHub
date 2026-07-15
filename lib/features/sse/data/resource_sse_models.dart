@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 class RVoid {
   const RVoid({required this.code, required this.msg, required this.data});

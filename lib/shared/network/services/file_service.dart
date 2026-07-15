@@ -1,18 +1,26 @@
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:bluehub_app/shared/network/api_client.dart';
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 import 'package:dio/dio.dart';
 
 import '../../../shared/network/api_exception.dart';
+import '../../../shared/logging/app_logger.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../../features/files/data/file_models.dart';
+import 'image_upload_compress_service.dart';
 
 class FileService {
-  FileService({required ApiClient apiClient}) : _apiClient = apiClient;
+  FileService({
+    required ApiClient apiClient,
+    ImageUploadCompressService? imageUploadCompressService,
+  }) : _apiClient = apiClient,
+       _imageUploadCompressService =
+           imageUploadCompressService ?? ImageUploadCompressService();
 
   final ApiClient _apiClient;
+  final ImageUploadCompressService _imageUploadCompressService;
 
   /// 确认文件上传完成。
   ///
@@ -48,25 +56,48 @@ class FileService {
       throw ApiException.unknown('file not found');
     }
 
-    final List<int> bytes = await localFile.readAsBytes();
     final String mimeType = resolveMimeType(path);
+    final PreparedUploadPayload preparedPayload =
+        await _imageUploadCompressService.prepareForUpload(
+          filePath: path,
+          mimeType: mimeType,
+        );
+    final List<int> bytes = preparedPayload.bytes;
+    final String uploadMimeType = preparedPayload.mimeType;
     final String resolvedErrorMessage = errorMessage.isEmpty
         ? tr('上传.文件上传失败')
         : errorMessage;
     final FilePresignVO response = await presign(
       request: FilePresignBO(
         fileName: UploadPickerUtils.basename(path),
-        fileType: mimeType,
-        fileSize: bytes.length,
+        fileType: uploadMimeType,
+        fileSize: preparedPayload.fileSize,
         scene: scene,
         accessType: accessType,
       ),
+    );
+    final Uri? uploadUri = Uri.tryParse(response.uploadUrl);
+    AppLogger.instance.info(
+      'FILE_UPLOAD',
+      '文件预签名成功',
+      context: <String, Object?>{
+        'scene': scene.value,
+        'fileName': UploadPickerUtils.basename(path),
+        'fileSize': bytes.length,
+        'mimeType': mimeType,
+        'isImage': preparedPayload.isImage,
+        'isCompressed': preparedPayload.isCompressed,
+        'exceedsMaxSizeLimit': preparedPayload.exceedsMaxSizeLimit,
+        'fileId': response.fileId,
+        'objectKey': response.objectKey,
+        'uploadHost': uploadUri?.host ?? '',
+      },
     );
 
     await putToUploadUrl(
       uploadUrl: response.uploadUrl,
       bytes: bytes,
-      mimeType: mimeType,
+      mimeType: uploadMimeType,
       errorMessage: resolvedErrorMessage,
       onSendProgress: onSendProgress,
     );
@@ -74,8 +105,18 @@ class FileService {
       request: ConfirmUploadBO(
         fileId: response.fileId,
         objectKey: response.objectKey,
-        fileSize: bytes.length,
+        fileSize: preparedPayload.fileSize,
       ),
+    );
+    AppLogger.instance.info(
+      'FILE_UPLOAD',
+      '文件上传确认成功',
+      context: <String, Object?>{
+        'scene': scene.value,
+        'fileId': response.fileId,
+        'objectKey': response.objectKey,
+        'fileSize': preparedPayload.fileSize,
+      },
     );
     final String fileUrl = await getFileUrl(fileId: response.fileId);
     return FilePresignVO(
@@ -97,6 +138,7 @@ class FileService {
     String errorMessage = '',
     void Function(int sent, int total)? onSendProgress,
   }) async {
+    final Uri? uploadUri = Uri.tryParse(uploadUrl);
     final Dio uploadDio = Dio(
       BaseOptions(
         connectTimeout: const Duration(seconds: 20),
@@ -122,6 +164,17 @@ class FileService {
               status != null && status >= 200 && status < 300,
         ),
       );
+      AppLogger.instance.info(
+        'FILE_UPLOAD',
+        '对象存储直传成功',
+        context: <String, Object?>{
+          'uploadHost': uploadUri?.host ?? '',
+          'uploadPath': uploadUri?.path ?? '',
+          'mimeType': mimeType,
+          'contentLength': bytes.length,
+          'statusCode': response.statusCode,
+        },
+      );
       if ((response.statusCode ?? 0) < 200 ||
           (response.statusCode ?? 0) >= 300) {
         throw ApiException.http(
@@ -130,6 +183,23 @@ class FileService {
         );
       }
     } on DioException catch (error) {
+      // 这里补齐对象存储直传失败现场，便于区分超时、403 签名问题或 TLS/网络异常。
+      AppLogger.instance.error(
+        'FILE_UPLOAD',
+        '对象存储直传失败',
+        error: error,
+        stackTrace: error.stackTrace,
+        context: <String, Object?>{
+          'uploadHost': uploadUri?.host ?? '',
+          'uploadPath': uploadUri?.path ?? '',
+          'mimeType': mimeType,
+          'contentLength': bytes.length,
+          'dioType': error.type.name,
+          'statusCode': error.response?.statusCode,
+          'responseData': _truncateLogValue(error.response?.data),
+          'message': error.message,
+        },
+      );
       throw ApiException.http(
         statusCode: error.response?.statusCode,
         message: resolvedErrorMessage,
@@ -138,6 +208,18 @@ class FileService {
     } finally {
       uploadDio.close(force: true);
     }
+  }
+
+  /// 截断较长响应内容，避免上传失败日志把整份 HTML/XML 错误页写满日志文件。
+  static String _truncateLogValue(Object? value, {int maxLength = 300}) {
+    final String text = value?.toString().trim() ?? '';
+    if (text.isEmpty) {
+      return '';
+    }
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return '${text.substring(0, maxLength)}...';
   }
 
   /// 根据文件路径推断 MIME 类型。

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
+/// Toast 显示位置，仅封装当前项目实际使用到的顶部与居中两种场景。
+enum AppToastPosition {
+  top,
+  center,
+}
+
 /// 全局 Toast 工具，统一对接 EasyLoading 并收口项目内文本提示样式。
 class AppToast {
   AppToast._();
@@ -14,6 +20,15 @@ class AppToast {
     vertical: 10,
   );
   static const Duration _displayDuration = Duration(milliseconds: 2000);
+  static const AppToastPosition _defaultPosition = AppToastPosition.center;
+
+  /// 将项目内部位置枚举映射为 EasyLoading 的原生位置枚举。
+  static EasyLoadingToastPosition _mapToastPosition(AppToastPosition position) {
+    return switch (position) {
+      AppToastPosition.center => EasyLoadingToastPosition.center,
+      AppToastPosition.top => EasyLoadingToastPosition.top,
+    };
+  }
 
   /// 初始化 EasyLoading 的全局 Toast 样式。
   static void configure() {
@@ -22,9 +37,9 @@ class AppToast {
       ..indicatorType = EasyLoadingIndicatorType.fadingCircle
       ..maskType = EasyLoadingMaskType.none
       ..userInteractions = true
-      ..dismissOnTap = true
+      ..dismissOnTap = false
       ..displayDuration = _displayDuration
-      ..toastPosition = EasyLoadingToastPosition.bottom
+      ..toastPosition = _mapToastPosition(_defaultPosition)
       ..backgroundColor = _backgroundColor
       ..textColor = _textColor
       ..indicatorColor = _textColor
@@ -35,8 +50,11 @@ class AppToast {
       ..contentPadding = _contentPadding;
   }
 
-  /// 展示统一样式的文本 Toast。
-  static Future<void> show(String message) async {
+  /// 展示统一样式的文本 Toast，可按需指定显示位置。
+  static Future<void> show(
+    String message, {
+    AppToastPosition position = _defaultPosition,
+  }) async {
     final String trimmedMessage = message.trim();
     if (trimmedMessage.isEmpty) {
       return;
@@ -45,8 +63,8 @@ class AppToast {
     await EasyLoading.showToast(
       trimmedMessage,
       duration: _displayDuration,
-      toastPosition: EasyLoadingToastPosition.bottom,
-      dismissOnTap: true,
+      toastPosition: _mapToastPosition(position),
+      dismissOnTap: false,
       maskType: EasyLoadingMaskType.none,
     );
   }
@@ -56,12 +74,18 @@ class AppToast {
   }
 
   /// 语义别名，当前与普通 Toast 使用同一视觉样式。
-  static Future<void> showError(String message) {
-    return show(message);
+  static Future<void> showError(
+    String message, {
+    AppToastPosition position = _defaultPosition,
+  }) {
+    return show(message, position: position);
   }
 
   /// 语义别名，当前与普通 Toast 使用同一视觉样式。
-  static Future<void> showSuccess(String message) {
-    return show(message);
+  static Future<void> showSuccess(
+    String message, {
+    AppToastPosition position = _defaultPosition,
+  }) {
+    return show(message, position: position);
   }
 }

@@ -7,9 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
-import '../../../shared/ui/app_colors.dart';
-import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../../../utils/upload_picker_utils.dart';
@@ -20,8 +19,10 @@ import '../../files/data/file_providers.dart';
 import '../../me/data/user_models.dart';
 import '../../me/data/user_providers.dart';
 import 'current_user_view_data.dart';
+import 'my_info_contact_edit_page.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
+
 /// 我的信息页：展示当前登录用户的基础资料，并支持基础信息编辑。
 class MyInfoPage extends ConsumerStatefulWidget {
   const MyInfoPage({super.key});
@@ -35,6 +36,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   bool _isSubmitting = false;
   String? _localAvatarPreviewPath;
+  late Future<RealNameVerificationVO?> _latestRealNameVerificationFuture;
 
   /// 返回性别选择项，运行时读取国际化文案。
   List<SelectableSheetOption<String>> get _genderOptions =>
@@ -45,95 +47,160 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
       ];
 
   @override
+  void initState() {
+    super.initState();
+    _latestRealNameVerificationFuture = _loadLatestRealNameVerification();
+  }
+
+  @override
   /// 构建“我的信息”页面，并根据当前登录态刷新展示内容。
   Widget build(BuildContext context) {
     final AuthUser? currentUser = ref.watch(authSessionProvider).user;
     final CurrentUserViewData userViewData = CurrentUserViewData.fromAuthUser(
       currentUser,
     );
+    final String currentNickname = currentUser?.nickname.trim() ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         bottom: false,
-        child: Stack(
-          children: <Widget>[
-            Column(
-              children: <Widget>[
-                _MyInfoHeader(onBackTap: context.pop),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          _InfoAvatarRow(
-                            label: '我的.头像'.tr(),
-                            avatarUrl: userViewData.avatarUrl,
-                            localAvatarPath: _localAvatarPreviewPath,
-                            fallbackAssetPath: _avatarAsset,
-                            onTap: _handleAvatarTap,
-                          ),
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Color(0xFFF0F0F0),
-                          ),
-                          _InfoValueRow(
-                            label: '我的.出生日期'.tr(),
-                            value: userViewData.birthdayText,
-                            onTap: _handleBirthdayTap,
-                          ),
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Color(0xFFF0F0F0),
-                          ),
-                          _InfoValueRow(
-                            label: '我的.性别'.tr(),
-                            value: userViewData.genderText,
-                            onTap: _handleGenderTap,
-                          ),
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Color(0xFFF0F0F0),
-                          ),
-                          _InfoValueRow(
-                            label: '我的.手机号'.tr(),
-                            value: userViewData.maskedPhone,
-                            // onTap: _handlePhoneTap,
-                            showChevron: false,
-                          ),
-                        ],
+        child: GestureDetector(
+          onTap: _dismissKeyboard,
+          behavior: HitTestBehavior.translucent,
+          child: Stack(
+            children: <Widget>[
+              Column(
+                children: <Widget>[
+                  _MyInfoHeader(
+                    onBackTap: () {
+                      _dismissKeyboard();
+                      context.pop();
+                    },
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            _InfoAvatarRow(
+                              label: '我的.头像'.tr(),
+                              avatarUrl: userViewData.avatarUrl,
+                              localAvatarPath: _localAvatarPreviewPath,
+                              fallbackAssetPath: _avatarAsset,
+                              onTap: _handleAvatarTap,
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            _NicknameEditRow(
+                              key: const Key('my-info-nickname-row'),
+                              label: '我的.昵称'.tr(),
+                              value: currentNickname,
+                              hintText: '我的.点击修改昵称'.tr(),
+                              enabled: !_isSubmitting,
+                              onSubmitted: _handleNicknameSubmitted,
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            FutureBuilder<RealNameVerificationVO?>(
+                              future: _latestRealNameVerificationFuture,
+                              builder:
+                                  (
+                                    BuildContext context,
+                                    AsyncSnapshot<RealNameVerificationVO?>
+                                    snapshot,
+                                  ) {
+                                    return _InfoValueRow(
+                                      key: const Key('my-info-real-name-row'),
+                                      label: '我的.实名认证'.tr(),
+                                      value: _mapRealNameRowValue(
+                                        record: snapshot.data,
+                                        fallback: userViewData.realNameText,
+                                      ),
+                                      onTap: _handleRealNameTap,
+                                    );
+                                  },
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            _InfoValueRow(
+                              label: '我的.出生日期'.tr(),
+                              value: userViewData.birthdayText,
+                              onTap: _handleBirthdayTap,
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            _InfoValueRow(
+                              label: '我的.性别'.tr(),
+                              value: userViewData.genderText,
+                              onTap: _handleGenderTap,
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            _InfoValueRow(
+                              label: '我的.手机号'.tr(),
+                              value: userViewData.maskedPhone,
+                              onTap: _handlePhoneTap,
+                            ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF0F0F0),
+                            ),
+                            _InfoValueRow(
+                              key: const Key('my-info-email-row'),
+                              label: '我的.邮箱'.tr(),
+                              value: userViewData.emailText,
+                              onTap: _handleEmailTap,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            if (_isSubmitting)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: const Color(0x33000000),
-                  child: Center(
-                    child: Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                  ),
-                ),
+                ],
               ),
-          ],
+              if (_isSubmitting)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: const Color(0x33000000),
+                    child: Center(
+                      child: Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -141,6 +208,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 打开头像来源面板，并让用户选择拍照或相册。
   Future<void> _handleAvatarTap() async {
+    _dismissKeyboard();
     if (_isSubmitting) {
       return;
     }
@@ -171,8 +239,110 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
     );
   }
 
+  /// 提交行内昵称输入结果，并在校验通过后更新当前用户昵称。
+  Future<void> _handleNicknameSubmitted(String nickname) async {
+    _dismissKeyboard();
+    final String currentNickname =
+        ref.read(authSessionProvider).user?.nickname.trim() ?? '';
+    final String nextNickname = nickname.trim();
+    if (_isSubmitting || nextNickname == currentNickname) {
+      return;
+    }
+
+    await _executeProfileAction(
+      action: () => ref
+          .read(userServiceProvider)
+          .updateMe(request: UpdateUserBO(nickname: nextNickname)),
+      successMessage: '我的.昵称已更新'.tr(),
+    );
+  }
+
+  /// 进入实名认证页面，沿用既有路由。
+  Future<void> _handleRealNameTap() async {
+    _dismissKeyboard();
+    await context.push(RoutePaths.jobSeekerRealNameVerification);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _latestRealNameVerificationFuture = _loadLatestRealNameVerification();
+    });
+  }
+
+  Future<RealNameVerificationVO?> _loadLatestRealNameVerification() async {
+    try {
+      final List<RealNameVerificationVO> records = await ref
+          .read(userServiceProvider)
+          .listMyRealNameVerifications();
+      if (records.isEmpty) {
+        return null;
+      }
+      final List<RealNameVerificationVO> sorted = <RealNameVerificationVO>[
+        ...records,
+      ]..sort(_compareRealNameVerificationRecord);
+      return sorted.first;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static int _compareRealNameVerificationRecord(
+    RealNameVerificationVO left,
+    RealNameVerificationVO right,
+  ) {
+    final DateTime? rightTime = _resolveRealNameRecordTime(right);
+    final DateTime? leftTime = _resolveRealNameRecordTime(left);
+    if (rightTime != null && leftTime != null) {
+      final int timeCompare = rightTime.compareTo(leftTime);
+      if (timeCompare != 0) {
+        return timeCompare;
+      }
+    } else if (rightTime != null) {
+      return 1;
+    } else if (leftTime != null) {
+      return -1;
+    }
+    return right.verifyId.compareTo(left.verifyId);
+  }
+
+  static DateTime? _resolveRealNameRecordTime(RealNameVerificationVO record) {
+    final List<String> candidates = <String>[
+      record.updatedAt,
+      record.reviewedAt,
+      record.createdAt,
+    ];
+    for (final String value in candidates) {
+      final DateTime? parsed = DateTime.tryParse(value.trim());
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  static String _mapRealNameRowValue({
+    required RealNameVerificationVO? record,
+    required String fallback,
+  }) {
+    if (record == null) {
+      return fallback;
+    }
+    switch (record.status.trim().toLowerCase()) {
+      case 'verified':
+        final String realName = record.realName.trim();
+        return realName.isEmpty ? '我的.已完成实名认证'.tr() : realName;
+      case 'pending':
+        return '我的.认证中'.tr();
+      case 'unverified':
+      case 'rejected':
+      default:
+        return '我的.未实名'.tr();
+    }
+  }
+
   /// 打开生日选择器，并把结果回写到用户资料。
   Future<void> _handleBirthdayTap() async {
+    _dismissKeyboard();
     final AuthUser? currentUser = ref.read(authSessionProvider).user;
     final DateTime now = DateTime.now();
     final DateTime initialDate =
@@ -200,6 +370,7 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 打开性别单选面板，并将选择结果同步到服务端。
   Future<void> _handleGenderTap() async {
+    _dismissKeyboard();
     final AuthUser? currentUser = ref.read(authSessionProvider).user;
     final List<String>? result = await showSelectableOptionsBottomSheet<String>(
       context: context,
@@ -224,23 +395,20 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
 
   /// 打开手机号编辑弹窗，当前版本先承载输入与确认交互。
   Future<void> _handlePhoneTap() async {
-    if (_isSubmitting) {
-      return;
-    }
-    final String currentPhone =
-        ref.read(authSessionProvider).user?.phone.trim() ?? '';
-    final String? nextPhone = await showAppDialog<String>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (BuildContext dialogContext) {
-        return _EditPhoneDialog(initialPhone: currentPhone);
-      },
+    _dismissKeyboard();
+    context.push(
+      RoutePaths.myInfoContactEdit,
+      extra: const MyInfoContactEditPageArgs.phone(),
     );
-    if (!mounted || nextPhone == null || nextPhone == currentPhone) {
-      return;
-    }
+  }
 
-    _showMessage('我的.暂不支持直接修改手机号'.tr());
+  /// 进入邮箱编辑页，当前复用统一的联系方式编辑页面。
+  Future<void> _handleEmailTap() async {
+    _dismissKeyboard();
+    context.push(
+      RoutePaths.myInfoContactEdit,
+      extra: const MyInfoContactEditPageArgs.email(),
+    );
   }
 
   /// 选择头像后完成预签名上传，并把返回的文件 ID 回写到资料接口。
@@ -408,6 +576,11 @@ class _MyInfoPageState extends ConsumerState<MyInfoPage> {
   void _showMessage(String message) {
     AppToast.show(message);
   }
+
+  /// 收起当前页面中的软键盘，避免跨行操作时键盘残留。
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
 }
 
 class _MyInfoHeader extends StatelessWidget {
@@ -433,7 +606,10 @@ class _MyInfoHeader extends StatelessWidget {
           ),
           Text(
             '我的.我的信息'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
+            style: TestStyle.pingFangMedium(
+              fontSize: 17,
+              color: Color(0xFF262626),
+            ),
           ),
         ],
       ),
@@ -485,29 +661,19 @@ class _InfoAvatarRow extends StatelessWidget {
 
 class _InfoValueRow extends StatelessWidget {
   const _InfoValueRow({
+    super.key,
     required this.label,
     required this.value,
     this.onTap,
-    this.showChevron = true,
   });
 
   final String label;
   final String value;
   final VoidCallback? onTap;
-  final bool showChevron;
 
   @override
   /// 构建基础资料行，支持可点击编辑和只读展示两种状态。
   Widget build(BuildContext context) {
-    final Widget trailing = showChevron
-        ? const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox(width: 4),
-              Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
-            ],
-          )
-        : const SizedBox.shrink();
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -518,12 +684,219 @@ class _InfoValueRow extends StatelessWidget {
               label,
               style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
             ),
-            const Spacer(),
-            Text(
-              value,
-              style: TestStyle.regular(fontSize: 16, color: Color(0xFF8C8C8C)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TestStyle.regular(
+                    fontSize: 16,
+                    color: const Color(0xFF8C8C8C),
+                  ),
+                ),
+              ),
             ),
-            trailing,
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 18, color: Color(0xFFBFBFBF)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NicknameEditRow extends StatefulWidget {
+  const _NicknameEditRow({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.hintText,
+    required this.enabled,
+    required this.onSubmitted,
+  });
+
+  final String label;
+  final String value;
+  final String hintText;
+  final bool enabled;
+  final Future<void> Function(String value) onSubmitted;
+
+  @override
+  State<_NicknameEditRow> createState() => _NicknameEditRowState();
+}
+
+class _NicknameEditRowState extends State<_NicknameEditRow> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  String? _errorText;
+  bool _isHandlingBlur = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _NicknameEditRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && !_focusNode.hasFocus) {
+      _controller.text = widget.value;
+    }
+    if (!widget.enabled && _focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_handleFocusChanged);
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (_focusNode.hasFocus) {
+      return;
+    }
+    _handleBlur();
+  }
+
+  void _handleRowTap() {
+    if (!widget.enabled) {
+      return;
+    }
+    _focusNode.requestFocus();
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    final String nickname = _controller.text.trim();
+    if (nickname.isEmpty) {
+      setState(() {
+        _errorText = '我的.请输入昵称'.tr();
+      });
+      return;
+    }
+    if (nickname.length > 20) {
+      setState(() {
+        _errorText = '我的.昵称长度限制'.tr();
+      });
+      return;
+    }
+
+    setState(() {
+      _errorText = null;
+    });
+    await widget.onSubmitted(nickname);
+  }
+
+  Future<void> _handleBlur() async {
+    if (!mounted || _isHandlingBlur || !widget.enabled) {
+      return;
+    }
+
+    final String nickname = _controller.text.trim();
+    if (nickname.isEmpty) {
+      setState(() {
+        _errorText = null;
+        _controller.text = widget.value;
+        _controller.selection = TextSelection.collapsed(
+          offset: _controller.text.length,
+        );
+      });
+      return;
+    }
+    if (nickname == widget.value) {
+      setState(() {
+        _errorText = null;
+      });
+      return;
+    }
+
+    _isHandlingBlur = true;
+    try {
+      await _handleSubmit();
+    } finally {
+      _isHandlingBlur = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleRowTap,
+      behavior: HitTestBehavior.translucent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              widget.label,
+              style: TestStyle.regular(fontSize: 16, color: Color(0xFF262626)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                key: const Key('my-info-nickname-input'),
+                controller: _controller,
+                focusNode: _focusNode,
+                enabled: widget.enabled,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.done,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                cursorColor: const Color(0xFF262626),
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(20),
+                ],
+                style: TestStyle.regular(
+                  fontSize: 16,
+                  color: const Color(0xFF262626),
+                ),
+                onTapOutside: (_) => _focusNode.unfocus(),
+                onChanged: (_) {
+                  if (_errorText == null) {
+                    return;
+                  }
+                  setState(() {
+                    _errorText = null;
+                  });
+                },
+                onSubmitted: (_) => _handleSubmit(),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: widget.hintText,
+                  hintStyle: TestStyle.regular(
+                    fontSize: 16,
+                    color: const Color(0xFF8C8C8C),
+                  ),
+                  errorText: _errorText,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -612,7 +985,10 @@ class _ImageSourceBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '我的.选择头像'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 17, color: Color(0xFF262626)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 17,
+                color: Color(0xFF262626),
+              ),
             ),
             const SizedBox(height: 12),
             _BottomSheetActionTile(label: '我的.拍照'.tr(), onTap: onCameraTap),
@@ -647,127 +1023,6 @@ class _BottomSheetActionTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _EditPhoneDialog extends StatefulWidget {
-  const _EditPhoneDialog({required this.initialPhone});
-
-  final String initialPhone;
-
-  @override
-  State<_EditPhoneDialog> createState() => _EditPhoneDialogState();
-}
-
-class _EditPhoneDialogState extends State<_EditPhoneDialog> {
-  late final TextEditingController _controller;
-  String? _errorText;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialPhone);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleConfirm() {
-    final String phone = _controller.text.trim();
-    if (phone.isEmpty) {
-      setState(() {
-        _errorText = '通用.请输入手机号'.tr();
-      });
-      return;
-    }
-    if (!RegExp(r'^\d{6,20}$').hasMatch(phone)) {
-      setState(() {
-        _errorText = '通用.请输入正确的手机号'.tr();
-      });
-      return;
-    }
-    Navigator.of(context).pop(phone);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: '我的.修改手机号'.tr(),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            '我的.请输入新的手机号'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(20),
-            ],
-            cursorColor: AppColors.brand,
-            onChanged: (_) {
-              if (_errorText == null) {
-                return;
-              }
-              setState(() {
-                _errorText = null;
-              });
-            },
-            onSubmitted: (_) => _handleConfirm(),
-            decoration: InputDecoration(
-              hintText: '通用.请输入手机号'.tr(),
-              hintStyle: TestStyle.pingFangRegular(fontSize: 15, color: Color(0xFFBFBFBF)),
-              filled: true,
-              fillColor: const Color(0xFFF5F7FA),
-              errorText: _errorText,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.brand),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.danger),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.danger),
-              ),
-            ),
-          ),
-        ],
-      ),
-      actions: <AppDialogAction>[
-        AppDialogAction.secondary(
-          label: '通用.取消'.tr(),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppDialogAction.primary(
-          label: '通用.确定'.tr(),
-          onPressed: _handleConfirm,
-        ),
-      ],
     );
   }
 }

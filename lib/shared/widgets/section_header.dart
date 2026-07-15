@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../ui/app_colors.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 /// 列表分区标题（含“更多”）。
 class SectionHeader extends StatelessWidget {
   const SectionHeader({

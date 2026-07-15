@@ -1,11 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/data/config_models.dart';
+import '../../../config/data/config_providers.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/network/services/config_service.dart';
 import '../../../../shared/widgets/job_position_card.dart';
 import '../../data/job_models.dart';
 
-class JobListCards extends StatelessWidget {
+class JobListCards extends ConsumerWidget {
   const JobListCards({
     super.key,
     required this.jobs,
@@ -30,7 +34,11 @@ class JobListCards extends StatelessWidget {
   final ScrollPhysics? physics;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Map<TagCategory, Map<String, TagItemVO>> tagLookupByCategory =
+        ref.watch(jobCardTagLookupProvider).asData?.value ??
+        const <TagCategory, Map<String, TagItemVO>>{};
+
     return ListView.separated(
       shrinkWrap: shrinkWrap,
       physics: physics,
@@ -42,6 +50,7 @@ class JobListCards extends StatelessWidget {
         final bool isApplied = appliedJobIds.contains(item.jobId);
         return JobPositionCard(
           data: item.toCardData(),
+          tagLookupByCategory: tagLookupByCategory,
           onTap: () => onTap(item),
           onApply: isApplied || onApply == null ? null : () => onApply!(item),
           isApplying: applyingJobIds.contains(item.jobId),
@@ -57,16 +66,32 @@ extension JobListCardDataMapper on JobListVO {
   JobPositionCardData toCardData() {
     final String urgentLabel = '招聘卡片.急招'.tr();
     final String visaSupportLabel = '招聘卡片.提供签证'.tr();
-    final List<String> tagLabels = tags
-        .map((TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
+    final List<JobPositionCardTagData> apiTags = tags
+        .map(
+          (TagVO tag) => JobPositionCardTagData(
+            label: tag.label.trim(),
+            type: tag.type.trim(),
+          ),
+        )
+        .where((JobPositionCardTagData tag) => tag.label.isNotEmpty)
         .toList(growable: false);
-    final List<String> requirementTags = <String>[
-      ...tagLabels.where((String label) => label != urgentLabel),
-      if (hasVisaSupport && !tagLabels.contains(visaSupportLabel))
-        visaSupportLabel,
+    final List<JobPositionCardTagData> requirementTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type != TagCategory.highlight.value,
+      ),
+      if (hasVisaSupport)
+        JobPositionCardTagData(label: visaSupportLabel, type: null),
     ].take(3).toList(growable: false);
-    final List<String> highlightTags = <String>[if (isUrgent) urgentLabel];
+    final List<JobPositionCardTagData> highlightTags = <JobPositionCardTagData>[
+      ...apiTags.where(
+        (JobPositionCardTagData tag) => tag.type == TagCategory.highlight.value,
+      ),
+      if (isUrgent)
+        JobPositionCardTagData(
+          label: urgentLabel,
+          type: TagCategory.highlight.value,
+        ),
+    ];
 
     return JobPositionCardData(
       title: title,

@@ -1,5 +1,5 @@
-import 'package:bluehub_app/shared/network/providers.dart';
-import 'package:bluehub_app/shared/network/services/provider_finance_service.dart';
+import 'package:europepass/shared/network/providers.dart';
+import 'package:europepass/shared/network/services/provider_finance_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final providerFinanceServiceProvider = Provider<ProviderFinanceService>((ref) {

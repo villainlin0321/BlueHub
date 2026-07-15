@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:bluehub_app/shared/network/api_decoders.dart';
+import 'package:europepass/shared/network/api_decoders.dart';
 
 enum ComplaintStatus {
   pending('pending', '投诉.待处理'),

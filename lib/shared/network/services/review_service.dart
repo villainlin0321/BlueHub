@@ -1,4 +1,4 @@
-import 'package:bluehub_app/shared/network/api_client.dart';
+import 'package:europepass/shared/network/api_client.dart';
 import '../../../features/visa/data/review_models.dart';
 
 class ReviewService {

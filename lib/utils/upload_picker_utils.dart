@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'permission_utils.dart';
 
-import 'package:bluehub_app/shared/ui/test_style.dart';
+import 'package:europepass/shared/ui/test_style.dart';
 enum UploadSourceType { camera, gallery, file }
 
 enum UploadItemState { uploading, success, failure }
@@ -168,21 +168,21 @@ class UploadPickerUtils {
     if (!granted) {
       return const <PickedUploadFile>[];
     }
-    final List<XFile> images = await _imagePicker.pickMultiImage(
+    // 项目约束：相册单次只允许选择 1 张；如需多张，由业务侧重复触发入口逐张追加。
+    final XFile? image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
       imageQuality: 90,
     );
-    if (images.isEmpty) {
+    if (image == null) {
       return const <PickedUploadFile>[];
     }
-    return images
-        .map(
-          (XFile image) => _buildUploadFile(
-            path: image.path,
-            sourceType: UploadSourceType.gallery,
-            name: image.name,
-          ),
-        )
-        .toList();
+    return <PickedUploadFile>[
+      _buildUploadFile(
+        path: image.path,
+        sourceType: UploadSourceType.gallery,
+        name: image.name,
+      ),
+    ];
   }
 
   static Future<List<PickedUploadFile>> pickFromFiles() async {
@@ -204,6 +204,31 @@ class UploadPickerUtils {
           ),
         )
         .toList();
+  }
+
+  /// 仅从本地文件中选择 PDF，统一限制业务文件上传类型。
+  static Future<List<PickedUploadFile>> pickPdfFiles() async {
+    final FilePickerResult? result = await FilePicker.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const <String>['pdf'],
+    );
+    if (result == null) {
+      return const <PickedUploadFile>[];
+    }
+
+    return result.files
+        .where((PlatformFile file) => file.path != null)
+        .map(
+          (PlatformFile file) => _buildUploadFile(
+            path: file.path!,
+            sourceType: UploadSourceType.file,
+            name: file.name,
+            sizeBytes: file.size,
+          ),
+        )
+        .where((PickedUploadFile file) => isPdfPath(file.path))
+        .toList(growable: false);
   }
 
   static PickedUploadFile _buildUploadFile({
@@ -254,6 +279,12 @@ class UploadPickerUtils {
         normalizedPath.endsWith('.gif') ||
         normalizedPath.endsWith('.heic') ||
         normalizedPath.endsWith('.heif');
+  }
+
+  /// 判断当前路径是否指向 PDF 文件，供上传限制和预览分流复用。
+  static bool isPdfPath(String path) {
+    final String normalizedPath = path.toLowerCase();
+    return normalizedPath.endsWith('.pdf');
   }
 
   static String formatFileSize(int bytes) {

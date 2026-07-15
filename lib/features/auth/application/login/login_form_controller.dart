@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_models.dart';
 import '../../data/auth_providers.dart';
+import '../../data/login_account_store.dart';
 import '../auth_session_provider.dart';
 import 'login_form_state.dart';
 
 final loginFormControllerProvider =
-    NotifierProvider<LoginFormController, LoginFormState>(
+    NotifierProvider.autoDispose<LoginFormController, LoginFormState>(
       LoginFormController.new,
     );
 
@@ -56,15 +57,16 @@ class LoginFormController extends Notifier<LoginFormState> {
     state = state.copyWith(feedbackMessage: null);
   }
 
-  Future<void> sendCode() async {
+  /// 发送验证码，并返回本次发送是否成功，便于页面层串联后续登录动作。
+  Future<bool> sendCode() async {
     if (state.isSendingCode || state.resendCountdownSeconds > 0) {
-      return;
+      return false;
     }
 
     final validationError = _validateBeforeSendingCode();
     if (validationError != null) {
       _emitFeedback(validationError, isError: true);
-      return;
+      return false;
     }
 
     state = state.copyWith(isSendingCode: true);
@@ -88,8 +90,10 @@ class LoginFormController extends Notifier<LoginFormState> {
         _startSendCodeCountdown();
         _emitFeedback(tr('认证.已发送邮箱验证码'));
       }
+      return true;
     } catch (_) {
       _emitFeedback(tr('认证.验证码发送失败'), isError: true);
+      return false;
     } finally {
       state = state.copyWith(isSendingCode: false);
     }
@@ -122,36 +126,14 @@ class LoginFormController extends Notifier<LoginFormState> {
               ),
             );
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
-      return login;
-    } catch (_) {
-      _emitFeedback(tr('认证.登录失败'), isError: true);
-      return null;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
-    }
-  }
-
-  Future<LoginVO?> submitEmailLoginWithoutValidation({
-    required String email,
-    required String code,
-  }) async {
-    state = state.copyWith(
-      isPhoneLogin: false,
-      email: email,
-      code: code,
-      isSubmitting: true,
-    );
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      final login = await authService.emailLogin(
-        request: EmailLoginBO(
-          email: email.trim(),
-          password: '',
-          code: code.trim(),
-        ),
-      );
-      await ref.read(authSessionProvider.notifier).handleLoginResult(login);
+      await ref
+          .read(loginAccountStoreProvider)
+          .save(
+            mode: state.isPhoneLogin
+                ? LoginAccountMode.phone
+                : LoginAccountMode.email,
+            account: state.currentAccount,
+          );
       return login;
     } catch (_) {
       _emitFeedback(tr('认证.登录失败'), isError: true);
