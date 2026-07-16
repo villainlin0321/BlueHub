@@ -118,12 +118,12 @@ flutter:
   fonts:
     - family: PingFang
       fonts:
-        - asset: assets/font/ping_fang/PingFangSC-Regular.ttf
-          weight: 400
-        - asset: assets/font/ping_fang/PingFangSC-Medium.ttf
-          weight: 500
-        - asset: assets/font/ping_fang/PingFangSC-Semibold.ttf
-          weight: 600
+#        - asset: assets/font/ping_fang/PingFangSC-Regular.ttf
+#          weight: 400
+#        - asset: assets/font/ping_fang/PingFangSC-Medium.ttf
+#          weight: 500
+#        - asset: assets/font/ping_fang/PingFangSC-Semibold.ttf
+#          weight: 600
     - family: SFUIText
       fonts:
         - asset: assets/font/sf_ui_text/SFUIText-Regular.otf
