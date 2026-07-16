@@ -12,6 +12,7 @@ import '../../../features/message/application/chat/chat_page_args.dart';
 import '../data/visa_order_models.dart';
 import '../data/visa_order_providers.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import 'order_detail_page.dart';
@@ -156,16 +157,17 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
 
       setState(() => _isLoadingMore = false);
-      AppToast.show(_normalizeError(error));
+      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+      if (toastMessage != null) {
+        AppToast.show(toastMessage);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        AppToast.show(_normalizeError(error));
+      }
     }
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '订单.订单加载失败'.tr());
   }
 
   void _showMessage(String message) {

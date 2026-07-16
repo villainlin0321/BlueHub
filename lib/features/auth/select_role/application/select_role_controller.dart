@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../application/auth_role_mapper.dart';
 import '../../application/auth_session_provider.dart';
 import '../../data/auth_models.dart';
@@ -48,8 +49,13 @@ class SelectRoleController extends Notifier<SelectRoleState> {
           );
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
       return true;
-    } catch (_) {
-      _emitFeedback(tr('认证.角色选择失败'), isError: true);
+    } catch (error) {
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _emitFeedback(tr('认证.角色选择失败'), isError: true);
+      }
       return false;
     } finally {
       state = state.copyWith(isSubmitting: false);

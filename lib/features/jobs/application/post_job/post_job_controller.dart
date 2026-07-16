@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
 import '../../../../shared/network/services/config_service.dart';
@@ -292,10 +293,15 @@ class PostJobController extends Notifier<PostJobState> {
         error: error,
         stackTrace: stackTrace,
       );
-      _emitFeedback(
-        editingJobId == null ? '岗位发布.岗位发布失败'.tr() : '岗位发布.岗位更新失败'.tr(),
-        isError: true,
-      );
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _emitFeedback(
+          editingJobId == null ? '岗位发布.岗位发布失败'.tr() : '岗位发布.岗位更新失败'.tr(),
+          isError: true,
+        );
+      }
     }
   }
 
@@ -319,7 +325,12 @@ class PostJobController extends Notifier<PostJobState> {
         stackTrace: stackTrace,
         context: <String, Object?>{'jobId': jobId},
       );
-      _emitFeedback('岗位发布.岗位详情加载失败'.tr(), isError: true);
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _emitFeedback('岗位发布.岗位详情加载失败'.tr(), isError: true);
+      }
       return null;
     }
   }
@@ -502,7 +513,9 @@ class PostJobController extends Notifier<PostJobState> {
       return detail.address.trim();
     }
     final String countryKey = _countryLabelKeyMap[detail.country] ?? '';
-    final String country = countryKey.isEmpty ? detail.country : countryKey.tr();
+    final String country = countryKey.isEmpty
+        ? detail.country
+        : countryKey.tr();
     final List<String> parts = <String>[
       country.trim(),
       detail.city.trim(),
@@ -645,7 +658,8 @@ class PostJobController extends Notifier<PostJobState> {
         'locationFilled': draft.countryOrCity.trim().isNotEmpty,
         'headcountFilled': draft.headcount.trim().isNotEmpty,
         'salaryRangeFilled':
-            draft.minSalary.trim().isNotEmpty && draft.maxSalary.trim().isNotEmpty,
+            draft.minSalary.trim().isNotEmpty &&
+            draft.maxSalary.trim().isNotEmpty,
         'descriptionLength': draft.description.trim().length,
       },
       if (reason != null) 'reason': reason,

@@ -6,7 +6,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
-import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
@@ -102,17 +102,17 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         }
       });
       if (!shouldShowInitialLoading) {
-        AppToast.show(_resolveErrorMessage(error));
+        final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+        if (toastMessage != null) {
+          AppToast.show(toastMessage);
+        }
       }
     }
   }
 
   /// 提取简历请求失败时的用户可读文案。
   String _resolveErrorMessage(Object error) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    return '我的.简历加载失败'.tr();
+    return ApiErrorFeedback.resolveMessage(error, fallback: '我的.简历加载失败'.tr());
   }
 
   /// 构建顶部导航栏，处理返回与右上角“管理”文案。

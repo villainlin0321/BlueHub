@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../data/user_models.dart';
 import '../../data/user_providers.dart';
@@ -74,8 +74,12 @@ class BlacklistController extends Notifier<BlacklistState> {
         ..remove(user.userId);
       state = state.copyWith(
         removingUserIds: nextRemovingIds,
-        feedbackMessage: _resolveRemoveErrorMessage(error),
-        feedbackId: state.feedbackId + 1,
+        feedbackMessage: ApiErrorFeedback.hasAutoToast(error)
+            ? null
+            : _resolveRemoveErrorMessage(error),
+        feedbackId: ApiErrorFeedback.hasAutoToast(error)
+            ? state.feedbackId
+            : state.feedbackId + 1,
       );
     }
   }
@@ -137,17 +141,11 @@ class BlacklistController extends Notifier<BlacklistState> {
   }
 
   String _resolveLoadErrorMessage(Object error) {
-    if (error is ApiException && error.message.trim().isNotEmpty) {
-      return error.message;
-    }
-    return '我的.黑名单加载失败'.tr();
+    return ApiErrorFeedback.resolveMessage(error, fallback: '我的.黑名单加载失败'.tr());
   }
 
   String _resolveRemoveErrorMessage(Object error) {
-    if (error is ApiException && error.message.trim().isNotEmpty) {
-      return error.message;
-    }
-    return '我的.移除失败'.tr();
+    return ApiErrorFeedback.resolveMessage(error, fallback: '我的.移除失败'.tr());
   }
 }
 

@@ -7,7 +7,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../home/data/home_providers.dart';
-import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
@@ -20,6 +20,7 @@ import '../../me/presentation/company_my_info_page.dart';
 import 'job_apply_helper.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 职位详情页参数：当前至少透传岗位 ID，供“投递简历”调用真实接口。
 class JobDetailPageArgs {
   const JobDetailPageArgs({required this.jobId});
@@ -111,10 +112,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
 
   /// 统一提取详情请求失败文案，优先显示接口返回的真实错误信息。
   String _resolveDetailErrorMessage(Object error) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    return '招聘.岗位详情加载失败'.tr();
+    return ApiErrorFeedback.resolveMessage(error, fallback: '招聘.岗位详情加载失败'.tr());
   }
 
   /// 当前收藏状态，优先采用本地交互后的覆盖值。
@@ -159,7 +157,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isCollecting = false;
       });
-      _showMessage(context, _resolveDetailErrorMessage(error));
+      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+      if (toastMessage != null) {
+        _showMessage(context, toastMessage);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(context, _resolveDetailErrorMessage(error));
+      }
     }
   }
 
@@ -213,7 +216,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isContacting = false;
       });
-      _showMessage(context, _resolveDetailErrorMessage(error));
+      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+      if (toastMessage != null) {
+        _showMessage(context, toastMessage);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(context, _resolveDetailErrorMessage(error));
+      }
     }
   }
 
@@ -301,7 +309,10 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         title: Text(
           '招聘.招聘详情'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: const Color(0xE6000000)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: const Color(0xE6000000),
+          ),
         ),
         actions: <Widget>[
           Opacity(
@@ -416,13 +427,19 @@ class _JobHeaderSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   detail.title,
-                  style: TestStyle.semibold(fontSize: 22, color: const Color(0xFF262626)),
+                  style: TestStyle.semibold(
+                    fontSize: 22,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 detail.salaryText,
-                style: TestStyle.medium(fontSize: 16, color: const Color(0xFFFE5815)),
+                style: TestStyle.medium(
+                  fontSize: 16,
+                  color: const Color(0xFFFE5815),
+                ),
               ),
             ],
           ),
@@ -445,7 +462,10 @@ class _JobHeaderSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 detail.locationText,
-                style: TestStyle.regular(fontSize: 12, color: const Color(0xFF595959)),
+                style: TestStyle.regular(
+                  fontSize: 12,
+                  color: const Color(0xFF595959),
+                ),
               ),
             ],
           ),
@@ -505,12 +525,18 @@ class _EmployerCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   employer.name,
-                  style: TestStyle.medium(fontSize: 16, color: const Color(0xFF262626)),
+                  style: TestStyle.medium(
+                    fontSize: 16,
+                    color: const Color(0xFF262626),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   employer.subtitleText,
-                  style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+                  style: TestStyle.regular(
+                    fontSize: 12,
+                    color: const Color(0xFF8C8C8C),
+                  ),
                 ),
               ],
             ),
@@ -564,7 +590,10 @@ class _JobDescriptionSection extends StatelessWidget {
           ],
           Text(
             '招聘.职位详情'.tr(),
-            style: TestStyle.pingFangSemibold(fontSize: 18, color: const Color(0xFF262626)),
+            style: TestStyle.pingFangSemibold(
+              fontSize: 18,
+              color: const Color(0xFF262626),
+            ),
           ),
           const SizedBox(height: 12),
           _DescriptionBlock(
@@ -599,7 +628,10 @@ class _DescriptionBlock extends StatelessWidget {
         for (final String item in items)
           Text(
             item,
-            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF595959)),
+            style: TestStyle.regular(
+              fontSize: 14,
+              color: const Color(0xFF595959),
+            ),
           ),
       ],
     );
@@ -622,18 +654,27 @@ class _LocationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '招聘.工作地点'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 16, color: const Color(0xFF262626)),
+            style: TestStyle.pingFangMedium(
+              fontSize: 16,
+              color: const Color(0xFF262626),
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             detail.addressText,
-            style: TestStyle.regular(fontSize: 14, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.regular(
+              fontSize: 14,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
           if (detail.coordinateText != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
               detail.coordinateText!,
-              style: TestStyle.regular(fontSize: 12, color: const Color(0xFFBFBFBF)),
+              style: TestStyle.regular(
+                fontSize: 12,
+                color: const Color(0xFFBFBFBF),
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -751,7 +792,10 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondaryStyle = TestStyle.regular(fontSize: 16, color: const Color(0xFF171A1D));
+    final secondaryStyle = TestStyle.regular(
+      fontSize: 16,
+      color: const Color(0xFF171A1D),
+    );
     final primaryStyle = TestStyle.regular(fontSize: 16, color: Colors.white);
 
     return SafeArea(

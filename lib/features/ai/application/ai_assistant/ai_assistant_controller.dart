@@ -7,8 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/network/api_decoders.dart';
-import '../../../../shared/network/api_exception.dart';
 import '../../../../shared/network/sse_models.dart';
 import '../../../jobs/data/application_models.dart';
 import '../../../jobs/data/application_providers.dart';
@@ -202,7 +202,12 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         _handleChatEvent(event, assistantIndex: assistantIndex);
       }
     } catch (error) {
-      _emitFeedback(error.toString(), isError: true);
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _emitFeedback(error.toString(), isError: true);
+      }
       _removeEmptyAssistantMessage(assistantIndex);
     } finally {
       _updateState((AiAssistantState current) {
@@ -422,14 +427,19 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         );
       });
     } catch (error) {
+      final String? message = ApiErrorFeedback.hasAutoToast(error)
+          ? null
+          : _resolveJobApplyErrorMessage(error);
       _updateState((AiAssistantState current) {
         final Set<int> nextApplying = <int>{...current.applyingJobIds}
           ..remove(job.jobId);
         return current.copyWith(
           applyingJobIds: nextApplying,
-          feedbackMessage: _resolveJobApplyErrorMessage(error),
-          feedbackIsError: true,
-          feedbackId: current.feedbackId + 1,
+          feedbackMessage: message,
+          feedbackIsError: message != null,
+          feedbackId: message == null
+              ? current.feedbackId
+              : current.feedbackId + 1,
         );
       });
     }
@@ -796,10 +806,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
   /// 统一解析岗位投递失败文案，优先透传接口真实错误信息。
   String _resolveJobApplyErrorMessage(Object error) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    return '招聘.投递失败'.tr();
+    return ApiErrorFeedback.resolveMessage(error, fallback: '招聘.投递失败'.tr());
   }
 
   /// 发出一次性反馈事件，交由页面层通过 SnackBar 展示。
