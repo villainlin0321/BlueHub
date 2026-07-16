@@ -6,6 +6,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/localization/app_locales.dart';
+import '../../../shared/payment/order_payment_config.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../application/auth_session_provider.dart';
@@ -54,11 +55,29 @@ class _LoginPhonePageState extends ConsumerState<LoginPhonePage> {
     final CachedLoginAccount? cachedAccount = ref
         .read(loginAccountStoreProvider)
         .load();
-    if (!mounted || cachedAccount == null) {
+    if (!mounted) {
       return;
     }
 
     final notifier = ref.read(loginFormControllerProvider.notifier);
+    if (OrderPaymentConfig.isReviewMode) {
+      notifier.setLoginMode(false);
+      _phoneController.clear();
+      notifier.updatePhone('');
+      if (cachedAccount?.mode == LoginAccountMode.email) {
+        _emailController.text = cachedAccount!.account;
+        notifier.updateEmail(cachedAccount.account);
+      } else {
+        _emailController.clear();
+        notifier.updateEmail('');
+      }
+      return;
+    }
+
+    if (cachedAccount == null) {
+      return;
+    }
+
     final bool isPhoneLogin = cachedAccount.mode == LoginAccountMode.phone;
     notifier.setLoginMode(isPhoneLogin);
 
