@@ -128,6 +128,64 @@ class MessageService {
     return response;
   }
 
+  /// 获取当前登录用户的系统通知分页列表。
+  ///
+  /// 支持通过 [unreadOnly] 仅拉取未读通知，返回结果可直接用于消息中心系统通知页渲染。
+  Future<PageResult<NotificationVO>> listNotifications({
+    int? page,
+    int? pageSize,
+    bool? unreadOnly,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      if (page != null) 'page': page,
+      if (pageSize != null) 'page_size': pageSize,
+      if (unreadOnly != null) 'unread_only': unreadOnly,
+    };
+    final response = await _apiClient.get<PageResult<NotificationVO>>(
+      '/notifications',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      decode: (data) => PageResult<NotificationVO>.fromJson(
+        asJsonMap(data),
+        fromJson: NotificationVO.fromJson,
+      ),
+    );
+    return response;
+  }
+
+  /// 获取当前用户系统通知的未读数。
+  Future<Map<String, int>> getNotificationUnreadCount() async {
+    final response = await _apiClient.get<Map<String, int>>(
+      '/notifications/unread-count',
+      decode: (data) => decodeMapValues<int>(
+        data ?? const <String, dynamic>{},
+        (value) => (value as num?)?.toInt() ?? 0,
+      ),
+    );
+    return response;
+  }
+
+  /// 建立系统通知 SSE 长连接。
+  Stream<SseEvent> connectNotificationStream() {
+    return _sseClient.connect('/notifications/sse').map((event) {
+      AppLogger.instance.info(
+        'NOTIFICATION_SSE',
+        '收到系统通知 SSE 消息',
+        context: <String, Object?>{
+          'id': event.id,
+          'event': event.event,
+          'retry': event.retry,
+          'data': event.data,
+        },
+      );
+      return event;
+    });
+  }
+
+  /// 主动关闭系统通知 SSE 长连接。
+  Future<void> closeNotificationStream() async {
+    return _apiClient.getVoid('/notifications/sse/close');
+  }
+
   /// 根据会话 ID 拉取消息列表。
   ///
   /// [conversationId] 为目标会话主键；
@@ -175,5 +233,15 @@ class MessageService {
   /// 常用于进入聊天详情页或在消息中心点击某条会话后同步未读状态。
   Future<void> markRead({required int conversationId}) async {
     return _apiClient.putVoid('/conversations/$conversationId/read');
+  }
+
+  /// 将指定系统通知标记为已读。
+  Future<void> markNotificationRead({required int notificationId}) async {
+    return _apiClient.putVoid('/notifications/$notificationId/read');
+  }
+
+  /// 将当前用户全部系统通知标记为已读。
+  Future<void> markAllNotificationsRead() async {
+    return _apiClient.putVoid('/notifications/read-all');
   }
 }

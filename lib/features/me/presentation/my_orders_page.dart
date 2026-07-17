@@ -3,6 +3,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -245,11 +246,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '订单.订单加载失败'.tr());
   }
 
   Future<bool?> _openOrderDetail(int orderId) {

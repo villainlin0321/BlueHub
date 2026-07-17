@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_text_input_dialog.dart';
@@ -85,7 +86,10 @@ class _AiSessionHistorySheetState
       }
       setState(() {
         _isLoading = false;
-        _errorMessage = error.toString();
+        _errorMessage = ApiErrorFeedback.resolveMessage(
+          error,
+          fallback: 'AI.会话列表加载失败'.tr(),
+        );
       });
     }
   }
@@ -114,7 +118,12 @@ class _AiSessionHistorySheetState
           .renameSession(id: session.sessionId, title: nextTitle);
       await _loadSessions();
     } catch (error) {
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话重命名失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -148,7 +157,12 @@ class _AiSessionHistorySheetState
       }
       await _loadSessions();
     } catch (error) {
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话删除失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

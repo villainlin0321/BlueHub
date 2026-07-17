@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -145,7 +146,12 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
           );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -196,7 +202,12 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -586,7 +597,12 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
           );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -635,7 +651,12 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(error.toString(), isError: true);
+      if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(
+          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

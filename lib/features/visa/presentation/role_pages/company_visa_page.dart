@@ -2,6 +2,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../config/data/config_models.dart';
@@ -300,11 +301,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? tr('企业岗位.加载失败') : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: tr('企业岗位.加载失败'));
   }
 
   void _showMessage(String message, {bool isError = false}) {

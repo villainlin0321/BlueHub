@@ -7,7 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../application/message_session/message_session_controller.dart';
+import '../../jobs/presentation/job_detail_page.dart';
+import '../../order/presentation/order_detail_page.dart';
+import '../../service_detail/presentation/service_detail_page.dart';
+import '../../shell/application/shell_role_provider.dart';
 import '../../messages/data/message_models.dart';
 import '../application/chat/chat_page_args.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -43,7 +48,6 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
       'assets/images/mpflx21r-qvw8ip7.svg';
 
   late final TabController _tabController;
-  late List<_SystemNoticeItem> _systemItems;
 
   @override
   void initState() {
@@ -51,7 +55,6 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
     // 自定义 Tab 文案颜色依赖 controller.index，切换时主动刷新页面以同步选中态。
     _tabController.addListener(_handleTabChanged);
-    _systemItems = _buildInitialSystemItems();
   }
 
   @override
@@ -69,18 +72,17 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     setState(() {});
   }
 
-  bool get _hasUnreadSystem => _systemItems.any((item) => item.isUnread);
-
   Future<void> _markAllAsRead(List<_ChatMessageItem> chatItems) async {
+    if (_tabController.index == 1) {
+      await ref
+          .read(messageSessionControllerProvider.notifier)
+          .markAllNotificationsRead();
+      return;
+    }
     final List<int> unreadConversationIds = chatItems
         .where((item) => item.isUnread)
         .map((item) => item.conversationId)
         .toList(growable: false);
-    setState(() {
-      _systemItems = _systemItems
-          .map((item) => item.copyWith(isUnread: false))
-          .toList(growable: false);
-    });
     await ref
         .read(messageSessionControllerProvider.notifier)
         .markAllConversationsRead(unreadConversationIds);
@@ -119,37 +121,75 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     }
   }
 
-  void _markSystemAsRead(int index) {
-    if (!_systemItems[index].isUnread) {
+  Future<void> _handleSystemNotificationTap(NotificationVO item) async {
+    if (!item.isRead) {
+      await ref
+          .read(messageSessionControllerProvider.notifier)
+          .markNotificationRead(item.notificationId);
+    }
+    if (!mounted) {
       return;
     }
-    setState(() {
-      _systemItems[index] = _systemItems[index].copyWith(isUnread: false);
-    });
+    _openNotificationTarget(item);
   }
 
-  List<_SystemNoticeItem> _buildInitialSystemItems() {
-    return <_SystemNoticeItem>[
-      // _SystemNoticeItem(
-      //   title: '消息.资质审核通过'.tr(),
-      //   time: '10-22 12:23:21',
-      //   content: '消息.资质审核通过内容'.tr(),
-      //   cardAssetPath: _noticeCardPrimaryAsset,
-      //   isUnread: true,
-      // ),
-      // _SystemNoticeItem(
-      //   title: '消息.资质审核未通过'.tr(),
-      //   time: '09-22 12:23:21',
-      //   content: '消息.资质审核未通过内容'.tr(),
-      //   cardAssetPath: _noticeCardSecondaryAsset,
-      // ),
-      // _SystemNoticeItem(
-      //   title: '消息.资质审核中'.tr(),
-      //   time: '09-18 12:23:21',
-      //   content: '消息.资质审核中内容'.tr(),
-      //   cardAssetPath: _noticeCardPendingAsset,
-      // ),
-    ];
+  void _openNotificationTarget(NotificationVO item) {
+    final String bizType = item.bizType.trim().toLowerCase();
+    final int bizId = item.bizId;
+    switch (bizType) {
+      case 'order':
+        if (bizId <= 0) {
+          AppToast.show('暂不支持该通知跳转');
+          return;
+        }
+        context.push(
+          RoutePaths.orderDetail,
+          extra: OrderDetailPageArgs(orderId: bizId),
+        );
+        return;
+      case 'job':
+        if (bizId <= 0) {
+          AppToast.show('暂不支持该通知跳转');
+          return;
+        }
+        context.push(
+          RoutePaths.jobDetail,
+          extra: JobDetailPageArgs(jobId: bizId),
+        );
+        return;
+      case 'package':
+        if (bizId <= 0) {
+          AppToast.show('暂不支持该通知跳转');
+          return;
+        }
+        context.push(
+          RoutePaths.serviceDetail,
+          extra: ServiceDetailPageArgs(packageId: bizId),
+        );
+        return;
+      case 'application':
+        final ShellRole role = ref.read(shellRoleProvider);
+        context.push(
+          role == ShellRole.company
+              ? RoutePaths.companyApplications
+              : RoutePaths.myApplications,
+        );
+        return;
+      default:
+        AppToast.show('暂不支持该通知跳转');
+        return;
+    }
+  }
+
+  String _resolveNotificationCardAsset(String type) {
+    switch (type.trim()) {
+      case 'order_status':
+        return _noticeCardPrimaryAsset;
+      case 'application':
+        return _noticeCardSecondaryAsset;
+      default:
+        return _noticeCardPendingAsset;
+    }
   }
 
   @override
@@ -158,6 +198,7 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     final List<_ChatMessageItem> chatItems = sessionState.conversations
         .map(_ChatMessageItem.fromConversation)
         .toList(growable: false);
+    final bool hasUnreadSystem = sessionState.hasUnreadNotifications;
 
     return Scaffold(
       backgroundColor: _pageBackground,
@@ -172,7 +213,7 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
             child: _MessageTabBar(
               controller: _tabController,
               hasUnreadChat: chatItems.any((item) => item.isUnread),
-              hasUnreadSystem: _hasUnreadSystem,
+              hasUnreadSystem: hasUnreadSystem,
             ),
           ),
           Expanded(
@@ -189,9 +230,15 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
                       .refreshConversations(),
                 ),
                 _SystemTabView(
-                  items: _systemItems,
+                  items: sessionState.notifications,
+                  isLoading: sessionState.isNotificationsInitializing,
+                  errorText: sessionState.notificationLoadErrorMessage,
                   noticeIconAsset: _noticeIconAsset,
-                  onTapItem: _markSystemAsRead,
+                  resolveCardAssetPath: _resolveNotificationCardAsset,
+                  onTapItem: _handleSystemNotificationTap,
+                  onRetry: () => ref
+                      .read(messageSessionControllerProvider.notifier)
+                      .refreshNotifications(),
                 ),
               ],
             ),
@@ -345,16 +392,17 @@ class _MessageTab extends StatelessWidget {
               padding: const EdgeInsets.only(top: 1),
               child: Text(
                 label,
-                style: (isSelected
-                        ? TestStyle.pingFangMedium(
-                            fontSize: 14,
-                            color: _MessageCenterPageState._primaryBlue,
-                          )
-                        : TestStyle.pingFangRegular(
-                            fontSize: 14,
-                            color: _MessageCenterPageState._titleColor,
-                          ))
-                    .copyWith(height: 22 / 14),
+                style:
+                    (isSelected
+                            ? TestStyle.pingFangMedium(
+                                fontSize: 14,
+                                color: _MessageCenterPageState._primaryBlue,
+                              )
+                            : TestStyle.pingFangRegular(
+                                fontSize: 14,
+                                color: _MessageCenterPageState._titleColor,
+                              ))
+                        .copyWith(height: 22 / 14),
               ),
             ),
             if (hasUnread)
@@ -573,10 +621,7 @@ class _AvatarFallbackText extends StatelessWidget {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TestStyle.pingFangRegular(
-          fontSize: 14,
-          color: Colors.white,
-        ),
+        style: TestStyle.pingFangRegular(fontSize: 14, color: Colors.white),
       ),
     );
   }
@@ -632,16 +677,40 @@ class _ChatStatusView extends StatelessWidget {
 class _SystemTabView extends StatelessWidget {
   const _SystemTabView({
     required this.items,
+    required this.isLoading,
+    required this.errorText,
     required this.noticeIconAsset,
+    required this.resolveCardAssetPath,
     required this.onTapItem,
+    required this.onRetry,
   });
 
-  final List<_SystemNoticeItem> items;
+  final List<NotificationVO> items;
+  final bool isLoading;
+  final String? errorText;
   final String noticeIconAsset;
-  final ValueChanged<int> onTapItem;
+  final String Function(String type) resolveCardAssetPath;
+  final Future<void> Function(NotificationVO item) onTapItem;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+    }
+
+    if (errorText != null) {
+      return _ChatStatusView(
+        message: errorText!,
+        actionLabel: '消息.重新加载'.tr(),
+        onAction: onRetry,
+      );
+    }
+
+    if (items.isEmpty) {
+      return const _ChatStatusView(message: '暂无系统通知');
+    }
+
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
         0,
@@ -652,11 +721,12 @@ class _SystemTabView extends StatelessWidget {
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 0),
       itemBuilder: (BuildContext context, int index) {
-        final _SystemNoticeItem item = items[index];
+        final NotificationVO item = items[index];
         return _SystemNoticeCard(
           item: item,
+          cardAssetPath: resolveCardAssetPath(item.type),
           noticeIconAsset: noticeIconAsset,
-          onTap: () => onTapItem(index),
+          onTap: () => onTapItem(item),
         );
       },
     );
@@ -666,11 +736,13 @@ class _SystemTabView extends StatelessWidget {
 class _SystemNoticeCard extends StatelessWidget {
   const _SystemNoticeCard({
     required this.item,
+    required this.cardAssetPath,
     required this.noticeIconAsset,
     required this.onTap,
   });
 
-  final _SystemNoticeItem item;
+  final NotificationVO item;
+  final String cardAssetPath;
   final String noticeIconAsset;
   final VoidCallback onTap;
 
@@ -689,7 +761,7 @@ class _SystemNoticeCard extends StatelessWidget {
             child: Stack(
               children: <Widget>[
                 Positioned.fill(
-                  child: SvgPicture.asset(item.cardAssetPath, fit: BoxFit.fill),
+                  child: SvgPicture.asset(cardAssetPath, fit: BoxFit.fill),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
@@ -704,7 +776,7 @@ class _SystemNoticeCard extends StatelessWidget {
                             width: 32,
                             height: 32,
                           ),
-                          if (item.isUnread)
+                          if (!item.isRead)
                             Positioned(
                               top: 3,
                               right: 2,
@@ -732,13 +804,14 @@ class _SystemNoticeCard extends StatelessWidget {
                                     item.title,
                                     style: TestStyle.pingFangMedium(
                                       fontSize: 14,
-                                      color: _MessageCenterPageState._titleColor,
+                                      color:
+                                          _MessageCenterPageState._titleColor,
                                     ).copyWith(height: 20 / 14),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  item.time,
+                                  _formatConversationTime(item.createdAt),
                                   style: TestStyle.regular(
                                     fontSize: 12,
                                     color: _MessageCenterPageState._hintText,
@@ -944,29 +1017,3 @@ String _buildAvatarFallbackText(String nickname) {
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
-
-class _SystemNoticeItem {
-  const _SystemNoticeItem({
-    required this.title,
-    required this.time,
-    required this.content,
-    required this.cardAssetPath,
-    this.isUnread = false,
-  });
-
-  final String title;
-  final String time;
-  final String content;
-  final String cardAssetPath;
-  final bool isUnread;
-
-  _SystemNoticeItem copyWith({bool? isUnread}) {
-    return _SystemNoticeItem(
-      title: title,
-      time: time,
-      content: content,
-      cardAssetPath: cardAssetPath,
-      isUnread: isUnread ?? this.isUnread,
-    );
-  }
-}

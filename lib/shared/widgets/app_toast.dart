@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
+import '../network/api_error_feedback.dart';
+
 /// Toast 显示位置，仅封装当前项目实际使用到的顶部与居中两种场景。
 enum AppToastPosition { top, center }
 
@@ -18,8 +20,11 @@ class AppToast {
   );
   static const Duration _displayDuration = Duration(milliseconds: 2000);
   static const Duration _networkErrorWindow = Duration(milliseconds: 1800);
+  static const Duration _duplicateToastWindow = Duration(milliseconds: 1800);
   static const AppToastPosition _defaultPosition = AppToastPosition.center;
   static DateTime? _lastNetworkErrorShownAt;
+  static DateTime? _lastToastShownAt;
+  static String? _lastToastMessage;
 
   /// 将项目内部位置枚举映射为 EasyLoading 的原生位置枚举。
   static EasyLoadingToastPosition _mapToastPosition(AppToastPosition position) {
@@ -54,13 +59,27 @@ class AppToast {
     String message, {
     AppToastPosition position = _defaultPosition,
   }) async {
-    final String trimmedMessage = message.trim();
-    if (trimmedMessage.isEmpty) {
+    if (ApiErrorFeedback.isAutoToastMessageText(message)) {
       return;
     }
+    final String normalizedMessage = ApiErrorFeedback.normalizeMessageText(
+      message,
+    );
+    if (normalizedMessage.isEmpty) {
+      return;
+    }
+    final DateTime now = DateTime.now();
+    final DateTime? lastShownAt = _lastToastShownAt;
+    if (lastShownAt != null &&
+        _lastToastMessage == normalizedMessage &&
+        now.difference(lastShownAt) < _duplicateToastWindow) {
+      return;
+    }
+    _lastToastShownAt = now;
+    _lastToastMessage = normalizedMessage;
     await EasyLoading.dismiss(animation: false);
     await EasyLoading.showToast(
-      trimmedMessage,
+      normalizedMessage,
       duration: _displayDuration,
       toastPosition: _mapToastPosition(position),
       dismissOnTap: false,
@@ -77,7 +96,7 @@ class AppToast {
     String message, {
     AppToastPosition position = _defaultPosition,
   }) async {
-    final String trimmedMessage = message.trim();
+    final String trimmedMessage = ApiErrorFeedback.normalizeMessageText(message);
     if (trimmedMessage.isEmpty) {
       return;
     }

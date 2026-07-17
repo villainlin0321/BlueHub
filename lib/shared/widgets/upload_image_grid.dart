@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/files/data/file_models.dart';
 import '../../features/files/data/file_providers.dart';
+import '../network/api_error_feedback.dart';
 import '../../utils/upload_picker_utils.dart';
 import 'upload_placeholder_tile.dart';
 
@@ -238,13 +239,10 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
   }
 
   String _resolveErrorMessage(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty
-        ? (widget.uploadErrorMessage ?? '上传.图片上传失败'.tr())
-        : message;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: widget.uploadErrorMessage ?? '上传.图片上传失败'.tr(),
+    );
   }
 
   _UploadImageEntry _buildInitialEntry(String path) {

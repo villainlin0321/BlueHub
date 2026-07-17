@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
 import '../../order/presentation/order_payment_bottom_sheet.dart';
-import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import 'service_detail_package_tab.dart';
 
 class ServiceDetailApplyBottomSheet {
@@ -581,12 +581,5 @@ String _resolveBottomSheetErrorMessage(
   Object error, {
   required String fallback,
 }) {
-  if (error is ApiException) {
-    return error.message;
-  }
-  final String message = error.toString().trim();
-  if (message.startsWith('Exception: ')) {
-    return message.substring('Exception: '.length);
-  }
-  return message.isEmpty ? fallback : message;
+  return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
 }

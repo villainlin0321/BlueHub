@@ -206,7 +206,10 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       if (message != null) {
         _emitFeedback(message, isError: true);
       } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback(error.toString(), isError: true);
+        _emitFeedback(
+          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.消息发送失败'.tr()),
+          isError: true,
+        );
       }
       _removeEmptyAssistantMessage(assistantIndex);
     } finally {
@@ -315,7 +318,10 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       );
     } catch (error) {
       _resetVoiceInputState();
-      _emitFeedback(error.toString(), isError: true);
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: 'AI.语音识别启动失败'.tr()),
+        isError: true,
+      );
     }
   }
 

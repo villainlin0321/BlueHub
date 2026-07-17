@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/network/api_error_feedback.dart';
 
 import '../../visa/data/review_models.dart';
 import '../../visa/data/review_providers.dart';
@@ -116,11 +117,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
 
   /// 规范化接口异常文案，避免直接向用户暴露冗余前缀。
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '评价.评价发布失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '评价.评价发布失败'.tr());
   }
 
   /// 构建评价主体区域，按设计稿控制留白、评分行与输入区比例。

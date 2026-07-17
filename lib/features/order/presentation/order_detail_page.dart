@@ -21,6 +21,7 @@ import '../../../shared/models/app_currency.dart';
 import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/logging/app_log_facade.dart';
 import '../../../shared/logging/app_log_scope.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/providers.dart';
 import '../../../shared/network/services/file_service.dart';
@@ -1192,14 +1193,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   String _resolveErrorMessage(Object error, {required String fallback}) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? fallback : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
   }
 
   Future<Directory> _resolveDownloadDirectory() async {

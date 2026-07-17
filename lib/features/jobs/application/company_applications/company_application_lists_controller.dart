@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../data/application_models.dart';
 import '../../data/application_providers.dart';
 import '../../../shell/application/shell_role_provider.dart';
@@ -325,11 +326,7 @@ class CompanyApplicationListsController
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '应聘管理.加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '应聘管理.加载失败'.tr());
   }
 }
 

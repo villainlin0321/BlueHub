@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -213,18 +214,12 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
   /// 规整动作失败提示，优先透传接口返回文案。
   String _normalizeActionError(Object error, String fallbackName) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty
-          ? '应聘管理.获取联系电话失败'.tr(
-              namedArgs: <String, String>{'name': fallbackName},
-            )
-          : normalized;
-    }
-    return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
-        : message;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: '应聘管理.获取联系电话失败'.tr(
+        namedArgs: <String, String>{'name': fallbackName},
+      ),
+    );
   }
 
   @override

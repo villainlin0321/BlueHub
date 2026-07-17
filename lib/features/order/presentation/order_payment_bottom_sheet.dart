@@ -8,6 +8,7 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/logging/app_log_facade.dart';
 import '../../../shared/logging/app_log_scope.dart';
 import '../../../shared/logging/app_route_tracker.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../service_detail/presentation/app_result_page.dart';
 import '../application/payment/payment_flow_coordinator.dart';
@@ -308,6 +309,9 @@ class _OrderPaymentBottomSheetContentState
         return;
       }
       setState(() => _isPaying = false);
+      if (ApiErrorFeedback.hasAutoToast(error)) {
+        return;
+      }
       _showMessage(resolveOrderPaymentErrorMessage(context, error));
     }
   }

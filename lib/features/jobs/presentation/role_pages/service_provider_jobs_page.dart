@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/app_dialog.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -433,11 +434,7 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '套餐管理.操作失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '套餐管理.操作失败'.tr());
   }
 
   Widget _buildPackageList(

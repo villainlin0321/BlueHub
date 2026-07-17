@@ -22,16 +22,16 @@
   ],
   "tags": [
     {
-      "name": "人才中心模块",
-      "description": "企业/服务商浏览公开简历，支持关键字/国家/岗位筛选"
-    },
-    {
       "name": "简历模块",
       "description": "简历 CRUD，支持多份简历管理，雇主查看他人默认简历"
     },
     {
       "name": "评价模块",
       "description": "提交签证服务评价（订单完成后，一单只能评价一次）"
+    },
+    {
+      "name": "系统通知模块",
+      "description": "系统消息通知：列表、未读数、已读标记"
     },
     {
       "name": "站内消息模块",
@@ -58,16 +58,8 @@
       "description": "两级职位树：分类（餐饮/医护等） → 具体职位；支持中英文关键字搜索"
     },
     {
-      "name": "AI 助手模块",
-      "description": "分角色 AI 对话（SSE 流式）、会话管理、人才推荐"
-    },
-    {
       "name": "用户模块",
       "description": "用户信息管理、角色切换、实名认证、黑名单"
-    },
-    {
-      "name": "文件上传模块",
-      "description": "获取 OSS 预签名上传地址，前端直传文件，无需经过应用服务器"
     },
     {
       "name": "签证套餐模块",
@@ -82,16 +74,32 @@
       "description": "服务商列表、详情、我的资料管理、评价列表"
     },
     {
+      "name": "投诉模块",
+      "description": "用户投诉企业或签证服务商"
+    },
+    {
+      "name": "学校字典模块",
+      "description": "毕业院校搜索，支持国内外多语言学校名称"
+    },
+    {
+      "name": "人才中心模块",
+      "description": "企业/服务商浏览公开简历，支持关键字/国家/岗位筛选"
+    },
+    {
+      "name": "AI 助手模块",
+      "description": "分角色 AI 对话（SSE 流式）、会话管理、人才推荐"
+    },
+    {
+      "name": "文件上传模块",
+      "description": "获取 OSS 预签名上传地址，前端直传文件，无需经过应用服务器"
+    },
+    {
       "name": "应聘模块",
       "description": "投递简历、查看应聘记录、更新应聘状态"
     },
     {
       "name": "首页模块",
       "description": "热门套餐、最新岗位、角色统计"
-    },
-    {
-      "name": "投诉模块",
-      "description": "用户投诉企业或签证服务商"
     },
     {
       "name": "雇主模块",
@@ -106,8 +114,8 @@
       "description": "国家/地区搜索，支持中英文关键字，返回 ISO 2位代码及双语名称"
     },
     {
-      "name": "学校字典模块",
-      "description": "毕业院校搜索，支持国内外多语言学校名称"
+      "name": "系统通知模块",
+      "description": "系统消息通知：SSE 实时推送、列表、未读数、已读标记"
     },
     {
       "name": "签证订单模块",
@@ -1690,6 +1698,162 @@
         }
       }
     },
+    "/notifications/{notificationId}/read": {
+      "put": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "标记单条通知已读",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "markRead",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "description": "通知 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "put": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "标记全部通知已读",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "markAllRead",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs/{jobId}": {
       "get": {
         "tags": [
@@ -2201,7 +2365,7 @@
         ],
         "summary": "标记会话消息已读",
         "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
-        "operationId": "markRead",
+        "operationId": "markRead_1",
         "parameters": [
           {
             "name": "conversationId",
@@ -8044,6 +8208,327 @@
         }
       }
     },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "我的通知列表",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "listMine",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "unread_only",
+            "in": "query",
+            "description": "仅未读",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultPageResultNotificationVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "未读通知数",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "unreadCount",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultMapStringLong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/sse": {
+      "get": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "建立通知 SSE 长连接，实时接收系统通知",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "connect_1",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/sse/close": {
+      "get": {
+        "tags": [
+          "系统通知模块"
+        ],
+        "summary": "主动断开通知 SSE 连接",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "close_1",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs/mine": {
       "get": {
         "tags": [
@@ -8752,7 +9237,7 @@
         ],
         "summary": "建立 SSE 长连接，实时接收新消息推送。\n\n ",
         "description": "建立 SSE 长连接，实时接收新消息推送。\n\n <p>客户端示例（JS）：</p>\n <pre><code>\n const es = new EventSource('/conversations/sse', { headers: { Authorization: 'Bearer ...' </code> });\n es.addEventListener('message', e => console.log(JSON.parse(e.data)));\n }</pre><br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
-        "operationId": "connect_1",
+        "operationId": "connect_2",
         "responses": {
           "500": {
             "description": "Internal Server Error",
@@ -8824,7 +9309,7 @@
         ],
         "summary": "主动断开 SSE 连接（退出登录前或页面卸载时调用）。\n 若当前 token 是该角色身份的最后一个活跃连接，则同步标记该角色身份下线。",
         "description": "主动断开 SSE 连接（退出登录前或页面卸载时调用）。\n 若当前 token 是该角色身份的最后一个活跃连接，则同步标记该角色身份下线。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
-        "operationId": "close_1",
+        "operationId": "close_2",
         "responses": {
           "500": {
             "description": "Internal Server Error",
@@ -10848,6 +11333,18 @@
           "city": {
             "type": "string",
             "description": "企业所在城市"
+          },
+          "contactPerson": {
+            "type": "string",
+            "description": "负责人/联系人姓名"
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "联系电话"
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "联系邮箱"
           }
         }
       },
@@ -13558,6 +14055,24 @@
             "type": "boolean",
             "description": "是否已实名认证"
           },
+          "realNameStatus": {
+            "type": "string",
+            "description": "实名认证状态：unverified / pending / verified / rejected"
+          },
+          "realNameStatusLabel": {
+            "type": "string",
+            "description": "实名认证状态展示文案"
+          },
+          "realName": {
+            "type": "string",
+            "description": "实名姓名（脱敏，仅已认证时返回）",
+            "example": "张*"
+          },
+          "realNameVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "实名认证通过时间"
+          },
           "blacklistCount": {
             "type": "integer",
             "format": "int32",
@@ -14841,6 +15356,132 @@
           }
         }
       },
+      "AppResultPageResultNotificationVO": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultNotificationVO",
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
+      "NotificationVO": {
+        "type": "object",
+        "description": "系统消息通知",
+        "properties": {
+          "notificationId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "通知 ID"
+          },
+          "type": {
+            "type": "string",
+            "description": "通知类型"
+          },
+          "title": {
+            "type": "string",
+            "description": "标题"
+          },
+          "content": {
+            "type": "string",
+            "description": "内容"
+          },
+          "bizType": {
+            "type": "string",
+            "description": "跳转目标类型"
+          },
+          "bizId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "跳转目标业务 ID"
+          },
+          "isRead": {
+            "type": "boolean",
+            "description": "是否已读"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        }
+      },
+      "PageResultNotificationVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "数据列表",
+            "items": {
+              "$ref": "#/components/schemas/NotificationVO"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination",
+            "description": "分页信息"
+          }
+        }
+      },
+      "AppResultMapStringLong": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
+          }
+        }
+      },
       "AppResultPageResultJobListVO": {
         "type": "object",
         "description": "统一响应体",
@@ -15628,6 +16269,18 @@
           "city": {
             "type": "string",
             "description": "所在城市"
+          },
+          "contactPerson": {
+            "type": "string",
+            "description": "负责人/联系人姓名"
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "联系电话"
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "联系邮箱"
           },
           "qualificationDocs": {
             "type": "array",

@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../data/finance_models.dart';
@@ -482,15 +482,7 @@ class _FinanceLeadingIcon extends StatelessWidget {
 }
 
 String normalizeFinanceError(Object error) {
-  if (error is ApiException) {
-    final String message = error.message.trim();
-    return message.isEmpty ? '财务.请求失败'.tr() : message;
-  }
-  final String message = error.toString().trim();
-  if (message.startsWith('Exception: ')) {
-    return message.substring('Exception: '.length);
-  }
-  return message.isEmpty ? '财务.请求失败'.tr() : message;
+  return ApiErrorFeedback.resolveMessage(error, fallback: '财务.请求失败'.tr());
 }
 
 String formatFinanceCurrencySymbol(String currency) {

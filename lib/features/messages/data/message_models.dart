@@ -55,6 +55,76 @@ class ConversationVO {
   }
 }
 
+class NotificationVO {
+  const NotificationVO({
+    required this.notificationId,
+    required this.type,
+    required this.title,
+    required this.content,
+    required this.bizType,
+    required this.bizId,
+    required this.isRead,
+    required this.createdAt,
+  });
+
+  final int notificationId;
+  final String type;
+  final String title;
+  final String content;
+  final String bizType;
+  final int bizId;
+  final bool isRead;
+  final String createdAt;
+
+  factory NotificationVO.fromJson(JsonMap json) {
+    return NotificationVO(
+      notificationId: readInt(json, 'notificationId'),
+      type: readString(json, 'type'),
+      title: readString(json, 'title'),
+      content: readString(json, 'content'),
+      bizType: readString(json, 'bizType'),
+      bizId: readInt(json, 'bizId'),
+      isRead: readBool(json, 'isRead'),
+      createdAt: readString(json, 'createdAt'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'notificationId': notificationId,
+      'type': type,
+      'title': title,
+      'content': content,
+      'bizType': bizType,
+      'bizId': bizId,
+      'isRead': isRead,
+      'createdAt': createdAt,
+    };
+  }
+
+  NotificationVO copyWith({
+    int? notificationId,
+    String? type,
+    String? title,
+    String? content,
+    String? bizType,
+    int? bizId,
+    bool? isRead,
+    String? createdAt,
+  }) {
+    return NotificationVO(
+      notificationId: notificationId ?? this.notificationId,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      bizType: bizType ?? this.bizType,
+      bizId: bizId ?? this.bizId,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
 class CreateConversationBO {
   const CreateConversationBO({
     required this.targetUserId,

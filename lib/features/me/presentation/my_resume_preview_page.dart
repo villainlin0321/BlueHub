@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
@@ -158,11 +159,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '我的.简历加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '我的.简历加载失败'.tr());
   }
 
   ResumePreviewArgs _mapResumeToPreviewArgs(ResumeVO resume) {

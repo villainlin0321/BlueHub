@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/network/api_error_feedback.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -122,11 +123,7 @@ class _CompanyApplicationManagementPageState
   }
 
   String _normalizeJobFilterError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length).trim();
-    }
-    return message.isEmpty ? '企业岗位.加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '企业岗位.加载失败'.tr());
   }
 
   @override
@@ -460,18 +457,12 @@ class _CompanyApplicationTabViewState
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty
-          ? '应聘管理.获取联系电话失败'.tr(
-              namedArgs: <String, String>{'name': fallbackName},
-            )
-          : normalized;
-    }
-    return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
-        : message;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: '应聘管理.获取联系电话失败'.tr(
+        namedArgs: <String, String>{'name': fallbackName},
+      ),
+    );
   }
 
   CompanyApplicationCardData _buildCardData(ApplicationVO item, int index) {

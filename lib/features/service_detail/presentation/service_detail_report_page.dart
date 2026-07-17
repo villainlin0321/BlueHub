@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -303,11 +304,7 @@ class _ServiceDetailReportPageState
   }
 
   String _resolveErrorMessage(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '投诉.提交失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '投诉.提交失败'.tr());
   }
 }
 
