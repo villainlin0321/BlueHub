@@ -16,10 +16,10 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
 import '../../home/data/home_providers.dart';
-import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/config_service.dart';
 import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -475,7 +475,12 @@ class _VisaPackageDetailScaffoldState
       setState(() {
         _isCollecting = false;
       });
-      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()));
+      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+      if (toastMessage != null) {
+        _showMessage(toastMessage);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(_resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()));
+      }
     }
   }
 
@@ -944,7 +949,12 @@ class _VisaPackageDetailScaffoldState
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
+      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
+      if (toastMessage != null) {
+        _showMessage(toastMessage);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
+      }
     } finally {
       dio.close(force: true);
       if (mounted) {
@@ -1814,10 +1824,7 @@ String? _resolveAsyncErrorMessage<T>(
 
 /// 统一处理接口异常文案。
 String _resolveErrorMessage(Object error, {required String fallback}) {
-  if (error is ApiException) {
-    return error.message;
-  }
-  return fallback;
+  return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
 }
 
 /// 将签证套餐详情映射为详情页的档位和材料展示模型。

@@ -3,16 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../home/data/home_providers.dart';
-import '../../../shared/network/api_exception.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../data/application_models.dart';
 import '../data/application_providers.dart';
 
 /// 统一解析岗位投递失败文案，优先透传接口返回的真实错误信息。
 String resolveJobApplyErrorMessage(Object error) {
-  if (error is ApiException) {
-    return error.message;
-  }
-  return '招聘.投递失败'.tr();
+  return ApiErrorFeedback.resolveMessage(error, fallback: '招聘.投递失败'.tr());
 }
 
 /// 统一提交岗位投递请求。
@@ -41,6 +38,9 @@ Future<String?> submitJobApplication(
     container.invalidate(homeDashboardStatsProvider);
     return null;
   } catch (error) {
+    if (ApiErrorFeedback.hasAutoToast(error)) {
+      return null;
+    }
     return resolveJobApplyErrorMessage(error);
   }
 }

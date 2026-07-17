@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../data/auth_models.dart';
 import '../../data/auth_providers.dart';
 import '../../data/login_account_store.dart';
@@ -94,8 +95,13 @@ class LoginFormController extends Notifier<LoginFormState> {
         _emitFeedback(tr('认证.已发送邮箱验证码'));
       }
       return true;
-    } catch (_) {
-      _emitFeedback(tr('认证.验证码发送失败'), isError: true);
+    } catch (error) {
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
+        _emitFeedback(tr('认证.验证码发送失败'), isError: true);
+      }
       return false;
     } finally {
       state = state.copyWith(isSendingCode: false);
@@ -138,8 +144,11 @@ class LoginFormController extends Notifier<LoginFormState> {
             account: state.currentAccount,
           );
       return login;
-    } catch (_) {
-      _emitFeedback(tr('认证.登录失败'), isError: true);
+    } catch (error) {
+      final String? message = ApiErrorFeedback.toastMessage(error);
+      if (message != null) {
+        _emitFeedback(message, isError: true);
+      }
       return null;
     } finally {
       state = state.copyWith(isSubmitting: false);

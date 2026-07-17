@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -9,6 +10,8 @@ import '../logging/app_log_scope.dart';
 import '../logging/app_logger.dart';
 import 'api_exception.dart';
 import 'api_result.dart';
+import 'app_result_error_resolver.dart';
+import '../widgets/app_toast.dart';
 
 class ApiClient {
   ApiClient(this._dio);
@@ -210,11 +213,7 @@ class ApiClient {
 
     final result = ApiResult.fromJson<T>(raw, decode: decode);
     if (!result.isSuccess) {
-      throw ApiException.biz(
-        code: result.code,
-        message: result.message,
-        requestId: result.requestId,
-      );
+      throw _buildBizException(result);
     }
 
     final data = result.data;
@@ -231,12 +230,22 @@ class ApiClient {
 
     final result = ApiResult.fromJson<void>(raw, decode: (_) {});
     if (!result.isSuccess) {
-      throw ApiException.biz(
-        code: result.code,
-        message: result.message,
-        requestId: result.requestId,
-      );
+      throw _buildBizException(result);
     }
+  }
+
+  ApiException _buildBizException(ApiResult<dynamic> result) {
+    final String message = AppResultErrorResolver.resolve(
+      code: result.code,
+      message: result.message,
+    );
+    unawaited(AppToast.showFirstPriorityError(message));
+    return ApiException.biz(
+      code: result.code,
+      message: message,
+      requestId: result.requestId,
+      hasShownToast: true,
+    );
   }
 
   ApiException _mapDioException(DioException e) {
@@ -246,9 +255,13 @@ class ApiClient {
       // #endregion
     }
     if (e.response != null) {
+      final String? responseMessage = _extractResponseErrorMessage(
+        e.response?.data,
+      );
       return ApiException.http(
         statusCode: e.response?.statusCode,
-        message: e.response?.statusMessage ?? tr('通用.HTTP请求失败'),
+        message:
+            responseMessage ?? e.response?.statusMessage ?? tr('通用.HTTP请求失败'),
         original: e,
       );
     }
@@ -259,6 +272,51 @@ class ApiClient {
       return ApiException.network(e);
     }
     return ApiException.unknown(e);
+  }
+
+  String? _extractResponseErrorMessage(dynamic responseData) {
+    final Map<String, dynamic>? json = switch (responseData) {
+      Map<String, dynamic> value => value,
+      String value => _tryParseJsonMap(value),
+      _ => null,
+    };
+    if (json == null) {
+      return null;
+    }
+    final int code = (json['code'] as num?)?.toInt() ?? -1;
+    final String message = (json['message'] as String?) ?? '';
+    final String normalizedMessage = message.trim();
+    if (normalizedMessage.isEmpty && code != 70002) {
+      return null;
+    }
+    if (_looksLikeI18nKey(normalizedMessage) && code != 70002) {
+      return null;
+    }
+    final String resolvedMessage = AppResultErrorResolver.resolve(
+      code: code,
+      message: message,
+    );
+    return resolvedMessage.trim().isEmpty ? null : resolvedMessage;
+  }
+
+  Map<String, dynamic>? _tryParseJsonMap(String value) {
+    final String normalized = value.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    try {
+      final Object? decoded = jsonDecode(normalized);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
+  bool _looksLikeI18nKey(String message) {
+    return RegExp(r'^[a-z0-9]+(\.[a-z0-9_]+)+$').hasMatch(message);
   }
 
   /// 构建带链路透传信息的请求配置，避免只有拦截器层知道当前请求入口。
@@ -309,19 +367,18 @@ class ApiClient {
       return;
     }
     try {
-      final Map<Object?, Object?>? result =
-          await _nativeDebugChannel.invokeMapMethod<Object?, Object?>(
-            'probeHttp',
-            <String, Object?>{'url': url},
-          );
+      final Map<Object?, Object?>? result = await _nativeDebugChannel
+          .invokeMapMethod<Object?, Object?>('probeHttp', <String, Object?>{
+            'url': url,
+          });
       AppLogger.instance.info(
         'NATIVE_HTTP',
         'Dio 失败后 iOS 原生同 URL 探针完成',
         context: <String, Object?>{
           'target': url,
-          'result': result?.map(
-                (Object? key, Object? value) =>
-                    MapEntry(key.toString(), value),
+          'result':
+              result?.map(
+                (Object? key, Object? value) => MapEntry(key.toString(), value),
               ) ??
               <String, Object?>{},
         },
