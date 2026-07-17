@@ -79,13 +79,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               _SettingsActionRow(
                                 title: '设置.关于我们'.tr(),
                                 onTap: _handleAboutTap,
+                                onLongPress: _handleAboutLongPress,
                               ),
                             ],
-                          ),
-                          SizedBox(height: 20),
-                          _BottomTextButton(
-                            label: '日志分享',
-                            onTap: _handleShareLogTap,
                           ),
                           const Spacer(),
                           // 通过额外 4pt 内边距，把底部主按钮控制在设计稿的 16pt 左右边距。
@@ -163,6 +159,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 打开关于我们页，便于用户查看应用版本和公司主体信息。
   void _handleAboutTap() {
     context.push(RoutePaths.aboutApp);
+  }
+
+  /// 长按“关于我们”时直接分享日志，保留隐藏入口并减少一次额外交互。
+  Future<void> _handleAboutLongPress() async {
+    await _handleShareLogTap();
   }
 
   /// 分享当前运行会话日志文件，便于用户快速导出问题现场给研发排查。
@@ -416,16 +417,22 @@ class _LanguageRow extends StatelessWidget {
 }
 
 class _SettingsActionRow extends StatelessWidget {
-  const _SettingsActionRow({required this.title, required this.onTap});
+  const _SettingsActionRow({
+    required this.title,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final String title;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   /// 构建可点击的设置项，复用统一的行高、文案和箭头样式。
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
