@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/logging/app_logger.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/localization/app_locales.dart';
@@ -77,6 +81,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 onTap: _handleAboutTap,
                               ),
                             ],
+                          ),
+                          SizedBox(height: 20),
+                          _BottomTextButton(
+                            label: '日志分享',
+                            onTap: _handleShareLogTap,
                           ),
                           const Spacer(),
                           // 通过额外 4pt 内边距，把底部主按钮控制在设计稿的 16pt 左右边距。
@@ -154,6 +163,49 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 打开关于我们页，便于用户查看应用版本和公司主体信息。
   void _handleAboutTap() {
     context.push(RoutePaths.aboutApp);
+  }
+
+  /// 分享当前运行会话日志文件，便于用户快速导出问题现场给研发排查。
+  Future<void> _handleShareLogTap() async {
+    final String? logFilePath = AppLogger.instance.currentLogFilePath;
+    if (logFilePath == null || logFilePath.trim().isEmpty) {
+      _showMessage('当前暂无可分享日志');
+      return;
+    }
+
+    final File logFile = File(logFilePath);
+    if (!await logFile.exists()) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('日志文件不存在');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    final String fileName = logFile.uri.pathSegments.isNotEmpty
+        ? logFile.uri.pathSegments.last
+        : 'bluehub.log';
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          title: fileName,
+          subject: fileName,
+          files: <XFile>[XFile(logFile.path, name: fileName)],
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(_resolveErrorMessage(error, fallback: '日志分享失败'));
+    }
   }
 
   /// 确认注销账号后调用软删除接口，并清空本地会话返回登录页。

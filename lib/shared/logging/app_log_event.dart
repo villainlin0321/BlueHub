@@ -94,6 +94,10 @@ Object? sanitizeAppLogValue(
     return '***';
   }
 
+  if (value is num || value is bool) {
+    return value;
+  }
+
   return truncateAppLogText(
     value.toString(),
     maxLength: maxFieldLength,
