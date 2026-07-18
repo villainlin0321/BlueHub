@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../shared/app_icon/app_icon_switcher.dart';
 import '../shared/localization/app_locales.dart';
 import '../shared/logging/app_lifecycle_logger.dart';
 import '../shared/network/providers.dart';
@@ -22,7 +21,7 @@ class App extends ConsumerWidget {
     final title = ref.watch(appTitleProvider);
     AppToast.configure();
 
-    return _AppIconInitialSync(
+    return _AppLocaleInitialSync(
       child: AppLifecycleLogger(
         child: MaterialApp.router(
           key: const Key('app-root'),
@@ -52,20 +51,20 @@ class App extends ConsumerWidget {
   }
 }
 
-class _AppIconInitialSync extends StatefulWidget {
-  const _AppIconInitialSync({required this.child});
+class _AppLocaleInitialSync extends StatefulWidget {
+  const _AppLocaleInitialSync({required this.child});
 
   final Widget child;
 
   @override
-  State<_AppIconInitialSync> createState() => _AppIconInitialSyncState();
+  State<_AppLocaleInitialSync> createState() => _AppLocaleInitialSyncState();
 }
 
-class _AppIconInitialSyncState extends State<_AppIconInitialSync> {
+class _AppLocaleInitialSyncState extends State<_AppLocaleInitialSync> {
   bool _didSync = false;
 
   @override
-  /// 首次进入应用时，根据当前 Locale 同步一次系统桌面图标（后续语言切换由 switchAppLocale 主动触发）。
+  /// 首次进入应用时，根据当前 Locale 同步一次全局语言码缓存。
   void didChangeDependencies() {
     super.didChangeDependencies();
 
@@ -78,9 +77,6 @@ class _AppIconInitialSyncState extends State<_AppIconInitialSync> {
     ProviderScope.containerOf(context, listen: false)
         .read(appLanguageStoreProvider)
         .syncLanguageCode(AppLocales.toLanguageCode(locale));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AppIconSwitcher.syncByLocale(locale);
-    });
   }
 
   @override
