@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../application/message_session/message_session_controller.dart';
+import '../application/message_session/message_session_state.dart';
 import '../../jobs/presentation/job_detail_page.dart';
 import '../../order/presentation/order_detail_page.dart';
 import '../../service_detail/presentation/service_detail_page.dart';
@@ -55,6 +56,9 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
     // 自定义 Tab 文案颜色依赖 controller.index，切换时主动刷新页面以同步选中态。
     _tabController.addListener(_handleTabChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshListsOnPageEnter());
+    });
   }
 
   @override
@@ -70,6 +74,25 @@ class _MessageCenterPageState extends ConsumerState<MessageCenterPage>
       return;
     }
     setState(() {});
+  }
+
+  /// 每次进入消息中心页后主动刷新聊天列表和系统通知列表，
+  /// 避免仅依赖壳层初始化时的首次拉取导致页面数据滞后。
+  Future<void> _refreshListsOnPageEnter() async {
+    final MessageSessionController controller = ref.read(
+      messageSessionControllerProvider.notifier,
+    );
+    final MessageSessionState sessionState = ref.read(
+      messageSessionControllerProvider,
+    );
+    if (!sessionState.hasStarted) {
+      await controller.startSession();
+      return;
+    }
+    await Future.wait<void>(<Future<void>>[
+      controller.refreshConversations(),
+      controller.refreshNotifications(),
+    ]);
   }
 
   Future<void> _markAllAsRead(List<_ChatMessageItem> chatItems) async {
