@@ -3,6 +3,7 @@ import 'package:europepass/shared/network/api_decoders.dart';
 import 'package:europepass/shared/network/page_result.dart';
 import 'package:europepass/shared/network/sse_client.dart';
 import 'package:europepass/shared/network/sse_models.dart';
+import 'package:europepass/shared/network/sse_reconnect_helper.dart';
 import '../../logging/app_logger.dart';
 import '../../../features/messages/data/message_models.dart';
 
@@ -92,19 +93,12 @@ class MessageService {
   ///
   /// 订阅后可持续接收新消息、已读回执等服务端推送事件。
   Stream<SseEvent> connectConversationStream() {
-    return _sseClient.connect('/conversations/sse').map((event) {
-      AppLogger.instance.info(
-        'MESSAGE_SSE',
-        '收到会话 SSE 消息',
-        context: <String, Object?>{
-          'id': event.id,
-          'event': event.event,
-          'retry': event.retry,
-          'data': event.data,
-        },
-      );
-      return event;
-    });
+    return _connectManagedSseStream(
+      path: '/conversations/sse',
+      logTag: 'MESSAGE_SSE',
+      streamName: '会话 SSE',
+      receiveMessage: '收到会话 SSE 消息',
+    );
   }
 
   /// 主动关闭会话 SSE 长连接。
@@ -166,19 +160,12 @@ class MessageService {
 
   /// 建立系统通知 SSE 长连接。
   Stream<SseEvent> connectNotificationStream() {
-    return _sseClient.connect('/notifications/sse').map((event) {
-      AppLogger.instance.info(
-        'NOTIFICATION_SSE',
-        '收到系统通知 SSE 消息',
-        context: <String, Object?>{
-          'id': event.id,
-          'event': event.event,
-          'retry': event.retry,
-          'data': event.data,
-        },
-      );
-      return event;
-    });
+    return _connectManagedSseStream(
+      path: '/notifications/sse',
+      logTag: 'NOTIFICATION_SSE',
+      streamName: '系统通知 SSE',
+      receiveMessage: '收到系统通知 SSE 消息',
+    );
   }
 
   /// 主动关闭系统通知 SSE 长连接。
@@ -243,5 +230,35 @@ class MessageService {
   /// 将当前用户全部系统通知标记为已读。
   Future<void> markAllNotificationsRead() async {
     return _apiClient.putVoid('/notifications/read-all');
+  }
+
+  /// 建立带自动重连能力的 SSE 流。
+  ///
+  /// 当底层连接异常断开或被服务端正常结束时，会按照指数退避自动重试，
+  /// 连续失败达到上限后触发熔断并结束流。
+  Stream<SseEvent> _connectManagedSseStream({
+    required String path,
+    required String logTag,
+    required String streamName,
+    required String receiveMessage,
+  }) {
+    return SseReconnectHelper<SseEvent>(
+      streamFactory: () => _sseClient.connect(path),
+      logTag: logTag,
+      streamName: streamName,
+      maxReconnectAttempts: 10,
+    ).connect().map((SseEvent event) {
+      AppLogger.instance.info(
+        logTag,
+        receiveMessage,
+        context: <String, Object?>{
+          'id': event.id,
+          'event': event.event,
+          'retry': event.retry,
+          'data': event.data,
+        },
+      );
+      return event;
+    });
   }
 }
