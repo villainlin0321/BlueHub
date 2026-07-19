@@ -265,7 +265,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       _isApplying = true;
     });
 
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: widget.args?.jobId,
     );
@@ -273,7 +273,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       return;
     }
 
-    if (errorMessage == null) {
+    if (result.isSuccess) {
       setState(() {
         _isApplying = false;
         _isApplied = true;
@@ -285,7 +285,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     setState(() {
       _isApplying = false;
     });
-    _showMessage(context, errorMessage);
+    if (result.shouldShowError) {
+      _showMessage(context, result.errorMessage!);
+    }
   }
 
   @override

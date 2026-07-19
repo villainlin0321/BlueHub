@@ -329,7 +329,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       _submittingJobIds.add(itemId);
     });
 
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: item.jobId,
     );
@@ -337,7 +337,7 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
       return;
     }
 
-    if (errorMessage == null) {
+    if (result.isSuccess) {
       setState(() {
         _submittingJobIds.remove(itemId);
         _appliedJobIds.add(itemId);
@@ -349,7 +349,9 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
     setState(() {
       _submittingJobIds.remove(itemId);
     });
-    _showMessage(errorMessage);
+    if (result.shouldShowError) {
+      _showMessage(result.errorMessage!);
+    }
   }
 
   void _toggleJobSelection(String id) {
