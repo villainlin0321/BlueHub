@@ -202,15 +202,10 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         _handleChatEvent(event, assistantIndex: assistantIndex);
       }
     } catch (error) {
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback(
-          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.消息发送失败'.tr()),
-          isError: true,
-        );
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: 'AI.消息发送失败'.tr()),
+        isError: true,
+      );
       _removeEmptyAssistantMessage(assistantIndex);
     } finally {
       _updateState((AiAssistantState current) {
@@ -433,19 +428,15 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         );
       });
     } catch (error) {
-      final String? message = ApiErrorFeedback.hasAutoToast(error)
-          ? null
-          : _resolveJobApplyErrorMessage(error);
+      final String message = _resolveJobApplyErrorMessage(error);
       _updateState((AiAssistantState current) {
         final Set<int> nextApplying = <int>{...current.applyingJobIds}
           ..remove(job.jobId);
         return current.copyWith(
           applyingJobIds: nextApplying,
           feedbackMessage: message,
-          feedbackIsError: message != null,
-          feedbackId: message == null
-              ? current.feedbackId
-              : current.feedbackId + 1,
+          feedbackIsError: true,
+          feedbackId: current.feedbackId + 1,
         );
       });
     }

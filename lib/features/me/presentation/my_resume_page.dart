@@ -102,10 +102,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         }
       });
       if (!shouldShowInitialLoading) {
-        final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-        if (toastMessage != null) {
-          AppToast.show(toastMessage);
-        }
+        AppToast.show(_resolveErrorMessage(error));
       }
     }
   }

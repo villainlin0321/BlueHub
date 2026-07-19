@@ -157,12 +157,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isCollecting = false;
       });
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(context, toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(context, _resolveDetailErrorMessage(error));
-      }
+      _showMessage(context, _resolveDetailErrorMessage(error));
     }
   }
 
@@ -216,12 +211,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isContacting = false;
       });
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(context, toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(context, _resolveDetailErrorMessage(error));
-      }
+      _showMessage(context, _resolveDetailErrorMessage(error));
     }
   }
 

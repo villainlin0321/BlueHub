@@ -50,12 +50,10 @@ class SelectRoleController extends Notifier<SelectRoleState> {
       await ref.read(authSessionProvider.notifier).handleLoginResult(login);
       return true;
     } catch (error) {
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback(tr('认证.角色选择失败'), isError: true);
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: tr('认证.角色选择失败')),
+        isError: true,
+      );
       return false;
     } finally {
       state = state.copyWith(isSubmitting: false);

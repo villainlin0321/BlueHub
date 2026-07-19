@@ -157,12 +157,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage> {
       }
 
       setState(() => _isLoadingMore = false);
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        AppToast.show(toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        AppToast.show(_normalizeError(error));
-      }
+      AppToast.show(_normalizeError(error));
     }
   }
 

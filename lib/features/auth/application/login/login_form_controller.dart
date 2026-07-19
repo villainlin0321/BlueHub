@@ -93,12 +93,10 @@ class LoginFormController extends Notifier<LoginFormState> {
       }
       return true;
     } catch (error) {
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback(tr('认证.验证码发送失败'), isError: true);
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: tr('认证.验证码发送失败')),
+        isError: true,
+      );
       return false;
     } finally {
       state = state.copyWith(isSendingCode: false);
@@ -142,10 +140,10 @@ class LoginFormController extends Notifier<LoginFormState> {
           );
       return login;
     } catch (error) {
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: tr('认证.登录失败')),
+        isError: true,
+      );
       return null;
     } finally {
       state = state.copyWith(isSubmitting: false);

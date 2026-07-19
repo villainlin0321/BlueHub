@@ -12,7 +12,7 @@ String resolveJobApplyErrorMessage(Object error) {
   return ApiErrorFeedback.resolveMessage(error, fallback: '招聘.投递失败'.tr());
 }
 
-enum JobApplySubmissionStatus { success, failure, failureHandled }
+enum JobApplySubmissionStatus { success, failure }
 
 /// 收口岗位投递结果，避免把“失败但已自动提示”误判为成功。
 class JobApplySubmissionResult {
@@ -29,9 +29,6 @@ class JobApplySubmissionResult {
         status: JobApplySubmissionStatus.failure,
         errorMessage: errorMessage,
       );
-
-  const JobApplySubmissionResult.failureHandled()
-    : this._(status: JobApplySubmissionStatus.failureHandled);
 
   final JobApplySubmissionStatus status;
   final String? errorMessage;
@@ -69,9 +66,6 @@ Future<JobApplySubmissionResult> submitJobApplication(
     container.invalidate(homeDashboardStatsProvider);
     return const JobApplySubmissionResult.success();
   } catch (error) {
-    if (ApiErrorFeedback.hasAutoToast(error)) {
-      return const JobApplySubmissionResult.failureHandled();
-    }
     return JobApplySubmissionResult.failure(resolveJobApplyErrorMessage(error));
   }
 }

@@ -118,12 +118,10 @@ class _AiSessionHistorySheetState
           .renameSession(id: session.sessionId, title: nextTitle);
       await _loadSessions();
     } catch (error) {
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话重命名失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话重命名失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -157,12 +155,10 @@ class _AiSessionHistorySheetState
       }
       await _loadSessions();
     } catch (error) {
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话删除失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: 'AI.会话删除失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {

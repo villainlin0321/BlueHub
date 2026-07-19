@@ -475,12 +475,7 @@ class _VisaPackageDetailScaffoldState
       setState(() {
         _isCollecting = false;
       });
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(_resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()));
-      }
+      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.收藏操作失败'.tr()));
     }
   }
 
@@ -949,12 +944,7 @@ class _VisaPackageDetailScaffoldState
       if (!mounted) {
         return;
       }
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
-      }
+      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
     } finally {
       dio.close(force: true);
       if (mounted) {

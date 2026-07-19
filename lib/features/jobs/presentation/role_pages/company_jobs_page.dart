@@ -146,12 +146,10 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
           );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -202,12 +200,10 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
       if (!mounted) {
         return;
       }
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -597,12 +593,10 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
           );
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -651,12 +645,10 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
       if (!mounted) {
         return;
       }
-      if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(
-          ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
-          isError: true,
-        );
-      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
