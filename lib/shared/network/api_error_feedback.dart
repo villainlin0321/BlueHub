@@ -4,21 +4,28 @@ import 'api_exception.dart';
 class ApiErrorFeedback {
   ApiErrorFeedback._();
 
-  static bool hasAutoToast(Object error) {
-    return error is ApiException && error.hasShownToast;
+  static String? toastMessage(Object error) {
+    return resolveMessageOrNull(error);
   }
 
-  static String? toastMessage(Object error) {
-    if (error is ApiException && error.shouldShowToast) {
-      return error.message;
+  static String? resolveMessageOrNull(Object error) {
+    if (error is ApiException) {
+      final String message = error.message.trim();
+      return message.isEmpty ? null : message;
     }
-    return null;
+    final String message = normalizeMessageText(error.toString());
+    return message.isEmpty ? null : message;
   }
 
   static String resolveMessage(Object error, {required String fallback}) {
-    if (error is ApiException && error.message.trim().isNotEmpty) {
-      return error.message;
+    return resolveMessageOrNull(error) ?? fallback;
+  }
+
+  static String normalizeMessageText(String message) {
+    final String normalized = message.trim();
+    if (normalized.startsWith('Exception: ')) {
+      return normalized.substring('Exception: '.length).trim();
     }
-    return fallback;
+    return normalized.trim();
   }
 }

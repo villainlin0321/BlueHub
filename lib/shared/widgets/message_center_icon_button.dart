@@ -19,8 +19,9 @@ class MessageCenterIconButton extends ConsumerWidget {
     final ({bool hasUnread, int latestEventToken}) unreadState = ref.watch(
       messageSessionControllerProvider.select(
         (state) => (
-          hasUnread: state.hasUnreadConversations,
-          latestEventToken: state.latestEventToken,
+          hasUnread: state.hasUnreadMessages,
+          latestEventToken:
+              state.latestEventToken + state.notificationLatestEventToken,
         ),
       ),
     );

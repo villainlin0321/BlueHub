@@ -26,6 +26,7 @@ import '../../../shared/widgets/app_user_avatar.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../application/message_session/message_session_controller.dart';
 import '../../messages/data/message_models.dart';
@@ -1876,11 +1877,11 @@ bool _shouldShowOrderCard(ChatPageArgs args) {
 
 String _resolveRoleLabel(String role) {
   switch (role.trim()) {
-    case 'worker':
+    case workerRoleId:
       return '消息.求职者'.tr();
-    case 'employer':
+    case employerRoleId:
       return '招聘.企业'.tr();
-    case 'visa_provider':
+    case visaProviderRoleId:
       return '消息.服务商'.tr();
     default:
       return '消息.客户'.tr();

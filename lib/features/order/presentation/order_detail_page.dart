@@ -16,11 +16,13 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../shell/application/shell_role_provider.dart';
 import '../../../shared/logging/app_log_facade.dart';
 import '../../../shared/logging/app_log_scope.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/providers.dart';
 import '../../../shared/network/services/file_service.dart';
@@ -474,7 +476,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       RoutePaths.chat,
       extra: ChatPageArgs(
         targetUserId: detail.providerInfo.providerId,
-        targetUserRole: 'visa_provider',
+        targetUserRole: visaProviderRoleId,
         nickname: detail.providerName.trim().isEmpty
             ? '订单.服务商'.tr()
             : detail.providerName,
@@ -1192,14 +1194,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   String _resolveErrorMessage(Object error, {required String fallback}) {
-    if (error is ApiException) {
-      return error.message;
-    }
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? fallback : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
   }
 
   Future<Directory> _resolveDownloadDirectory() async {

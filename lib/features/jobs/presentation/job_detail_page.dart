@@ -7,8 +7,12 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../home/data/home_providers.dart';
+import '../../me/data/dictionary_providers.dart';
 import '../../../shared/network/api_error_feedback.dart';
+import '../../../shared/network/models/dictionary_models.dart';
+import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
@@ -157,12 +161,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isCollecting = false;
       });
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(context, toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(context, _resolveDetailErrorMessage(error));
-      }
+      _showMessage(context, _resolveDetailErrorMessage(error));
     }
   }
 
@@ -187,7 +186,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: detail.employer.employerId,
-              targetUserRole: 'employer',
+              targetUserRole: employerRoleId,
             ),
           );
       if (!mounted) {
@@ -201,7 +200,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: detail.employer.employerId,
-          targetUserRole: 'employer',
+          targetUserRole: employerRoleId,
           nickname: detail.employer.name.trim().isEmpty
               ? '招聘.企业'.tr()
               : detail.employer.name,
@@ -216,12 +215,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       setState(() {
         _isContacting = false;
       });
-      final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-      if (toastMessage != null) {
-        _showMessage(context, toastMessage);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _showMessage(context, _resolveDetailErrorMessage(error));
-      }
+      _showMessage(context, _resolveDetailErrorMessage(error));
     }
   }
 
@@ -265,7 +259,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       _isApplying = true;
     });
 
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: widget.args?.jobId,
     );
@@ -273,7 +267,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       return;
     }
 
-    if (errorMessage == null) {
+    if (result.isSuccess) {
       setState(() {
         _isApplying = false;
         _isApplied = true;
@@ -285,7 +279,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     setState(() {
       _isApplying = false;
     });
-    _showMessage(context, errorMessage);
+    if (result.shouldShowError) {
+      _showMessage(context, result.errorMessage!);
+    }
   }
 
   @override
@@ -390,10 +386,27 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       );
     }
 
+    final AsyncValue<PageResult<CountryVO>> countriesAsync = ref.watch(
+      countrySearchProvider(const CountrySearchQuery(page: 1, pageSize: 300)),
+    );
+    final Map<String, String> countryLabelMap = _buildCountryLabelMap(
+      countriesAsync.asData?.value.list ?? const <CountryVO>[],
+    );
+    final String resolvedCountryLabel = _resolveCountryLabel(
+      detail.country,
+      countryLabelMap,
+    );
+    final String locationText = detail.buildLocationText(
+      countryLabel: resolvedCountryLabel,
+    );
+    final String addressText = detail.buildAddressText(
+      countryLabel: resolvedCountryLabel,
+    );
+
     return ListView(
       padding: EdgeInsets.zero,
       children: <Widget>[
-        _JobHeaderSection(detail: detail),
+        _JobHeaderSection(detail: detail, locationText: locationText),
         const SizedBox(height: 1),
         _EmployerCard(
           employer: detail.employer,
@@ -402,16 +415,21 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         const SizedBox(height: 1),
         _JobDescriptionSection(detail: detail),
         const SizedBox(height: 1),
-        _LocationSection(detail: detail, mapAssetPath: _mapAsset),
+        _LocationSection(
+          detail: detail,
+          mapAssetPath: _mapAsset,
+          addressText: addressText,
+        ),
       ],
     );
   }
 }
 
 class _JobHeaderSection extends StatelessWidget {
-  const _JobHeaderSection({required this.detail});
+  const _JobHeaderSection({required this.detail, required this.locationText});
 
   final JobDetailVO detail;
+  final String locationText;
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +440,7 @@ class _JobHeaderSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               Expanded(
                 child: Text(
@@ -447,7 +465,9 @@ class _JobHeaderSection extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: detail.displayTags
+            children: detail.requirements
+                .map((String item) => item.trim())
+                .where((String item) => item.isNotEmpty)
                 .map((String tag) => _BorderTag(label: tag))
                 .toList(),
           ),
@@ -461,7 +481,7 @@ class _JobHeaderSection extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                detail.locationText,
+                locationText,
                 style: TestStyle.regular(
                   fontSize: 12,
                   color: const Color(0xFF595959),
@@ -581,13 +601,6 @@ class _JobDescriptionSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (detail.description.trim().isNotEmpty) ...<Widget>[
-            _DescriptionBlock(
-              title: '招聘.岗位描述'.tr(),
-              items: <String>[detail.description.trim()],
-            ),
-            const SizedBox(height: 20),
-          ],
           Text(
             '招聘.职位详情'.tr(),
             style: TestStyle.pingFangSemibold(
@@ -596,53 +609,29 @@ class _JobDescriptionSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _DescriptionBlock(
-            title: '招聘.岗位职责'.tr(),
-            items: detail.responsibilities,
+          Text(
+            detail.description.trim(),
+            style: TestStyle.regular(
+              fontSize: 14,
+              color: const Color(0xFF595959),
+            ),
           ),
-          const SizedBox(height: 20),
-          _DescriptionBlock(title: '招聘.任职要求'.tr(), items: detail.requirements),
-          const SizedBox(height: 20),
-          _DescriptionBlock(title: '招聘.福利待遇'.tr(), items: detail.benefits),
         ],
       ),
     );
   }
 }
 
-class _DescriptionBlock extends StatelessWidget {
-  const _DescriptionBlock({required this.title, required this.items});
-
-  final String title;
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          title,
-          style: TestStyle.medium(fontSize: 14, color: const Color(0xFF262626)),
-        ),
-        for (final String item in items)
-          Text(
-            item,
-            style: TestStyle.regular(
-              fontSize: 14,
-              color: const Color(0xFF595959),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _LocationSection extends StatelessWidget {
-  const _LocationSection({required this.detail, required this.mapAssetPath});
+  const _LocationSection({
+    required this.detail,
+    required this.mapAssetPath,
+    required this.addressText,
+  });
 
   final JobDetailVO detail;
   final String mapAssetPath;
+  final String addressText;
 
   @override
   Widget build(BuildContext context) {
@@ -661,7 +650,7 @@ class _LocationSection extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            detail.addressText,
+            addressText,
             style: TestStyle.regular(
               fontSize: 14,
               color: const Color(0xFF8C8C8C),
@@ -866,40 +855,21 @@ extension on JobDetailVO {
     return salaryPeriod.isEmpty ? range : '$range/$salaryPeriod';
   }
 
-  /// 组装详情页展示标签，兼容急招和签证支持。
-  List<String> get displayTags {
-    final String urgentLabel = '招聘卡片.急招'.tr();
-    final String visaSupportLabel = '招聘卡片.提供签证'.tr();
-    final List<String> labels = tags
-        .map((TagVO tag) => tag.label.trim())
-        .where((String label) => label.isNotEmpty)
-        .toList(growable: true);
-    if (hasVisaSupport && !labels.contains(visaSupportLabel)) {
-      labels.add(visaSupportLabel);
-    }
-    if (isUrgent && !labels.contains(urgentLabel)) {
-      labels.insert(0, urgentLabel);
-    }
-    if (employmentType.trim().isNotEmpty &&
-        !labels.contains(employmentType.trim())) {
-      labels.add(employmentType.trim());
-    }
-    return labels;
-  }
-
-  /// 组装地点文案。
-  String get locationText {
+  /// 组装地点文案，支持替换国家展示名称。
+  String buildLocationText({String? countryLabel}) {
     final List<String> parts = <String>[
-      country.trim(),
+      (countryLabel ?? country).trim(),
       city.trim(),
     ].where((String value) => value.isNotEmpty).toList(growable: false);
     return parts.isEmpty ? '招聘.地点待更新'.tr() : parts.join('·');
   }
 
-  /// 组装详细地址文案。
-  String get addressText {
+  /// 组装详细地址文案，地址为空时回退到地点文案。
+  String buildAddressText({String? countryLabel}) {
     final String addressText = address.trim();
-    return addressText.isEmpty ? locationText : addressText;
+    return addressText.isEmpty
+        ? buildLocationText(countryLabel: countryLabel)
+        : addressText;
   }
 
   /// 组装经纬度展示文案。
@@ -921,6 +891,19 @@ extension on JobDetailVO {
     }
     return value.toStringAsFixed(1);
   }
+}
+
+Map<String, String> _buildCountryLabelMap(List<CountryVO> countries) {
+  return <String, String>{
+    for (final CountryVO item in countries)
+      if (item.countryCode.trim().isNotEmpty && item.nameZh.trim().isNotEmpty)
+        item.countryCode.trim(): item.nameZh.trim(),
+  };
+}
+
+String _resolveCountryLabel(String value, Map<String, String> countryLabelMap) {
+  final String trimmed = value.trim();
+  return countryLabelMap[trimmed] ?? trimmed;
 }
 
 extension on EmployerInfoVO {

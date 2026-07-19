@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/models/app_currency.dart';
+import '../../../shared/network/api_error_feedback.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import 'order_payment_copy.dart';
 
@@ -230,12 +231,8 @@ class _OrderPaymentRadio extends StatelessWidget {
 
 /// 解析支付发起异常文案，优先展示真实错误，否则回退到当前语言的统一兜底提示。
 String resolveOrderPaymentErrorMessage(BuildContext context, Object error) {
-  final String message = error.toString().trim();
-  if (message.startsWith('Exception: ')) {
-    return message.substring('Exception: '.length);
-  }
-  if (message.isNotEmpty) {
-    return message;
-  }
-  return OrderPaymentCopy.startFail(context);
+  return ApiErrorFeedback.resolveMessage(
+    error,
+    fallback: OrderPaymentCopy.startFail(context),
+  );
 }

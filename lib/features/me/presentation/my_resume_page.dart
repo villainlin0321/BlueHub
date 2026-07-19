@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -16,6 +17,8 @@ import 'my_resume_editor_page.dart';
 import 'package:europepass/shared/ui/test_style.dart';
 
 const double _kResumeCardFooterHeight = 32;
+const String _kResumeEmptyStateAssetPath =
+    'assets/images/resume_empty_state_illustration.svg';
 
 /// 我的简历页。
 ///
@@ -102,10 +105,7 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         }
       });
       if (!shouldShowInitialLoading) {
-        final String? toastMessage = ApiErrorFeedback.toastMessage(error);
-        if (toastMessage != null) {
-          AppToast.show(toastMessage);
-        }
+        AppToast.show(_resolveErrorMessage(error));
       }
     }
   }
@@ -588,22 +588,26 @@ class _MyResumePageState extends ConsumerState<MyResumePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        children: <Widget>[
-          const Icon(
-            Icons.description_outlined,
-            size: 32,
-            color: Color(0xFFBFBFBF),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '我的.暂无简历'.tr(),
-            style: TestStyle.pingFangRegular(
-              fontSize: 14,
-              color: Color(0xFF8C8C8C),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SvgPicture.asset(
+              _kResumeEmptyStateAssetPath,
+              width: 132,
+              height: 96,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              '我的.暂无简历'.tr(),
+              textAlign: TextAlign.center,
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF8C8C8C),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

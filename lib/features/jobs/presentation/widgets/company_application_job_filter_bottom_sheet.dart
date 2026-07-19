@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../config/data/config_models.dart';
@@ -123,11 +124,7 @@ class _CompanyApplicationJobFilterSheetState
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length).trim();
-    }
-    return message.isEmpty ? '企业岗位.加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '企业岗位.加载失败'.tr());
   }
 
   void _syncSelectionFromNotifier() {

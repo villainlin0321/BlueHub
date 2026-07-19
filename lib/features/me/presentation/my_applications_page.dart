@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -350,7 +351,7 @@ class _MyApplicationListView extends StatelessWidget {
               RoutePaths.chat,
               extra: ChatPageArgs(
                 targetUserId: profileId,
-                targetUserRole: 'employer',
+                targetUserRole: employerRoleId,
                 nickname: item.companyName.trim().isEmpty
                     ? item.title
                     : item.companyName,

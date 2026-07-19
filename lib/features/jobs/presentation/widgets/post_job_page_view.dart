@@ -158,10 +158,10 @@ class PostJobPageView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             PostJobFieldGroup(
-                              label: '岗位发布.套餐名称'.tr(),
+                              label: '岗位发布.岗位名称'.tr(),
                               child: PostJobInputField(
                                 controller: packageNameController,
-                                hintText: '岗位发布.套餐名称示例'.tr(),
+                                hintText: '岗位发布.岗位名称示例'.tr(),
                                 textInputAction: TextInputAction.next,
                               ),
                             ),

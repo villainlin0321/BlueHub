@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/network/api_exception.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../jobs/data/application_providers.dart';
 import '../../data/my_applications_models.dart';
 import 'my_application_list_state.dart';
@@ -171,14 +171,10 @@ class MyApplicationListsController
   }
 
   String _normalizeError(Object error) {
-    if (error is ApiException && error.message.trim().isNotEmpty) {
-      return error.message;
-    }
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '我的应聘.加载失败请稍后重试'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: '我的应聘.加载失败请稍后重试'.tr(),
+    );
   }
 }
 

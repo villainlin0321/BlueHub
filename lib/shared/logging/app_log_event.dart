@@ -115,9 +115,6 @@ bool isSensitiveAppLogKey(String? key) {
       normalized.contains('authorization') ||
       normalized.contains('password') ||
       normalized.contains('secret') ||
-      // 统一把手机号和邮箱也纳入敏感字段规则，避免结构化快照明文落日志。
-      normalized.contains('phone') ||
-      normalized.contains('email') ||
       // 实名认证相关字段需要统一脱敏，避免身份证号或证件照片地址进入客户端日志。
       normalized.contains('realname') ||
       normalized.contains('idcard') ||

@@ -2,10 +2,12 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
 import '../../../jobs/presentation/post_job_page.dart';
@@ -300,11 +302,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? tr('企业岗位.加载失败') : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: tr('企业岗位.加载失败'));
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -397,6 +395,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
             .where((JobDetailVO item) => item.jobId != job.jobId)
             .toList(growable: false);
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
       _showMessage(successMessage);
     } catch (error) {
@@ -650,18 +649,6 @@ class _JobManageCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (job.publishedAt.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 6),
-              Text(
-                '企业岗位.发布时间'.tr(
-                  namedArgs: <String, String>{'time': job.publishedAt},
-                ),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 12,
-                  color: Color(0xFF8C8C8C),
-                ),
-              ),
-            ],
             const SizedBox(height: 16),
             Row(
               children: <Widget>[

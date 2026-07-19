@@ -530,14 +530,20 @@ class _HomeLatestJobsSection extends ConsumerWidget {
 
   /// 处理首页岗位投递，并透传统一的成功/失败提示文案。
   Future<void> _handleApply(BuildContext context, JobListVO job) async {
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: job.jobId,
     );
     if (!context.mounted) {
       return;
     }
-    AppToast.show(errorMessage ?? '首页.投递成功'.tr());
+    if (result.isSuccess) {
+      AppToast.show('首页.投递成功'.tr());
+      return;
+    }
+    if (result.shouldShowError) {
+      AppToast.show(result.errorMessage!);
+    }
   }
 
   /// 根据接口状态切换最新岗位区块的加载、错误、空态和正常列表。

@@ -12,10 +12,38 @@ String resolveJobApplyErrorMessage(Object error) {
   return ApiErrorFeedback.resolveMessage(error, fallback: '招聘.投递失败'.tr());
 }
 
+enum JobApplySubmissionStatus { success, failure }
+
+/// 收口岗位投递结果，避免把“失败但已自动提示”误判为成功。
+class JobApplySubmissionResult {
+  const JobApplySubmissionResult._({
+    required this.status,
+    this.errorMessage,
+  });
+
+  const JobApplySubmissionResult.success()
+    : this._(status: JobApplySubmissionStatus.success);
+
+  const JobApplySubmissionResult.failure(String errorMessage)
+    : this._(
+        status: JobApplySubmissionStatus.failure,
+        errorMessage: errorMessage,
+      );
+
+  final JobApplySubmissionStatus status;
+  final String? errorMessage;
+
+  bool get isSuccess => status == JobApplySubmissionStatus.success;
+  bool get shouldShowError =>
+      status == JobApplySubmissionStatus.failure &&
+      errorMessage != null &&
+      errorMessage!.trim().isNotEmpty;
+}
+
 /// 统一提交岗位投递请求。
 ///
-/// 返回 `null` 表示投递成功；返回字符串表示当前场景下应展示给用户的错误提示。
-Future<String?> submitJobApplication(
+/// 仅在真实投递成功时返回 `success`，避免把已自动提示的失败误判为成功。
+Future<JobApplySubmissionResult> submitJobApplication(
   BuildContext context, {
   required int? jobId,
 }) async {
@@ -26,7 +54,7 @@ Future<String?> submitJobApplication(
 
   // 关键保护：没有真实岗位 ID 时，不发起无效请求，直接给出明确提示。
   if (jobId == null || jobId <= 0) {
-    return '招聘.岗位信息缺失无法投递'.tr();
+    return JobApplySubmissionResult.failure('招聘.岗位信息缺失无法投递'.tr());
   }
 
   try {
@@ -36,11 +64,8 @@ Future<String?> submitJobApplication(
 
     // 投递成功后触发首页统计重新拉取，刷新失败不影响投递结果反馈。
     container.invalidate(homeDashboardStatsProvider);
-    return null;
+    return const JobApplySubmissionResult.success();
   } catch (error) {
-    if (ApiErrorFeedback.hasAutoToast(error)) {
-      return null;
-    }
-    return resolveJobApplyErrorMessage(error);
+    return JobApplySubmissionResult.failure(resolveJobApplyErrorMessage(error));
   }
 }

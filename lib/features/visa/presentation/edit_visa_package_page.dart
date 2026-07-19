@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_cropper/image_cropper.dart';
 
+import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/widgets/app_currency_bottom_sheet.dart';
@@ -378,11 +379,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '服务详情.套餐详情加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '服务详情.套餐详情加载失败'.tr());
   }
 
   void _replaceTiers(List<EditVisaPackageTierViewDraft> nextTiers) {
@@ -1308,12 +1305,7 @@ class _EditVisaPackagePageState extends ConsumerState<EditVisaPackagePage>
   }
 
   String _resolveUploadErrorMessage(Object error, {required String fallback}) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty ? fallback : normalized;
-    }
-    return message.isEmpty ? fallback : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
   }
 
   Future<void> _handleSubmitSuccess(EditVisaPackageState next) async {

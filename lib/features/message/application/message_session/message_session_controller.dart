@@ -13,6 +13,7 @@ import '../../../../shared/network/page_result.dart';
 import '../../../../shared/network/services/message_service.dart';
 import '../../../../shared/network/sse_models.dart';
 import '../../../auth/application/auth_session_provider.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
 import 'message_session_state.dart';
@@ -24,6 +25,7 @@ final messageSessionControllerProvider =
 
 class MessageSessionController extends Notifier<MessageSessionState> {
   static const int _pageSize = 50;
+  static const int _notificationPageSize = 50;
   static int _activeChatConversationId = 0;
 
   static void setActiveChatConversationId(int conversationId) {
@@ -31,6 +33,8 @@ class MessageSessionController extends Notifier<MessageSessionState> {
   }
 
   StreamSubscription<SseEvent>? _sseSubscription;
+  StreamSubscription<SseEvent>? _notificationSseSubscription;
+  Future<void>? _refreshConversationsFuture;
   bool _isDisposed = false;
   late final MessageService _messageService;
   int _currentUserId = 0;
@@ -56,21 +60,29 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     _updateState(
       (MessageSessionState current) => current.copyWith(
         conversations: const <ConversationVO>[],
+        notifications: const <NotificationVO>[],
         hasStarted: true,
         isInitializing: true,
+        isNotificationsInitializing: true,
         loadErrorMessage: null,
+        notificationLoadErrorMessage: null,
       ),
     );
     _logSessionStart(previousCount: previousCount);
     _subscribeConversationSse();
-    await refreshConversations();
-    if (state.loadErrorMessage == null) {
+    _subscribeNotificationSse();
+    await Future.wait<void>(<Future<void>>[
+      refreshConversations(),
+      refreshNotifications(),
+    ]);
+    if (state.loadErrorMessage == null &&
+        state.notificationLoadErrorMessage == null) {
       _logSessionSuccess(latestCount: state.conversations.length);
       return;
     }
     _logSessionFail(
       previousCount: previousCount,
-      reason: state.loadErrorMessage!,
+      reason: _resolveSessionStartFailureReason(),
     );
   }
 
@@ -84,15 +96,32 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       (MessageSessionState current) => current.copyWith(
         hasStarted: false,
         isInitializing: false,
+        isNotificationsInitializing: false,
         latestEvent: null,
+        latestNotificationEvent: null,
       ),
     );
   }
 
-  Future<void> refreshConversations() async {
+  Future<void> refreshConversations() {
     if (!state.hasStarted) {
-      return;
+      return Future<void>.value();
     }
+    final Future<void>? currentRefresh = _refreshConversationsFuture;
+    if (currentRefresh != null) {
+      return currentRefresh;
+    }
+
+    final Future<void> refreshFuture = _performRefreshConversations();
+    _refreshConversationsFuture = refreshFuture;
+    return refreshFuture.whenComplete(() {
+      if (identical(_refreshConversationsFuture, refreshFuture)) {
+        _refreshConversationsFuture = null;
+      }
+    });
+  }
+
+  Future<void> _performRefreshConversations() async {
     final int previousCount = state.conversations.length;
     _syncCurrentUserId();
     _updateState(
@@ -131,6 +160,49 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         (MessageSessionState current) => current.copyWith(
           isInitializing: false,
           loadErrorMessage: _resolveErrorMessage(error),
+        ),
+      );
+    }
+  }
+
+  Future<void> refreshNotifications() async {
+    if (!state.hasStarted) {
+      return;
+    }
+    final int previousCount = state.notifications.length;
+    _updateState(
+      (MessageSessionState current) => current.copyWith(
+        isNotificationsInitializing: true,
+        notificationLoadErrorMessage: null,
+      ),
+    );
+
+    try {
+      final PageResult<NotificationVO> response = await _messageService
+          .listNotifications(page: 1, pageSize: _notificationPageSize);
+      _updateState(
+        (MessageSessionState current) => current.copyWith(
+          notifications: response.list,
+          isNotificationsInitializing: false,
+          notificationLoadErrorMessage: null,
+        ),
+      );
+    } catch (error, stackTrace) {
+      _logNotificationRefreshFail(
+        previousCount: previousCount,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      AppLogger.instance.error(
+        'MESSAGE_SESSION',
+        '刷新系统通知列表失败',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _updateState(
+        (MessageSessionState current) => current.copyWith(
+          isNotificationsInitializing: false,
+          notificationLoadErrorMessage: _resolveErrorMessage(error),
         ),
       );
     }
@@ -210,6 +282,62 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     }
   }
 
+  Future<void> markNotificationRead(int notificationId) async {
+    if (notificationId <= 0) {
+      return;
+    }
+    final int index = state.notifications.indexWhere(
+      (NotificationVO item) => item.notificationId == notificationId,
+    );
+    if (index == -1) {
+      return;
+    }
+    final NotificationVO previous = state.notifications[index];
+    if (previous.isRead) {
+      return;
+    }
+    _replaceNotification(previous.copyWith(isRead: true), moveToFront: false);
+    try {
+      await _messageService.markNotificationRead(
+        notificationId: notificationId,
+      );
+    } catch (error, stackTrace) {
+      _logNotificationReadSyncFail(
+        notificationId: notificationId,
+        mode: 'single',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _replaceNotification(previous, moveToFront: false);
+    }
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final List<NotificationVO> unreadItems = state.notifications
+        .where((NotificationVO item) => !item.isRead)
+        .toList(growable: false);
+    if (unreadItems.isEmpty) {
+      return;
+    }
+    _updateState((MessageSessionState current) {
+      final List<NotificationVO> updated = current.notifications
+          .map((NotificationVO item) => item.copyWith(isRead: true))
+          .toList(growable: false);
+      return current.copyWith(notifications: updated);
+    });
+    try {
+      await _messageService.markAllNotificationsRead();
+    } catch (error, stackTrace) {
+      _logNotificationReadSyncFail(
+        notificationId: 0,
+        mode: 'batch',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await refreshNotifications();
+    }
+  }
+
   void _subscribeConversationSse() {
     _sseSubscription?.cancel();
     _sseSubscription = _messageService.connectConversationStream().listen(
@@ -222,6 +350,22 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         );
       },
     );
+  }
+
+  void _subscribeNotificationSse() {
+    _notificationSseSubscription?.cancel();
+    _notificationSseSubscription = _messageService
+        .connectNotificationStream()
+        .listen(
+          _handleNotificationEvent,
+          onError: (Object error, StackTrace stackTrace) {
+            _logNotificationSseStreamFail(
+              error: error,
+              stackTrace: stackTrace,
+              phase: 'stream',
+            );
+          },
+        );
   }
 
   void _handleConversationEvent(SseEvent event) {
@@ -283,7 +427,40 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       );
       _replaceConversation(updated);
     } catch (error, stackTrace) {
-      _logSseParseFail(
+      _logSseParseFail(event: event, error: error, stackTrace: stackTrace);
+    }
+  }
+
+  void _handleNotificationEvent(SseEvent event) {
+    if (_isDisposed || !state.hasStarted) {
+      return;
+    }
+    _updateState(
+      (MessageSessionState current) => current.copyWith(
+        notificationLatestEventToken: current.notificationLatestEventToken + 1,
+        latestNotificationEvent: event,
+      ),
+    );
+    if (!event.hasData) {
+      return;
+    }
+
+    try {
+      final JsonMap payload = _extractPayload(event);
+      if (payload.isEmpty) {
+        return;
+      }
+      final NotificationVO? notification = _parseNotification(payload);
+      if (notification == null) {
+        unawaited(refreshNotifications());
+        return;
+      }
+      _replaceNotification(notification);
+      if (notification.bizType.trim().toLowerCase() == 'application') {
+        ref.invalidate(homeDashboardStatsProvider);
+      }
+    } catch (error, stackTrace) {
+      _logNotificationSseParseFail(
         event: event,
         error: error,
         stackTrace: stackTrace,
@@ -294,11 +471,16 @@ class MessageSessionController extends Notifier<MessageSessionState> {
   Future<void> _disposeSession({required bool closeRemote}) async {
     await _sseSubscription?.cancel();
     _sseSubscription = null;
+    await _notificationSseSubscription?.cancel();
+    _notificationSseSubscription = null;
     if (!closeRemote) {
       return;
     }
     try {
-      await _messageService.closeConversationStream();
+      await Future.wait<void>(<Future<void>>[
+        _messageService.closeConversationStream(),
+        _messageService.closeNotificationStream(),
+      ]);
     } catch (error, stackTrace) {
       AppLogger.instance.error(
         'MESSAGE_SESSION',
@@ -331,6 +513,30 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         items.insert(index, conversation);
       }
       return current.copyWith(conversations: items);
+    });
+  }
+
+  void _replaceNotification(
+    NotificationVO notification, {
+    bool moveToFront = true,
+  }) {
+    _updateState((MessageSessionState current) {
+      final List<NotificationVO> items = List<NotificationVO>.from(
+        current.notifications,
+      );
+      final int index = items.indexWhere(
+        (NotificationVO item) =>
+            item.notificationId == notification.notificationId,
+      );
+      if (index != -1) {
+        items.removeAt(index);
+      }
+      if (moveToFront || index == -1) {
+        items.insert(0, notification);
+      } else {
+        items.insert(index, notification);
+      }
+      return current.copyWith(notifications: items);
     });
   }
 
@@ -428,6 +634,37 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     return MessageVO.fromJson(normalizedMessage);
   }
 
+  NotificationVO? _parseNotification(JsonMap payload) {
+    final JsonMap notificationJson = _extractNotificationJson(payload);
+    if (notificationJson.isEmpty) {
+      return null;
+    }
+    final int notificationId = readInt(notificationJson, 'notificationId');
+    if (notificationId <= 0) {
+      return null;
+    }
+    return NotificationVO.fromJson(notificationJson);
+  }
+
+  JsonMap _extractNotificationJson(JsonMap payload) {
+    if (payload['notificationId'] != null) {
+      return payload;
+    }
+    final JsonMap notification = asJsonMap(payload['notification']);
+    if (notification.isNotEmpty) {
+      return notification;
+    }
+    final JsonMap payloadData = asJsonMap(payload['data']);
+    if (payloadData['notificationId'] != null) {
+      return payloadData;
+    }
+    final JsonMap nestedNotification = asJsonMap(payloadData['notification']);
+    if (nestedNotification.isNotEmpty) {
+      return nestedNotification;
+    }
+    return const <String, dynamic>{};
+  }
+
   bool _isActiveChatConversation(int conversationId) {
     return conversationId > 0 && conversationId == _activeChatConversationId;
   }
@@ -485,6 +722,20 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       return error.message;
     }
     return tr('消息.消息加载失败');
+  }
+
+  String _resolveSessionStartFailureReason() {
+    final List<String> reasons = <String>[
+      if (state.loadErrorMessage != null && state.loadErrorMessage!.isNotEmpty)
+        state.loadErrorMessage!,
+      if (state.notificationLoadErrorMessage != null &&
+          state.notificationLoadErrorMessage!.isNotEmpty)
+        state.notificationLoadErrorMessage!,
+    ];
+    if (reasons.isEmpty) {
+      return tr('消息.消息加载失败');
+    }
+    return reasons.join(' | ');
   }
 
   void _syncCurrentUserId() {
@@ -557,6 +808,28 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     };
   }
 
+  /// 记录系统通知刷新失败事件，并保留当前通知数量上下文。
+  void _logNotificationRefreshFail({
+    required int previousCount,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'NOTIFICATION_REFRESH_FAIL',
+      message: '系统通知列表刷新失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'page': 1,
+        'pageSize': _notificationPageSize,
+        'notificationCountBefore': previousCount,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
   /// 记录消息会话启动开始事件，便于把订阅启动和刷新列表串成同一段会话链路。
   void _logSessionStart({required int previousCount}) {
     StateLog.transition(
@@ -578,16 +851,14 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       result: AppLogResult.success,
       context: <String, Object?>{
         'conversationCountAfter': latestCount,
+        'notificationCountAfter': state.notifications.length,
         if (_currentUserId > 0) 'currentUserId': _currentUserId,
       },
     );
   }
 
   /// 记录消息会话启动失败事件，保留失败原因帮助区分是订阅失败还是列表刷新失败。
-  void _logSessionFail({
-    required int previousCount,
-    required String reason,
-  }) {
+  void _logSessionFail({required int previousCount, required String reason}) {
     StateLog.transition(
       event: 'MESSAGE_SESSION_FAIL',
       message: '消息会话启动失败',
@@ -595,6 +866,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       result: AppLogResult.fail,
       context: <String, Object?>{
         'conversationCountBefore': previousCount,
+        'notificationCountBefore': state.notifications.length,
         'reason': reason,
         if (_currentUserId > 0) 'currentUserId': _currentUserId,
       },
@@ -654,6 +926,69 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     StateLog.transition(
       event: 'MESSAGE_SSE_PARSE_FAIL',
       message: '解析会话 SSE 事件失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        if ((event.id ?? '').trim().isNotEmpty) 'sseId': event.id,
+        if ((event.event ?? '').trim().isNotEmpty) 'sseEvent': event.event,
+        if (event.data.trim().isNotEmpty) 'sseDataLength': event.data.length,
+      },
+    );
+  }
+
+  /// 记录系统通知已读同步失败事件。
+  void _logNotificationReadSyncFail({
+    required int notificationId,
+    required String mode,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'NOTIFICATION_READ_SYNC_FAIL',
+      message: mode == 'batch' ? '批量同步系统通知已读失败' : '同步单条系统通知已读失败',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        if (notificationId > 0) 'notificationId': notificationId,
+        'mode': mode,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录系统通知 SSE 收包阶段异常。
+  void _logNotificationSseStreamFail({
+    required Object error,
+    required StackTrace stackTrace,
+    required String phase,
+  }) {
+    StateLog.transition(
+      event: 'NOTIFICATION_SSE_STREAM_FAIL',
+      message: '系统通知 SSE 收包异常',
+      level: AppLogLevel.error,
+      result: AppLogResult.fail,
+      error: error,
+      stackTrace: stackTrace,
+      context: <String, Object?>{
+        'phase': phase,
+        if (_currentUserId > 0) 'currentUserId': _currentUserId,
+      },
+    );
+  }
+
+  /// 记录系统通知 SSE 解析失败事件。
+  void _logNotificationSseParseFail({
+    required SseEvent event,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    StateLog.transition(
+      event: 'NOTIFICATION_SSE_PARSE_FAIL',
+      message: '解析系统通知 SSE 事件失败',
       level: AppLogLevel.error,
       result: AppLogResult.fail,
       error: error,

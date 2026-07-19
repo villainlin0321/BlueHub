@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../data/job_models.dart';
 import '../../data/job_providers.dart';
 
@@ -60,7 +61,10 @@ class _InviteJobPickerSheetState extends ConsumerState<_InviteJobPickerSheet> {
       }
       setState(() {
         _isLoading = false;
-        _errorMessage = error.toString();
+        _errorMessage = ApiErrorFeedback.resolveMessage(
+          error,
+          fallback: '企业岗位.加载失败'.tr(),
+        );
       });
     }
   }

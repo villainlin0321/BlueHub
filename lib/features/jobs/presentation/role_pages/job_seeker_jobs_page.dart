@@ -427,24 +427,27 @@ class _JobsPageBodyState extends ConsumerState<_JobsPageBody> {
       _submittingJobIds.add(job.jobId);
     });
 
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: job.jobId,
     );
     if (!mounted) {
       return;
     }
-    if (errorMessage == null) {
+    if (result.isSuccess) {
       setState(() {
         _submittingJobIds.remove(job.jobId);
         _appliedJobIds.add(job.jobId);
       });
       AppToast.show('招聘.投递成功'.tr());
-    } else {
-      setState(() {
-        _submittingJobIds.remove(job.jobId);
-      });
-      AppToast.show(errorMessage);
+      return;
+    }
+
+    setState(() {
+      _submittingJobIds.remove(job.jobId);
+    });
+    if (result.shouldShowError) {
+      AppToast.show(result.errorMessage!);
     }
   }
 }

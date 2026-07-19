@@ -11,7 +11,6 @@ import '../logging/app_logger.dart';
 import 'api_exception.dart';
 import 'api_result.dart';
 import 'app_result_error_resolver.dart';
-import '../widgets/app_toast.dart';
 
 class ApiClient {
   ApiClient(this._dio);
@@ -239,12 +238,10 @@ class ApiClient {
       code: result.code,
       message: result.message,
     );
-    unawaited(AppToast.showFirstPriorityError(message));
     return ApiException.biz(
       code: result.code,
       message: message,
       requestId: result.requestId,
-      hasShownToast: true,
     );
   }
 

@@ -293,15 +293,15 @@ class PostJobController extends Notifier<PostJobState> {
         error: error,
         stackTrace: stackTrace,
       );
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback(
-          editingJobId == null ? '岗位发布.岗位发布失败'.tr() : '岗位发布.岗位更新失败'.tr(),
-          isError: true,
-        );
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(
+          error,
+          fallback: editingJobId == null
+              ? '岗位发布.岗位发布失败'.tr()
+              : '岗位发布.岗位更新失败'.tr(),
+        ),
+        isError: true,
+      );
     }
   }
 
@@ -325,12 +325,10 @@ class PostJobController extends Notifier<PostJobState> {
         stackTrace: stackTrace,
         context: <String, Object?>{'jobId': jobId},
       );
-      final String? message = ApiErrorFeedback.toastMessage(error);
-      if (message != null) {
-        _emitFeedback(message, isError: true);
-      } else if (!ApiErrorFeedback.hasAutoToast(error)) {
-        _emitFeedback('岗位发布.岗位详情加载失败'.tr(), isError: true);
-      }
+      _emitFeedback(
+        ApiErrorFeedback.resolveMessage(error, fallback: '岗位发布.岗位详情加载失败'.tr()),
+        isError: true,
+      );
       return null;
     }
   }

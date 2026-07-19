@@ -194,10 +194,16 @@ class EditVisaPackageController extends Notifier<EditVisaPackageState> {
   }
 
   int _parseCreatedPackageId(Map<String, dynamic> response) {
-    final Object? packageId = response['packageId'];
+    final Object? data = response['data'];
+    final Object? packageId =
+        data is Map<String, dynamic> ? data['package_id'] : null;
+    final Object? fallbackPackageId = response['package_id'];
+    final Object? legacyPackageId = response['packageId'];
     final Object? fallbackId = response['id'];
     final int resolvedId =
         _tryParsePositiveInt(packageId) ??
+        _tryParsePositiveInt(fallbackPackageId) ??
+        _tryParsePositiveInt(legacyPackageId) ??
         _tryParsePositiveInt(fallbackId) ??
         0;
     if (resolvedId > 0) {

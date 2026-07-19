@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
@@ -124,11 +125,7 @@ class _ServiceProviderVisaPageState
   }
 
   String _normalizeError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? '订单.订单加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '订单.订单加载失败'.tr());
   }
 
   void _showMessage(String message) {

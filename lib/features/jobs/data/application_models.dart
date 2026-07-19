@@ -240,18 +240,18 @@ class UpdateApplicationStatusBO {
 class InviteInterviewBO {
   const InviteInterviewBO({
     required this.jobId,
-    required this.resumeId,
+    this.resumeId,
     this.remark,
   });
 
   final int jobId;
-  final int resumeId;
+  final int? resumeId;
   final String? remark;
 
   factory InviteInterviewBO.fromJson(JsonMap json) {
     return InviteInterviewBO(
       jobId: readInt(json, 'jobId'),
-      resumeId: readInt(json, 'resumeId'),
+      resumeId: _readNullableInt(json['resumeId']),
       remark: _readNullableString(json['remark']),
     );
   }
@@ -259,10 +259,26 @@ class InviteInterviewBO {
   JsonMap toJson() {
     return <String, dynamic>{
       'jobId': jobId,
-      'resumeId': resumeId,
+      if (resumeId != null && resumeId! > 0) 'resumeId': resumeId,
       if (remark != null && remark!.trim().isNotEmpty) 'remark': remark,
     };
   }
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
 }
 
 String? _readNullableString(dynamic value) {
@@ -274,19 +290,6 @@ String? _readNullableString(dynamic value) {
   }
   if (value is num || value is bool) {
     return value.toString();
-  }
-  return null;
-}
-
-int? _readNullableInt(dynamic value) {
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  if (value is String) {
-    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
   }
   return null;
 }

@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app_icon/app_icon_switcher.dart';
 import '../network/providers.dart';
 
 /// 应用语言配置：统一维护支持的语言、默认语言与切换方法。
@@ -35,6 +34,5 @@ extension AppLocaleContextX on BuildContext {
     await container
         .read(appLanguageStoreProvider)
         .setLanguageCode(AppLocales.toLanguageCode(nextLocale));
-    await AppIconSwitcher.syncByLocale(nextLocale);
   }
 }

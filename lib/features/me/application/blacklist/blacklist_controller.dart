@@ -74,12 +74,8 @@ class BlacklistController extends Notifier<BlacklistState> {
         ..remove(user.userId);
       state = state.copyWith(
         removingUserIds: nextRemovingIds,
-        feedbackMessage: ApiErrorFeedback.hasAutoToast(error)
-            ? null
-            : _resolveRemoveErrorMessage(error),
-        feedbackId: ApiErrorFeedback.hasAutoToast(error)
-            ? state.feedbackId
-            : state.feedbackId + 1,
+        feedbackMessage: _resolveRemoveErrorMessage(error),
+        feedbackId: state.feedbackId + 1,
       );
     }
   }

@@ -3,24 +3,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../shared/network/api_error_feedback.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../features/home/data/home_providers.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
 import '../../../../shared/network/page_result.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
-import '../../../../shared/widgets/app_dialog.dart';
 import '../../../message/application/chat/chat_page_args.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
+import '../../../auth/application/auth_role_mapper.dart';
 import '../../data/application_models.dart';
-import '../../data/job_models.dart';
 import '../../data/application_providers.dart';
+import '../../data/job_models.dart';
 import '../../data/talent_providers.dart';
-import '../widgets/invite_job_picker_sheet.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+import '../widgets/invite_job_picker_sheet.dart';
 
 enum TalentCenterMode {
   employer,
@@ -137,15 +141,19 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
       await ref
           .read(applicationServiceProvider)
           .inviteInterview(
-            request: InviteInterviewBO(
-              jobId: selectedJob.jobId,
-              resumeId: data.resumeId,
-              remark: remark.trim().isEmpty ? null : remark.trim(),
-            ),
-          );
+        request: InviteInterviewBO(
+          jobId: selectedJob.jobId,
+          resumeId: data.resumeId,
+          remark: remark.trim().isEmpty ? null : remark.trim(),
+        ),
+      );
+      ref.invalidate(homeDashboardStatsProvider);
       _showMessage('招聘.邀约面试'.tr());
     } catch (error) {
-      _showMessage(error.toString(), isError: true);
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -155,7 +163,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     }
   }
 
-  /// 服务商在人才中心点击“打招呼”后，直接创建会话并跳转聊天页。
+  /// 人才中心点击“打招呼”后，直接创建会话并跳转聊天页。
   Future<void> _handleSayHello(_CandidateCardData data) async {
     if (_processingPrimaryActionUserIds.contains(data.userId)) {
       return;
@@ -175,7 +183,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: data.userId,
-              targetUserRole: 'job_seeker',
+              targetUserRole: workerRoleId,
             ),
           );
       if (!mounted) {
@@ -186,7 +194,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: data.userId,
-          targetUserRole: 'job_seeker',
+          targetUserRole: workerRoleId,
           nickname: data.name,
           avatarUrl: data.avatarUrl,
           conversationId: conversationId,
@@ -196,7 +204,10 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(error.toString(), isError: true);
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -206,13 +217,9 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
     }
   }
 
-  /// 根据当前页面模式分发卡片主按钮动作，避免服务商端误走邀约流程。
+  /// 卡片主按钮统一走“打招呼”动作，直接进入聊天会话。
   Future<void> _handlePrimaryAction(_CandidateCardData data) async {
-    if (_isServiceProviderMode) {
-      await _handleSayHello(data);
-      return;
-    }
-    await _handleInviteInterview(data);
+    await _handleSayHello(data);
   }
 
   /// 兼容不同接口响应格式，提取聊天会话 ID。
@@ -543,60 +550,7 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
     await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
-  Future<String?> _showRemarkDialog(String actionLabel) async {
-    return showAppDialog<String>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return _RemarkDialog(actionLabel: actionLabel);
-      },
-    );
-  }
-
-  /// 企业端搜索结果点击主按钮时，继续走邀约面试流程。
-  Future<void> _handleInviteInterview(_CandidateCardData data) async {
-    if (_processingPrimaryActionUserIds.contains(data.userId)) {
-      return;
-    }
-    final String? remark = await _showRemarkDialog(
-      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
-    );
-    if (remark == null || !mounted) {
-      return;
-    }
-    final JobDetailVO? selectedJob = await showInviteJobPickerSheet(context);
-    if (selectedJob == null || !mounted) {
-      return;
-    }
-    setState(() {
-      _processingPrimaryActionUserIds.add(data.userId);
-    });
-    try {
-      if (data.resumeId <= 0 || selectedJob.jobId <= 0) {
-        _showMessage('招聘.邀约失败'.tr(), isError: true);
-        return;
-      }
-      await ref
-          .read(applicationServiceProvider)
-          .inviteInterview(
-            request: InviteInterviewBO(
-              jobId: selectedJob.jobId,
-              resumeId: data.resumeId,
-              remark: remark.trim().isEmpty ? null : remark.trim(),
-            ),
-          );
-      _showMessage('招聘.邀约面试'.tr());
-    } catch (error) {
-      _showMessage(error.toString(), isError: true);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _processingPrimaryActionUserIds.remove(data.userId);
-        });
-      }
-    }
-  }
-
-  /// 服务商端搜索结果点击主按钮时，直接创建会话并跳转聊天页。
+  /// 搜索结果点击主按钮时，直接创建会话并跳转聊天页。
   Future<void> _handleSayHello(_CandidateCardData data) async {
     if (_processingPrimaryActionUserIds.contains(data.userId)) {
       return;
@@ -614,7 +568,7 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: data.userId,
-              targetUserRole: 'job_seeker',
+              targetUserRole: workerRoleId,
             ),
           );
       if (!mounted) {
@@ -625,7 +579,7 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: data.userId,
-          targetUserRole: 'job_seeker',
+          targetUserRole: workerRoleId,
           nickname: data.name,
           avatarUrl: data.avatarUrl,
           conversationId: conversationId,
@@ -635,7 +589,10 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
       if (!mounted) {
         return;
       }
-      _showMessage(error.toString(), isError: true);
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -645,13 +602,9 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
     }
   }
 
-  /// 根据当前搜索页角色模式分发卡片主按钮动作。
+  /// 搜索结果卡片主按钮统一走“打招呼”动作。
   Future<void> _handlePrimaryAction(_CandidateCardData data) async {
-    if (_isServiceProviderMode) {
-      await _handleSayHello(data);
-      return;
-    }
-    await _handleInviteInterview(data);
+    await _handleSayHello(data);
   }
 
   /// 兼容不同接口响应格式，提取聊天会话 ID。
@@ -910,9 +863,7 @@ class _TalentListView extends StatelessWidget {
         return _CandidateCard(
           data: cardData,
           onViewResumeTap: () => onViewResumeTap(talent.userId),
-          primaryActionLabel: isServiceProviderMode
-              ? '通用.打招呼'.tr()
-              : '招聘.邀约面试'.tr(),
+          primaryActionLabel: '通用.打招呼'.tr(),
           onPrimaryActionTap: () => onPrimaryActionTap(cardData),
           isPrimaryActionLoading: processingPrimaryActionUserIds.contains(
             talent.userId,
@@ -1293,7 +1244,6 @@ class _CandidateCardData {
     TalentVO talent, {
     required String sort,
   }) {
-    final bool isMatchSort = sort == 'match';
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
       resumeId: talent.resumeId,
@@ -1302,12 +1252,8 @@ class _CandidateCardData {
       name: talent.nickname.isEmpty ? '招聘.未命名用户'.tr() : talent.nickname,
       ageGender: _buildAgeGender(talent),
       intention: _buildIntention(talent),
-      scoreText: isMatchSort && talent.matchScore != null
-          ? '${talent.matchScore!.clamp(0, 100)}%'
-          : '${talent.completeness}%',
-      scoreLabel: isMatchSort && talent.matchScore != null
-          ? '招聘.匹配度'.tr()
-          : '招聘.完整度'.tr(),
+      scoreText: '${(talent.matchScore ?? 0).clamp(0, 100)}%',
+      scoreLabel: '招聘.匹配度'.tr(),
       tags: _buildTags(talent),
       updatedText: isActiveSort
           ? _buildActiveText(talent.lastLoginAt)

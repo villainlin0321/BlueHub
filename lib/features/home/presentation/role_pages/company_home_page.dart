@@ -4,17 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../shared/network/api_error_feedback.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../features/employer/data/employer_models.dart';
 import '../../../../features/employer/data/employer_providers.dart';
 import '../../../../shared/widgets/app_user_avatar.dart';
-import '../../../../shared/widgets/app_dialog.dart';
 import '../../../jobs/application/company_applications/company_application_list_state.dart';
 import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
 import '../../../jobs/data/application_models.dart';
 import '../../../jobs/presentation/widgets/company_application_management_widgets.dart';
+import '../../../auth/application/auth_role_mapper.dart';
+import '../../../message/application/chat/chat_page_args.dart';
+import '../../../messages/data/message_models.dart';
+import '../../../messages/data/message_providers.dart';
 import '../../../me/data/resume_providers.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -103,72 +107,54 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
     await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
-  /// 弹出备注输入框，供状态流转时填写备注。
-  Future<String?> _showRemarkDialog(String actionLabel) async {
-    final TextEditingController controller = TextEditingController();
-    final String? result = await showAppDialog<String>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AppDialog(
-          title: '首页.备注标题'.tr(
-            namedArgs: <String, String>{'action': actionLabel},
-          ),
-          content: TextField(
-            controller: controller,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-            ).copyWith(hintText: '招聘.请输入备注选填'.tr()),
-          ),
-          actions: <AppDialogAction>[
-            AppDialogAction.secondary(
-              label: '通用.取消'.tr(),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            AppDialogAction.primary(
-              label: '通用.确定'.tr(),
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(controller.text.trim()),
-            ),
-          ],
-        );
-      },
-    );
-    controller.dispose();
-    return result;
-  }
-
-  /// 处理应聘状态变更，并在完成后刷新对应列表状态。
-  Future<void> _handleApplicationAction(
-    _ResumeCardItem item,
-    EmployerApplicationUpdateStatus nextStatus,
-  ) async {
-    final String? remark = await _showRemarkDialog(nextStatus.labelKey.tr());
-    if (remark == null || !mounted) {
-      return;
-    }
-
-    final ApplicationStatusUpdateResult result = await ref
-        .read(companyApplicationListsControllerProvider.notifier)
-        .updateApplicationStatus(
-          sourceStatus: _pendingStatus,
-          applicationId: item.applicationId,
-          nextStatus: nextStatus,
-          remark: remark,
-        );
-    _showMessage(result.message, isError: !result.success);
-  }
-
   /// 根据候选人当前状态分发次要操作。
   Future<void> _handleSecondaryAction(_ResumeCardItem item) async {
     if (item.status == EmployerApplicationFilterStatus.pending.value) {
-      await _handleApplicationAction(
-        item,
-        EmployerApplicationUpdateStatus.interview,
-      );
+      await _handleSayHello(item);
       return;
     }
     await _handlePhoneCall(item);
+  }
+
+  /// 创建或获取与候选人的聊天会话，并跳转到聊天页。
+  Future<void> _handleSayHello(_ResumeCardItem item) async {
+    if (item.userId <= 0) {
+      _showMessage('招聘.用户信息缺失'.tr(), isError: true);
+      return;
+    }
+
+    try {
+      final Map<String, dynamic> response = await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: item.userId,
+              targetUserRole: workerRoleId,
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+
+      await context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: item.userId,
+          targetUserRole: workerRoleId,
+          nickname: item.name,
+          avatarUrl: item.avatarUrl,
+          conversationId: _readConversationId(response),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        isError: true,
+      );
+    }
   }
 
   /// 获取候选人手机号并发起拨号。
@@ -213,18 +199,42 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
 
   /// 规整动作失败提示，优先透传接口返回文案。
   String _normalizeActionError(Object error, String fallbackName) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty
-          ? '应聘管理.获取联系电话失败'.tr(
-              namedArgs: <String, String>{'name': fallbackName},
-            )
-          : normalized;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: '应聘管理.获取联系电话失败'.tr(
+        namedArgs: <String, String>{'name': fallbackName},
+      ),
+    );
+  }
+
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
     }
-    return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
-        : message;
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
   }
 
   @override
@@ -347,7 +357,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
   /// 解析简历卡片右下角的次操作文案。
   String _resolveSecondaryActionLabel(String status) {
     if (status == EmployerApplicationFilterStatus.pending.value) {
-      return '招聘.邀约面试'.tr();
+      return '通用.打招呼'.tr();
     }
     return '应聘管理.电话联系'.tr();
   }

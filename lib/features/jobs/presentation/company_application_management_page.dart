@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:europepass/features/home/data/home_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/network/api_error_feedback.dart';
+import '../../../shared/widgets/app_dialog.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -12,6 +17,7 @@ import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
+import '../data/application_providers.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../../../shared/network/page_result.dart';
@@ -30,6 +36,10 @@ class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
 
 class _CompanyApplicationManagementPageState
     extends ConsumerState<CompanyApplicationManagementPage> {
+  static final List<String> _initialStatuses = _CompanyApplicationTab.values
+      .map((tab) => tab.status)
+      .toList(growable: false);
+
   int? _selectedJobId;
   String? _selectedJobTitle;
   List<JobDetailVO> _jobFilterJobs = const <JobDetailVO>[];
@@ -44,8 +54,15 @@ class _CompanyApplicationManagementPageState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshAllApplicationTabs());
       _loadJobFilterJobs();
     });
+  }
+
+  Future<void> _refreshAllApplicationTabs() async {
+    await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .refreshStatuses(statuses: _initialStatuses, jobId: _selectedJobId);
   }
 
   Future<void> _loadJobFilterJobs() async {
@@ -122,11 +139,7 @@ class _CompanyApplicationManagementPageState
   }
 
   String _normalizeJobFilterError(Object error) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length).trim();
-    }
-    return message.isEmpty ? '企业岗位.加载失败'.tr() : message;
+    return ApiErrorFeedback.resolveMessage(error, fallback: '企业岗位.加载失败'.tr());
   }
 
   @override
@@ -388,31 +401,86 @@ class _CompanyApplicationTabViewState
     await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
-  /// 根据当前 Tab 的动作定义，执行邀约或电话联系等二级操作。
+  /// 根据当前 Tab 的动作定义，执行打招呼或电话联系等二级操作。
   Future<void> _handleSecondaryAction(ApplicationVO item) async {
-    if (widget.tab.secondaryActionLabel == '招聘.邀约面试') {
-      final ApplicationStatusUpdateResult result = await ref
-          .read(companyApplicationListsControllerProvider.notifier)
-          .updateApplicationStatus(
-            sourceStatus: widget.tab.status,
-            jobId: widget.selectedJobId,
-            applicationId: item.applicationId,
-            nextStatus: EmployerApplicationUpdateStatus.interview,
-            remark: '',
+    switch (widget.tab) {
+      case _CompanyApplicationTab.pending:
+        await _handleInviteInterview(item);
+        return;
+      case _CompanyApplicationTab.invited:
+      case _CompanyApplicationTab.rejected:
+        await _handlePhoneCall(item);
+        return;
+    }
+  }
+
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    return showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return _InviteRemarkDialog(actionLabel: actionLabel);
+      },
+    );
+  }
+
+  /// 应聘管理页待处理候选人点击“邀约面试”后，优先补充简历 ID 再发起邀约。
+  Future<void> _handleInviteInterview(ApplicationVO item) async {
+    final int jobId = item.job.jobId;
+    if (jobId <= 0) {
+      _showErrorToast('招聘.邀约失败'.tr());
+      return;
+    }
+
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+
+    int? resumeId;
+    final int applicantUserId = item.applicant.userId;
+    if (applicantUserId > 0) {
+      try {
+        final resume = await ref
+            .read(resumeServiceProvider)
+            .getResumeByUserId(userId: applicantUserId);
+        if (resume.resumeId > 0) {
+          resumeId = resume.resumeId;
+        }
+      } catch (_) {
+        // 如果无法补充简历 ID，则按后端允许的最小参数继续发起邀约。
+      }
+    }
+
+    try {
+      await ref.read(applicationServiceProvider).inviteInterview(
+            request: InviteInterviewBO(
+              jobId: jobId,
+              resumeId: resumeId,
+              remark: remark.trim().isEmpty ? null : remark.trim(),
+            ),
           );
       if (!mounted) {
         return;
       }
-      AppToast.show(result.message);
-      if (!result.success) {
+      ref.invalidate(homeDashboardStatsProvider);
+      AppToast.show('招聘.邀约面试'.tr());
+      await ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .refreshStatuses(
+            statuses: _CompanyApplicationTab.values
+                .map((tab) => tab.status)
+                .toList(growable: false),
+            jobId: widget.selectedJobId,
+          );
+    } catch (error) {
+      if (!mounted) {
         return;
       }
-      return;
-    }
-
-    if (widget.tab.secondaryActionLabel == '应聘管理.电话联系') {
-      await _handlePhoneCall(item);
-      return;
+      _showErrorToast(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+      );
     }
   }
 
@@ -460,18 +528,12 @@ class _CompanyApplicationTabViewState
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
-    final String message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      final String normalized = message.substring('Exception: '.length).trim();
-      return normalized.isEmpty
-          ? '应聘管理.获取联系电话失败'.tr(
-              namedArgs: <String, String>{'name': fallbackName},
-            )
-          : normalized;
-    }
-    return message.isEmpty
-        ? '应聘管理.获取联系电话失败'.tr(namedArgs: <String, String>{'name': fallbackName})
-        : message;
+    return ApiErrorFeedback.resolveMessage(
+      error,
+      fallback: '应聘管理.获取联系电话失败'.tr(
+        namedArgs: <String, String>{'name': fallbackName},
+      ),
+    );
   }
 
   CompanyApplicationCardData _buildCardData(ApplicationVO item, int index) {
@@ -617,5 +679,49 @@ class _CompanyApplicationTabViewState
 
   String _twoDigits(int value) {
     return value < 10 ? '0$value' : value.toString();
+  }
+}
+
+class _InviteRemarkDialog extends StatefulWidget {
+  const _InviteRemarkDialog({required this.actionLabel});
+
+  final String actionLabel;
+
+  @override
+  State<_InviteRemarkDialog> createState() => _InviteRemarkDialogState();
+}
+
+class _InviteRemarkDialogState extends State<_InviteRemarkDialog> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: '${widget.actionLabel}${'招聘.备注'.tr()}',
+      content: TextField(
+        controller: _controller,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: '招聘.请输入备注选填'.tr(),
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+        ),
+      ],
+    );
   }
 }

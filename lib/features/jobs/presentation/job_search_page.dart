@@ -139,7 +139,7 @@ class _JobSearchPageState extends ConsumerState<JobSearchPage> {
       _submittingJobIds.add(job.jobId);
     });
 
-    final String? errorMessage = await submitJobApplication(
+    final JobApplySubmissionResult result = await submitJobApplication(
       context,
       jobId: job.jobId,
     );
@@ -147,7 +147,7 @@ class _JobSearchPageState extends ConsumerState<JobSearchPage> {
       return;
     }
 
-    if (errorMessage == null) {
+    if (result.isSuccess) {
       setState(() {
         _submittingJobIds.remove(job.jobId);
         _appliedJobIds.add(job.jobId);
@@ -159,7 +159,9 @@ class _JobSearchPageState extends ConsumerState<JobSearchPage> {
     setState(() {
       _submittingJobIds.remove(job.jobId);
     });
-    AppToast.show(errorMessage);
+    if (result.shouldShowError) {
+      AppToast.show(result.errorMessage!);
+    }
   }
 
   @override
