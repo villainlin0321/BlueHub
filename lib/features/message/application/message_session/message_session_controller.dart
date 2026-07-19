@@ -13,6 +13,7 @@ import '../../../../shared/network/page_result.dart';
 import '../../../../shared/network/services/message_service.dart';
 import '../../../../shared/network/sse_models.dart';
 import '../../../auth/application/auth_session_provider.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
 import 'message_session_state.dart';
@@ -455,6 +456,9 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         return;
       }
       _replaceNotification(notification);
+      if (notification.bizType.trim().toLowerCase() == 'application') {
+        ref.invalidate(homeDashboardStatsProvider);
+      }
     } catch (error, stackTrace) {
       _logNotificationSseParseFail(
         event: event,

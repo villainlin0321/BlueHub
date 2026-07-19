@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../shared/network/api_error_feedback.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../features/home/data/home_providers.dart';
 
 import '../../../../app/router/route_paths.dart';
 import '../../../../shared/network/models/talent_models.dart';
@@ -14,9 +16,14 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../message/application/chat/chat_page_args.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
+import '../../data/application_models.dart';
+import '../../data/application_providers.dart';
+import '../../data/job_models.dart';
 import '../../data/talent_providers.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
+import '../widgets/invite_job_picker_sheet.dart';
 
 enum TalentCenterMode {
   employer,
@@ -94,6 +101,65 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
 
   Future<void> _openResumePreview(int userId) async {
     await context.push(RoutePaths.resumePreview, extra: userId);
+  }
+
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    return showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return _RemarkDialog(actionLabel: actionLabel);
+      },
+    );
+  }
+
+  Future<void> _handleInviteInterview(_CandidateCardData data) async {
+    if (_processingPrimaryActionUserIds.contains(data.userId)) {
+      return;
+    }
+
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+    final JobDetailVO? selectedJob = await showInviteJobPickerSheet(context);
+    if (selectedJob == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _processingPrimaryActionUserIds.add(data.userId);
+    });
+
+    try {
+      if (data.resumeId <= 0 || selectedJob.jobId <= 0) {
+        _showMessage('招聘.邀约失败'.tr(), isError: true);
+        return;
+      }
+      await ref
+          .read(applicationServiceProvider)
+          .inviteInterview(
+        request: InviteInterviewBO(
+          jobId: selectedJob.jobId,
+          resumeId: data.resumeId,
+          remark: remark.trim().isEmpty ? null : remark.trim(),
+        ),
+      );
+      ref.invalidate(homeDashboardStatsProvider);
+      _showMessage('招聘.邀约面试'.tr());
+    } catch (error) {
+      _showMessage(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingPrimaryActionUserIds.remove(data.userId);
+        });
+      }
+    }
   }
 
   /// 人才中心点击“打招呼”后，直接创建会话并跳转聊天页。
@@ -266,6 +332,50 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
             talentsAsync: talentsAsync,
             bottomPadding: bottomPadding,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RemarkDialog extends StatefulWidget {
+  const _RemarkDialog({required this.actionLabel});
+
+  final String actionLabel;
+
+  @override
+  State<_RemarkDialog> createState() => _RemarkDialogState();
+}
+
+class _RemarkDialogState extends State<_RemarkDialog> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: '${widget.actionLabel}${'招聘.备注'.tr()}',
+      content: TextField(
+        controller: _controller,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: '招聘.请输入备注选填'.tr(),
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
         ),
       ],
     );

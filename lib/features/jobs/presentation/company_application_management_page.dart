@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:europepass/features/home/data/home_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../message/application/chat/chat_page_args.dart';
-import '../../messages/data/message_models.dart';
-import '../../messages/data/message_providers.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/network/api_error_feedback.dart';
+import '../../../shared/widgets/app_dialog.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -18,6 +17,7 @@ import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
 import '../data/application_models.dart';
+import '../data/application_providers.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../../../shared/network/page_result.dart';
@@ -216,7 +216,7 @@ enum _CompanyApplicationTab {
     label: '应聘管理.待处理',
     status: 'pending',
     emptyText: '应聘管理.暂无待处理应聘',
-    secondaryActionLabel: '通用.打招呼',
+    secondaryActionLabel: '招聘.邀约面试',
   ),
   invited(
     label: '应聘管理.已邀约',
@@ -403,57 +403,83 @@ class _CompanyApplicationTabViewState
 
   /// 根据当前 Tab 的动作定义，执行打招呼或电话联系等二级操作。
   Future<void> _handleSecondaryAction(ApplicationVO item) async {
-    if (widget.tab.secondaryActionLabel == '通用.打招呼') {
-      await _handleSayHello(item);
-      return;
-    }
-
-    if (widget.tab.secondaryActionLabel == '应聘管理.电话联系') {
-      await _handlePhoneCall(item);
-      return;
+    switch (widget.tab) {
+      case _CompanyApplicationTab.pending:
+        await _handleInviteInterview(item);
+        return;
+      case _CompanyApplicationTab.invited:
+      case _CompanyApplicationTab.rejected:
+        await _handlePhoneCall(item);
+        return;
     }
   }
 
-  /// 直接创建与候选人的聊天会话，并跳转到聊天页。
-  Future<void> _handleSayHello(ApplicationVO item) async {
-    final int targetUserId = item.applicant.userId;
-    if (targetUserId <= 0) {
-      _showErrorToast('招聘.用户信息缺失'.tr());
+  Future<String?> _showRemarkDialog(String actionLabel) async {
+    return showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return _InviteRemarkDialog(actionLabel: actionLabel);
+      },
+    );
+  }
+
+  /// 应聘管理页待处理候选人点击“邀约面试”后，优先补充简历 ID 再发起邀约。
+  Future<void> _handleInviteInterview(ApplicationVO item) async {
+    final int jobId = item.job.jobId;
+    if (jobId <= 0) {
+      _showErrorToast('招聘.邀约失败'.tr());
       return;
     }
 
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.interview.labelKey.tr(),
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+
+    int? resumeId;
+    final int applicantUserId = item.applicant.userId;
+    if (applicantUserId > 0) {
+      try {
+        final resume = await ref
+            .read(resumeServiceProvider)
+            .getResumeByUserId(userId: applicantUserId);
+        if (resume.resumeId > 0) {
+          resumeId = resume.resumeId;
+        }
+      } catch (_) {
+        // 如果无法补充简历 ID，则按后端允许的最小参数继续发起邀约。
+      }
+    }
+
     try {
-      final Map<String, dynamic> response = await ref
-          .read(messageServiceProvider)
-          .createConversation(
-            request: CreateConversationBO(
-              targetUserId: targetUserId,
-              targetUserRole: 'job_seeker',
+      await ref.read(applicationServiceProvider).inviteInterview(
+            request: InviteInterviewBO(
+              jobId: jobId,
+              resumeId: resumeId,
+              remark: remark.trim().isEmpty ? null : remark.trim(),
             ),
           );
       if (!mounted) {
         return;
       }
-
-      final String nickname = item.applicant.nickname.trim().isEmpty
-          ? '招聘.匿名候选人'.tr()
-          : item.applicant.nickname.trim();
-      await context.push(
-        RoutePaths.chat,
-        extra: ChatPageArgs(
-          targetUserId: targetUserId,
-          targetUserRole: 'job_seeker',
-          nickname: nickname,
-          avatarUrl: item.applicant.avatarUrl,
-          conversationId: _readConversationId(response),
-        ),
-      );
+      ref.invalidate(homeDashboardStatsProvider);
+      AppToast.show('招聘.邀约面试'.tr());
+      await ref
+          .read(companyApplicationListsControllerProvider.notifier)
+          .refreshStatuses(
+            statuses: _CompanyApplicationTab.values
+                .map((tab) => tab.status)
+                .toList(growable: false),
+            jobId: widget.selectedJobId,
+          );
     } catch (error) {
       if (!mounted) {
         return;
       }
       _showErrorToast(
-        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
       );
     }
   }
@@ -499,36 +525,6 @@ class _CompanyApplicationTabViewState
 
   void _showErrorToast(String message) {
     AppToast.show(message);
-  }
-
-  int _readConversationId(Map<String, dynamic> raw) {
-    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
-    if (direct is int) {
-      return direct;
-    }
-    if (direct is num) {
-      return direct.toInt();
-    }
-    if (direct is String) {
-      return int.tryParse(direct) ?? 0;
-    }
-
-    final Object? nestedConversation = raw['conversation'];
-    if (nestedConversation is Map<String, dynamic>) {
-      final Object? nestedId =
-          nestedConversation['conversationId'] ??
-          nestedConversation['conversation_id'];
-      if (nestedId is int) {
-        return nestedId;
-      }
-      if (nestedId is num) {
-        return nestedId.toInt();
-      }
-      if (nestedId is String) {
-        return int.tryParse(nestedId) ?? 0;
-      }
-    }
-    return 0;
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
@@ -683,5 +679,49 @@ class _CompanyApplicationTabViewState
 
   String _twoDigits(int value) {
     return value < 10 ? '0$value' : value.toString();
+  }
+}
+
+class _InviteRemarkDialog extends StatefulWidget {
+  const _InviteRemarkDialog({required this.actionLabel});
+
+  final String actionLabel;
+
+  @override
+  State<_InviteRemarkDialog> createState() => _InviteRemarkDialogState();
+}
+
+class _InviteRemarkDialogState extends State<_InviteRemarkDialog> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: '${widget.actionLabel}${'招聘.备注'.tr()}',
+      content: TextField(
+        controller: _controller,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: '招聘.请输入备注选填'.tr(),
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: <AppDialogAction>[
+        AppDialogAction.secondary(
+          label: '通用.取消'.tr(),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction.primary(
+          label: '通用.确定'.tr(),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+        ),
+      ],
+    );
   }
 }
