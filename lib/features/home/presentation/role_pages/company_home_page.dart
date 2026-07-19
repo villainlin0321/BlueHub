@@ -15,6 +15,7 @@ import '../../../jobs/application/company_applications/company_application_list_
 import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
 import '../../../jobs/data/application_models.dart';
 import '../../../jobs/presentation/widgets/company_application_management_widgets.dart';
+import '../../../auth/application/auth_role_mapper.dart';
 import '../../../message/application/chat/chat_page_args.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
@@ -128,7 +129,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: item.userId,
-              targetUserRole: 'job_seeker',
+              targetUserRole: workerRoleId,
             ),
           );
       if (!mounted) {
@@ -139,7 +140,7 @@ class _CompanyHomePageState extends ConsumerState<CompanyHomePage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: item.userId,
-          targetUserRole: 'job_seeker',
+          targetUserRole: workerRoleId,
           nickname: item.name,
           avatarUrl: item.avatarUrl,
           conversationId: _readConversationId(response),

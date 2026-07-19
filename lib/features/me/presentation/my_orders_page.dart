@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_toast.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
@@ -76,7 +77,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           RoutePaths.chat,
           extra: ChatPageArgs(
             targetUserId: order.providerId,
-            targetUserRole: 'visa_provider',
+            targetUserRole: visaProviderRoleId,
             nickname: order.provider.trim().isEmpty
                 ? '订单.服务商'.tr()
                 : order.provider,

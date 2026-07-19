@@ -1,4 +1,5 @@
 import 'package:europepass/shared/network/api_decoders.dart';
+import '../../auth/application/auth_role_mapper.dart';
 
 class CreateVisaOrderBO {
   const CreateVisaOrderBO({required this.packageId, required this.tierId});
@@ -546,7 +547,7 @@ class VisaOrderVO {
 
   int get contactTargetUserId {
     final String normalizedRole = applicant.type.trim().toLowerCase();
-    if (normalizedRole == 'worker') {
+    if (normalizedRole == workerRoleId) {
       return applicant.userId;
     }
     if ((applicant.profileId ?? 0) > 0) {
@@ -557,7 +558,7 @@ class VisaOrderVO {
 
   String get contactTargetUserRole {
     final String normalizedRole = applicant.type.trim();
-    return normalizedRole.isEmpty ? 'worker' : normalizedRole;
+    return normalizedRole.isEmpty ? workerRoleId : normalizedRole;
   }
 
   factory VisaOrderVO.fromJson(JsonMap json) {
@@ -599,7 +600,7 @@ class VisaOrderVO {
               userId: readInt(json, 'userId'),
               nickname: readString(json, 'nickname'),
               avatarUrl: readString(json, 'avatarUrl'),
-              type: _readNullableString(json['type']) ?? 'worker',
+              type: _readNullableString(json['type']) ?? workerRoleId,
               profileId: _readNullableInt(json['profileId']),
             )
           : ApplicantInfoVO.fromJson(applicantJson),

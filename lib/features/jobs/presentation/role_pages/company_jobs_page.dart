@@ -16,6 +16,7 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../message/application/chat/chat_page_args.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
+import '../../../auth/application/auth_role_mapper.dart';
 import '../../data/application_models.dart';
 import '../../data/application_providers.dart';
 import '../../data/job_models.dart';
@@ -182,7 +183,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: data.userId,
-              targetUserRole: 'job_seeker',
+              targetUserRole: workerRoleId,
             ),
           );
       if (!mounted) {
@@ -193,7 +194,7 @@ class _CompanyJobsPageState extends ConsumerState<CompanyJobsPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: data.userId,
-          targetUserRole: 'job_seeker',
+          targetUserRole: workerRoleId,
           nickname: data.name,
           avatarUrl: data.avatarUrl,
           conversationId: conversationId,
@@ -567,7 +568,7 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: data.userId,
-              targetUserRole: 'job_seeker',
+              targetUserRole: workerRoleId,
             ),
           );
       if (!mounted) {
@@ -578,7 +579,7 @@ class _TalentSearchPageState extends ConsumerState<TalentSearchPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: data.userId,
-          targetUserRole: 'job_seeker',
+          targetUserRole: workerRoleId,
           nickname: data.name,
           avatarUrl: data.avatarUrl,
           conversationId: conversationId,

@@ -16,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../features/files/data/file_models.dart';
 import '../../../features/files/data/file_providers.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../../features/message/application/chat/chat_page_args.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../shell/application/shell_role_provider.dart';
@@ -475,7 +476,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       RoutePaths.chat,
       extra: ChatPageArgs(
         targetUserId: detail.providerInfo.providerId,
-        targetUserRole: 'visa_provider',
+        targetUserRole: visaProviderRoleId,
         nickname: detail.providerName.trim().isEmpty
             ? '订单.服务商'.tr()
             : detail.providerName,

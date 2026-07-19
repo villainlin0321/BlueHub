@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_error_feedback.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
 import '../../home/data/home_providers.dart';
@@ -425,7 +426,7 @@ class _VisaPackageDetailScaffoldState
       RoutePaths.chat,
       extra: ChatPageArgs(
         targetUserId: provider.providerId,
-        targetUserRole: 'visa_provider',
+        targetUserRole: visaProviderRoleId,
         nickname: provider.name.trim().isEmpty
             ? '服务详情.服务商'.tr()
             : provider.name,

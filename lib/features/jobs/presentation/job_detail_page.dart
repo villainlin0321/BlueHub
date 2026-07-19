@@ -12,6 +12,7 @@ import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../auth/application/auth_role_mapper.dart';
 import '../data/job_models.dart';
 import '../data/job_providers.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
@@ -185,7 +186,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           .createConversation(
             request: CreateConversationBO(
               targetUserId: detail.employer.employerId,
-              targetUserRole: 'employer',
+              targetUserRole: employerRoleId,
             ),
           );
       if (!mounted) {
@@ -199,7 +200,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         RoutePaths.chat,
         extra: ChatPageArgs(
           targetUserId: detail.employer.employerId,
-          targetUserRole: 'employer',
+          targetUserRole: employerRoleId,
           nickname: detail.employer.name.trim().isEmpty
               ? '招聘.企业'.tr()
               : detail.employer.name,
