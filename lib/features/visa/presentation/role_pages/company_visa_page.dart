@@ -649,18 +649,6 @@ class _JobManageCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (job.publishedAt.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 6),
-              Text(
-                '企业岗位.发布时间'.tr(
-                  namedArgs: <String, String>{'time': job.publishedAt},
-                ),
-                style: TestStyle.pingFangRegular(
-                  fontSize: 12,
-                  color: Color(0xFF8C8C8C),
-                ),
-              ),
-            ],
             const SizedBox(height: 16),
             Row(
               children: <Widget>[

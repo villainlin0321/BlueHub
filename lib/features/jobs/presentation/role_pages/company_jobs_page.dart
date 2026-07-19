@@ -1243,7 +1243,6 @@ class _CandidateCardData {
     TalentVO talent, {
     required String sort,
   }) {
-    final bool isMatchSort = sort == 'match';
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
       resumeId: talent.resumeId,
@@ -1252,12 +1251,8 @@ class _CandidateCardData {
       name: talent.nickname.isEmpty ? '招聘.未命名用户'.tr() : talent.nickname,
       ageGender: _buildAgeGender(talent),
       intention: _buildIntention(talent),
-      scoreText: isMatchSort && talent.matchScore != null
-          ? '${talent.matchScore!.clamp(0, 100)}%'
-          : '${talent.completeness}%',
-      scoreLabel: isMatchSort && talent.matchScore != null
-          ? '招聘.匹配度'.tr()
-          : '招聘.完整度'.tr(),
+      scoreText: '${(talent.matchScore ?? 0).clamp(0, 100)}%',
+      scoreLabel: '招聘.匹配度'.tr(),
       tags: _buildTags(talent),
       updatedText: isActiveSort
           ? _buildActiveText(talent.lastLoginAt)
