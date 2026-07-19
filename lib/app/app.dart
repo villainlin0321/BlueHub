@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/auth/application/auth_session_provider.dart';
+import '../shared/auth/auth_session_expiry_provider.dart';
 import '../shared/localization/app_locales.dart';
 import '../shared/logging/app_lifecycle_logger.dart';
 import '../shared/network/providers.dart';
@@ -17,6 +21,17 @@ class App extends ConsumerWidget {
   @override
   /// 构建应用根节点，并把 easy_localization 提供的多语言配置注入到路由应用。
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(authSessionExpiryProvider, (previous, next) {
+      if (next == null || previous?.version == next.version) {
+        return;
+      }
+      unawaited(
+        ref
+            .read(authSessionProvider.notifier)
+            .clearSession(reason: next.reason),
+      );
+    });
+
     final router = ref.watch(routerProvider);
     final title = ref.watch(appTitleProvider);
     AppToast.configure();

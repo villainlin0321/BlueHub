@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/auth_session_expiry_provider.dart';
 import '../auth/token_store.dart';
 import '../localization/app_language_store.dart';
 import 'api_client.dart';
@@ -28,10 +29,12 @@ final appLanguageStoreProvider = Provider<AppLanguageStore>((ref) {
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final tokenStore = ref.watch(tokenStoreProvider);
+  final sessionExpiryNotifier = ref.read(authSessionExpiryProvider.notifier);
   final languageStore = ref.watch(appLanguageStoreProvider);
   return DioFactory(
     config: config,
     tokenStore: tokenStore,
+    sessionExpiryNotifier: sessionExpiryNotifier,
     languageStore: languageStore,
   ).create();
 });

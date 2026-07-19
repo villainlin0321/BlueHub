@@ -33,6 +33,7 @@ class MessageSessionController extends Notifier<MessageSessionState> {
 
   StreamSubscription<SseEvent>? _sseSubscription;
   StreamSubscription<SseEvent>? _notificationSseSubscription;
+  Future<void>? _refreshConversationsFuture;
   bool _isDisposed = false;
   late final MessageService _messageService;
   int _currentUserId = 0;
@@ -101,10 +102,25 @@ class MessageSessionController extends Notifier<MessageSessionState> {
     );
   }
 
-  Future<void> refreshConversations() async {
+  Future<void> refreshConversations() {
     if (!state.hasStarted) {
-      return;
+      return Future<void>.value();
     }
+    final Future<void>? currentRefresh = _refreshConversationsFuture;
+    if (currentRefresh != null) {
+      return currentRefresh;
+    }
+
+    final Future<void> refreshFuture = _performRefreshConversations();
+    _refreshConversationsFuture = refreshFuture;
+    return refreshFuture.whenComplete(() {
+      if (identical(_refreshConversationsFuture, refreshFuture)) {
+        _refreshConversationsFuture = null;
+      }
+    });
+  }
+
+  Future<void> _performRefreshConversations() async {
     final int previousCount = state.conversations.length;
     _syncCurrentUserId();
     _updateState(
