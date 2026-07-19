@@ -38,6 +38,17 @@ class CompanyApplicationListsController
     return state[key] ?? const CompanyApplicationListState();
   }
 
+  Future<void> refreshStatuses({
+    required List<String> statuses,
+    int? jobId,
+  }) async {
+    await Future.wait(
+      statuses.map((String status) {
+        return loadInitial(status: status, jobId: jobId, force: true);
+      }),
+    );
+  }
+
   Future<bool> loadInitial({
     required String status,
     int? jobId,

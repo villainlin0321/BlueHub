@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../message/application/chat/chat_page_args.dart';
+import '../../messages/data/message_models.dart';
+import '../../messages/data/message_providers.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/network/api_error_feedback.dart';
 
@@ -31,6 +36,10 @@ class CompanyApplicationManagementPage extends ConsumerStatefulWidget {
 
 class _CompanyApplicationManagementPageState
     extends ConsumerState<CompanyApplicationManagementPage> {
+  static final List<String> _initialStatuses = _CompanyApplicationTab.values
+      .map((tab) => tab.status)
+      .toList(growable: false);
+
   int? _selectedJobId;
   String? _selectedJobTitle;
   List<JobDetailVO> _jobFilterJobs = const <JobDetailVO>[];
@@ -45,8 +54,15 @@ class _CompanyApplicationManagementPageState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshAllApplicationTabs());
       _loadJobFilterJobs();
     });
+  }
+
+  Future<void> _refreshAllApplicationTabs() async {
+    await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .refreshStatuses(statuses: _initialStatuses, jobId: _selectedJobId);
   }
 
   Future<void> _loadJobFilterJobs() async {
@@ -200,7 +216,7 @@ enum _CompanyApplicationTab {
     label: '应聘管理.待处理',
     status: 'pending',
     emptyText: '应聘管理.暂无待处理应聘',
-    secondaryActionLabel: '招聘.邀约面试',
+    secondaryActionLabel: '通用.打招呼',
   ),
   invited(
     label: '应聘管理.已邀约',
@@ -385,31 +401,60 @@ class _CompanyApplicationTabViewState
     await context.push(RoutePaths.resumePreview, extra: userId);
   }
 
-  /// 根据当前 Tab 的动作定义，执行邀约或电话联系等二级操作。
+  /// 根据当前 Tab 的动作定义，执行打招呼或电话联系等二级操作。
   Future<void> _handleSecondaryAction(ApplicationVO item) async {
-    if (widget.tab.secondaryActionLabel == '招聘.邀约面试') {
-      final ApplicationStatusUpdateResult result = await ref
-          .read(companyApplicationListsControllerProvider.notifier)
-          .updateApplicationStatus(
-            sourceStatus: widget.tab.status,
-            jobId: widget.selectedJobId,
-            applicationId: item.applicationId,
-            nextStatus: EmployerApplicationUpdateStatus.interview,
-            remark: '',
-          );
-      if (!mounted) {
-        return;
-      }
-      AppToast.show(result.message);
-      if (!result.success) {
-        return;
-      }
+    if (widget.tab.secondaryActionLabel == '通用.打招呼') {
+      await _handleSayHello(item);
       return;
     }
 
     if (widget.tab.secondaryActionLabel == '应聘管理.电话联系') {
       await _handlePhoneCall(item);
       return;
+    }
+  }
+
+  /// 直接创建与候选人的聊天会话，并跳转到聊天页。
+  Future<void> _handleSayHello(ApplicationVO item) async {
+    final int targetUserId = item.applicant.userId;
+    if (targetUserId <= 0) {
+      _showErrorToast('招聘.用户信息缺失'.tr());
+      return;
+    }
+
+    try {
+      final Map<String, dynamic> response = await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: targetUserId,
+              targetUserRole: 'job_seeker',
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+
+      final String nickname = item.applicant.nickname.trim().isEmpty
+          ? '招聘.匿名候选人'.tr()
+          : item.applicant.nickname.trim();
+      await context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: targetUserId,
+          targetUserRole: 'job_seeker',
+          nickname: nickname,
+          avatarUrl: item.applicant.avatarUrl,
+          conversationId: _readConversationId(response),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showErrorToast(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+      );
     }
   }
 
@@ -454,6 +499,36 @@ class _CompanyApplicationTabViewState
 
   void _showErrorToast(String message) {
     AppToast.show(message);
+  }
+
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
+    }
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
   }
 
   String _normalizeActionError(Object error, String fallbackName) {
