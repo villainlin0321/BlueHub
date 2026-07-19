@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -203,7 +204,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
       certificates: resume.skillCertificates
           .map(
             (SkillCertificateVO item) => ResumePreviewCertificate(
-              title: _formatCertificateTitle(item.name, item.level),
+              title: item.name.trim(),
               period: item.issuedDate.trim(),
               issuer: item.issuer.trim(),
               networkImageUrls: item.imageUrl.trim().isEmpty
@@ -261,12 +262,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   }
 
   String _formatLanguageLabel(LanguageAbilityVO item) {
-    final List<String> parts = <String>[
-      item.language.trim(),
-      item.certificate.trim(),
-      item.level.trim(),
-    ].where((String value) => value.isNotEmpty).toList(growable: false);
-    return parts.join(' · ');
+    return item.language.trim();
   }
 
   String _formatExperienceRole(String department, String position) {
@@ -294,14 +290,6 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
       return start;
     }
     return '$start - $end';
-  }
-
-  String _formatCertificateTitle(String name, String level) {
-    final List<String> parts = <String>[
-      name.trim(),
-      level.trim(),
-    ].where((String value) => value.isNotEmpty).toList(growable: false);
-    return parts.join(' · ');
   }
 
   String _formatEducationPeriod(int startYear, int endYear) {
@@ -852,46 +840,62 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   /// 根据图片来源类型渲染本地或网络证书图。
   Widget _buildCertificateImages(ResumePreviewCertificate certificate) {
     if (certificate.localImagePaths.isNotEmpty) {
-      return Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: certificate.localImagePaths
-            .map(
-              (String path) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(path),
-                  width: 88,
-                  height: 88,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                ),
-              ),
-            )
-            .toList(growable: false),
+      return _buildCertificateImageGrid(
+        itemCount: certificate.localImagePaths.length,
+        itemBuilder: (BuildContext context, int index) {
+          final String path = certificate.localImagePaths[index];
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(path),
+              width: 88,
+              height: 88,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildImageLoadErrorPlaceholder(),
+            ),
+          );
+        },
       );
     }
     if (certificate.networkImageUrls.isNotEmpty) {
-      return Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: certificate.networkImageUrls
-            .map(
-              (String url) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: url,
-                  width: 88,
-                  height: 88,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => _buildImagePlaceholder(),
-                ),
-              ),
-            )
-            .toList(growable: false),
+      return _buildCertificateImageGrid(
+        itemCount: certificate.networkImageUrls.length,
+        itemBuilder: (BuildContext context, int index) {
+          final String url = certificate.networkImageUrls[index];
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: url,
+              width: 88,
+              height: 88,
+              fit: BoxFit.cover,
+              errorWidget:
+                  (_, __, ___) => _buildImageLoadErrorPlaceholder(),
+            ),
+          );
+        },
       );
     }
     return _buildImagePlaceholder();
+  }
+
+  /// 使用不可滚动网格展示证书图片，保持预览布局稳定。
+  Widget _buildCertificateImageGrid({
+    required int itemCount,
+    required IndexedWidgetBuilder itemBuilder,
+  }) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 88,
+        childAspectRatio: 1,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemBuilder: itemBuilder,
+    );
   }
 
   /// 渲染统一图片占位，避免继续展示任何示例素材。
@@ -910,6 +914,42 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
           fontSize: 12,
           color: Color(0xFF8C8C8C),
         ),
+      ),
+    );
+  }
+
+  /// 图片地址存在但渲染失败时，展示明确的失败提示。
+  Widget _buildImageLoadErrorPlaceholder() {
+    return Container(
+      width: 88,
+      height: 88,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          SvgPicture.asset(
+            'assets/images/add_warining.svg',
+            width: 20,
+            height: 20,
+            colorFilter: const ColorFilter.mode(
+              Color(0xFF8C8C8C),
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '加载失败',
+            textAlign: TextAlign.center,
+            style: TestStyle.pingFangRegular(
+              fontSize: 12,
+              color: const Color(0xFF8C8C8C),
+            ),
+          ),
+        ],
       ),
     );
   }

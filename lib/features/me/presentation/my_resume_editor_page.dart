@@ -1899,7 +1899,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
       positions: List<String>.of(_jobTags),
       countries: List<String>.of(_countryTags),
       languages: _languages
-          .map((item) => item.displayLabel)
+          .map((item) => item.language)
           .toList(growable: false),
       experiences: _experiences
           .map(
