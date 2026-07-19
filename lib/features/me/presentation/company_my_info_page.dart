@@ -604,19 +604,19 @@ class _CompanyPublicInfoContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          CompanyMyInfoSectionCard(
-            title: '服务详情.简介'.tr(),
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-            child: Text(
-              profile.description.trim().isEmpty
-                  ? '服务详情.暂无商家简介'.tr()
-                  : profile.description,
-              style: CompanyMyInfoStyles.fieldValue.copyWith(
-                color: const Color(0xFF595959),
-                height: 22 / 14,
-              ),
-            ),
-          ),
+          // CompanyMyInfoSectionCard(
+          //   title: '服务详情.简介'.tr(),
+          //   padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+          //   child: Text(
+          //     profile.description.trim().isEmpty
+          //         ? '服务详情.暂无商家简介'.tr()
+          //         : profile.description,
+          //     style: CompanyMyInfoStyles.fieldValue.copyWith(
+          //       color: const Color(0xFF595959),
+          //       height: 22 / 14,
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
