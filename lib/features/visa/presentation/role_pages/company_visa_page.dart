@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_toast.dart';
 
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../jobs/data/job_models.dart';
 import '../../../jobs/data/job_providers.dart';
 import '../../../jobs/presentation/post_job_page.dart';
@@ -394,6 +395,7 @@ class _CompanyJobTabViewState extends ConsumerState<_CompanyJobTabView>
             .where((JobDetailVO item) => item.jobId != job.jobId)
             .toList(growable: false);
       });
+      ref.invalidate(homeDashboardStatsProvider);
       ref.read(companyJobListRefreshTickProvider.notifier).notifyChanged();
       _showMessage(successMessage);
     } catch (error) {
