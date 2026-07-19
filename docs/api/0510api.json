@@ -9158,6 +9158,90 @@
         }
       }
     },
+    "/conversations/{conversationId}/online": {
+      "get": {
+        "tags": [
+          "站内消息模块"
+        ],
+        "summary": "查询会话对方在线状态",
+        "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+        "operationId": "getPartnerOnline",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "description": "会话 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppResultMapStringBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/conversations/unread-count": {
       "get": {
         "tags": [
@@ -12346,8 +12430,14 @@
           },
           "targetUserRole": {
             "type": "string",
-            "description": "目标用户角色（worker / employer / visa_provider）",
-            "minLength": 1
+            "description": "目标用户角色（仅允许 worker / employer / visa_provider）",
+            "enum": [
+              "worker",
+              "employer",
+              "visa_provider"
+            ],
+            "minLength": 1,
+            "pattern": "worker|employer|visa_provider"
           },
           "orderId": {
             "type": "integer",
@@ -16535,6 +16625,41 @@
           "isOnline": {
             "type": "boolean",
             "description": "是否在线"
+          }
+        }
+      },
+      "AppResultMapStringBoolean": {
+        "type": "object",
+        "description": "统一响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "业务状态码，0=成功",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "状态描述",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务器时间戳（毫秒）",
+            "example": 1713542400000
+          },
+          "requestId": {
+            "type": "string",
+            "description": "请求追踪ID",
+            "example": "req_abc123xyz"
           }
         }
       },

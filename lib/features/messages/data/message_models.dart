@@ -414,4 +414,20 @@ class TargetUserVO {
       'isOnline': isOnline,
     };
   }
+
+  TargetUserVO copyWith({
+    int? userId,
+    String? nickname,
+    String? avatarUrl,
+    String? role,
+    bool? isOnline,
+  }) {
+    return TargetUserVO(
+      userId: userId ?? this.userId,
+      nickname: nickname ?? this.nickname,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      role: role ?? this.role,
+      isOnline: isOnline ?? this.isOnline,
+    );
+  }
 }

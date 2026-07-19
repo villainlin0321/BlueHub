@@ -173,6 +173,42 @@ class MessageService {
     return _apiClient.getVoid('/notifications/sse/close');
   }
 
+  /// 查询当前会话对方是否在线。
+  ///
+  /// 接口返回的是布尔 Map；优先读取 `online` / `isOnline`，
+  /// 若后端未固定字段名，则回退到首个布尔值。
+  Future<bool> getPartnerOnline({required int conversationId}) async {
+    final Map<String, bool> response = await _apiClient.get<Map<String, bool>>(
+      '/conversations/$conversationId/online',
+      decode: (data) => decodeMapValues<bool>(
+        data ?? const <String, dynamic>{},
+        (value) {
+          if (value is bool) {
+            return value;
+          }
+          if (value is num) {
+            return value != 0;
+          }
+          if (value is String) {
+            final String normalized = value.trim().toLowerCase();
+            return normalized == 'true' || normalized == '1';
+          }
+          return false;
+        },
+      ),
+    );
+    if (response.containsKey('online')) {
+      return response['online'] ?? false;
+    }
+    if (response.containsKey('isOnline')) {
+      return response['isOnline'] ?? false;
+    }
+    for (final bool value in response.values) {
+      return value;
+    }
+    return false;
+  }
+
   /// 根据会话 ID 拉取消息列表。
   ///
   /// [conversationId] 为目标会话主键；
