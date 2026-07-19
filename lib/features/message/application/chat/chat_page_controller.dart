@@ -53,7 +53,10 @@ class ChatPageController extends Notifier<ChatPageState> {
     _messageService = ref.read(messageServiceProvider);
     _fileService = ref.read(fileServiceProvider);
     _currentUserId = ref.read(authSessionProvider).user?.userId ?? 0;
-    return ChatPageState(conversationId: arg.conversationId);
+    return ChatPageState(
+      conversationId: arg.conversationId,
+      isOnline: arg.isOnline,
+    );
   }
 
   Future<void> loadInitialData() async {
@@ -76,6 +79,7 @@ class ChatPageController extends Notifier<ChatPageState> {
           newestMessageToken: current.newestMessageToken + 1,
         ),
       );
+      await _refreshPartnerOnlineIfNeeded(payload.conversationId);
       await _markCurrentConversationRead();
     } catch (error) {
       _updateState(
@@ -585,6 +589,16 @@ class ChatPageController extends Notifier<ChatPageState> {
       if (payload.isEmpty) {
         return;
       }
+      if (_isPresencePayload(payload)) {
+        if (_matchesCurrentTarget(payload)) {
+          _updateState(
+            (ChatPageState current) => current.copyWith(
+              isOnline: _extractPresenceOnline(payload),
+            ),
+          );
+        }
+        return;
+      }
 
       final JsonMap messageJson = _extractMessageJson(payload);
       if (messageJson.isEmpty || messageJson['messageId'] == null) {
@@ -689,6 +703,25 @@ class ChatPageController extends Notifier<ChatPageState> {
       await _messageService.markRead(conversationId: state.conversationId);
     } catch (_) {
       // 已读失败不阻断消息展示。
+    }
+  }
+
+  Future<void> _refreshPartnerOnlineIfNeeded(int conversationId) async {
+    if (_isDisposed || conversationId <= 0) {
+      return;
+    }
+    try {
+      final bool isOnline = await _messageService.getPartnerOnline(
+        conversationId: conversationId,
+      );
+      if (_isDisposed) {
+        return;
+      }
+      _updateState(
+        (ChatPageState current) => current.copyWith(isOnline: isOnline),
+      );
+    } catch (_) {
+      // 在线状态查询失败不影响聊天页面主流程。
     }
   }
 
@@ -866,6 +899,37 @@ class ChatPageController extends Notifier<ChatPageState> {
     }
 
     return asJsonMap(payload['data']);
+  }
+
+  bool _isPresencePayload(JsonMap payload) {
+    return readString(payload, 'type').trim().toLowerCase() == 'presence';
+  }
+
+  bool _matchesCurrentTarget(JsonMap payload) {
+    final int userId = readInt(payload, 'userId');
+    if (userId != arg.targetUserId) {
+      return false;
+    }
+    final String role = readString(payload, 'role').trim().toLowerCase();
+    return role.isNotEmpty && role == arg.targetUserRole.trim().toLowerCase();
+  }
+
+  bool _extractPresenceOnline(JsonMap payload) {
+    if (payload.containsKey('online')) {
+      return readBool(payload, 'online');
+    }
+    if (payload.containsKey('isOnline')) {
+      return readBool(payload, 'isOnline');
+    }
+    if (payload.containsKey('is_online')) {
+      return readBool(payload, 'is_online');
+    }
+    for (final dynamic value in payload.values) {
+      if (value is bool) {
+        return value;
+      }
+    }
+    return false;
   }
 
   bool _isCurrentConversationMessage(MessageVO message) {

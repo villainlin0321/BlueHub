@@ -653,6 +653,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
       resizeToAvoidBottomInset: false,
       appBar: _ChatPageAppBar(
         args: widget.args,
+        isOnline: state.isOnline,
         onBack: () => Navigator.of(context).maybePop(),
         onMoreTap: _showMoreMenu,
       ),
@@ -769,11 +770,13 @@ enum _ChatMoreMenuAction { block }
 class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _ChatPageAppBar({
     required this.args,
+    required this.isOnline,
     required this.onBack,
     required this.onMoreTap,
   });
 
   final ChatPageArgs args;
+  final bool isOnline;
   final VoidCallback onBack;
   final ValueChanged<BuildContext> onMoreTap;
 
@@ -818,7 +821,7 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: args.isOnline
+                    color: isOnline
                         ? _ChatPageState._onlineGreen
                         : const Color(0xFFBFBFBF),
                     shape: BoxShape.circle,
@@ -826,8 +829,8 @@ class _ChatPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  args.isOnline ? '消息.在线'.tr() : '消息.离线'.tr(),
-                  style: TestStyle.pingFangRegular(fontSize: 10, color: args.isOnline
+                  isOnline ? '消息.在线'.tr() : '消息.离线'.tr(),
+                  style: TestStyle.pingFangRegular(fontSize: 10, color: isOnline
                         ? _ChatPageState._onlineGreen
                         : const Color(0xFFBFBFBF)),
                 ),

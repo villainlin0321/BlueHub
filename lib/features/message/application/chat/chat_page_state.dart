@@ -10,6 +10,7 @@ enum ChatVoiceRecordingState { idle, recording, cancel }
 class ChatPageState {
   const ChatPageState({
     this.conversationId = 0,
+    this.isOnline = false,
     this.messages = const <MessageVO>[],
     this.isInitialLoading = false,
     this.isLoadingMore = false,
@@ -28,6 +29,7 @@ class ChatPageState {
   });
 
   final int conversationId;
+  final bool isOnline;
   final List<MessageVO> messages;
   final bool isInitialLoading;
   final bool isLoadingMore;
@@ -51,6 +53,7 @@ class ChatPageState {
 
   ChatPageState copyWith({
     int? conversationId,
+    bool? isOnline,
     List<MessageVO>? messages,
     bool? isInitialLoading,
     bool? isLoadingMore,
@@ -69,6 +72,7 @@ class ChatPageState {
   }) {
     return ChatPageState(
       conversationId: conversationId ?? this.conversationId,
+      isOnline: isOnline ?? this.isOnline,
       messages: messages ?? this.messages,
       isInitialLoading: isInitialLoading ?? this.isInitialLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,

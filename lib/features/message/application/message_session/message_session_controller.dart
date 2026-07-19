@@ -387,6 +387,10 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       if (payload.isEmpty) {
         return;
       }
+      if (_isPresencePayload(payload)) {
+        _handlePresenceEvent(payload);
+        return;
+      }
       final JsonMap messageJson = _extractMessageJson(payload);
       final int conversationId = _extractConversationId(
         payload,
@@ -548,6 +552,57 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       return payload;
     }
     return root;
+  }
+
+  bool _isPresencePayload(JsonMap payload) {
+    return readString(payload, 'type').trim().toLowerCase() == 'presence';
+  }
+
+  void _handlePresenceEvent(JsonMap payload) {
+    final int userId = readInt(payload, 'userId');
+    final String role = readString(payload, 'role').trim();
+    if (userId <= 0 || role.isEmpty) {
+      return;
+    }
+    final int index = _findConversationIndexByPresence(userId, role);
+    if (index == -1) {
+      return;
+    }
+    final ConversationVO current = state.conversations[index];
+    _replaceConversation(
+      current.copyWith(
+        targetUser: current.targetUser.copyWith(
+          isOnline: _extractPresenceOnline(payload),
+        ),
+      ),
+      moveToFront: false,
+    );
+  }
+
+  int _findConversationIndexByPresence(int userId, String role) {
+    final String normalizedRole = role.trim().toLowerCase();
+    return state.conversations.indexWhere((ConversationVO item) {
+      return item.targetUser.userId == userId &&
+          item.targetUser.role.trim().toLowerCase() == normalizedRole;
+    });
+  }
+
+  bool _extractPresenceOnline(JsonMap payload) {
+    if (payload.containsKey('online')) {
+      return readBool(payload, 'online');
+    }
+    if (payload.containsKey('isOnline')) {
+      return readBool(payload, 'isOnline');
+    }
+    if (payload.containsKey('is_online')) {
+      return readBool(payload, 'is_online');
+    }
+    for (final dynamic value in payload.values) {
+      if (value is bool) {
+        return value;
+      }
+    }
+    return false;
   }
 
   JsonMap _extractMessageJson(JsonMap payload) {
