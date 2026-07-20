@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_error_feedback.dart';
+import '../../../shared/network/services/country_service.dart';
 import '../../auth/application/auth_role_mapper.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
@@ -29,6 +30,7 @@ import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../message/application/chat/chat_page_args.dart';
+import '../../me/data/dictionary_providers.dart';
 import '../../me/data/collection_models.dart' show CollectionBO;
 import '../../me/data/collection_providers.dart';
 import '../../visa/data/provider_models.dart'
@@ -121,6 +123,22 @@ class _VisaPackageDetailScaffoldState
         final int? effectiveProviderId =
             widget.args.providerId ??
             (package.providerId > 0 ? package.providerId : null);
+        final Map<String, String> countryLabelMap = ref
+            .watch(
+              countrySearchProvider(
+                const CountrySearchQuery(page: 1, pageSize: 300),
+              ),
+            )
+            .maybeWhen(
+              data: (result) => _buildCountryLabelMap(result.list),
+              orElse: () => const <String, String>{},
+            );
+        final Map<String, String> visaTypeLabelMap = ref
+            .watch(tagDictionaryProvider(TagCategory.visaType))
+            .maybeWhen(
+              data: _buildLocalizedTagLabelMap,
+              orElse: () => const <String, String>{},
+            );
         final AsyncValue<VisaProviderDetailVO>? providerDetailAsync =
             effectiveProviderId == null
             ? null
@@ -287,6 +305,8 @@ class _VisaPackageDetailScaffoldState
                         packageDetail: package,
                         provider: provider,
                         verifiedBadgeAsset: _verifiedBadgeAsset,
+                        countryLabelMap: countryLabelMap,
+                        visaTypeLabelMap: visaTypeLabelMap,
                       ),
                     ),
                     SliverPersistentHeader(
@@ -605,6 +625,26 @@ class _VisaPackageDetailScaffoldState
       materials: materials,
       verifiedBadgeAsset: _verifiedBadgeAsset,
       serviceTagLabelMap: _buildServiceTagLabelMap(),
+      countryLabelMap: _buildCountryLabelMap(
+        ref
+                .read(
+                  countrySearchProvider(
+                    const CountrySearchQuery(page: 1, pageSize: 300),
+                  ),
+                )
+                .asData
+                ?.value
+                .list ??
+            const <dynamic>[],
+      ),
+      visaTypeLabelMap: _buildVisaTypeLabelMap(),
+    );
+  }
+
+  Map<String, String> _buildCountryLabelMap(Iterable<dynamic> countries) {
+    return CountryService.buildLocalizedCountryLabelMap(
+      countries.cast(),
+      locale: context.locale,
     );
   }
 
@@ -612,33 +652,21 @@ class _VisaPackageDetailScaffoldState
     final List<TagItemVO> serviceTags =
         ref.read(tagDictionaryProvider(TagCategory.service)).asData?.value ??
         const <TagItemVO>[];
-    final bool isChineseLocale = context.locale.languageCode
-        .toLowerCase()
-        .startsWith('zh');
-    return <String, String>{
-      for (final TagItemVO item in serviceTags)
-        item.tagCode.trim(): isChineseLocale
-            ? _resolveZhFirstTagLabel(item)
-            : _resolveEnFirstTagLabel(item),
-    };
+    return _buildLocalizedTagLabelMap(serviceTags);
   }
 
-  String _resolveZhFirstTagLabel(TagItemVO item) {
-    final String zh = item.tagNameZh.trim();
-    if (zh.isNotEmpty) {
-      return zh;
-    }
-    final String en = item.tagNameEn.trim();
-    return en.isNotEmpty ? en : item.tagCode.trim();
+  Map<String, String> _buildVisaTypeLabelMap() {
+    final List<TagItemVO> visaTypeTags =
+        ref.read(tagDictionaryProvider(TagCategory.visaType)).asData?.value ??
+        const <TagItemVO>[];
+    return _buildLocalizedTagLabelMap(visaTypeTags);
   }
 
-  String _resolveEnFirstTagLabel(TagItemVO item) {
-    final String en = item.tagNameEn.trim();
-    if (en.isNotEmpty) {
-      return en;
-    }
-    final String zh = item.tagNameZh.trim();
-    return zh.isNotEmpty ? zh : item.tagCode.trim();
+  Map<String, String> _buildLocalizedTagLabelMap(List<TagItemVO> tags) {
+    return ConfigService.buildLocalizedTagLabelMap(
+      tags,
+      locale: context.locale,
+    );
   }
 
   Future<void> _shareServiceDetailText({
@@ -1197,6 +1225,8 @@ class _SummaryPanel extends StatelessWidget {
     required this.packageDetail,
     required this.provider,
     required this.verifiedBadgeAsset,
+    required this.countryLabelMap,
+    required this.visaTypeLabelMap,
   });
 
   final String serviceTitle;
@@ -1204,6 +1234,8 @@ class _SummaryPanel extends StatelessWidget {
   final VisaPackageVO packageDetail;
   final ProviderVO? provider;
   final String verifiedBadgeAsset;
+  final Map<String, String> countryLabelMap;
+  final Map<String, String> visaTypeLabelMap;
 
   @override
   Widget build(BuildContext context) {
@@ -1275,9 +1307,17 @@ class _SummaryPanel extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               _SummaryTag(
-                label: _formatCountryLabel(packageDetail.targetCountry),
+                label: _resolveCountryLabel(
+                  packageDetail.targetCountry,
+                  countryLabelMap: countryLabelMap,
+                ),
               ),
-              _SummaryTag(label: _formatVisaTypeLabel(packageDetail.visaType)),
+              _SummaryTag(
+                label: _resolveVisaTypeLabel(
+                  packageDetail.visaType,
+                  visaTypeLabelMap: visaTypeLabelMap,
+                ),
+              ),
               if (packageDetail.estimatedDays > 0)
                 _SummaryTag(
                   label: '服务详情.天办结'.tr(
@@ -1886,27 +1926,27 @@ String _formatPrice(double amount, String currency) {
   return AppCurrency.formatAmount(amount, currency);
 }
 
-/// 将国家代码转为详情页展示文案。
-String _formatCountryLabel(String country) {
-  return switch (country.trim().toUpperCase()) {
-    'DE' => '国家.德国'.tr(),
-    'FR' => '国家.法国'.tr(),
-    'IT' => '国家.意大利'.tr(),
-    'ES' => '国家.西班牙'.tr(),
-    'NL' => '国家.荷兰'.tr(),
-    'BE' => '国家.比利时'.tr(),
-    _ => country.trim().isEmpty ? '国家.签证'.tr() : country.trim().toUpperCase(),
-  };
+/// 通过国家字典解析详情页国家展示文案，未命中时回退原始国家码。
+String _resolveCountryLabel(
+  String country, {
+  required Map<String, String> countryLabelMap,
+}) {
+  final String normalizedCountry = country.trim().toUpperCase();
+  if (normalizedCountry.isEmpty) {
+    return '国家.签证'.tr();
+  }
+  return countryLabelMap[normalizedCountry] ?? normalizedCountry;
 }
 
-/// 将签证类型代码转为详情页展示文案。
-String _formatVisaTypeLabel(String visaType) {
-  return switch (visaType.trim().toLowerCase()) {
-    'work' => '服务详情.工作签'.tr(),
-    'travel' => '服务详情.旅游签'.tr(),
-    'tech' => '服务详情.技术签'.tr(),
-    'nursing' => '服务详情.护理签'.tr(),
-    'study' => '服务详情.留学签'.tr(),
-    _ => visaType.trim().isEmpty ? '服务详情.签证服务'.tr() : visaType.trim(),
-  };
+/// 通过标签字典解析签证类型展示文案，未命中时回退原始值。
+String _resolveVisaTypeLabel(
+  String visaType, {
+  required Map<String, String> visaTypeLabelMap,
+}) {
+  final String normalizedVisaType = visaType.trim();
+  if (normalizedVisaType.isEmpty) {
+    return '服务详情.签证服务'.tr();
+  }
+  return visaTypeLabelMap[normalizedVisaType.toLowerCase()] ??
+      normalizedVisaType;
 }
