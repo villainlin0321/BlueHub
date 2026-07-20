@@ -3,46 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../shared/legal/agreement_links.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/ui/app_colors.dart';
-import '../../../../shared/widgets/app_toast.dart';
 import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
 
 typedef AgreementLinkOpener = Future<bool> Function(Uri uri);
-
-final Uri _userTermsUri = Uri.parse('https://yunhezp.vip/app/terms.html');
-final Uri _crossBorderTermsUri = Uri.parse(
-  'https://yunhezp.vip/app/cross-terms.html',
-);
-final Uri _privacyPolicyUri = Uri.parse(
-  'https://yunhezp.vip/app/privacy-policy.html',
-);
-
-Future<bool> _openAgreementLink(BuildContext context, Uri uri) async {
-  try {
-    final bool openedInApp = await launchUrl(
-      uri,
-      mode: LaunchMode.inAppWebView,
-    );
-    if (openedInApp) {
-      return true;
-    }
-
-    final bool opened = await launchUrl(uri);
-    if (!opened) {
-      await AppToast.show('认证.协议打开失败'.tr());
-    }
-    return opened;
-  } catch (_) {
-    await AppToast.show('认证.协议打开失败'.tr());
-    return false;
-  }
-}
 
 class LoginRegionOption {
   const LoginRegionOption({required this.label, required this.code});
@@ -186,7 +156,7 @@ class LoginPhoneView extends StatelessWidget {
                     onAgreementChanged: onAgreementChanged,
                     onOpenLink: (uri) =>
                         (onOpenAgreementLink ??
-                        (value) => _openAgreementLink(context, value))(uri),
+                        (value) => AgreementLinks.open(context, value))(uri),
                   ),
                   const Spacer(),
                   // const SizedBox(height: 24),
@@ -244,9 +214,12 @@ class _AgreementSectionState extends State<_AgreementSection> {
   Widget build(BuildContext context) {
     _toggleAgreementRecognizer.onTap = () =>
         widget.onAgreementChanged(!widget.agreed);
-    _userTermsRecognizer.onTap = () => widget.onOpenLink(_userTermsUri);
-    _crossTermsRecognizer.onTap = () => widget.onOpenLink(_crossBorderTermsUri);
-    _privacyPolicyRecognizer.onTap = () => widget.onOpenLink(_privacyPolicyUri);
+    _userTermsRecognizer.onTap = () =>
+        widget.onOpenLink(AgreementLinks.userTermsUri);
+    _crossTermsRecognizer.onTap = () =>
+        widget.onOpenLink(AgreementLinks.crossBorderTermsUri);
+    _privacyPolicyRecognizer.onTap = () =>
+        widget.onOpenLink(AgreementLinks.privacyPolicyUri);
 
     final String languageCode =
         Localizations.maybeLocaleOf(context)?.languageCode.toLowerCase() ??

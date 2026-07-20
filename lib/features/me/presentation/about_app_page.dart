@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../shared/legal/agreement_links.dart';
 import 'package:europepass/shared/ui/test_style.dart';
 /// 关于我们页：用于展示应用名称、版本信息以及公司主体信息，便于留存合规截图。
 class AboutAppPage extends StatefulWidget {
@@ -45,6 +46,8 @@ class _AboutAppPageState extends State<AboutAppPage> {
             children: <Widget>[
               _buildHeaderCard(context),
               const Spacer(),
+              _buildAgreementCard(context),
+              const SizedBox(height: 16),
               _buildFooter(context),
             ],
           ),
@@ -171,6 +174,36 @@ class _AboutAppPageState extends State<AboutAppPage> {
       ],
     );
   }
+
+  /// 构建协议入口卡片，统一承载关于页底部的 3 个合规协议跳转。
+  Widget _buildAgreementCard(BuildContext context) {
+    final List<AgreementLinkDefinition> entries = AgreementLinks.aboutAppEntries;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int index = 0; index < entries.length; index++) ...<Widget>[
+            _AgreementEntryTile(
+              label: entries[index].labelKey.tr(),
+              onTap: () => AgreementLinks.open(context, entries[index].uri),
+            ),
+            if (index != entries.length - 1)
+              const Divider(
+                height: 1,
+                thickness: 1,
+                indent: 16,
+                endIndent: 16,
+                color: Color(0xFFF0F0F0),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _AboutInfoRow extends StatelessWidget {
@@ -199,6 +232,43 @@ class _AboutInfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AgreementEntryTile extends StatelessWidget {
+  const _AgreementEntryTile({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  /// 构建关于页协议入口行，保持与设计图一致的标题与右箭头布局。
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                label,
+                style: TestStyle.pingFangSemibold(
+                  fontSize: 15,
+                  color: const Color(0xFF262626),
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_right_rounded,
+              size: 22,
+              color: Color(0xFF8C8C8C),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
