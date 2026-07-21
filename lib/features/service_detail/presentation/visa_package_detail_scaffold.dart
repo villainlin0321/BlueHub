@@ -1858,6 +1858,7 @@ String _resolveErrorMessage(Object error, {required String fallback}) {
   return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
 }
 
+
 /// 将签证套餐详情映射为详情页的档位和材料展示模型。
 extension on VisaPackageVO {
   List<ServicePackageData> toServicePackages() {

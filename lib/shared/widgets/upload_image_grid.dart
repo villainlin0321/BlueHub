@@ -18,6 +18,7 @@ class UploadImageGrid extends ConsumerStatefulWidget {
     required this.scene,
     required this.onChanged,
     this.initialImagePaths = const <String>[],
+    this.initialUploadedValues = const <UploadedImageValue>[],
     this.maxImages = 9,
     this.uploadAssetPath = 'assets/images/service_detail_report_upload.svg',
     this.uploadLabel,
@@ -30,6 +31,7 @@ class UploadImageGrid extends ConsumerStatefulWidget {
   final FileScene scene;
   final ValueChanged<List<String>> onChanged;
   final List<String> initialImagePaths;
+  final List<UploadedImageValue> initialUploadedValues;
   final int maxImages;
   final String uploadAssetPath;
   final String? uploadLabel;
@@ -50,7 +52,17 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
   void initState() {
     super.initState();
     _entries.addAll(
-      widget.initialImagePaths.map<_UploadImageEntry>(_buildInitialEntry),
+      widget.initialUploadedValues.map<_UploadImageEntry>(_buildUploadedEntry),
+    );
+    _entries.addAll(
+      widget.initialImagePaths
+          .where(
+            (String path) => !widget.initialUploadedValues.any(
+              (UploadedImageValue value) =>
+                  value.previewPath == path || value.fileUrl == path,
+            ),
+          )
+          .map<_UploadImageEntry>(_buildInitialEntry),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) {
@@ -251,6 +263,16 @@ class _UploadImageGridState extends ConsumerState<UploadImageGrid> {
       previewPath: path,
       uploadedUrl: _isNetworkPath(path) ? path : null,
       localPath: _isNetworkPath(path) ? null : path,
+    );
+  }
+
+  _UploadImageEntry _buildUploadedEntry(UploadedImageValue value) {
+    return _UploadImageEntry(
+      id: '${DateTime.now().microsecondsSinceEpoch}_${value.fileId}',
+      previewPath: value.previewPath,
+      uploadedUrl: value.fileUrl,
+      uploadedFileId: value.fileId,
+      localPath: null,
     );
   }
 

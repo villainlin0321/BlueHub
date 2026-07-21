@@ -25,13 +25,14 @@ class AddSkillCertificatePage extends ConsumerStatefulWidget {
 
 class _AddSkillCertificatePageState
     extends ConsumerState<AddSkillCertificatePage> {
-  static const int _maxAttachments = 9;
+  static const int _maxAttachments = 1;
   static const String _uploadAsset =
       'assets/images/service_detail_report_upload.svg';
 
   String? _certificateName;
   ResumeTimePickerValue? _issuedAt;
   List<String> _uploadedImageUrls = const <String>[];
+  List<UploadedImageValue> _uploadedImages = const <UploadedImageValue>[];
   bool _isUploadingImages = false;
 
   AddSkillCertificatePageArgs get _resolvedArgs =>
@@ -53,7 +54,15 @@ class _AddSkillCertificatePageState
       initialValue.networkImageUrls,
       growable: false,
     );
-    _isUploadingImages = initialValue.localImagePaths.isNotEmpty;
+    if (initialValue.imageFileId != null && _uploadedImageUrls.isNotEmpty) {
+      _uploadedImages = <UploadedImageValue>[
+        UploadedImageValue(
+          fileId: initialValue.imageFileId!,
+          fileUrl: _uploadedImageUrls.first,
+          previewPath: _uploadedImageUrls.first,
+        ),
+      ];
+    }
   }
 
   Future<List<SelectableSheetOption<String>>> _loadCertificateOptions() async {
@@ -146,10 +155,11 @@ class _AddSkillCertificatePageState
       _showMessage('我的.请选择获得时间'.tr());
       return;
     }
-    if (_uploadedImageUrls.isEmpty) {
+    if (_uploadedImages.isEmpty) {
       _showMessage('我的.请上传证书图片'.tr());
       return;
     }
+    final UploadedImageValue selectedImage = _uploadedImages.first;
 
     context.pop(
       ResumeCertificatePageResult.saved(
@@ -158,6 +168,7 @@ class _AddSkillCertificatePageState
           issuedAt: _issuedAt!,
           localImagePaths: const <String>[],
           networkImageUrls: _uploadedImageUrls,
+          imageFileId: selectedImage.fileId,
         ),
       ),
     );
@@ -216,6 +227,23 @@ class _AddSkillCertificatePageState
               scene: FileScene.cert,
               maxImages: _maxAttachments,
               uploadAssetPath: _uploadAsset,
+              initialUploadedValues:
+                  _resolvedArgs.initialValue?.imageFileId == null ||
+                      _resolvedArgs.initialValue!.networkImageUrls.isEmpty
+                  ? const <UploadedImageValue>[]
+                  : <UploadedImageValue>[
+                      UploadedImageValue(
+                        fileId: _resolvedArgs.initialValue!.imageFileId!,
+                        fileUrl:
+                            _resolvedArgs.initialValue!.networkImageUrls.isEmpty
+                            ? ''
+                            : _resolvedArgs.initialValue!.networkImageUrls.first,
+                        previewPath:
+                            _resolvedArgs.initialValue!.networkImageUrls.isEmpty
+                            ? ''
+                            : _resolvedArgs.initialValue!.networkImageUrls.first,
+                      ),
+                    ],
               initialImagePaths: <String>[
                 ..._resolvedArgs.initialValue?.localImagePaths ??
                     const <String>[],
@@ -224,6 +252,9 @@ class _AddSkillCertificatePageState
               ],
               onChanged: (List<String> imageUrls) {
                 _uploadedImageUrls = imageUrls;
+              },
+              onUploadedChanged: (List<UploadedImageValue> uploadedImages) {
+                _uploadedImages = uploadedImages;
               },
               onUploadingChanged: (bool isUploading) {
                 setState(() {
@@ -309,12 +340,14 @@ class ResumeCertificateFormResult {
     required this.issuedAt,
     this.localImagePaths = const <String>[],
     this.networkImageUrls = const <String>[],
+    this.imageFileId,
   });
 
   final String title;
   final ResumeTimePickerValue issuedAt;
   final List<String> localImagePaths;
   final List<String> networkImageUrls;
+  final int? imageFileId;
 }
 
 class AddSkillCertificatePageArgs {
