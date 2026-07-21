@@ -1090,19 +1090,20 @@ class _CandidateCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  children: <Widget>[
-                    Text(
-                      data.scoreText,
-                      style: TestStyle.regular(fontSize: 16, color: Color(0xFF096DD9)),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      data.scoreLabel,
-                      style: TestStyle.regular(fontSize: 10, color: Color(0xFF096DD9)),
-                    ),
-                  ],
-                ),
+                if (data.scoreText > 0)
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        '${data.scoreText}%',
+                        style: TestStyle.regular(fontSize: 16, color: Color(0xFF096DD9)),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        data.scoreLabel,
+                        style: TestStyle.regular(fontSize: 10, color: Color(0xFF096DD9)),
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -1235,7 +1236,7 @@ class _CandidateCardData {
   final String name;
   final String ageGender;
   final String intention;
-  final String scoreText;
+  final int scoreText;
   final String scoreLabel;
   final List<String> tags;
   final String updatedText;
@@ -1244,6 +1245,7 @@ class _CandidateCardData {
     TalentVO talent, {
     required String sort,
   }) {
+    final int matchScore = (talent.matchScore ?? 0).clamp(0, 100);
     final bool isActiveSort = sort == 'active';
     return _CandidateCardData(
       resumeId: talent.resumeId,
@@ -1252,8 +1254,8 @@ class _CandidateCardData {
       name: talent.nickname.isEmpty ? '招聘.未命名用户'.tr() : talent.nickname,
       ageGender: _buildAgeGender(talent),
       intention: _buildIntention(talent),
-      scoreText: '${(talent.matchScore ?? 0).clamp(0, 100)}%',
-      scoreLabel: '招聘.匹配度'.tr(),
+      scoreText: matchScore,
+      scoreLabel: '招聘.匹配'.tr(),
       tags: _buildTags(talent),
       updatedText: isActiveSort
           ? _buildActiveText(talent.lastLoginAt)
