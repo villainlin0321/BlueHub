@@ -15,11 +15,13 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/compact_publish_button.dart';
 import '../../../config/data/config_models.dart';
 import '../../../config/data/config_providers.dart';
+import '../../../home/data/home_providers.dart';
 import '../../../me/data/dictionary_providers.dart';
 import '../../../me/presentation/country_options_bottom_sheet.dart';
 import '../../../service_detail/presentation/visa_package_preview_page.dart';
 import '../../../visa/data/visa_package_models.dart';
 import '../../../visa/data/visa_package_providers.dart';
+import '../../../visa/data/provider_providers.dart';
 import '../../../../shared/network/models/dictionary_models.dart';
 import '../../../../shared/network/services/config_service.dart';
 
@@ -362,6 +364,8 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
       });
       ref.invalidate(myVisaPackageListProvider(widget.tab.status));
       ref.invalidate(myVisaPackageListProvider(nextStatus));
+      ref.invalidate(homeDashboardStatsProvider);
+      ref.invalidate(providerServiceProvider);
       _showMessage(
         widget.tab.status == 'active' ? '套餐管理.套餐已下架'.tr() : '套餐管理.套餐已上架'.tr(),
       );
@@ -417,6 +421,10 @@ class _PackageTabViewState extends ConsumerState<_PackageTabView> {
             .toList(growable: false);
       });
       ref.invalidate(myVisaPackageListProvider(widget.tab.status));
+      ref.invalidate(providerServiceProvider);
+      if (widget.tab.status == 'active') {
+        ref.invalidate(homeDashboardStatsProvider);
+      }
       _showMessage('套餐管理.套餐已删除'.tr());
     } catch (error) {
       if (!mounted) {
