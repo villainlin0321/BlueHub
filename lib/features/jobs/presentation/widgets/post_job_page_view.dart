@@ -122,20 +122,20 @@ class PostJobPageView extends StatelessWidget {
           ),
         ),
         title: Text(title, style: PostJobPageStyles.navTitle),
-        // actions: <Widget>[
-        //   Padding(
-        //     padding: const EdgeInsets.only(right: 16),
-        //     child: TextButton(
-        //       onPressed: onSaveDraft,
-        //       style: TextButton.styleFrom(
-        //         minimumSize: const Size(44, 32),
-        //         foregroundColor: PostJobPageStyles.titleText,
-        //         textStyle: PostJobPageStyles.navAction,
-        //       ),
-        //       child: Text('岗位发布.存草稿'.tr()),
-        //     ),
-        //   ),
-        // ],
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: TextButton(
+              onPressed: isPublishing ? null : onSaveDraft,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(44, 32),
+                foregroundColor: PostJobPageStyles.titleText,
+                textStyle: PostJobPageStyles.navAction,
+              ),
+              child: Text('岗位发布.存草稿'.tr()),
+            ),
+          ),
+        ],
       ),
       body: TapBlankToDismissKeyboard(
         child: LayoutBuilder(

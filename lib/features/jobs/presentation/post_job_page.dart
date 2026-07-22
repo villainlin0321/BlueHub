@@ -287,6 +287,29 @@ class _PostJobPageState extends ConsumerState<PostJobPage>
     );
   }
 
+  Future<void> _handleSaveDraft() async {
+    FocusScope.of(context).unfocus();
+    _submitCustomTag();
+    final PostJobFormDraft draft = _buildFormDraft();
+    final Map<String, Object?> logContext = <String, Object?>{
+      ..._buildPageLogContext(),
+      'action': 'POST_JOB_SAVE_DRAFT_TAP',
+    };
+    await AppLogScope.run<Future<void>>(
+      traceId: buildAppTraceId('post_job_save_draft'),
+      fields: logContext,
+      action: () async {
+        ActionLog.log(
+          event: 'POST_JOB_SAVE_DRAFT_TAP',
+          message: '用户点击保存岗位草稿',
+        );
+        await ref
+            .read(postJobControllerProvider.notifier)
+            .saveDraft(draft, editingJobId: widget.args.jobId);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<PostJobState>(postJobControllerProvider, (
@@ -389,7 +412,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage>
         requirementTagsError: state.requirementTagsError,
         isPublishing: state.isPublishing,
         onBack: _handleAttemptLeave,
-        onSaveDraft: controller.saveDraft,
+        onSaveDraft: _handleSaveDraft,
         onPublish: _handlePublish,
         onRetryLoadRequirementTags: () =>
             controller.loadRequirementTags(force: true),
