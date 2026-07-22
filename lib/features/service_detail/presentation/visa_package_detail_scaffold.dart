@@ -9,7 +9,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -30,6 +29,7 @@ import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
+import '../../../shared/file/attachment_download_service.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../../message/application/chat/chat_page_args.dart';
 import '../../me/data/dictionary_providers.dart';
@@ -745,50 +745,6 @@ class _VisaPackageDetailScaffoldState
     return package.name.trim().isEmpty ? '服务详情.标题'.tr() : package.name.trim();
   }
 
-  Future<Directory> _resolveDownloadDirectory() async {
-    final List<Directory> candidates = <Directory>[];
-    try {
-      final Directory? downloadsDirectory = await getDownloadsDirectory();
-      if (downloadsDirectory != null) {
-        candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
-      }
-    } catch (_) {}
-
-    try {
-      final Directory documentsDirectory =
-          await getApplicationDocumentsDirectory();
-      candidates.add(Directory('${documentsDirectory.path}/downloads'));
-    } catch (_) {}
-
-    final Directory temporaryDirectory = await getTemporaryDirectory();
-    candidates.add(Directory('${temporaryDirectory.path}/downloads'));
-
-    for (final Directory candidate in candidates) {
-      if (await _canWriteToDirectory(candidate)) {
-        return candidate;
-      }
-    }
-    throw Exception('服务详情.下载目录无访问权限'.tr());
-  }
-
-  Future<bool> _canWriteToDirectory(Directory directory) async {
-    try {
-      if (!directory.existsSync()) {
-        await directory.create(recursive: true);
-      }
-      final File probeFile = File(
-        '${directory.path}/.bluehub_write_test_${DateTime.now().microsecondsSinceEpoch}',
-      );
-      await probeFile.writeAsString('ok', flush: true);
-      if (probeFile.existsSync()) {
-        await probeFile.delete();
-      }
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   String _materialDisplayName(ServiceMaterialData material) {
     final String materialName = material.title.trim();
     if (materialName.isNotEmpty) {
@@ -818,10 +774,6 @@ class _VisaPackageDetailScaffoldState
     }
 
     return '';
-  }
-
-  String _sanitizeFileName(String name) {
-    return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
   }
 
   List<_ServiceSampleFileData> _buildSampleFiles(
@@ -917,6 +869,49 @@ class _VisaPackageDetailScaffoldState
     await _downloadAndOpenMaterial(material);
   }
 
+  Future<void> _presentIosSavePanel({
+    required String savePath,
+    required String fileName,
+  }) async {
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        title: fileName,
+        subject: fileName,
+        files: <XFile>[XFile(savePath, name: fileName)],
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
+  String _resolveAttachmentDownloadErrorMessage(
+    AttachmentDownloadException error,
+  ) {
+    switch (error.type) {
+      case AttachmentDownloadErrorType.fileNotFound:
+        return '服务详情.文件地址不存在'.tr();
+      case AttachmentDownloadErrorType.noWritableDirectory:
+        return '服务详情.下载目录无访问权限'.tr();
+      case AttachmentDownloadErrorType.galleryAccessDenied:
+        return '服务详情.相册权限不足'.tr();
+      case AttachmentDownloadErrorType.gallerySaveFailed:
+        return '服务详情.保存到系统相册失败'.tr();
+    }
+  }
+
+  void _showDownloadSuccess(AttachmentDownloadResult result) {
+    if (result.savedToGallery) {
+      _showMessage('服务详情.图片已保存到系统相册'.tr());
+      return;
+    }
+    final String savePath = (result.localPath ?? '').trim();
+    _showMessage(
+      savePath.isEmpty ? '服务详情.已下载到本地'.tr() : '${'服务详情.已下载到本地'.tr()}\n$savePath',
+    );
+  }
+
   /// 使用页面上下文打开样例附件预览，避免在弹窗子上下文里直接做路由跳转。
   Future<void> _previewSampleFile(_ServiceSampleFileData file) async {
     final String fileUrl = file.fileUrl.trim();
@@ -958,48 +953,34 @@ class _VisaPackageDetailScaffoldState
     );
 
     try {
-      final Directory directory = await _resolveDownloadDirectory();
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
       final String displayName = _materialDisplayName(material);
       final String extension = _materialFileExtension(material);
       final String normalizedName =
           displayName.contains('.') || extension.isEmpty
           ? displayName
           : '$displayName$extension';
-      final String sanitizedName = _sanitizeFileName(normalizedName);
-      String savePath = '${directory.path}/$sanitizedName';
-      if (File(savePath).existsSync()) {
-        final String timestamp = DateTime.now().millisecondsSinceEpoch
-            .toString();
-        final int nameDotIndex = sanitizedName.lastIndexOf('.');
-        final String uniqueName = nameDotIndex > 0
-            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
-            : '${sanitizedName}_$timestamp';
-        savePath = '${directory.path}/$uniqueName';
-      }
-
-      await dio.download(
-        fileUrl,
-        savePath,
-        options: Options(
-          responseType: ResponseType.bytes,
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-        deleteOnError: true,
+      final AttachmentDownloadResult result = await AttachmentDownloadService.save(
+        sourcePath: fileUrl,
+        fileName: normalizedName,
+        isImage:
+            UploadPickerUtils.isImagePath(fileUrl) ||
+            UploadPickerUtils.isImagePath(displayName),
+        dio: dio,
       );
 
       if (!mounted) {
         return;
       }
-
-      final OpenResult openResult = await OpenFilex.open(savePath);
-      if (openResult.type != ResultType.done) {
-        final String message = openResult.message.trim();
-        _showMessage(message.isEmpty ? '服务详情.文件打开失败'.tr() : message);
+      if (Platform.isIOS && !result.savedToGallery) {
+        final String savePath = result.localPath ?? '';
+        if (savePath.isEmpty) {
+          _showMessage('服务详情.文件下载失败'.tr());
+          return;
+        }
+        await _presentIosSavePanel(savePath: savePath, fileName: normalizedName);
+        return;
       }
+      _showDownloadSuccess(result);
     } on DioException {
       if (!mounted) {
         return;
@@ -1009,7 +990,11 @@ class _VisaPackageDetailScaffoldState
       if (!mounted) {
         return;
       }
-      _showMessage(_resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()));
+      _showMessage(
+        error is AttachmentDownloadException
+            ? _resolveAttachmentDownloadErrorMessage(error)
+            : _resolveErrorMessage(error, fallback: '服务详情.文件下载失败'.tr()),
+      );
     } finally {
       dio.close(force: true);
       if (mounted) {
