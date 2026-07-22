@@ -246,8 +246,11 @@ class PostJobController extends Notifier<PostJobState> {
     );
   }
 
-  void saveDraft() {
-    _emitFeedback('岗位发布.草稿已保存'.tr());
+  Future<void> saveDraft(
+    PostJobFormDraft draft, {
+    int? editingJobId,
+  }) async {
+    await _submit(draft, isDraft: true, editingJobId: editingJobId);
   }
 
   void clearFeedback() {
@@ -255,13 +258,26 @@ class PostJobController extends Notifier<PostJobState> {
   }
 
   Future<void> publish(PostJobFormDraft draft, {int? editingJobId}) async {
+    await _submit(draft, isDraft: false, editingJobId: editingJobId);
+  }
+
+  Future<void> _submit(
+    PostJobFormDraft draft, {
+    required bool isDraft,
+    int? editingJobId,
+  }) async {
     if (state.isPublishing) {
       return;
     }
 
-    _logPublishValidationStart(draft: draft, editingJobId: editingJobId);
+    _logPublishValidationStart(
+      draft: draft,
+      isDraft: isDraft,
+      editingJobId: editingJobId,
+    );
     final CreateJobBO? request = _buildPublishRequest(
       draft,
+      isDraft: isDraft,
       editingJobId: editingJobId,
     );
     if (request == null) {
@@ -269,7 +285,7 @@ class PostJobController extends Notifier<PostJobState> {
     }
 
     state = state.copyWith(isPublishing: true);
-    _logPublishRequestStart(editingJobId: editingJobId);
+    _logPublishRequestStart(isDraft: isDraft, editingJobId: editingJobId);
 
     try {
       if (editingJobId == null) {
@@ -284,11 +300,14 @@ class PostJobController extends Notifier<PostJobState> {
         publishSuccessId: state.publishSuccessId + 1,
       );
       _emitFeedback(
-        editingJobId == null ? '岗位发布.岗位发布成功'.tr() : '岗位发布.岗位更新成功'.tr(),
+        editingJobId == null
+            ? (isDraft ? '岗位发布.草稿已保存'.tr() : '岗位发布.岗位发布成功'.tr())
+            : (isDraft ? '岗位发布.草稿已更新'.tr() : '岗位发布.岗位更新成功'.tr()),
       );
     } catch (error, stackTrace) {
       state = state.copyWith(isPublishing: false);
       _logPublishRequestFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         error: error,
         stackTrace: stackTrace,
@@ -297,8 +316,8 @@ class PostJobController extends Notifier<PostJobState> {
         ApiErrorFeedback.resolveMessage(
           error,
           fallback: editingJobId == null
-              ? '岗位发布.岗位发布失败'.tr()
-              : '岗位发布.岗位更新失败'.tr(),
+              ? (isDraft ? '岗位发布.草稿保存失败'.tr() : '岗位发布.岗位发布失败'.tr())
+              : (isDraft ? '岗位发布.草稿更新失败'.tr() : '岗位发布.岗位更新失败'.tr()),
         ),
         isError: true,
       );
@@ -392,11 +411,13 @@ class PostJobController extends Notifier<PostJobState> {
   /// 构建发布请求，并在校验失败时直接输出结构化失败日志与可展示提示。
   CreateJobBO? _buildPublishRequest(
     PostJobFormDraft draft, {
+    required bool isDraft,
     int? editingJobId,
   }) {
     final String title = draft.title.trim();
     if (title.isEmpty) {
       _logPublishValidationFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: 'title_required',
         field: 'title',
@@ -409,6 +430,7 @@ class PostJobController extends Notifier<PostJobState> {
     final String countryCode = _normalizeCountryCode(location.countryText);
     if (countryCode.isEmpty) {
       _logPublishValidationFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: 'country_required',
         field: 'countryOrCity',
@@ -420,6 +442,7 @@ class PostJobController extends Notifier<PostJobState> {
     final int? headcount = int.tryParse(draft.headcount.trim());
     if (headcount == null || headcount <= 0) {
       _logPublishValidationFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: 'headcount_invalid',
         field: 'headcount',
@@ -432,6 +455,7 @@ class PostJobController extends Notifier<PostJobState> {
     final double? salaryMax = double.tryParse(draft.maxSalary.trim());
     if (salaryMin == null || salaryMax == null) {
       _logPublishValidationFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: 'salary_incomplete',
         field: 'salaryRange',
@@ -441,6 +465,7 @@ class PostJobController extends Notifier<PostJobState> {
     }
     if (salaryMin > salaryMax) {
       _logPublishValidationFail(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: 'salary_range_invalid',
         field: 'salaryRange',
@@ -488,7 +513,7 @@ class PostJobController extends Notifier<PostJobState> {
       requirements: requirements,
       benefits: const <String>[],
       description: draft.description.trim(),
-      isDraft: false,
+      isDraft: isDraft,
     );
   }
 
@@ -574,14 +599,16 @@ class PostJobController extends Notifier<PostJobState> {
   /// 记录岗位发布校验开始事件，便于回放一次发布是从哪个模式进入校验流程。
   void _logPublishValidationStart({
     required PostJobFormDraft draft,
+    required bool isDraft,
     required int? editingJobId,
   }) {
     StateLog.transition(
       event: 'POST_JOB_VALIDATE_START',
-      message: '开始校验岗位发布表单',
+      message: isDraft ? '开始校验岗位草稿表单' : '开始校验岗位发布表单',
       result: AppLogResult.pending,
       context: _buildPublishLogContext(
         draft: draft,
+        isDraft: isDraft,
         editingJobId: editingJobId,
       ),
     );
@@ -589,16 +616,18 @@ class PostJobController extends Notifier<PostJobState> {
 
   /// 记录岗位发布校验失败事件，只保留失败原因和字段名等安全上下文。
   void _logPublishValidationFail({
+    required bool isDraft,
     required int? editingJobId,
     required String reason,
     required String field,
   }) {
     StateLog.transition(
       event: 'POST_JOB_VALIDATE_FAIL',
-      message: '岗位发布表单校验失败',
+      message: isDraft ? '岗位草稿表单校验失败' : '岗位发布表单校验失败',
       level: AppLogLevel.warn,
       result: AppLogResult.fail,
       context: _buildPublishLogContext(
+        isDraft: isDraft,
         editingJobId: editingJobId,
         reason: reason,
         field: field,
@@ -607,27 +636,41 @@ class PostJobController extends Notifier<PostJobState> {
   }
 
   /// 记录岗位发布请求开始事件，确保后续请求成功或失败都能挂到同一条链路上。
-  void _logPublishRequestStart({required int? editingJobId}) {
+  void _logPublishRequestStart({
+    required bool isDraft,
+    required int? editingJobId,
+  }) {
     StateLog.transition(
       event: 'POST_JOB_SUBMIT_REQUEST_START',
-      message: editingJobId == null ? '开始请求岗位发布接口' : '开始请求岗位更新接口',
+      message: editingJobId == null
+          ? (isDraft ? '开始请求岗位草稿保存接口' : '开始请求岗位发布接口')
+          : (isDraft ? '开始请求岗位草稿更新接口' : '开始请求岗位更新接口'),
       result: AppLogResult.pending,
-      context: _buildPublishLogContext(editingJobId: editingJobId),
+      context: _buildPublishLogContext(
+        isDraft: isDraft,
+        editingJobId: editingJobId,
+      ),
     );
   }
 
   /// 记录岗位发布请求失败事件，保留编辑态与异常信息方便本地排障。
   void _logPublishRequestFail({
+    required bool isDraft,
     required int? editingJobId,
     required Object error,
     required StackTrace stackTrace,
   }) {
     StateLog.transition(
       event: 'POST_JOB_SUBMIT_REQUEST_FAIL',
-      message: editingJobId == null ? '岗位发布请求失败' : '岗位更新请求失败',
+      message: editingJobId == null
+          ? (isDraft ? '岗位草稿保存请求失败' : '岗位发布请求失败')
+          : (isDraft ? '岗位草稿更新请求失败' : '岗位更新请求失败'),
       level: AppLogLevel.error,
       result: AppLogResult.fail,
-      context: _buildPublishLogContext(editingJobId: editingJobId),
+      context: _buildPublishLogContext(
+        isDraft: isDraft,
+        editingJobId: editingJobId,
+      ),
       error: error,
       stackTrace: stackTrace,
     );
@@ -636,6 +679,7 @@ class PostJobController extends Notifier<PostJobState> {
   /// 统一构建岗位发布日志上下文，只输出排障所需且不含表单原文的安全字段。
   Map<String, Object?> _buildPublishLogContext({
     PostJobFormDraft? draft,
+    required bool isDraft,
     required int? editingJobId,
     String? reason,
     String? field,
@@ -644,6 +688,7 @@ class PostJobController extends Notifier<PostJobState> {
     return <String, Object?>{
       'mode': isEdit ? 'edit' : 'create',
       'isEdit': isEdit,
+      'submitType': isDraft ? 'draft' : 'publish',
       if (editingJobId != null) 'editingJobId': editingJobId,
       'selectedJobType': state.selectedJobType,
       'salaryUnit': state.selectedSalaryUnit,

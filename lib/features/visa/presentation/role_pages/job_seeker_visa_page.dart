@@ -336,7 +336,7 @@ class _VisaTabRow extends StatelessWidget {
     tr('签证页.德国签证'),
     tr('签证页.法国签证'),
     tr('签证页.意大利签证'),
-    tr('签证页.英国推荐'),
+    tr('签证页.英国签证'),
   ];
 
   @override
