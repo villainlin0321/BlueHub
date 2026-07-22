@@ -1901,7 +1901,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return;
     }
     if (detail.materials.isEmpty) {
-      _showMessage('暂无可驳回材料');
+      _showMessage('订单.暂无可驳回材料'.tr());
       return;
     }
     final _RejectReasonSubmitResult? result = await _showRejectReasonDialog(
@@ -3078,7 +3078,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
 
   void _handleConfirm() {
     if (!_hasAnyReason) {
-      AppToast.show('至少选择一项填写');
+      AppToast.show('订单.至少选择一项填写'.tr());
       return;
     }
     final List<OrderMaterialRejectionBO> materialRejections =
@@ -3183,7 +3183,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '至少填写一项驳回原因，客户将收到通知并重新上传材料',
+                              '订单.驳回说明'.tr(),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: const Color(0xFF096DD9),
                                 fontSize: 12,
@@ -3329,7 +3329,7 @@ class _RejectReasonMaterialCard extends StatelessWidget {
                   isCollapsed: true,
                   border: InputBorder.none,
                   counterText: '',
-                  hintText: '例如：证件首页照片反光…',
+                  hintText: '订单.驳回原因示例'.tr(),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF8C8C8C),
                     fontSize: 14,
