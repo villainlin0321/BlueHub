@@ -13,6 +13,10 @@ import '../../../shared/widgets/app_dialog.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../auth/application/auth_role_mapper.dart';
+import '../../message/application/chat/chat_page_args.dart';
+import '../../messages/data/message_models.dart';
+import '../../messages/data/message_providers.dart';
 import '../../me/data/resume_providers.dart';
 import '../application/company_applications/company_application_list_state.dart';
 import '../application/company_applications/company_application_lists_controller.dart';
@@ -267,6 +271,8 @@ class _CompanyApplicationTabViewState
     controlFinishLoad: true,
   );
 
+  bool get _useInviteInterviewSecondaryAction => false;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -405,7 +411,11 @@ class _CompanyApplicationTabViewState
   Future<void> _handleSecondaryAction(ApplicationVO item) async {
     switch (widget.tab) {
       case _CompanyApplicationTab.pending:
-        await _handleInviteInterview(item);
+        if (_useInviteInterviewSecondaryAction) {
+          await _handleInviteInterview(item);
+        } else {
+          await _handleSayHello(item);
+        }
         return;
       case _CompanyApplicationTab.invited:
       case _CompanyApplicationTab.rejected:
@@ -421,6 +431,49 @@ class _CompanyApplicationTabViewState
         return _InviteRemarkDialog(actionLabel: actionLabel);
       },
     );
+  }
+
+  /// 待处理候选人点击“打招呼”后，创建或获取会话并进入聊天页。
+  Future<void> _handleSayHello(ApplicationVO item) async {
+    final int targetUserId = item.applicant.userId;
+    if (targetUserId <= 0) {
+      _showErrorToast('招聘.用户信息缺失'.tr());
+      return;
+    }
+
+    try {
+      final Map<String, dynamic> response = await ref
+          .read(messageServiceProvider)
+          .createConversation(
+            request: CreateConversationBO(
+              targetUserId: targetUserId,
+              targetUserRole: workerRoleId,
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+
+      await context.push(
+        RoutePaths.chat,
+        extra: ChatPageArgs(
+          targetUserId: targetUserId,
+          targetUserRole: workerRoleId,
+          nickname: item.applicant.nickname.trim().isEmpty
+              ? '招聘.匿名候选人'.tr()
+              : item.applicant.nickname,
+          avatarUrl: item.applicant.avatarUrl,
+          conversationId: _readConversationId(response),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showErrorToast(
+        ApiErrorFeedback.resolveMessage(error, fallback: '招聘.发起聊天失败'.tr()),
+      );
+    }
   }
 
   /// 应聘管理页待处理候选人点击“邀约面试”后，优先补充简历 ID 再发起邀约。
@@ -527,6 +580,36 @@ class _CompanyApplicationTabViewState
     AppToast.show(message);
   }
 
+  int _readConversationId(Map<String, dynamic> raw) {
+    final Object? direct = raw['conversationId'] ?? raw['conversation_id'];
+    if (direct is int) {
+      return direct;
+    }
+    if (direct is num) {
+      return direct.toInt();
+    }
+    if (direct is String) {
+      return int.tryParse(direct) ?? 0;
+    }
+
+    final Object? nestedConversation = raw['conversation'];
+    if (nestedConversation is Map<String, dynamic>) {
+      final Object? nestedId =
+          nestedConversation['conversationId'] ??
+          nestedConversation['conversation_id'];
+      if (nestedId is int) {
+        return nestedId;
+      }
+      if (nestedId is num) {
+        return nestedId.toInt();
+      }
+      if (nestedId is String) {
+        return int.tryParse(nestedId) ?? 0;
+      }
+    }
+    return 0;
+  }
+
   String _normalizeActionError(Object error, String fallbackName) {
     return ApiErrorFeedback.resolveMessage(
       error,
@@ -549,7 +632,11 @@ class _CompanyApplicationTabViewState
       ageGender: _formatAgeGender(item.applicant.age, item.applicant.gender),
       tags: _buildTags(item.applicant),
       submittedText: _formatSubmittedText(item.submittedAt),
-      secondaryActionLabel: widget.tab.secondaryActionLabel.tr(),
+      secondaryActionLabel:
+          widget.tab == _CompanyApplicationTab.pending &&
+              !_useInviteInterviewSecondaryAction
+          ? '通用.打招呼'.tr()
+          : widget.tab.secondaryActionLabel.tr(),
     );
   }
 

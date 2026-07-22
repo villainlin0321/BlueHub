@@ -16,6 +16,8 @@ import '../../../auth/application/auth_session_provider.dart';
 import '../../../home/data/home_providers.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
+import '../../../shell/application/shell_role_provider.dart';
+import '../../../visa/data/provider_providers.dart';
 import 'message_session_state.dart';
 
 final messageSessionControllerProvider =
@@ -463,6 +465,11 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       final String normalizedBizType = notification.bizType.trim().toLowerCase();
       if (normalizedBizType == 'application' || normalizedBizType == 'order') {
         ref.invalidate(homeDashboardStatsProvider);
+        if (normalizedBizType == 'order' &&
+            ref.read(shellRoleProvider) == ShellRole.serviceProvider) {
+          ref.invalidate(serviceProviderReviewingOrdersProvider);
+          ref.invalidate(providerServiceProvider);
+        }
       }
     } catch (error, stackTrace) {
       _logNotificationSseParseFail(

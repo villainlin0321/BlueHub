@@ -596,7 +596,7 @@ class _JobManageCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const _MoreActionIcon(),
+                // const _MoreActionIcon(),
               ],
             ),
             const SizedBox(height: 6),

@@ -5,12 +5,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_error_feedback.dart';
+import '../../../shared/widgets/app_image_load_failed.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
 import '../../files/data/file_providers.dart';
 import '../data/resume_models.dart';
@@ -1025,37 +1025,10 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
 
   /// 图片地址存在但渲染失败时，展示明确的失败提示。
   Widget _buildImageLoadErrorPlaceholder() {
-    return Container(
+    return const AppImageLoadFailed(
       width: 88,
       height: 88,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          SvgPicture.asset(
-            'assets/images/add_warining.svg',
-            width: 20,
-            height: 20,
-            colorFilter: const ColorFilter.mode(
-              Color(0xFF8C8C8C),
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '加载失败',
-            textAlign: TextAlign.center,
-            style: TestStyle.pingFangRegular(
-              fontSize: 12,
-              color: const Color(0xFF8C8C8C),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: Color(0xFFF5F7FA),
     );
   }
 

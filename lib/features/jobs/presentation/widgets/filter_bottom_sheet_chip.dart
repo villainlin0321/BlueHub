@@ -341,6 +341,7 @@ class _FilterActionBottomSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
+      bottom: false,
       child: Stack(
         children: <Widget>[
           Positioned.fill(

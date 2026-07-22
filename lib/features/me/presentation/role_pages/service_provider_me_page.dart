@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:screenshot/screenshot.dart';
 
 import '../../../../shared/widgets/app_toast.dart';
 
@@ -268,8 +267,7 @@ class _ProviderProfileRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final VisaProviderProfileVO? providerProfile = ref
         .watch(_currentProviderProfileProvider)
-        .asData
-        ?.value;
+        .value;
     final String providerSummary = providerProfile == null
         ? ''
         : '我的.服务商摘要'.tr(
@@ -325,8 +323,7 @@ class _ProviderNameRow extends ConsumerWidget {
     );
     final VisaProviderProfileVO? providerProfile = ref
         .watch(_currentProviderProfileProvider)
-        .asData
-        ?.value;
+        .value;
     final String providerName = providerProfile?.companyName.trim() ?? '';
     final String displayName = providerName.isNotEmpty
         ? providerName
@@ -396,8 +393,7 @@ class _StatCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final VisaProviderProfileVO? providerProfile = ref
         .watch(_currentProviderProfileProvider)
-        .asData
-        ?.value;
+        .value;
     final List<_StatData> stats = _buildProviderStats(providerProfile);
     return Container(
       height: 88,

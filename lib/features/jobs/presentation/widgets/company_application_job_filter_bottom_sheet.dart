@@ -50,7 +50,10 @@ showCompanyApplicationJobFilterBottomSheet({
           );
         },
         onConfirm: () {
-          Navigator.of(context).pop(selectionNotifier.value);
+          Navigator.of(
+            context,
+            rootNavigator: true,
+          ).pop(selectionNotifier.value);
         },
         child: _CompanyApplicationJobFilterSheet(
           selectionNotifier: selectionNotifier,
