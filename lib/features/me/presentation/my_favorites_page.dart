@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../app/router/route_paths.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/services/config_service.dart';
+import '../../../shared/network/services/country_service.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/job_position_card.dart';
 import '../../../shared/widgets/visa_service_card.dart';
@@ -17,6 +18,7 @@ import '../../config/data/config_providers.dart';
 import '../../jobs/presentation/job_apply_helper.dart';
 import '../../jobs/presentation/job_detail_page.dart';
 import '../../service_detail/presentation/service_detail_page.dart';
+import '../data/dictionary_providers.dart';
 import '../data/collection_models.dart' as collection_models;
 import '../data/collection_providers.dart';
 
@@ -656,6 +658,28 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
 
   /// 根据收藏签证加载状态切换列表、空态和错误态。
   Widget _buildServiceTab() {
+    final Map<String, String> countryLabelMap = ref
+        .watch(
+          countrySearchProvider(
+            const CountrySearchQuery(page: 1, pageSize: 300),
+          ),
+        )
+        .maybeWhen(
+          data: (result) => CountryService.buildLocalizedCountryLabelMap(
+            result.list,
+            locale: context.locale,
+          ),
+          orElse: () => const <String, String>{},
+        );
+    final Map<String, String> visaTypeLabelMap = ref
+        .watch(tagDictionaryProvider(TagCategory.visaType))
+        .maybeWhen(
+          data: (List<TagItemVO> tags) => ConfigService.buildLocalizedTagLabelMap(
+            tags,
+            locale: context.locale,
+          ),
+          orElse: () => const <String, String>{},
+        );
     final Widget child;
     if (_isServiceLoading && _serviceItems.isEmpty) {
       child = _buildScrollableState(
@@ -682,6 +706,8 @@ class _MyFavoritesPageState extends ConsumerState<MyFavoritesPage>
         selectedIds: _selectedServiceIds,
         onItemSelectionToggle: _toggleServiceSelection,
         onDeleteItem: _deleteServiceItem,
+        countryLabelMap: countryLabelMap,
+        visaTypeLabelMap: visaTypeLabelMap,
       );
     }
     return EasyRefresh(
@@ -706,6 +732,8 @@ class _FavoriteServiceList extends StatelessWidget {
     required this.selectedIds,
     required this.onItemSelectionToggle,
     required this.onDeleteItem,
+    required this.countryLabelMap,
+    required this.visaTypeLabelMap,
   });
 
   final List<collection_models.VisaPackageVO> items;
@@ -713,6 +741,8 @@ class _FavoriteServiceList extends StatelessWidget {
   final Set<String> selectedIds;
   final ValueChanged<String> onItemSelectionToggle;
   final ValueChanged<int> onDeleteItem;
+  final Map<String, String> countryLabelMap;
+  final Map<String, String> visaTypeLabelMap;
 
   @override
   Widget build(BuildContext context) {
@@ -729,7 +759,11 @@ class _FavoriteServiceList extends StatelessWidget {
           selected: selectedIds.contains(item.packageId.toString()),
           onTap: () => onItemSelectionToggle(item.packageId.toString()),
           onDelete: () => onDeleteItem(item.packageId),
-          child: _FavoriteServiceCard(item: item),
+          child: _FavoriteServiceCard(
+            item: item,
+            countryLabelMap: countryLabelMap,
+            visaTypeLabelMap: visaTypeLabelMap,
+          ),
         );
       },
     );
@@ -877,14 +911,23 @@ class _SelectionIcon extends StatelessWidget {
 }
 
 class _FavoriteServiceCard extends StatelessWidget {
-  const _FavoriteServiceCard({required this.item});
+  const _FavoriteServiceCard({
+    required this.item,
+    required this.countryLabelMap,
+    required this.visaTypeLabelMap,
+  });
 
   final collection_models.VisaPackageVO item;
+  final Map<String, String> countryLabelMap;
+  final Map<String, String> visaTypeLabelMap;
 
   @override
   Widget build(BuildContext context) {
     return VisaServiceCard(
-      data: item.toCardData(),
+      data: item.toCardData(
+        countryLabelMap: countryLabelMap,
+        visaTypeLabelMap: visaTypeLabelMap,
+      ),
       onTap: () => context.push(
         RoutePaths.serviceDetail,
         extra: ServiceDetailPageArgs(
@@ -1174,10 +1217,19 @@ extension on collection_models.JobListVO {
 
 extension on collection_models.VisaPackageVO {
   /// 将收藏签证接口数据映射为签证卡片展示数据。
-  VisaServiceCardData toCardData() {
+  VisaServiceCardData toCardData({
+    required Map<String, String> countryLabelMap,
+    required Map<String, String> visaTypeLabelMap,
+  }) {
     final List<String> tags = <String>[
-      _formatFavoriteCountry(targetCountry),
-      _formatFavoriteVisaType(visaType),
+      _resolveFavoriteCountryLabel(
+        targetCountry,
+        countryLabelMap: countryLabelMap,
+      ),
+      _resolveFavoriteVisaTypeLabel(
+        visaType,
+        visaTypeLabelMap: visaTypeLabelMap,
+      ),
     ].where((String value) => value.isNotEmpty).toList(growable: false);
 
     return VisaServiceCardData(
@@ -1238,24 +1290,27 @@ String _formatFavoritePrice(double price) {
   return price % 1 == 0 ? price.toInt().toString() : price.toStringAsFixed(1);
 }
 
-/// 将收藏签证国家代码转为展示文案。
-String _formatFavoriteCountry(String country) {
-  return switch (country.trim().toUpperCase()) {
-    'DE' => '国家.德国'.tr(),
-    'FR' => '国家.法国'.tr(),
-    'IT' => '国家.意大利'.tr(),
-    _ => country.trim(),
-  };
+/// 通过国家字典解析收藏签证国家展示文案。
+String _resolveFavoriteCountryLabel(
+  String country, {
+  required Map<String, String> countryLabelMap,
+}) {
+  final String normalizedCountry = country.trim().toUpperCase();
+  if (normalizedCountry.isEmpty) {
+    return '';
+  }
+  return countryLabelMap[normalizedCountry] ?? normalizedCountry;
 }
 
 /// 将收藏签证类型代码转为展示文案。
-String _formatFavoriteVisaType(String visaType) {
-  return switch (visaType.trim().toLowerCase()) {
-    'work' => '服务详情.工作签'.tr(),
-    'travel' => '服务详情.旅游签'.tr(),
-    'tech' => '服务详情.技术签'.tr(),
-    'nursing' => '服务详情.护理签'.tr(),
-    'study' => '服务详情.留学签'.tr(),
-    _ => visaType.trim(),
-  };
+String _resolveFavoriteVisaTypeLabel(
+  String visaType, {
+  required Map<String, String> visaTypeLabelMap,
+}) {
+  final String normalizedVisaType = visaType.trim();
+  if (normalizedVisaType.isEmpty) {
+    return '';
+  }
+  return visaTypeLabelMap[normalizedVisaType.toLowerCase()] ??
+      normalizedVisaType;
 }

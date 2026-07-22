@@ -22,6 +22,8 @@ class ServiceDetailShareCard extends StatelessWidget {
     required this.materials,
     required this.verifiedBadgeAsset,
     required this.serviceTagLabelMap,
+    required this.countryLabelMap,
+    required this.visaTypeLabelMap,
   });
 
   static const double shareWidth = 375;
@@ -35,6 +37,8 @@ class ServiceDetailShareCard extends StatelessWidget {
   final List<ServiceMaterialData> materials;
   final String verifiedBadgeAsset;
   final Map<String, String> serviceTagLabelMap;
+  final Map<String, String> countryLabelMap;
+  final Map<String, String> visaTypeLabelMap;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +68,8 @@ class ServiceDetailShareCard extends StatelessWidget {
                 packageDetail: package,
                 provider: provider,
                 verifiedBadgeAsset: verifiedBadgeAsset,
+                countryLabelMap: countryLabelMap,
+                visaTypeLabelMap: visaTypeLabelMap,
               ),
               _SharePackageSection(
                 packages: packages,
@@ -171,6 +177,8 @@ class _ShareSummarySection extends StatelessWidget {
     required this.packageDetail,
     required this.provider,
     required this.verifiedBadgeAsset,
+    required this.countryLabelMap,
+    required this.visaTypeLabelMap,
   });
 
   final String serviceTitle;
@@ -178,6 +186,8 @@ class _ShareSummarySection extends StatelessWidget {
   final VisaPackageVO packageDetail;
   final ProviderVO? provider;
   final String verifiedBadgeAsset;
+  final Map<String, String> countryLabelMap;
+  final Map<String, String> visaTypeLabelMap;
 
   @override
   Widget build(BuildContext context) {
@@ -244,9 +254,17 @@ class _ShareSummarySection extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               _SummaryTag(
-                label: _formatCountryLabel(packageDetail.targetCountry),
+                label: _resolveCountryLabel(
+                  packageDetail.targetCountry,
+                  countryLabelMap: countryLabelMap,
+                ),
               ),
-              _SummaryTag(label: _formatVisaTypeLabel(packageDetail.visaType)),
+              _SummaryTag(
+                label: _resolveVisaTypeLabel(
+                  packageDetail.visaType,
+                  visaTypeLabelMap: visaTypeLabelMap,
+                ),
+              ),
               if (packageDetail.estimatedDays > 0)
                 _SummaryTag(
                   label: '服务详情.天办结'.tr(
@@ -628,25 +646,25 @@ String _formatPrice(double amount, String currency) {
   return AppCurrency.formatAmount(amount, currency);
 }
 
-String _formatCountryLabel(String country) {
-  return switch (country.trim().toUpperCase()) {
-    'DE' => '国家.德国'.tr(),
-    'FR' => '国家.法国'.tr(),
-    'IT' => '国家.意大利'.tr(),
-    'ES' => '国家.西班牙'.tr(),
-    'NL' => '国家.荷兰'.tr(),
-    'BE' => '国家.比利时'.tr(),
-    _ => country.trim().isEmpty ? '国家.签证'.tr() : country.trim().toUpperCase(),
-  };
+String _resolveCountryLabel(
+  String country, {
+  required Map<String, String> countryLabelMap,
+}) {
+  final String normalizedCountry = country.trim().toUpperCase();
+  if (normalizedCountry.isEmpty) {
+    return '国家.签证'.tr();
+  }
+  return countryLabelMap[normalizedCountry] ?? normalizedCountry;
 }
 
-String _formatVisaTypeLabel(String visaType) {
-  return switch (visaType.trim().toLowerCase()) {
-    'work' => '服务详情.工作签'.tr(),
-    'travel' => '服务详情.旅游签'.tr(),
-    'tech' => '服务详情.技术签'.tr(),
-    'nursing' => '服务详情.护理签'.tr(),
-    'study' => '服务详情.留学签'.tr(),
-    _ => visaType.trim().isEmpty ? '服务详情.签证服务'.tr() : visaType.trim(),
-  };
+String _resolveVisaTypeLabel(
+  String visaType, {
+  required Map<String, String> visaTypeLabelMap,
+}) {
+  final String normalizedVisaType = visaType.trim();
+  if (normalizedVisaType.isEmpty) {
+    return '服务详情.签证服务'.tr();
+  }
+  return visaTypeLabelMap[normalizedVisaType.toLowerCase()] ??
+      normalizedVisaType;
 }

@@ -128,6 +128,24 @@ class ConfigService {
     return resolveLocalizedTagLabel(matched, locale: locale);
   }
 
+  /// 将标签集合转换为当前语言环境下的 `code -> 展示文案` 映射。
+  static Map<String, String> buildLocalizedTagLabelMap(
+    Iterable<TagItemVO> tags, {
+    required Locale locale,
+  }) {
+    final Map<String, String> labelMap = <String, String>{};
+
+    for (final TagItemVO item in tags) {
+      final String key = _normalizeTagKey(item.tagCode);
+      if (key.isEmpty || labelMap.containsKey(key)) {
+        continue;
+      }
+      labelMap[key] = resolveLocalizedTagLabel(item, locale: locale);
+    }
+
+    return labelMap;
+  }
+
   /// 根据标签分类和值解析展示文案，无法匹配时回退原始值。
   static String resolveTagLabelByCategory({
     required String rawLabel,

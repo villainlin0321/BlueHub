@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/network/models/dictionary_models.dart';
+import '../../../shared/network/services/country_service.dart';
 import '../../../shared/widgets/selectable_options_bottom_sheet.dart';
 import '../data/dictionary_providers.dart';
 
@@ -36,11 +37,10 @@ List<SelectableSheetOption<String>> buildCountrySheetOptions(
 }
 
 Map<String, String> buildCountryLabelMap(List<CountryVO> countries) {
-  return <String, String>{
-    for (final CountryVO item in countries)
-      if (item.countryCode.trim().isNotEmpty && item.nameZh.trim().isNotEmpty)
-        item.countryCode.trim(): item.nameZh.trim(),
-  };
+  return CountryService.buildLocalizedCountryLabelMap(
+    countries,
+    locale: const Locale('zh'),
+  );
 }
 
 String resolveCountryCode(String value, List<CountryVO> countries) {

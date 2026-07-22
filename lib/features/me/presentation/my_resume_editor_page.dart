@@ -16,6 +16,7 @@ import '../../../shared/logging/app_log_scope.dart';
 import '../../auth/application/auth_session_provider.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
+import '../../files/data/file_providers.dart';
 import '../../../shared/network/api_exception.dart';
 import '../../../shared/network/models/dictionary_models.dart';
 import '../../../shared/network/services/config_service.dart';
@@ -151,6 +152,7 @@ class ResumePreviewCertificate {
     required this.title,
     required this.period,
     required this.issuer,
+    this.imageFileId,
     this.localImagePaths = const <String>[],
     this.networkImageUrls = const <String>[],
   });
@@ -158,6 +160,7 @@ class ResumePreviewCertificate {
   final String title;
   final String period;
   final String issuer;
+  final int? imageFileId;
   final List<String> localImagePaths;
   final List<String> networkImageUrls;
 }
@@ -260,6 +263,12 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
     _initialSnapshot = _buildCurrentSnapshot();
     _salaryValueController.addListener(_handleCompletenessFieldChanged);
     _salaryMaxValueController.addListener(_handleCompletenessFieldChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _refreshCertificatePreviewUrls();
+    });
   }
 
   @override
@@ -438,16 +447,74 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
             level: item.level,
             authority: item.issuer,
             issuedAt: item.issuedDate,
-            previewFilePaths:
-                item.imageUrl.isNotEmpty && !_isNetworkPath(item.imageUrl)
-                ? <String>[item.imageUrl]
-                : const <String>[],
-            previewImageUrls: _isNetworkPath(item.imageUrl)
+            imageFileId: item.imageFileId,
+            previewFilePaths: const <String>[],
+            previewImageUrls: item.imageUrl.isNotEmpty
                 ? <String>[item.imageUrl]
                 : const <String>[],
           ),
         )
         .toList();
+  }
+
+  Future<void> _refreshCertificatePreviewUrls() async {
+    final List<_ResumeCertificate> nextCertificates =
+        List<_ResumeCertificate>.of(_certificates);
+    bool hasChanged = false;
+    for (int index = 0; index < nextCertificates.length; index++) {
+      final _ResumeCertificate certificate = nextCertificates[index];
+      if (certificate.previewFilePaths.isNotEmpty ||
+          certificate.imageFileId == null) {
+        continue;
+      }
+      final String currentUrl = _firstNonEmpty(certificate.previewImageUrls);
+      final String? resolvedUrl = await _resolveCertificateImageUrl(
+        certificate.imageFileId!,
+        fallbackUrl: currentUrl,
+      );
+      if (resolvedUrl == null || resolvedUrl == currentUrl) {
+        continue;
+      }
+      nextCertificates[index] = certificate.copyWith(
+        previewImageUrls: <String>[resolvedUrl],
+      );
+      hasChanged = true;
+    }
+    if (!mounted || !hasChanged) {
+      return;
+    }
+    setState(() {
+      _certificates
+        ..clear()
+        ..addAll(nextCertificates);
+    });
+  }
+
+  Future<String?> _resolveCertificateImageUrl(
+    int imageFileId, {
+    String fallbackUrl = '',
+  }) async {
+    try {
+      final String fileUrl = await ref
+          .read(fileServiceProvider)
+          .getFileUrl(fileId: imageFileId);
+      final String normalizedUrl = fileUrl.trim();
+      if (normalizedUrl.isNotEmpty) {
+        return normalizedUrl;
+      }
+    } catch (_) {}
+    final String normalizedFallback = fallbackUrl.trim();
+    return normalizedFallback.isEmpty ? null : normalizedFallback;
+  }
+
+  String _firstNonEmpty(List<String> values) {
+    for (final String value in values) {
+      final String normalizedValue = value.trim();
+      if (normalizedValue.isNotEmpty) {
+        return normalizedValue;
+      }
+    }
+    return '';
   }
 
   /// 构建真实教育经历列表，保留专业、学历与年份。
@@ -1837,11 +1904,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
               level: entry.value.level,
               issuer: entry.value.authority,
               issuedDate: entry.value.issuedAt,
-              imageUrl: entry.value.previewFilePaths.isNotEmpty
-                  ? entry.value.previewFilePaths.first
-                  : entry.value.previewImageUrls.isNotEmpty
-                  ? entry.value.previewImageUrls.first
-                  : '',
+              imageFileId: entry.value.imageFileId,
               sortOrder: entry.key + 1,
             ),
           )
@@ -1917,6 +1980,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
               title: item.title,
               period: item.issuedAt,
               issuer: item.authority,
+              imageFileId: item.imageFileId,
               localImagePaths: List<String>.of(item.previewFilePaths),
               networkImageUrls: List<String>.of(item.previewImageUrls),
             ),
@@ -1962,11 +2026,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
           .toList(growable: false),
       certificates: _certificates
           .map(
-            (_ResumeCertificate item) =>
-                '${item.certId}|${item.title}|'
-                '${item.level}|${item.authority}|${item.issuedAt}|'
-                '${item.previewFilePaths.join(',')}|'
-                '${item.previewImageUrls.join(',')}',
+            (_ResumeCertificate item) => _buildCertificateSnapshotKey(item),
           )
           .toList(growable: false),
       educations: _educations
@@ -1979,6 +2039,13 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
       summary: _selfEvaluation,
       isPublic: _draft.isPublic,
     );
+  }
+
+  String _buildCertificateSnapshotKey(_ResumeCertificate item) {
+    return '${item.certId}|${item.title}|${item.level}|${item.authority}|'
+        '${item.issuedAt}|${item.imageFileId ?? 0}|'
+        '${item.previewFilePaths.join(',')}|'
+        '${item.imageFileId == null ? item.previewImageUrls.join(',') : ''}';
   }
 
   ResumeDraft get _currentDraft {
@@ -2429,6 +2496,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
     return ResumeCertificateFormResult(
       title: item.title,
       issuedAt: _parseSingleMonth(item.issuedAt),
+      imageFileId: item.imageFileId,
       localImagePaths: List<String>.of(item.previewFilePaths),
       networkImageUrls: List<String>.of(item.previewImageUrls),
     );
@@ -2446,6 +2514,7 @@ class _MyResumeEditorPageState extends ConsumerState<MyResumeEditorPage>
       level: level,
       authority: authority.isEmpty ? '我的.技能证书'.tr() : authority,
       issuedAt: result.issuedAt.format(ResumeTimePickerType.singleMonth),
+      imageFileId: result.imageFileId,
       previewFilePaths: List<String>.of(result.localImagePaths),
       previewImageUrls: List<String>.of(result.networkImageUrls),
     );
@@ -2735,6 +2804,7 @@ class _ResumeCertificate {
     required this.level,
     required this.authority,
     required this.issuedAt,
+    this.imageFileId,
     this.previewFilePaths = const <String>[],
     this.previewImageUrls = const <String>[],
   });
@@ -2744,8 +2814,35 @@ class _ResumeCertificate {
   final String level;
   final String authority;
   final String issuedAt;
+  final int? imageFileId;
   final List<String> previewFilePaths;
   final List<String> previewImageUrls;
+
+  _ResumeCertificate copyWith({
+    int? certId,
+    String? title,
+    String? level,
+    String? authority,
+    String? issuedAt,
+    Object? imageFileId = _sentinel,
+    List<String>? previewFilePaths,
+    List<String>? previewImageUrls,
+  }) {
+    return _ResumeCertificate(
+      certId: certId ?? this.certId,
+      title: title ?? this.title,
+      level: level ?? this.level,
+      authority: authority ?? this.authority,
+      issuedAt: issuedAt ?? this.issuedAt,
+      imageFileId: identical(imageFileId, _sentinel)
+          ? this.imageFileId
+          : imageFileId as int?,
+      previewFilePaths: previewFilePaths ?? this.previewFilePaths,
+      previewImageUrls: previewImageUrls ?? this.previewImageUrls,
+    );
+  }
+
+  static const Object _sentinel = Object();
 }
 
 /// 教育经历展示模型。

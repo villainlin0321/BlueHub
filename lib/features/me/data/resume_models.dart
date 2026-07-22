@@ -649,14 +649,6 @@ String? _normalizeOptionalYearMonthValue(String? value) {
   return _normalizeYearMonthValue(trimmed);
 }
 
-String _normalizeUrlValue(String value) {
-  final String trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return trimmed;
-  }
-  return trimmed.replaceAll('`', '').trim();
-}
-
 bool _readBoolByKeys(JsonMap json, List<String> keys, {bool fallback = false}) {
   for (final key in keys) {
     if (json.containsKey(key)) {
@@ -830,7 +822,7 @@ class SkillCertificateBO {
     required this.level,
     required this.issuer,
     required this.issuedDate,
-    required this.imageUrl,
+    required this.imageFileId,
     required this.sortOrder,
   });
 
@@ -839,7 +831,7 @@ class SkillCertificateBO {
   final String level;
   final String issuer;
   final String issuedDate;
-  final String imageUrl;
+  final int? imageFileId;
   final int sortOrder;
 
   factory SkillCertificateBO.fromJson(JsonMap json) {
@@ -849,7 +841,7 @@ class SkillCertificateBO {
       level: readString(json, 'level'),
       issuer: readString(json, 'issuer'),
       issuedDate: readString(json, 'issuedDate'),
-      imageUrl: readString(json, 'imageUrl'),
+      imageFileId: _readNullableIntByKeys(json, const ['imageFileId']),
       sortOrder: readInt(json, 'sortOrder'),
     );
   }
@@ -861,7 +853,7 @@ class SkillCertificateBO {
       'level': level,
       'issuer': issuer,
       'issuedDate': _normalizeYearMonthValue(issuedDate),
-      'imageUrl': _normalizeUrlValue(imageUrl),
+      if (imageFileId != null) 'imageFileId': imageFileId,
       'sortOrder': sortOrder,
     };
   }
@@ -874,6 +866,7 @@ class SkillCertificateVO {
     required this.level,
     required this.issuer,
     required this.issuedDate,
+    required this.imageFileId,
     required this.imageUrl,
   });
 
@@ -882,6 +875,7 @@ class SkillCertificateVO {
   final String level;
   final String issuer;
   final String issuedDate;
+  final int? imageFileId;
   final String imageUrl;
 
   factory SkillCertificateVO.fromJson(JsonMap json) {
@@ -891,6 +885,7 @@ class SkillCertificateVO {
       level: readString(json, 'level'),
       issuer: readString(json, 'issuer'),
       issuedDate: readString(json, 'issuedDate'),
+      imageFileId: _readNullableIntByKeys(json, const ['imageFileId']),
       imageUrl: readString(json, 'imageUrl'),
     );
   }
@@ -902,6 +897,7 @@ class SkillCertificateVO {
       'level': level,
       'issuer': issuer,
       'issuedDate': issuedDate,
+      if (imageFileId != null) 'imageFileId': imageFileId,
       'imageUrl': imageUrl,
     };
   }

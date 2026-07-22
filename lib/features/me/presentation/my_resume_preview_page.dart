@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -11,6 +12,7 @@ import '../../../app/router/route_paths.dart';
 import '../../../shared/models/app_currency.dart';
 import '../../../shared/network/api_error_feedback.dart';
 import '../../../shared/widgets/app_user_avatar.dart';
+import '../../files/data/file_providers.dart';
 import '../data/resume_models.dart';
 import '../data/resume_providers.dart';
 import 'my_resume_editor_page.dart';
@@ -42,8 +44,8 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
 
   /// 空入参时提供一个纯空白快照，避免页面崩溃。
   ResumePreviewArgs get _resolvedArgs {
-    return widget.args ??
-        _remoteArgs ??
+    return _remoteArgs ??
+        widget.args ??
         const ResumePreviewArgs(
           draft: ResumeDraft(),
           avatarUrl: '',
@@ -115,6 +117,14 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.args != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _resolvePreviewCertificateUrls(widget.args!);
+      });
+    }
     if (_shouldLoadByUserId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
@@ -140,11 +150,14 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
       final ResumeVO resume = await ref
           .read(resumeServiceProvider)
           .getResumeByUserId(userId: userId);
+      final ResumePreviewArgs resolvedArgs = await _resolveCertificateUrls(
+        _mapResumeToPreviewArgs(resume),
+      );
       if (!mounted) {
         return;
       }
       setState(() {
-        _remoteArgs = _mapResumeToPreviewArgs(resume);
+        _remoteArgs = resolvedArgs;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -207,6 +220,7 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
               title: item.name.trim(),
               period: item.issuedDate.trim(),
               issuer: item.issuer.trim(),
+              imageFileId: item.imageFileId,
               networkImageUrls: item.imageUrl.trim().isEmpty
                   ? const <String>[]
                   : <String>[item.imageUrl.trim()],
@@ -223,6 +237,97 @@ class _MyResumePreviewPageState extends ConsumerState<MyResumePreviewPage> {
           )
           .toList(growable: false),
     );
+  }
+
+  Future<void> _resolvePreviewCertificateUrls(ResumePreviewArgs args) async {
+    final ResumePreviewArgs resolvedArgs = await _resolveCertificateUrls(args);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _remoteArgs = resolvedArgs;
+    });
+  }
+
+  Future<ResumePreviewArgs> _resolveCertificateUrls(ResumePreviewArgs args) async {
+    bool hasChanged = false;
+    final List<ResumePreviewCertificate> resolvedCertificates =
+        <ResumePreviewCertificate>[];
+    for (final ResumePreviewCertificate certificate in args.certificates) {
+      final ResumePreviewCertificate resolvedCertificate =
+          await _resolveCertificateUrlForItem(certificate);
+      if (!_sameCertificateUrls(certificate, resolvedCertificate)) {
+        hasChanged = true;
+      }
+      resolvedCertificates.add(resolvedCertificate);
+    }
+    if (!hasChanged) {
+      return args;
+    }
+    return ResumePreviewArgs(
+      draft: args.draft,
+      avatarUrl: args.avatarUrl,
+      positions: args.positions,
+      countries: args.countries,
+      languages: args.languages,
+      experiences: args.experiences,
+      certificates: resolvedCertificates,
+      educations: args.educations,
+    );
+  }
+
+  Future<ResumePreviewCertificate> _resolveCertificateUrlForItem(
+    ResumePreviewCertificate certificate,
+  ) async {
+    if (certificate.localImagePaths.isNotEmpty || certificate.imageFileId == null) {
+      return certificate;
+    }
+    final String fallbackUrl = _firstNonEmpty(certificate.networkImageUrls);
+    try {
+      final String fileUrl = await ref
+          .read(fileServiceProvider)
+          .getFileUrl(fileId: certificate.imageFileId!);
+      final String normalizedUrl = fileUrl.trim();
+      if (normalizedUrl.isNotEmpty) {
+        return ResumePreviewCertificate(
+          title: certificate.title,
+          period: certificate.period,
+          issuer: certificate.issuer,
+          imageFileId: certificate.imageFileId,
+          localImagePaths: certificate.localImagePaths,
+          networkImageUrls: <String>[normalizedUrl],
+        );
+      }
+    } catch (_) {}
+    if (fallbackUrl.isEmpty) {
+      return certificate;
+    }
+    return ResumePreviewCertificate(
+      title: certificate.title,
+      period: certificate.period,
+      issuer: certificate.issuer,
+      imageFileId: certificate.imageFileId,
+      localImagePaths: certificate.localImagePaths,
+      networkImageUrls: <String>[fallbackUrl],
+    );
+  }
+
+  bool _sameCertificateUrls(
+    ResumePreviewCertificate previous,
+    ResumePreviewCertificate next,
+  ) {
+    return listEquals(previous.localImagePaths, next.localImagePaths) &&
+        listEquals(previous.networkImageUrls, next.networkImageUrls);
+  }
+
+  String _firstNonEmpty(List<String> values) {
+    for (final String value in values) {
+      final String normalizedValue = value.trim();
+      if (normalizedValue.isNotEmpty) {
+        return normalizedValue;
+      }
+    }
+    return '';
   }
 
   List<String> _cleanList(List<String> values) {

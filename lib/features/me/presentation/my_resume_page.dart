@@ -1002,7 +1002,7 @@ extension on ResumeVO {
               level: entry.value.level,
               issuer: entry.value.issuer,
               issuedDate: entry.value.issuedDate,
-              imageUrl: entry.value.imageUrl,
+              imageFileId: entry.value.imageFileId,
               sortOrder: entry.key + 1,
             ),
           )

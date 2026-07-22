@@ -11167,9 +11167,10 @@
             "description": "颁发年月，格式 YYYY-MM",
             "example": "2016-10"
           },
-          "imageUrl": {
-            "type": "string",
-            "description": "证书图片 URL"
+          "imageFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "证书图片文件 ID（关联 es_uploaded_files.file_id）"
           },
           "sortOrder": {
             "type": "integer",
@@ -14788,9 +14789,14 @@
             "type": "string",
             "description": "颁发日期"
           },
+          "imageFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "证书图片文件 ID（回填用）"
+          },
           "imageUrl": {
             "type": "string",
-            "description": "证书图片URL"
+            "description": "证书图片 URL（由 imageFileId 动态解析，展示用）"
           }
         }
       },
@@ -15682,6 +15688,10 @@
           "isCollected": {
             "type": "boolean",
             "description": "是否已收藏（登录用户）"
+          },
+          "status": {
+            "type": "string",
+            "description": "岗位状态：active / inactive 等"
           },
           "publishedAt": {
             "type": "string",
