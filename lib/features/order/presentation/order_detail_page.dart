@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/router/route_paths.dart';
@@ -36,6 +35,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/widgets/sample_file_selection_dialog.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
+import '../../../shared/file/attachment_download_service.dart';
 import '../../../utils/upload_picker_utils.dart';
 import '../application/payment/payment_flow_coordinator.dart';
 import '../data/payment_providers.dart';
@@ -486,6 +486,51 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         orderStatus: detail.statusLabel,
       ),
     );
+  }
+
+  void _handleContactTap() {
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单.客户信息加载中'.tr());
+      return;
+    }
+    final int targetUserId = detail.contactTargetUserId;
+    if (targetUserId <= 0) {
+      _showMessage('订单.客户信息缺失'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: targetUserId,
+        targetUserRole: detail.contactTargetUserRole,
+        nickname: _customerNameFor(detail),
+        avatarUrl: detail.avatarUrl,
+        relatedOrderId: detail.orderId,
+        packageName: _serviceNameFor(detail),
+        orderStatus: detail.statusLabel,
+      ),
+    );
+  }
+
+  String _customerNameFor(VisaOrderVO detail) {
+    final String nickname = detail.nickname.trim();
+    if (nickname.isNotEmpty) {
+      return nickname;
+    }
+    return '订单.订单客户'.tr();
+  }
+
+  String _serviceNameFor(VisaOrderVO detail) {
+    final String packageName = detail.packageName.trim();
+    if (packageName.isNotEmpty) {
+      return packageName;
+    }
+    final String tierName = detail.tierName.trim();
+    if (tierName.isNotEmpty) {
+      return tierName;
+    }
+    return '订单.签证服务'.tr();
   }
 
   List<PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
@@ -1194,69 +1239,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   String _resolveErrorMessage(Object error, {required String fallback}) {
+    if (error is AttachmentDownloadException) {
+      return _resolveAttachmentDownloadErrorMessage(error);
+    }
     return ApiErrorFeedback.resolveMessage(error, fallback: fallback);
-  }
-
-  Future<Directory> _resolveDownloadDirectory() async {
-    final List<Directory> candidates = <Directory>[];
-    if (Platform.isAndroid) {
-      try {
-        final Directory? downloadsDirectory = await getDownloadsDirectory();
-        if (downloadsDirectory != null) {
-          candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
-        }
-      } catch (_) {}
-      try {
-        final Directory documentsDirectory =
-            await getApplicationDocumentsDirectory();
-        candidates.add(Directory('${documentsDirectory.path}/downloads'));
-      } catch (_) {}
-    } else if (Platform.isIOS) {
-      try {
-        final Directory temporaryDirectory = await getTemporaryDirectory();
-        candidates.add(Directory('${temporaryDirectory.path}/downloads'));
-      } catch (_) {}
-    } else {
-      try {
-        final Directory? downloadsDirectory = await getDownloadsDirectory();
-        if (downloadsDirectory != null) {
-          candidates.add(Directory('${downloadsDirectory.path}/BlueHub'));
-        }
-      } catch (_) {}
-      try {
-        final Directory documentsDirectory =
-            await getApplicationDocumentsDirectory();
-        candidates.add(Directory('${documentsDirectory.path}/downloads'));
-      } catch (_) {}
-    }
-
-    final Directory temporaryDirectory = await getTemporaryDirectory();
-    candidates.add(Directory('${temporaryDirectory.path}/downloads'));
-
-    for (final Directory candidate in candidates) {
-      if (await _canWriteToDirectory(candidate)) {
-        return candidate;
-      }
-    }
-    throw Exception('订单.下载目录无访问权限'.tr());
-  }
-
-  Future<bool> _canWriteToDirectory(Directory directory) async {
-    try {
-      if (!directory.existsSync()) {
-        await directory.create(recursive: true);
-      }
-      final File probeFile = File(
-        '${directory.path}/.bluehub_write_test_${DateTime.now().microsecondsSinceEpoch}',
-      );
-      await probeFile.writeAsString('ok', flush: true);
-      if (probeFile.existsSync()) {
-        await probeFile.delete();
-      }
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   String _materialDisplayName(MaterialVO material) {
@@ -1286,14 +1272,22 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     if (type.contains('jpeg') || type.contains('jpg')) {
       return '.jpg';
     }
+    if (type.contains('webp')) {
+      return '.webp';
+    }
+    if (type.contains('gif')) {
+      return '.gif';
+    }
+    if (type.contains('heic')) {
+      return '.heic';
+    }
+    if (type.contains('heif')) {
+      return '.heif';
+    }
     if (type.contains('pdf')) {
       return '.pdf';
     }
     return '';
-  }
-
-  String _sanitizeFileName(String name) {
-    return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
   }
 
   List<MaterialVO> _buildRequirementExampleMaterials(
@@ -1345,6 +1339,15 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     if (lowerUrl.endsWith('.webp')) {
       return 'image/webp';
+    }
+    if (lowerUrl.endsWith('.gif')) {
+      return 'image/gif';
+    }
+    if (lowerUrl.endsWith('.heic')) {
+      return 'image/heic';
+    }
+    if (lowerUrl.endsWith('.heif')) {
+      return 'image/heif';
     }
     if (lowerUrl.endsWith('.pdf')) {
       return 'application/pdf';
@@ -1494,6 +1497,32 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
+  String _resolveAttachmentDownloadErrorMessage(
+    AttachmentDownloadException error,
+  ) {
+    switch (error.type) {
+      case AttachmentDownloadErrorType.fileNotFound:
+        return '订单.文件地址不存在'.tr();
+      case AttachmentDownloadErrorType.noWritableDirectory:
+        return '订单.下载目录无访问权限'.tr();
+      case AttachmentDownloadErrorType.galleryAccessDenied:
+        return '订单.相册权限不足'.tr();
+      case AttachmentDownloadErrorType.gallerySaveFailed:
+        return '订单.保存到系统相册失败'.tr();
+    }
+  }
+
+  void _showDownloadSuccess(AttachmentDownloadResult result) {
+    if (result.savedToGallery) {
+      _showMessage('订单.图片已保存到系统相册'.tr());
+      return;
+    }
+    final String savePath = (result.localPath ?? '').trim();
+    _showMessage(
+      savePath.isEmpty ? '订单.已下载到本地'.tr() : '${'订单.已下载到本地'.tr()}\n$savePath',
+    );
+  }
+
   /// 下载已选文件；远程文件走鉴权下载，本地文件复制到目标目录，统一沉淀到系统文件夹。
   Future<bool> _downloadPickedUploadFile(PickedUploadFile file) async {
     final String downloadKey = _pickedFileDownloadKey(file);
@@ -1521,54 +1550,30 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         : filePath;
     final (Dio dio, bool shouldCloseDio) = _createDownloadDio(downloadUrl);
     try {
-      final Directory directory = await _resolveDownloadDirectory();
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
       final String extension = _pickedFileExtension(file);
       final String normalizedName = file.name.contains('.') || extension.isEmpty
           ? file.name
           : '${file.name}$extension';
-      final String sanitizedName = _sanitizeFileName(normalizedName);
-      String savePath = '${directory.path}/$sanitizedName';
-      if (File(savePath).existsSync()) {
-        final String timestamp = DateTime.now().millisecondsSinceEpoch
-            .toString();
-        final int nameDotIndex = sanitizedName.lastIndexOf('.');
-        final String uniqueName = nameDotIndex > 0
-            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
-            : '${sanitizedName}_$timestamp';
-        savePath = '${directory.path}/$uniqueName';
-      }
-
-      if (remoteFileUrl.isNotEmpty) {
-        await dio.download(
-          remoteFileUrl,
-          savePath,
-          options: Options(
-            responseType: ResponseType.bytes,
-            receiveTimeout: const Duration(seconds: 60),
-          ),
-          deleteOnError: true,
-        );
-      } else {
-        final File localFile = File(filePath);
-        if (!localFile.existsSync()) {
-          _showMessage('订单.文件地址不存在'.tr());
-          return false;
-        }
-        await localFile.copy(savePath);
-      }
+      final AttachmentDownloadResult result = await AttachmentDownloadService.save(
+        sourcePath: downloadUrl,
+        fileName: normalizedName,
+        isImage: file.isImage,
+        dio: remoteFileUrl.isNotEmpty ? dio : null,
+      );
 
       if (!mounted) {
         return false;
       }
-      if (Platform.isIOS) {
-        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
+      if (Platform.isIOS && !result.savedToGallery) {
+        final String savePath = result.localPath ?? '';
+        if (savePath.isEmpty) {
+          _showMessage('订单.文件下载失败'.tr());
+          return false;
+        }
+        await _presentIosSavePanel(savePath: savePath, fileName: normalizedName);
         return true;
       }
-      _showMessage('${'订单.已下载到本地'.tr()}\n$savePath');
+      _showDownloadSuccess(result);
       return true;
     } on DioException {
       if (!mounted) {
@@ -1693,50 +1698,44 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         await EasyLoading.show(maskType: EasyLoadingMaskType.black);
         didShowPageLoading = true;
       }
-      final Directory directory = await _resolveDownloadDirectory();
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
       final String displayName = _materialDisplayName(material);
       final String extension = _materialFileExtension(material);
       final String normalizedName =
           displayName.contains('.') || extension.isEmpty
           ? displayName
           : '$displayName$extension';
-      final String sanitizedName = _sanitizeFileName(normalizedName);
-      String savePath = '${directory.path}/$sanitizedName';
-      if (File(savePath).existsSync()) {
-        final String timestamp = DateTime.now().millisecondsSinceEpoch
-            .toString();
-        final int nameDotIndex = sanitizedName.lastIndexOf('.');
-        final String uniqueName = nameDotIndex > 0
-            ? '${sanitizedName.substring(0, nameDotIndex)}_$timestamp${sanitizedName.substring(nameDotIndex)}'
-            : '${sanitizedName}_$timestamp';
-        savePath = '${directory.path}/$uniqueName';
-      }
-
-      await dio.download(
-        fileUrl,
-        savePath,
-        options: Options(
-          responseType: ResponseType.bytes,
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-        deleteOnError: true,
+      final AttachmentDownloadResult result = await AttachmentDownloadService.save(
+        sourcePath: fileUrl,
+        fileName: normalizedName,
+        isImage: _isImageFileType(material.fileType),
+        dio: dio,
       );
 
       if (!mounted) {
         await dismissPageLoading();
         return false;
       }
-      if (Platform.isIOS && !openAfterDownload) {
+      if (Platform.isIOS && !openAfterDownload && !result.savedToGallery) {
         await dismissPageLoading();
-        await _presentIosSavePanel(savePath: savePath, fileName: sanitizedName);
+        final String savePath = result.localPath ?? '';
+        if (savePath.isEmpty) {
+          _showMessage('订单.文件下载失败'.tr());
+          return false;
+        }
+        await _presentIosSavePanel(savePath: savePath, fileName: normalizedName);
         return true;
       }
       if (openAfterDownload) {
         await dismissPageLoading();
+        if (result.savedToGallery) {
+          _showDownloadSuccess(result);
+          return true;
+        }
+        final String savePath = result.localPath ?? '';
+        if (savePath.isEmpty) {
+          _showMessage('订单.文件下载失败'.tr());
+          return false;
+        }
         final OpenResult openResult = await OpenFilex.open(savePath);
         if (openResult.type != ResultType.done) {
           final String message = openResult.message.trim();
@@ -1746,7 +1745,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return true;
       }
       await dismissPageLoading();
-      _showMessage('${'订单.已下载到本地'.tr()}\n$savePath');
+      _showDownloadSuccess(result);
       return true;
     } on DioException {
       await dismissPageLoading();
@@ -1856,7 +1855,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return;
     }
     if (detail.materials.isEmpty) {
-      _showMessage('暂无可驳回材料');
+      _showMessage('订单.暂无可驳回材料'.tr());
       return;
     }
     final _RejectReasonSubmitResult? result = await _showRejectReasonDialog(
@@ -1918,21 +1917,19 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             color: const Color(0xE6000000),
           ),
         ),
-        actions: isServiceProvider
-            ? const <Widget>[]
-            : <Widget>[
-                TextButton(
-                  onPressed: _handleConsultTap,
-                  child: Text(
-                    '订单.联系商家'.tr(),
-                    style: TestStyle.pingFangRegular(
-                      fontSize: 14,
-                      color: const Color(0xFF262626),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-              ],
+        actions: <Widget>[
+          TextButton(
+            onPressed: isServiceProvider ? _handleContactTap : _handleConsultTap,
+            child: Text(
+              isServiceProvider ? '订单.联系客户'.tr() : '订单.联系商家'.tr(),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: const Color(0xFF262626),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _buildBody(
         detail: detail,
@@ -2999,7 +2996,6 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
   static const int _maxReasonLength = 50;
 
   late final List<_RejectReasonDraftItem> _draftItems;
-  bool _showValidationTip = false;
 
   @override
   void initState() {
@@ -3010,7 +3006,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
             material: material,
             controller: TextEditingController(
               text: _truncateReason((material.rejectReason ?? '').trim()),
-            )..addListener(_handleTextChanged),
+            ),
           ),
         )
         .toList(growable: false);
@@ -3019,7 +3015,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
   @override
   void dispose() {
     for (final _RejectReasonDraftItem item in _draftItems) {
-      item.dispose(_handleTextChanged);
+      item.dispose();
     }
     super.dispose();
   }
@@ -3031,23 +3027,12 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
     return value.substring(0, _maxReasonLength);
   }
 
-  void _handleTextChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      if (_showValidationTip && _hasAnyReason) {
-        _showValidationTip = false;
-      }
-    });
-  }
-
   bool get _hasAnyReason =>
       _draftItems.any((item) => item.controller.text.trim().isNotEmpty);
 
   void _handleConfirm() {
     if (!_hasAnyReason) {
-      setState(() => _showValidationTip = true);
+      AppToast.show('订单.至少选择一项填写'.tr());
       return;
     }
     final List<OrderMaterialRejectionBO> materialRejections =
@@ -3152,7 +3137,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '至少填写一项驳回原因，客户将收到通知并重新上传材料',
+                              '订单.驳回说明'.tr(),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: const Color(0xFF096DD9),
                                 fontSize: 12,
@@ -3165,28 +3150,6 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                       ),
                     ),
                   ),
-                  if (_showValidationTip) ...<Widget>[
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xE645484A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 13,
-                      ),
-                      child: Text(
-                        '至少选择一项填写',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: 14,
-                          height: 14 / 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   Flexible(
                     child: ListView.builder(
@@ -3320,7 +3283,7 @@ class _RejectReasonMaterialCard extends StatelessWidget {
                   isCollapsed: true,
                   border: InputBorder.none,
                   counterText: '',
-                  hintText: '例如：证件首页照片反光…',
+                  hintText: '订单.驳回原因示例'.tr(),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF8C8C8C),
                     fontSize: 14,
@@ -3365,10 +3328,8 @@ class _RejectReasonDraftItem {
   final MaterialVO material;
   final TextEditingController controller;
 
-  void dispose(VoidCallback listener) {
-    controller
-      ..removeListener(listener)
-      ..dispose();
+  void dispose() {
+    controller.dispose();
   }
 }
 
