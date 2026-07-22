@@ -656,6 +656,8 @@
     "驳回说明": "Please fill in the rejection reason. The customer will be notified and asked to upload again.",
     "确认驳回": "Confirm Rejection",
     "驳回原因示例": "Example: The passport first page photo is reflective. Please upload a clearer image.",
+    "至少选择一项填写": "Please fill in at least one item",
+    "暂无可驳回材料": "No rejectable materials available",
     "上传类型": "Upload Type",
     "拍照上传": "Take Photo",
     "本地相册": "Gallery",
