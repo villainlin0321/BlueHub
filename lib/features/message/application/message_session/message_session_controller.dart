@@ -460,7 +460,8 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         return;
       }
       _replaceNotification(notification);
-      if (notification.bizType.trim().toLowerCase() == 'application') {
+      final String normalizedBizType = notification.bizType.trim().toLowerCase();
+      if (normalizedBizType == 'application' || normalizedBizType == 'order') {
         ref.invalidate(homeDashboardStatsProvider);
       }
     } catch (error, stackTrace) {
