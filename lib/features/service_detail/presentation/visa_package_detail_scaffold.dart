@@ -22,6 +22,8 @@ import '../../auth/application/auth_role_mapper.dart';
 import '../../config/data/config_models.dart';
 import '../../config/data/config_providers.dart';
 import '../../home/data/home_providers.dart';
+import '../../order/data/visa_order_models.dart';
+import '../../order/data/visa_order_providers.dart';
 import '../../../shared/network/services/config_service.dart';
 import '../../../shared/presentation/attachment_preview_page.dart';
 import '../../../shared/ui/app_colors.dart';
@@ -96,6 +98,7 @@ class _VisaPackageDetailScaffoldState
   int? _initialReviewTotalCount;
   int? _initialReviewTotalProviderId;
   bool _isCollecting = false;
+  bool _isApplying = false;
   bool _showCollapsedTitle = false;
   bool? _isCollectedOverride;
   final Set<String> _downloadingMaterialUrls = <String>{};
@@ -213,10 +216,13 @@ class _VisaPackageDetailScaffoldState
                       );
                     },
                     onConsultTap: () => _handleConsultTap(provider),
-                    onApplyTap: () => _showApplyBottomSheet(
-                      serviceTitle: package.name,
-                      package: selectedPackage,
-                    ),
+                    onApplyTap: _isApplying
+                        ? null
+                        : () {
+                            _handleApplyTap(
+                              package: selectedPackage,
+                            );
+                          },
                   ),
             body: NotificationListener<ScrollNotification>(
               onNotification: (ScrollNotification notification) {
@@ -416,20 +422,50 @@ class _VisaPackageDetailScaffoldState
     return ((_expandedAppBarHeight - currentHeight) / delta).clamp(0.0, 1.0);
   }
 
-  /// 打开申请弹窗，若没有可选档位则提示用户。
-  void _showApplyBottomSheet({
-    required String serviceTitle,
+  /// 直接创建订单并拉起支付流程，若没有可选档位则提示用户。
+  Future<void> _handleApplyTap({
     required ServicePackageData? package,
-  }) {
+  }) async {
     if (package == null) {
       AppToast.show('服务详情.当前套餐暂无可申请档位'.tr());
       return;
     }
-    ServiceDetailApplyBottomSheet.show(
-      context: context,
-      serviceTitle: serviceTitle,
-      package: package,
-    );
+    if (_isApplying) {
+      return;
+    }
+    setState(() => _isApplying = true);
+    try {
+      final order = await ref
+          .read(visaOrderServiceProvider)
+          .createOrder(
+            request: CreateVisaOrderBO(
+              packageId: package.packageId,
+              tierId: package.tierId,
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      await ServiceDetailConfirmPaymentBottomSheet.show(
+        context: context,
+        amount: package.amount,
+        currency: package.currency,
+        orderId: order.orderId,
+        packageName: package.title,
+        parentContext: context,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage(
+        _resolveErrorMessage(error, fallback: '服务详情.创建订单失败'.tr()),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isApplying = false);
+      }
+    }
   }
 
   /// 跳转到聊天页，并携带当前服务商作为聊天对象。
@@ -1585,7 +1621,7 @@ class _BottomActionBar extends StatelessWidget {
   final String consultIconAsset;
   final VoidCallback onReportTap;
   final VoidCallback onConsultTap;
-  final VoidCallback onApplyTap;
+  final VoidCallback? onApplyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1623,7 +1659,7 @@ class _PackageBottomActionBar extends StatelessWidget {
 
   final String consultIconAsset;
   final VoidCallback onConsultTap;
-  final VoidCallback onApplyTap;
+  final VoidCallback? onApplyTap;
 
   @override
   Widget build(BuildContext context) {
