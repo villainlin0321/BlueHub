@@ -1747,17 +1747,10 @@ class _JobsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: AppEmptyState(
-          message: '招聘.暂无岗位数据'.tr(),
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-        ),
+    return Center(
+      child: AppEmptyState(
+        message: '招聘.暂无岗位数据'.tr(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
       ),
     );
   }
