@@ -488,6 +488,51 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
+  void _handleContactTap() {
+    final VisaOrderVO? detail = _orderDetail;
+    if (detail == null) {
+      _showMessage('订单.客户信息加载中'.tr());
+      return;
+    }
+    final int targetUserId = detail.contactTargetUserId;
+    if (targetUserId <= 0) {
+      _showMessage('订单.客户信息缺失'.tr());
+      return;
+    }
+    context.push(
+      RoutePaths.chat,
+      extra: ChatPageArgs(
+        targetUserId: targetUserId,
+        targetUserRole: detail.contactTargetUserRole,
+        nickname: _customerNameFor(detail),
+        avatarUrl: detail.avatarUrl,
+        relatedOrderId: detail.orderId,
+        packageName: _serviceNameFor(detail),
+        orderStatus: detail.statusLabel,
+      ),
+    );
+  }
+
+  String _customerNameFor(VisaOrderVO detail) {
+    final String nickname = detail.nickname.trim();
+    if (nickname.isNotEmpty) {
+      return nickname;
+    }
+    return '订单.订单客户'.tr();
+  }
+
+  String _serviceNameFor(VisaOrderVO detail) {
+    final String packageName = detail.packageName.trim();
+    if (packageName.isNotEmpty) {
+      return packageName;
+    }
+    final String tierName = detail.tierName.trim();
+    if (tierName.isNotEmpty) {
+      return tierName;
+    }
+    return '订单.签证服务'.tr();
+  }
+
   List<PickedUploadFile> _filesFor(_MaterialRequirement requirement) {
     return _uploadsByRequirement[requirement.id] ?? const <PickedUploadFile>[];
   }
@@ -1918,21 +1963,19 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             color: const Color(0xE6000000),
           ),
         ),
-        actions: isServiceProvider
-            ? const <Widget>[]
-            : <Widget>[
-                TextButton(
-                  onPressed: _handleConsultTap,
-                  child: Text(
-                    '订单.联系商家'.tr(),
-                    style: TestStyle.pingFangRegular(
-                      fontSize: 14,
-                      color: const Color(0xFF262626),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-              ],
+        actions: <Widget>[
+          TextButton(
+            onPressed: isServiceProvider ? _handleContactTap : _handleConsultTap,
+            child: Text(
+              isServiceProvider ? '订单.联系客户'.tr() : '订单.联系商家'.tr(),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: const Color(0xFF262626),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _buildBody(
         detail: detail,
@@ -2999,7 +3042,6 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
   static const int _maxReasonLength = 50;
 
   late final List<_RejectReasonDraftItem> _draftItems;
-  bool _showValidationTip = false;
 
   @override
   void initState() {
@@ -3010,7 +3052,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
             material: material,
             controller: TextEditingController(
               text: _truncateReason((material.rejectReason ?? '').trim()),
-            )..addListener(_handleTextChanged),
+            ),
           ),
         )
         .toList(growable: false);
@@ -3019,7 +3061,7 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
   @override
   void dispose() {
     for (final _RejectReasonDraftItem item in _draftItems) {
-      item.dispose(_handleTextChanged);
+      item.dispose();
     }
     super.dispose();
   }
@@ -3031,23 +3073,12 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
     return value.substring(0, _maxReasonLength);
   }
 
-  void _handleTextChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      if (_showValidationTip && _hasAnyReason) {
-        _showValidationTip = false;
-      }
-    });
-  }
-
   bool get _hasAnyReason =>
       _draftItems.any((item) => item.controller.text.trim().isNotEmpty);
 
   void _handleConfirm() {
     if (!_hasAnyReason) {
-      setState(() => _showValidationTip = true);
+      AppToast.show('至少选择一项填写');
       return;
     }
     final List<OrderMaterialRejectionBO> materialRejections =
@@ -3165,28 +3196,6 @@ class _RejectReasonBottomSheetState extends State<_RejectReasonBottomSheet> {
                       ),
                     ),
                   ),
-                  if (_showValidationTip) ...<Widget>[
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xE645484A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 13,
-                      ),
-                      child: Text(
-                        '至少选择一项填写',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: 14,
-                          height: 14 / 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   Flexible(
                     child: ListView.builder(
@@ -3365,10 +3374,8 @@ class _RejectReasonDraftItem {
   final MaterialVO material;
   final TextEditingController controller;
 
-  void dispose(VoidCallback listener) {
-    controller
-      ..removeListener(listener)
-      ..dispose();
+  void dispose() {
+    controller.dispose();
   }
 }
 
