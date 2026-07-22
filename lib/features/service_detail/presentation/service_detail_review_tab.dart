@@ -317,7 +317,7 @@ class _ReviewCard extends StatelessWidget {
             isExpanded: isExpanded,
             onExpand: onExpand,
           ),
-          if (isExpanded && review.images.isNotEmpty) ...<Widget>[
+          if (review.images.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             _ReviewPhotoRow(photoAssetPaths: review.images),
           ],
