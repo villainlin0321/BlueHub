@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../../shared/widgets/app_image_load_failed.dart';
 import '../../visa/data/provider_models.dart';
 import '../../visa/data/provider_providers.dart';
 
@@ -520,15 +521,10 @@ class _ReviewPhotoRow extends StatelessWidget {
               height: 106,
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) {
-                return Container(
+                return const AppImageLoadFailed(
                   width: 106,
                   height: 106,
-                  color: const Color(0xFFF5F5F5),
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.image_not_supported_outlined,
-                    color: Color(0xFFBFBFBF),
-                  ),
+                  backgroundColor: Color(0xFFF5F5F5),
                 );
               },
             ),
