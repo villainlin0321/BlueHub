@@ -742,7 +742,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
           onConfirm: () {
             final String? selectedPreset = draftSalaryPresetKey;
             if (selectedPreset?.isNotEmpty == true) {
-              Navigator.of(context).pop(
+              Navigator.of(context, rootNavigator: true).pop(
                 _SalaryFilterSelection(
                   presetKey: selectedPreset,
                   salaryCurrency: draftSalaryCurrency,
@@ -754,7 +754,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
             final String minText = minController.text.trim();
             final String maxText = maxController.text.trim();
             if (minText.isEmpty && maxText.isEmpty) {
-              Navigator.of(context).pop(
+              Navigator.of(context, rootNavigator: true).pop(
                 _SalaryFilterSelection(salaryCurrency: draftSalaryCurrency),
               );
               return;
@@ -771,7 +771,7 @@ class _SalaryBottomSheetChip extends StatelessWidget {
               return;
             }
 
-            Navigator.of(context).pop(
+            Navigator.of(context, rootNavigator: true).pop(
               _SalaryFilterSelection(
                 customMin: min,
                 customMax: max,
@@ -956,7 +956,7 @@ class _CombinedFilterBottomSheetChip extends StatelessWidget {
             if (salarySelection == null) {
               return;
             }
-            Navigator.of(context).pop(
+            Navigator.of(context, rootNavigator: true).pop(
               _CombinedJobFilterSelection(
                 countryCode: draftCountryCode,
                 positionKeyword: draftPositionKeyword,
