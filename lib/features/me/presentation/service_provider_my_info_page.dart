@@ -21,6 +21,7 @@ import 'country_options_bottom_sheet.dart';
 import 'widgets/company_my_info_widgets.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 final _serviceProviderMyInfoProfileProvider =
     FutureProvider.autoDispose<VisaProviderProfileVO>((ref) async {
       final service = ref.watch(providerServiceProvider);
@@ -221,11 +222,9 @@ class _ServiceProviderMyInfoPageState
     VisaProviderProfileVO profile,
     Map<String, String> countryLabelMap,
   ) {
-    final QualificationCertificationDraft draft = QualificationCertificationDraft()
-      ..fillFromProviderProfile(
-        profile,
-        countryLabelMap: countryLabelMap,
-      );
+    final QualificationCertificationDraft draft =
+        QualificationCertificationDraft()
+          ..fillFromProviderProfile(profile, countryLabelMap: countryLabelMap);
     return QualificationCertificationPageArgs(
       role: QualificationCertificationRole.serviceProvider,
       draft: draft,
@@ -433,7 +432,10 @@ class _ServiceProviderMyInfoContent extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               '我的.注意重新提交审核'.tr(),
-              style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 12,
+                color: Color(0xFF8C8C8C),
+              ),
             ),
           ),
         ],
@@ -505,7 +507,10 @@ class _InfoSection extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Text(
               '我的.基础信息'.tr(),
-              style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+              style: TestStyle.pingFangMedium(
+                fontSize: 16,
+                color: Color(0xFF262626),
+              ),
             ),
           ),
           _AvatarRow(
@@ -555,7 +560,10 @@ class _AvatarRow extends StatelessWidget {
           Expanded(
             child: Text(
               '我的.头像'.tr(),
-              style: TestStyle.pingFangRegular(fontSize: 16, color: Color(0xFF262626)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 16,
+                color: Color(0xFF262626),
+              ),
             ),
           ),
           if (resolvedLocalAvatarPath.isNotEmpty)
@@ -645,19 +653,25 @@ class _QualificationSection extends StatelessWidget {
         children: <Widget>[
           Text(
             '我的.材料资质'.tr(),
-            style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+            style: TestStyle.pingFangMedium(
+              fontSize: 16,
+              color: Color(0xFF262626),
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             '我的.身份证'.tr(),
-            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF262626)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: Color(0xFF262626),
+            ),
           ),
           const SizedBox(height: 8),
           Row(
             children: <Widget>[
               Expanded(
                 child: _MaterialPreviewCard(
-                  imageUrl: docs.idCardEmblem?.fileUrl ?? '',
+                  fileId: docs.idCardEmblem?.fileId,
                   placeholderAsset:
                       ServiceProviderMyInfoPage._idCardEmblemPlaceholderAsset,
                   height: 100,
@@ -666,7 +680,7 @@ class _QualificationSection extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _MaterialPreviewCard(
-                  imageUrl: docs.idCardPortrait?.fileUrl ?? '',
+                  fileId: docs.idCardPortrait?.fileId,
                   placeholderAsset:
                       ServiceProviderMyInfoPage._idCardPortraitPlaceholderAsset,
                   height: 100,
@@ -682,7 +696,7 @@ class _QualificationSection extends StatelessWidget {
                 child: _DocumentBlock(
                   label: '我的.营业执照'.tr(),
                   child: _MaterialPreviewCard(
-                    imageUrl: docs.businessLicense?.fileUrl ?? '',
+                    fileId: docs.businessLicense?.fileId,
                     placeholderAsset:
                         ServiceProviderMyInfoPage._licensePlaceholderAsset,
                     height: 110,
@@ -694,7 +708,7 @@ class _QualificationSection extends StatelessWidget {
                 child: _DocumentBlock(
                   label: '我的.特许经验许可'.tr(),
                   child: _MaterialPreviewCard(
-                    imageUrl: docs.specialPermit?.fileUrl ?? '',
+                    fileId: docs.specialPermit?.fileId,
                     placeholderAsset:
                         ServiceProviderMyInfoPage._licensePlaceholderAsset,
                     height: 110,
@@ -734,28 +748,82 @@ class _DocumentBlock extends StatelessWidget {
   }
 }
 
-class _MaterialPreviewCard extends StatelessWidget {
+class _MaterialPreviewCard extends ConsumerStatefulWidget {
   const _MaterialPreviewCard({
-    required this.imageUrl,
+    required this.fileId,
     required this.placeholderAsset,
     required this.height,
   });
 
-  final String imageUrl;
+  final int? fileId;
   final String placeholderAsset;
   final double height;
 
   @override
+  ConsumerState<_MaterialPreviewCard> createState() =>
+      _MaterialPreviewCardState();
+}
+
+class _MaterialPreviewCardState extends ConsumerState<_MaterialPreviewCard> {
+  String _resolvedImageUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImageUrl();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MaterialPreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fileId != widget.fileId) {
+      _resolveImageUrl();
+    }
+  }
+
+  Future<void> _resolveImageUrl() async {
+    final int? fileId = widget.fileId;
+    if (fileId == null || fileId <= 0) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resolvedImageUrl = '';
+      });
+      return;
+    }
+    try {
+      final String fileUrl = await ref
+          .read(fileServiceProvider)
+          .getFileUrl(fileId: fileId);
+      final String normalizedUrl = fileUrl.trim();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resolvedImageUrl = normalizedUrl;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _resolvedImageUrl = '';
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Widget fallback = Image.asset(
-      placeholderAsset,
+      widget.placeholderAsset,
       width: double.infinity,
       height: double.infinity,
       fit: BoxFit.cover,
     );
 
     return Container(
-      height: height,
+      height: widget.height,
       decoration: BoxDecoration(
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(8),
@@ -768,10 +836,10 @@ class _MaterialPreviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: imageUrl.trim().isEmpty
+        child: _resolvedImageUrl.isEmpty
             ? fallback
             : CachedNetworkImage(
-                imageUrl: imageUrl,
+                imageUrl: _resolvedImageUrl,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
@@ -802,7 +870,10 @@ class _ServiceProviderMyInfoErrorView extends StatelessWidget {
           children: <Widget>[
             Text(
               message,
-              style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+              style: TestStyle.pingFangRegular(
+                fontSize: 14,
+                color: Color(0xFF8C8C8C),
+              ),
             ),
             const SizedBox(height: 12),
             TextButton(onPressed: onRetry, child: Text('通用.重试'.tr())),

@@ -15,8 +15,8 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/guarded_pop_scope.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../../files/data/file_providers.dart';
 import 'qualification_certification_flow.dart';
-import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_preview_image.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
@@ -25,12 +25,12 @@ import 'package:europepass/shared/ui/test_style.dart';
 /// 记录第二步表单的关键字段快照，用于判断当前页面是否存在未保存改动。
 class _QualificationStepTwoSnapshot {
   const _QualificationStepTwoSnapshot({
-    required this.businessLicensePath,
-    required this.specialPermitPath,
+    required this.businessLicenseValue,
+    required this.specialPermitValue,
   });
 
-  final String businessLicensePath;
-  final String specialPermitPath;
+  final String businessLicenseValue;
+  final String specialPermitValue;
 
   @override
   bool operator ==(Object other) {
@@ -38,12 +38,12 @@ class _QualificationStepTwoSnapshot {
       return true;
     }
     return other is _QualificationStepTwoSnapshot &&
-        other.businessLicensePath == businessLicensePath &&
-        other.specialPermitPath == specialPermitPath;
+        other.businessLicenseValue == businessLicenseValue &&
+        other.specialPermitValue == specialPermitValue;
   }
 
   @override
-  int get hashCode => Object.hash(businessLicensePath, specialPermitPath);
+  int get hashCode => Object.hash(businessLicenseValue, specialPermitValue);
 }
 
 class QualificationCertificationStepTwoPage extends ConsumerStatefulWidget {
@@ -74,49 +74,117 @@ class _QualificationCertificationStepTwoPageState
   @override
   void initState() {
     super.initState();
-    if (_draft.businessLicenseDoc != null) {
-      final String? previewPath =
-          QualificationPreviewResolver.resolvePreviewPath(
-            _draft.businessLicenseDoc,
-          );
-      if (previewPath != null) {
-        _businessLicenseImage = PickedUploadFile(
-          id: 'qualification-business-license',
-          name: _draft.businessLicenseDoc!.docName,
-          path: previewPath,
-          sourceType: UploadSourceType.gallery,
-          state: UploadItemState.success,
-          isImage: true,
-          sizeLabel: '',
-        );
-      }
-    }
-    if (_draft.specialPermitDoc != null) {
-      final String? previewPath =
-          QualificationPreviewResolver.resolvePreviewPath(
-            _draft.specialPermitDoc,
-          );
-      if (previewPath != null) {
-        _specialPermitImage = PickedUploadFile(
-          id: 'qualification-special-permit',
-          name: _draft.specialPermitDoc!.docName,
-          path: previewPath,
-          sourceType: UploadSourceType.gallery,
-          state: UploadItemState.success,
-          isImage: true,
-          sizeLabel: '',
-        );
-      }
-    }
+    _restoreQualificationImagesFromDraft();
     _initialSnapshot = _buildCurrentSnapshot();
   }
 
   /// 采集当前上传区状态，用于和初始值做快照比对。
   _QualificationStepTwoSnapshot _buildCurrentSnapshot() {
     return _QualificationStepTwoSnapshot(
-      businessLicensePath:
-          _debugBusinessLicensePathForTest ?? _businessLicenseImage?.path ?? '',
-      specialPermitPath: _specialPermitImage?.path ?? '',
+      businessLicenseValue:
+          _debugBusinessLicensePathForTest ??
+          _buildDocumentSnapshotValue(_draft.businessLicenseDoc),
+      specialPermitValue: _buildDocumentSnapshotValue(_draft.specialPermitDoc),
+    );
+  }
+
+  /// 统一返回第二步证照图片的签名值，避免远端 URL 异步解析后被误判为已编辑。
+  String _buildDocumentSnapshotValue(UploadedQualificationDoc? document) {
+    if (document == null) {
+      return '';
+    }
+    final String localPath = document.localPath.trim();
+    if (localPath.isNotEmpty) {
+      return 'local:$localPath';
+    }
+    final int? fileId = document.fileId;
+    if (fileId != null) {
+      return 'remote:$fileId';
+    }
+    return '';
+  }
+
+  /// 初始化第二步证照图片时优先使用本地路径，远端历史图片则通过 fileId 查询最新 URL。
+  Future<void> _restoreQualificationImagesFromDraft() async {
+    await Future.wait<void>(<Future<void>>[
+      _restoreQualificationImage(
+        document: _draft.businessLicenseDoc,
+        imageId: 'qualification-business-license',
+        onResolved: (PickedUploadFile file) => _businessLicenseImage = file,
+      ),
+      _restoreQualificationImage(
+        document: _draft.specialPermitDoc,
+        imageId: 'qualification-special-permit',
+        onResolved: (PickedUploadFile file) => _specialPermitImage = file,
+      ),
+    ]);
+  }
+
+  /// 将草稿中的第二步证照恢复为可预览文件，本地图片直接显示，远端图片按 fileId 查询 URL。
+  Future<void> _restoreQualificationImage({
+    required UploadedQualificationDoc? document,
+    required String imageId,
+    required void Function(PickedUploadFile file) onResolved,
+  }) async {
+    if (document == null) {
+      return;
+    }
+    final String localPath = document.localPath.trim();
+    if (localPath.isNotEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        onResolved(
+          _buildQualificationPickedFile(
+            imageId: imageId,
+            previewPath: localPath,
+            name: document.docName,
+          ),
+        );
+      });
+      return;
+    }
+    final int? fileId = document.fileId;
+    if (fileId == null) {
+      return;
+    }
+    try {
+      final String fileUrl = await ref
+          .read(fileServiceProvider)
+          .getFileUrl(fileId: fileId);
+      final String normalizedUrl = fileUrl.trim();
+      if (!mounted || normalizedUrl.isEmpty) {
+        return;
+      }
+      setState(() {
+        onResolved(
+          _buildQualificationPickedFile(
+            imageId: imageId,
+            previewPath: normalizedUrl,
+            name: document.docName,
+          ),
+        );
+      });
+    } catch (_) {
+      // 单张证照解析失败时忽略，避免影响页面其余内容展示。
+    }
+  }
+
+  /// 统一构造第二步上传卡片的预览文件对象，减少本地与远端回显分支差异。
+  PickedUploadFile _buildQualificationPickedFile({
+    required String imageId,
+    required String previewPath,
+    required String name,
+  }) {
+    return PickedUploadFile(
+      id: imageId,
+      name: name,
+      path: previewPath,
+      sourceType: UploadSourceType.gallery,
+      state: UploadItemState.success,
+      isImage: true,
+      sizeLabel: '',
     );
   }
 
@@ -156,10 +224,7 @@ class _QualificationCertificationStepTwoPageState
     if (_businessLicenseImage == null &&
         (_debugBusinessLicensePathForTest == null ||
             _debugBusinessLicensePathForTest!.isEmpty)) {
-      AppToast.show(
-        '认证流程.请上传营业执照'.tr(),
-        position: AppToastPosition.center,
-      );
+      AppToast.show('认证流程.请上传营业执照'.tr(), position: AppToastPosition.center);
       return false;
     }
     return true;
@@ -597,10 +662,7 @@ class _UploadPlaceholder extends StatelessWidget {
 
 /// 为上传框绘制圆角虚线边框，尽量贴近设计稿中的点状描边效果。
 class _DashedRoundedRectPainter extends CustomPainter {
-  const _DashedRoundedRectPainter({
-    required this.color,
-    required this.radius,
-  });
+  const _DashedRoundedRectPainter({required this.color, required this.radius});
 
   final Color color;
   final double radius;
@@ -634,7 +696,6 @@ class _DashedRoundedRectPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
-    return color != oldDelegate.color ||
-        radius != oldDelegate.radius;
+    return color != oldDelegate.color || radius != oldDelegate.radius;
   }
 }

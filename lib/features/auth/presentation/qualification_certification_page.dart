@@ -12,9 +12,9 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/tap_blank_to_dismiss_keyboard.dart';
 import '../../../shared/widgets/unsaved_changes_exit_guard.dart';
 import '../../../utils/upload_picker_utils.dart';
+import '../../files/data/file_providers.dart';
 import '../../me/presentation/country_options_bottom_sheet.dart';
 import 'qualification_certification_flow.dart';
-import 'qualification_preview_resolver.dart';
 import 'widgets/qualification_preview_image.dart';
 import 'widgets/qualification_progress_stepper.dart';
 
@@ -97,40 +97,7 @@ class _QualificationCertificationPageState
     _selectedCompanyCountryCode = _draft.companyCountryCode.trim().isEmpty
         ? null
         : _draft.companyCountryCode.trim();
-    if (_draft.idCardEmblemDoc != null) {
-      final String? previewPath =
-          QualificationPreviewResolver.resolvePreviewPath(
-            _draft.idCardEmblemDoc,
-          );
-      if (previewPath != null) {
-        _idCardEmblemImage = PickedUploadFile(
-          id: 'qualification-id-emblem',
-          path: previewPath,
-          name: _draft.idCardEmblemDoc!.docName,
-          isImage: true,
-          sizeLabel: '',
-          sourceType: UploadSourceType.gallery,
-          state: UploadItemState.success,
-        );
-      }
-    }
-    if (_draft.idCardPortraitDoc != null) {
-      final String? previewPath =
-          QualificationPreviewResolver.resolvePreviewPath(
-            _draft.idCardPortraitDoc,
-          );
-      if (previewPath != null) {
-        _idCardPortraitImage = PickedUploadFile(
-          id: 'qualification-id-portrait',
-          path: previewPath,
-          name: _draft.idCardPortraitDoc!.docName,
-          isImage: true,
-          sizeLabel: '',
-          sourceType: UploadSourceType.gallery,
-          state: UploadItemState.success,
-        );
-      }
-    }
+    _restoreIdentityImagesFromDraft();
     _companyNameController.addListener(_handleCompanyFormChanged);
     _companyIndustryController.addListener(_handleCompanyFormChanged);
     _companySizeController.addListener(_handleCompanyFormChanged);
@@ -191,10 +158,110 @@ class _QualificationCertificationPageState
       _companyEmailController.text.trim(),
       _selectedCompanyCountry?.trim() ?? '',
       _selectedCompanyCountryCode?.trim() ?? '',
-      _idCardEmblemImage?.path ?? '',
-      _idCardPortraitImage?.path ?? '',
+      _buildIdentitySnapshotValue(_draft.idCardEmblemDoc),
+      _buildIdentitySnapshotValue(_draft.idCardPortraitDoc),
     ];
     return values.join('||');
+  }
+
+  /// 统一返回身份证图片的签名值，避免远端 URL 异步解析后被误判为表单修改。
+  String _buildIdentitySnapshotValue(UploadedQualificationDoc? document) {
+    if (document == null) {
+      return '';
+    }
+    final String localPath = document.localPath.trim();
+    if (localPath.isNotEmpty) {
+      return 'local:$localPath';
+    }
+    final int? fileId = document.fileId;
+    if (fileId != null) {
+      return 'remote:$fileId';
+    }
+    return '';
+  }
+
+  /// 初始化身份证预览图时优先使用本地路径，远端历史图片则通过 fileId 换取最新 URL。
+  Future<void> _restoreIdentityImagesFromDraft() async {
+    await Future.wait<void>(<Future<void>>[
+      _restoreIdentityImage(
+        document: _draft.idCardEmblemDoc,
+        imageId: 'qualification-id-emblem',
+        onResolved: (PickedUploadFile file) => _idCardEmblemImage = file,
+      ),
+      _restoreIdentityImage(
+        document: _draft.idCardPortraitDoc,
+        imageId: 'qualification-id-portrait',
+        onResolved: (PickedUploadFile file) => _idCardPortraitImage = file,
+      ),
+    ]);
+  }
+
+  /// 将草稿中的身份证图片恢复为页面可预览文件，本地图片直接显示，远端图片按 fileId 查询 URL。
+  Future<void> _restoreIdentityImage({
+    required UploadedQualificationDoc? document,
+    required String imageId,
+    required void Function(PickedUploadFile file) onResolved,
+  }) async {
+    if (document == null) {
+      return;
+    }
+    final String localPath = document.localPath.trim();
+    if (localPath.isNotEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        onResolved(
+          _buildIdentityPickedFile(
+            imageId: imageId,
+            previewPath: localPath,
+            name: document.docName,
+          ),
+        );
+      });
+      return;
+    }
+    final int? fileId = document.fileId;
+    if (fileId == null) {
+      return;
+    }
+    try {
+      final String fileUrl = await ref
+          .read(fileServiceProvider)
+          .getFileUrl(fileId: fileId);
+      final String normalizedUrl = fileUrl.trim();
+      if (!mounted || normalizedUrl.isEmpty) {
+        return;
+      }
+      setState(() {
+        onResolved(
+          _buildIdentityPickedFile(
+            imageId: imageId,
+            previewPath: normalizedUrl,
+            name: document.docName,
+          ),
+        );
+      });
+    } catch (_) {
+      // 单张历史图片解析失败时忽略，避免影响页面其余内容展示。
+    }
+  }
+
+  /// 统一构造身份证上传卡片所需的预览文件对象，减少本地与远端回显的分支差异。
+  PickedUploadFile _buildIdentityPickedFile({
+    required String imageId,
+    required String previewPath,
+    required String name,
+  }) {
+    return PickedUploadFile(
+      id: imageId,
+      path: previewPath,
+      name: name,
+      isImage: true,
+      sizeLabel: '',
+      sourceType: UploadSourceType.gallery,
+      state: UploadItemState.success,
+    );
   }
 
   /// 统一同步第一页输入内容到流程草稿，确保后续步骤拿到的是最新状态。
@@ -470,7 +537,7 @@ class _QualificationCertificationPageState
               height: 48,
               child: FilledButton(
                 key: AppTestKeys.actionQualificationStepOneNext,
-                  onPressed: _handleNext,
+                onPressed: _handleNext,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF096DD9),
                   disabledBackgroundColor: const Color(0xFFD9D9D9),
