@@ -66,6 +66,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         );
         if (published == true && mounted) {
           AppToast.show('我的.评价发布成功'.tr());
+          await _loadOrders();
         }
         return;
       case _OrderActionType.contactMerchant:
@@ -540,9 +541,13 @@ class _OrderItem {
           _OrderAction.filled(_OrderActionType.viewProgress, '我的.查看进度'),
         ];
       case _OrderFilter.completed:
-        return const <_OrderAction>[
-          _OrderAction.outline(_OrderActionType.contactMerchant, '订单.联系商家'),
-          _OrderAction.filled(_OrderActionType.goReview, '我的.去评价'),
+        return <_OrderAction>[
+          const _OrderAction.outline(
+            _OrderActionType.contactMerchant,
+            '订单.联系商家',
+          ),
+          if (!order.isReviewed)
+            const _OrderAction.filled(_OrderActionType.goReview, '我的.去评价'),
         ];
       case _OrderFilter.all:
         return const <_OrderAction>[

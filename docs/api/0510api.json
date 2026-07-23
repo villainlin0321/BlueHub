@@ -11883,6 +11883,10 @@
             "type": "string",
             "description": "拒绝原因"
           },
+          "isReviewed": {
+            "type": "boolean",
+            "description": "是否已评价"
+          },
           "latestReject": {
             "$ref": "#/components/schemas/OrderRejectRecordVO",
             "description": "最近一次驳回记录（含单项材料明细），无则为 null"

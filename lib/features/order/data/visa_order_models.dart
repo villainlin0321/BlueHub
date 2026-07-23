@@ -506,6 +506,7 @@ class VisaOrderVO {
     required this.visaDocuments,
     required this.applicant,
     required this.rejectReason,
+    required this.isReviewed,
     required this.latestReject,
     required this.isUrgent,
     required this.createdAt,
@@ -532,6 +533,7 @@ class VisaOrderVO {
   final List<VisaDocVO> visaDocuments;
   final ApplicantInfoVO applicant;
   final String? rejectReason;
+  final bool isReviewed;
   final OrderRejectRecordVO? latestReject;
   final bool isUrgent;
   final String country;
@@ -605,6 +607,7 @@ class VisaOrderVO {
             )
           : ApplicantInfoVO.fromJson(applicantJson),
       rejectReason: _readNullableString(json['rejectReason']),
+      isReviewed: readBool(json, 'isReviewed'),
       latestReject: _readNullableModel<OrderRejectRecordVO>(
         json['latestReject'],
         OrderRejectRecordVO.fromJson,
@@ -643,6 +646,7 @@ class VisaOrderVO {
           .toList(growable: false),
       'applicant': applicant.toJson(),
       'rejectReason': rejectReason,
+      'isReviewed': isReviewed,
       'latestReject': latestReject?.toJson(),
       'isUrgent': isUrgent,
       'country': country,
