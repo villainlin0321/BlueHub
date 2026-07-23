@@ -14,6 +14,7 @@ class PostJobPageView extends StatelessWidget {
     super.key,
     required this.title,
     required this.publishButtonLabel,
+    required this.showSaveDraftAction,
     required this.packageNameController,
     required this.countryController,
     required this.headcountController,
@@ -47,6 +48,7 @@ class PostJobPageView extends StatelessWidget {
 
   final String title;
   final String publishButtonLabel;
+  final bool showSaveDraftAction;
   final TextEditingController packageNameController;
   final TextEditingController countryController;
   final TextEditingController headcountController;
@@ -123,18 +125,19 @@ class PostJobPageView extends StatelessWidget {
         ),
         title: Text(title, style: PostJobPageStyles.navTitle),
         actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: TextButton(
-              onPressed: isPublishing ? null : onSaveDraft,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(44, 32),
-                foregroundColor: PostJobPageStyles.titleText,
-                textStyle: PostJobPageStyles.navAction,
+          if (showSaveDraftAction)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: TextButton(
+                onPressed: isPublishing ? null : onSaveDraft,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 32),
+                  foregroundColor: PostJobPageStyles.titleText,
+                  textStyle: PostJobPageStyles.navAction,
+                ),
+                child: Text('岗位发布.存草稿'.tr()),
               ),
-              child: Text('岗位发布.存草稿'.tr()),
             ),
-          ),
         ],
       ),
       body: TapBlankToDismissKeyboard(

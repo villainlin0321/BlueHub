@@ -393,6 +393,7 @@ class _PostJobPageState extends ConsumerState<PostJobPage>
       child: PostJobPageView(
         title: widget.args.isEdit ? '岗位发布.编辑岗位'.tr() : '岗位发布.发布岗位'.tr(),
         publishButtonLabel: '岗位发布.立即发布'.tr(),
+        showSaveDraftAction: !widget.args.isEdit,
         packageNameController: _packageNameController,
         countryController: _countryController,
         headcountController: _headcountController,
