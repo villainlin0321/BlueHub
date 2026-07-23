@@ -10,8 +10,10 @@ import '../../../shared/network/api_exception.dart';
 import '../../../shared/ui/app_colors.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../auth/application/auth_session_provider.dart';
+import '../../auth/application/auth_user.dart';
 import '../../auth/data/auth_models.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../auth/presentation/widgets/login_phone_view.dart';
 import '../data/user_models.dart';
 import '../data/user_providers.dart';
 
@@ -48,6 +50,7 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
   late final TextEditingController _accountController;
   late final TextEditingController _codeController;
 
+  late String _selectedPhoneCountryCode;
   Timer? _countdownTimer;
   int _resendCountdownSeconds = 0;
   bool _isSendingCode = false;
@@ -64,6 +67,7 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
   void initState() {
     super.initState();
     final user = ref.read(authSessionProvider).user;
+    _selectedPhoneCountryCode = _resolveInitialPhoneCountryCode(user);
     _accountController = TextEditingController(
       text: _isEmailMode ? (user?.email.trim() ?? '') : '',
     );
@@ -87,6 +91,44 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
       return;
     }
     setState(() {});
+  }
+
+  List<LoginRegionOption> _buildRegionOptions(BuildContext context) {
+    return <LoginRegionOption>[
+      LoginRegionOption(label: tr('认证.中国大陆'), code: '+86'),
+      LoginRegionOption(label: tr('认证.中国香港'), code: '+852'),
+      LoginRegionOption(label: tr('认证.中国澳门'), code: '+853'),
+      LoginRegionOption(label: tr('认证.新加坡'), code: '+65'),
+    ];
+  }
+
+  Future<void> _showRegionPicker() async {
+    if (_isEmailMode) {
+      return;
+    }
+    final List<LoginRegionOption> regionOptions = _buildRegionOptions(context);
+    final LoginRegionOption selectedRegion =
+        regionOptions
+            .where(
+              (LoginRegionOption option) => option.code == _phoneCountryCode,
+            )
+            .firstOrNull ??
+        regionOptions.first;
+    final LoginRegionOption? region =
+        await showModalBottomSheet<LoginRegionOption>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (BuildContext context) => RegionPickerSheet(
+            options: regionOptions,
+            selected: selectedRegion,
+          ),
+        );
+    if (region == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _selectedPhoneCountryCode = region.code;
+    });
   }
 
   Future<void> _handleSendCode() async {
@@ -115,15 +157,10 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
         );
         await AppToast.show('认证.已发送邮箱验证码'.tr());
       } else {
-        final String countryCode =
-            ref.read(authSessionProvider).user?.countryCode.trim().isNotEmpty ==
-                true
-            ? ref.read(authSessionProvider).user!.countryCode.trim()
-            : '+86';
         await authService.sendSms(
           request: SendSmsBO(
             phone: _accountController.text.trim(),
-            countryCode: countryCode,
+            countryCode: _phoneCountryCode,
             scene: 'bind',
           ),
         );
@@ -170,15 +207,10 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
           request: BindEmailBO(email: value, code: code),
         );
       } else {
-        final String countryCode =
-            ref.read(authSessionProvider).user?.countryCode.trim().isNotEmpty ==
-                true
-            ? ref.read(authSessionProvider).user!.countryCode.trim()
-            : '+86';
         await userService.bindPhone(
           request: BindPhoneBO(
             phone: value,
-            countryCode: countryCode,
+            countryCode: _phoneCountryCode,
             code: code,
           ),
         );
@@ -282,6 +314,7 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
                 controller: _accountController,
                 hintText: _accountHintText,
                 prefixText: _isEmailMode ? null : _phoneCountryCode,
+                onPrefixTap: _isEmailMode ? null : _showRegionPicker,
                 keyboardType: _isEmailMode
                     ? TextInputType.emailAddress
                     : TextInputType.phone,
@@ -352,8 +385,12 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
       _isEmailMode ? '认证.请输入邮箱'.tr() : '通用.请输入手机号'.tr();
 
   String get _phoneCountryCode {
-    final String countryCode =
-        ref.read(authSessionProvider).user?.countryCode.trim() ?? '';
+    final String countryCode = _selectedPhoneCountryCode.trim();
+    return countryCode.isEmpty ? '+86' : countryCode;
+  }
+
+  String _resolveInitialPhoneCountryCode(AuthUser? user) {
+    final String countryCode = user?.countryCode.trim() ?? '';
     return countryCode.isEmpty ? '+86' : countryCode;
   }
 }
@@ -399,6 +436,7 @@ class _UnderlinedInput extends StatelessWidget {
     required this.keyboardType,
     required this.inputFormatters,
     this.prefixText,
+    this.onPrefixTap,
   });
 
   final Key fieldKey;
@@ -407,6 +445,7 @@ class _UnderlinedInput extends StatelessWidget {
   final TextInputType keyboardType;
   final List<TextInputFormatter> inputFormatters;
   final String? prefixText;
+  final VoidCallback? onPrefixTap;
 
   @override
   Widget build(BuildContext context) {
@@ -416,11 +455,30 @@ class _UnderlinedInput extends StatelessWidget {
         Row(
           children: <Widget>[
             if (normalizedPrefix.isNotEmpty) ...<Widget>[
-              Text(
-                normalizedPrefix,
-                style: TestStyle.pingFangRegular(
-                  fontSize: 16,
-                  color: const Color(0xFF262626),
+              InkWell(
+                onTap: onPrefixTap,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        normalizedPrefix,
+                        style: TestStyle.pingFangRegular(
+                          fontSize: 16,
+                          color: const Color(0xFF262626),
+                        ),
+                      ),
+                      if (onPrefixTap != null) ...<Widget>[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: Color(0xFF595959),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
