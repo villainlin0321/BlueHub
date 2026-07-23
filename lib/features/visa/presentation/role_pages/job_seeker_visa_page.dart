@@ -84,7 +84,7 @@ class _JobSeekerVisaPageState extends ConsumerState<JobSeekerVisaPage> {
       1 => 'de',
       2 => 'fr',
       3 => 'it',
-      4 => 'uk',
+      4 => 'gb',
       _ => 'recommended',
     };
   }
