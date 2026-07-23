@@ -1160,6 +1160,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
+      ref.read(orderRefreshTickProvider.notifier).bump();
       context.pop(true);
     } catch (error) {
       if (!mounted) {
@@ -1222,6 +1223,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       if (!mounted) {
         return;
       }
+      ref.read(orderRefreshTickProvider.notifier).bump();
       context.pop(true);
     } catch (error) {
       if (!mounted) {
@@ -1554,12 +1556,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final String normalizedName = file.name.contains('.') || extension.isEmpty
           ? file.name
           : '${file.name}$extension';
-      final AttachmentDownloadResult result = await AttachmentDownloadService.save(
-        sourcePath: downloadUrl,
-        fileName: normalizedName,
-        isImage: file.isImage,
-        dio: remoteFileUrl.isNotEmpty ? dio : null,
-      );
+      final AttachmentDownloadResult result =
+          await AttachmentDownloadService.save(
+            sourcePath: downloadUrl,
+            fileName: normalizedName,
+            isImage: file.isImage,
+            dio: remoteFileUrl.isNotEmpty ? dio : null,
+          );
 
       if (!mounted) {
         return false;
@@ -1570,7 +1573,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           _showMessage('订单.文件下载失败'.tr());
           return false;
         }
-        await _presentIosSavePanel(savePath: savePath, fileName: normalizedName);
+        await _presentIosSavePanel(
+          savePath: savePath,
+          fileName: normalizedName,
+        );
         return true;
       }
       _showDownloadSuccess(result);
@@ -1704,12 +1710,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           displayName.contains('.') || extension.isEmpty
           ? displayName
           : '$displayName$extension';
-      final AttachmentDownloadResult result = await AttachmentDownloadService.save(
-        sourcePath: fileUrl,
-        fileName: normalizedName,
-        isImage: _isImageFileType(material.fileType),
-        dio: dio,
-      );
+      final AttachmentDownloadResult result =
+          await AttachmentDownloadService.save(
+            sourcePath: fileUrl,
+            fileName: normalizedName,
+            isImage: _isImageFileType(material.fileType),
+            dio: dio,
+          );
 
       if (!mounted) {
         await dismissPageLoading();
@@ -1722,7 +1729,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           _showMessage('订单.文件下载失败'.tr());
           return false;
         }
-        await _presentIosSavePanel(savePath: savePath, fileName: normalizedName);
+        await _presentIosSavePanel(
+          savePath: savePath,
+          fileName: normalizedName,
+        );
         return true;
       }
       if (openAfterDownload) {
@@ -1919,7 +1929,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: isServiceProvider ? _handleContactTap : _handleConsultTap,
+            onPressed: isServiceProvider
+                ? _handleContactTap
+                : _handleConsultTap,
             child: Text(
               isServiceProvider ? '订单.联系客户'.tr() : '订单.联系商家'.tr(),
               style: TestStyle.pingFangRegular(

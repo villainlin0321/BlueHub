@@ -18,6 +18,7 @@ import '../../../shared/network/page_result.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
 import 'package:europepass/shared/ui/test_style.dart';
+
 class MyOrdersPage extends ConsumerStatefulWidget {
   const MyOrdersPage({super.key});
 
@@ -92,16 +93,10 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       case _OrderActionType.uploadMaterials:
       case _OrderActionType.viewProgress:
       case _OrderActionType.viewDetail:
-        final bool? updated = await _openOrderDetail(order.orderId);
-        if (updated == true && mounted) {
-          await _loadOrders();
-        }
+        await _openOrderDetailAndRefresh(order.orderId);
         return;
       case _OrderActionType.goPay:
-        final bool? updated = await _openOrderDetail(order.orderId);
-        if (updated == true && mounted) {
-          await _loadOrders();
-        }
+        await _openOrderDetailAndRefresh(order.orderId);
         return;
     }
   }
@@ -251,6 +246,13 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     return ApiErrorFeedback.resolveMessage(error, fallback: '订单.订单加载失败'.tr());
   }
 
+  Future<void> _openOrderDetailAndRefresh(int orderId) async {
+    final bool? updated = await _openOrderDetail(orderId);
+    if (updated == true && mounted) {
+      await _loadOrders();
+    }
+  }
+
   Future<bool?> _openOrderDetail(int orderId) {
     return context.push<bool>(
       RoutePaths.orderDetail,
@@ -292,7 +294,10 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         ),
         title: Text(
           '我的.我的订单'.tr(),
-          style: TestStyle.pingFangSemibold(fontSize: 17, color: Color(0xE6262626)),
+          style: TestStyle.pingFangSemibold(
+            fontSize: 17,
+            color: Color(0xE6262626),
+          ),
         ),
       ),
       body: Column(
@@ -357,7 +362,8 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
               return _OrderCard(
                 order: visibleOrders[index],
                 onActionTap: _handleActionTap,
-                onTap: () => _openOrderDetail(visibleOrders[index].orderId),
+                onTap: () =>
+                    _openOrderDetailAndRefresh(visibleOrders[index].orderId),
               );
             },
           );
@@ -650,9 +656,12 @@ class _OrderStatusTabs extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     filter.label.tr(),
-                    style: TestStyle.medium(fontSize: 14, color: isSelected
+                    style: TestStyle.medium(
+                      fontSize: 14,
+                      color: isSelected
                           ? const Color(0xFF096DD9)
-                          : const Color(0xFF262626)),
+                          : const Color(0xFF262626),
+                    ),
                   ),
                   const SizedBox(height: 9),
                   Container(
@@ -786,7 +795,10 @@ class _OrderCard extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         order.timeText,
-                        style: TestStyle.regular(fontSize: 12, color: Color(0xFF8C8C8C)),
+                        style: TestStyle.regular(
+                          fontSize: 12,
+                          color: Color(0xFF8C8C8C),
+                        ),
                       ),
                       const Spacer(),
                       if (order.tagLabel != null && order.tagStyle != null)
@@ -805,13 +817,19 @@ class _OrderCard extends StatelessWidget {
                           order.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TestStyle.semibold(fontSize: 16, color: Color(0xFF262626)),
+                          style: TestStyle.semibold(
+                            fontSize: 16,
+                            color: Color(0xFF262626),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         order.price,
-                        style: TestStyle.pingFangMedium(fontSize: 16, color: Color(0xFF262626)),
+                        style: TestStyle.pingFangMedium(
+                          fontSize: 16,
+                          color: Color(0xFF262626),
+                        ),
                       ),
                     ],
                   ),
