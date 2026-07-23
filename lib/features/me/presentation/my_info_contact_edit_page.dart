@@ -65,9 +65,7 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
     super.initState();
     final user = ref.read(authSessionProvider).user;
     _accountController = TextEditingController(
-      text: _isEmailMode
-          ? (user?.email.trim() ?? '')
-          : (user?.phone.trim() ?? ''),
+      text: _isEmailMode ? (user?.email.trim() ?? '') : '',
     );
     _codeController = TextEditingController();
     _accountController.addListener(_handleFieldChanged);
@@ -283,6 +281,7 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
                 fieldKey: const Key('my-info-contact-account-input'),
                 controller: _accountController,
                 hintText: _accountHintText,
+                prefixText: _isEmailMode ? null : _phoneCountryCode,
                 keyboardType: _isEmailMode
                     ? TextInputType.emailAddress
                     : TextInputType.phone,
@@ -351,6 +350,12 @@ class _MyInfoContactEditPageState extends ConsumerState<MyInfoContactEditPage> {
 
   String get _accountHintText =>
       _isEmailMode ? '认证.请输入邮箱'.tr() : '通用.请输入手机号'.tr();
+
+  String get _phoneCountryCode {
+    final String countryCode =
+        ref.read(authSessionProvider).user?.countryCode.trim() ?? '';
+    return countryCode.isEmpty ? '+86' : countryCode;
+  }
 }
 
 class _ContactEditHeader extends StatelessWidget {
@@ -393,6 +398,7 @@ class _UnderlinedInput extends StatelessWidget {
     required this.hintText,
     required this.keyboardType,
     required this.inputFormatters,
+    this.prefixText,
   });
 
   final Key fieldKey;
@@ -400,30 +406,48 @@ class _UnderlinedInput extends StatelessWidget {
   final String hintText;
   final TextInputType keyboardType;
   final List<TextInputFormatter> inputFormatters;
+  final String? prefixText;
 
   @override
   Widget build(BuildContext context) {
+    final String normalizedPrefix = prefixText?.trim() ?? '';
     return Column(
       children: <Widget>[
-        TextField(
-          key: fieldKey,
-          controller: controller,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          cursorColor: AppColors.brand,
-          decoration: InputDecoration(
-            isDense: true,
-            border: InputBorder.none,
-            hintText: hintText,
-            hintStyle: TestStyle.pingFangRegular(
-              fontSize: 16,
-              color: const Color(0xFFBFBFBF),
+        Row(
+          children: <Widget>[
+            if (normalizedPrefix.isNotEmpty) ...<Widget>[
+              Text(
+                normalizedPrefix,
+                style: TestStyle.pingFangRegular(
+                  fontSize: 16,
+                  color: const Color(0xFF262626),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: TextField(
+                key: fieldKey,
+                controller: controller,
+                keyboardType: keyboardType,
+                inputFormatters: inputFormatters,
+                cursorColor: AppColors.brand,
+                decoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  hintText: hintText,
+                  hintStyle: TestStyle.pingFangRegular(
+                    fontSize: 16,
+                    color: const Color(0xFFBFBFBF),
+                  ),
+                ),
+                style: TestStyle.pingFangRegular(
+                  fontSize: 16,
+                  color: const Color(0xFF262626),
+                ),
+              ),
             ),
-          ),
-          style: TestStyle.pingFangRegular(
-            fontSize: 16,
-            color: const Color(0xFF262626),
-          ),
+          ],
         ),
         const Divider(height: 1, thickness: 1, color: Color(0xFFD8D8D8)),
       ],
