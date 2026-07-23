@@ -50,7 +50,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
   double _rating = 5;
   bool _isSubmitting = false;
   bool _isUploadingImages = false;
-  List<String> _uploadedImageUrls = const <String>[];
+  List<UploadedImageValue> _uploadedImages = const <UploadedImageValue>[];
 
   @override
   void initState() {
@@ -96,7 +96,9 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               providerId: widget.args.providerId,
               rating: _rating.round().clamp(1, 5),
               content: _commentController.text.trim(),
-              images: _uploadedImageUrls,
+              imageFileIds: _uploadedImages
+                  .map((UploadedImageValue item) => item.fileId)
+                  .toList(growable: false),
             ),
           );
       if (!mounted) {
@@ -158,8 +160,9 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
               scene: FileScene.review,
               maxImages: 1,
               uploadLabel: '上传.上传图片'.tr(),
-              onChanged: (List<String> imageUrls) {
-                _uploadedImageUrls = imageUrls;
+              onChanged: (_) {},
+              onUploadedChanged: (List<UploadedImageValue> uploadedImages) {
+                _uploadedImages = uploadedImages;
               },
               onUploadingChanged: (bool isUploading) {
                 setState(() {
@@ -178,9 +181,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -295,7 +296,10 @@ class _ReviewTitleRow extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TestStyle.semibold(fontSize: 16, color: const Color(0xFF262626)),
+            style: TestStyle.semibold(
+              fontSize: 16,
+              color: const Color(0xFF262626),
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -322,7 +326,10 @@ class _ReviewInfoRow extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+          style: TestStyle.regular(
+            fontSize: 12,
+            color: const Color(0xFF8C8C8C),
+          ),
         ),
         Flexible(
           child: Text(
@@ -330,7 +337,10 @@ class _ReviewInfoRow extends StatelessWidget {
             textAlign: TextAlign.right,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TestStyle.regular(fontSize: 12, color: const Color(0xFF8C8C8C)),
+            style: TestStyle.regular(
+              fontSize: 12,
+              color: const Color(0xFF8C8C8C),
+            ),
           ),
         ),
       ],
