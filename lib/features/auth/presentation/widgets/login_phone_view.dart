@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../../../shared/legal/agreement_links.dart';
 import '../../../../shared/ui/test_keys.dart';
 import '../../../../shared/ui/app_colors.dart';
+import '../../../../shared/payment/order_payment_config.dart';
 import '../../application/login/login_form_state.dart';
 import 'auth_language_switch.dart';
 
@@ -66,6 +67,9 @@ class LoginPhoneView extends StatelessWidget {
   @override
   /// 构建登录视图，并根据当前全局语言实时切换页面文案。
   Widget build(BuildContext context) {
+    final bool isReviewMode = OrderPaymentConfig.isReviewMode;
+    final bool isPhoneLogin = !isReviewMode && state.isPhoneLogin;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -92,12 +96,13 @@ class LoginPhoneView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 41),
-                  _LoginModeTabs(
-                    isPhoneLogin: state.isPhoneLogin,
-                    onChanged: onLoginModeChanged,
-                  ),
+                  if (!isReviewMode)
+                    _LoginModeTabs(
+                      isPhoneLogin: state.isPhoneLogin,
+                      onChanged: onLoginModeChanged,
+                    ),
                   const SizedBox(height: 32),
-                  if (state.isPhoneLogin)
+                  if (isPhoneLogin)
                     _PhoneInputRow(
                       regionCode: state.regionCode,
                       controller: phoneController,
@@ -113,7 +118,7 @@ class LoginPhoneView extends StatelessWidget {
                     ),
                   const SizedBox(height: 25),
                   _CodeInputRow(
-                    hintText: state.isPhoneLogin
+                    hintText: isPhoneLogin
                         ? '认证.请输入验证码'.tr()
                         : '认证.请输入邮箱验证码'.tr(),
                     controller: codeController,
@@ -231,11 +236,9 @@ class _AgreementSectionState extends State<_AgreementSection> {
           color: const Color(0xFF171A1D),
           fontSize: 12,
         );
-    final TextStyle linkStyle =
-        TestStyle.pingFangRegular(color: AppColors.brand).copyWith(
-          height: 22 / 12,
-          fontSize: 12,
-        );
+    final TextStyle linkStyle = TestStyle.pingFangRegular(
+      color: AppColors.brand,
+    ).copyWith(height: 22 / 12, fontSize: 12);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

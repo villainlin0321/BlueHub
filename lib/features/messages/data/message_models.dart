@@ -383,6 +383,7 @@ int? _readNullableInt(dynamic value) {
 class TargetUserVO {
   const TargetUserVO({
     required this.userId,
+    required this.profileId,
     required this.nickname,
     required this.avatarUrl,
     required this.role,
@@ -390,6 +391,7 @@ class TargetUserVO {
   });
 
   final int userId;
+  final int? profileId;
   final String nickname;
   final String avatarUrl;
   final String role;
@@ -398,6 +400,7 @@ class TargetUserVO {
   factory TargetUserVO.fromJson(JsonMap json) {
     return TargetUserVO(
       userId: readInt(json, 'userId'),
+      profileId: _readNullableInt(json['profileId']),
       nickname: readString(json, 'nickname'),
       avatarUrl: readString(json, 'avatarUrl'),
       role: readString(json, 'role'),
@@ -408,6 +411,7 @@ class TargetUserVO {
   JsonMap toJson() {
     return <String, dynamic>{
       'userId': userId,
+      'profileId': profileId,
       'nickname': nickname,
       'avatarUrl': avatarUrl,
       'role': role,
@@ -417,6 +421,7 @@ class TargetUserVO {
 
   TargetUserVO copyWith({
     int? userId,
+    Object? profileId = _sentinel,
     String? nickname,
     String? avatarUrl,
     String? role,
@@ -424,10 +429,15 @@ class TargetUserVO {
   }) {
     return TargetUserVO(
       userId: userId ?? this.userId,
+      profileId: identical(profileId, _sentinel)
+          ? this.profileId
+          : profileId as int?,
       nickname: nickname ?? this.nickname,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       role: role ?? this.role,
       isOnline: isOnline ?? this.isOnline,
     );
   }
+
+  static const Object _sentinel = Object();
 }

@@ -1,7 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../files/data/file_providers.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_image_load_failed.dart';
 import '../../visa/data/provider_models.dart';
@@ -318,9 +321,13 @@ class _ReviewCard extends StatelessWidget {
             isExpanded: isExpanded,
             onExpand: onExpand,
           ),
-          if (review.images.isNotEmpty) ...<Widget>[
+          if (review.images.isNotEmpty ||
+              review.imageFileIds.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
-            _ReviewPhotoRow(photoAssetPaths: review.images),
+            _ReviewPhotoRow(
+              photoUrls: review.images,
+              photoFileIds: review.imageFileIds,
+            ),
           ],
         ],
       ),
@@ -500,33 +507,136 @@ class _ExpandableReviewText extends StatelessWidget {
   }
 }
 
-class _ReviewPhotoRow extends StatelessWidget {
-  const _ReviewPhotoRow({required this.photoAssetPaths});
+class _ReviewPhotoRow extends ConsumerStatefulWidget {
+  const _ReviewPhotoRow({required this.photoUrls, required this.photoFileIds});
 
-  final List<String> photoAssetPaths;
+  final List<String> photoUrls;
+  final List<int> photoFileIds;
+
+  @override
+  ConsumerState<_ReviewPhotoRow> createState() => _ReviewPhotoRowState();
+}
+
+class _ReviewPhotoRowState extends ConsumerState<_ReviewPhotoRow> {
+  late Future<List<String>> _resolvedPhotoUrlsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolvedPhotoUrlsFuture = _createResolvedPhotoUrlsFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReviewPhotoRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.photoUrls, widget.photoUrls) ||
+        !listEquals(oldWidget.photoFileIds, widget.photoFileIds)) {
+      _resolvedPhotoUrlsFuture = _createResolvedPhotoUrlsFuture();
+    }
+  }
+
+  Future<List<String>> _createResolvedPhotoUrlsFuture() async {
+    if (widget.photoFileIds.isNotEmpty) {
+      final List<String> resolvedUrls = await _resolvePhotoUrlsByFileIds(
+        widget.photoFileIds,
+      );
+      if (resolvedUrls.isNotEmpty) {
+        return resolvedUrls;
+      }
+    }
+    return _normalizePhotoUrls(widget.photoUrls);
+  }
+
+  Future<List<String>> _resolvePhotoUrlsByFileIds(List<int> fileIds) async {
+    final fileService = ref.read(fileServiceProvider);
+    final List<String> resolvedUrls = <String>[];
+    for (final int fileId in fileIds) {
+      try {
+        final String fileUrl = await fileService.getFileUrl(fileId: fileId);
+        final String normalizedUrl = fileUrl.trim();
+        if (normalizedUrl.isNotEmpty) {
+          resolvedUrls.add(normalizedUrl);
+        }
+      } catch (_) {
+        // 单张图片解析失败时忽略，避免影响其余图片展示。
+      }
+    }
+    return resolvedUrls;
+  }
+
+  List<String> _normalizePhotoUrls(List<String> photoUrls) {
+    return photoUrls
+        .map((String url) => url.trim())
+        .where((String url) => url.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<String>>(
+      future: _resolvedPhotoUrlsFuture,
+      builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot) {
+        final List<String> photoUrls = snapshot.data == null
+            ? const <String>[]
+            : snapshot.data!;
+        if (photoUrls.isEmpty &&
+            snapshot.connectionState == ConnectionState.waiting) {
+          return const _ReviewPhotoLoadingRow();
+        }
+        if (photoUrls.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Row(
+          children: List<Widget>.generate(photoUrls.length, (int index) {
+            return Padding(
+              padding: EdgeInsets.only(
+                right: index == photoUrls.length - 1 ? 0 : 12,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: photoUrls[index],
+                  width: 106,
+                  height: 106,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) {
+                    return const AppImageLoadFailed(
+                      width: 106,
+                      height: 106,
+                      backgroundColor: Color(0xFFF5F5F5),
+                    );
+                  },
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
+class _ReviewPhotoLoadingRow extends StatelessWidget {
+  const _ReviewPhotoLoadingRow();
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List<Widget>.generate(photoAssetPaths.length, (index) {
+      children: List<Widget>.generate(1, (int index) {
         return Padding(
-          padding: EdgeInsets.only(
-            right: index == photoAssetPaths.length - 1 ? 0 : 12,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: CachedNetworkImage(
-              imageUrl: photoAssetPaths[index],
-              width: 106,
-              height: 106,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) {
-                return const AppImageLoadFailed(
-                  width: 106,
-                  height: 106,
-                  backgroundColor: Color(0xFFF5F5F5),
-                );
-              },
+          padding: EdgeInsets.only(right: index == 0 ? 0 : 12),
+          child: Container(
+            width: 106,
+            height: 106,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
         );

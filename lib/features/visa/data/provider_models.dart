@@ -317,6 +317,7 @@ class ReviewItemVO {
     required this.rating,
     required this.content,
     required this.images,
+    required this.imageFileIds,
     required this.createdAt,
     required this.isExpanded,
   });
@@ -326,6 +327,7 @@ class ReviewItemVO {
   final int rating;
   final String content;
   final List<String> images;
+  final List<int> imageFileIds;
   final String createdAt;
   final bool isExpanded;
 
@@ -336,6 +338,7 @@ class ReviewItemVO {
       rating: readInt(json, 'rating'),
       content: readString(json, 'content'),
       images: readStringList(json, 'images'),
+      imageFileIds: readIntList(json, 'imageFileIds'),
       createdAt: readString(json, 'createdAt'),
       isExpanded: readBool(json, 'isExpanded'),
     );
@@ -348,6 +351,7 @@ class ReviewItemVO {
       'rating': rating,
       'content': content,
       'images': images,
+      'imageFileIds': imageFileIds,
       'createdAt': createdAt,
       'isExpanded': isExpanded,
     };

@@ -7,6 +7,7 @@ import '../../../../shared/network/api_error_feedback.dart';
 import '../../data/auth_models.dart';
 import '../../data/auth_providers.dart';
 import '../../data/login_account_store.dart';
+import '../../../../shared/payment/order_payment_config.dart';
 import '../auth_session_provider.dart';
 import 'login_form_state.dart';
 
@@ -27,11 +28,13 @@ class LoginFormController extends Notifier<LoginFormState> {
       _sendCodeCountdownTimer?.cancel();
       _sendCodeCountdownTimer = null;
     });
-    return const LoginFormState();
+    return LoginFormState(isPhoneLogin: !OrderPaymentConfig.isReviewMode);
   }
 
   void setLoginMode(bool isPhoneLogin) {
-    state = state.copyWith(isPhoneLogin: isPhoneLogin);
+    state = state.copyWith(
+      isPhoneLogin: OrderPaymentConfig.isReviewMode ? false : isPhoneLogin,
+    );
   }
 
   void setAgreement(bool agreed) {

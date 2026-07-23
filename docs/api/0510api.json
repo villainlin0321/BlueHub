@@ -12092,11 +12092,12 @@
             "type": "string",
             "description": "评价内容"
           },
-          "images": {
+          "imageFileIds": {
             "type": "array",
-            "description": "评价图片列表",
+            "description": "评价图片文件 ID 列表（关联 es_uploaded_files.file_id）",
             "items": {
-              "type": "string"
+              "type": "integer",
+              "format": "int64"
             }
           }
         },
@@ -16620,13 +16621,18 @@
             "format": "int64",
             "description": "用户ID"
           },
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务档案 ID：employer=企业档案 profile_id，visa_provider=服务商档案 profile_id；\n worker 无档案，为 null。前端可据此跳转企业/服务商主页。"
+          },
           "nickname": {
             "type": "string",
-            "description": "昵称"
+            "description": "展示名称：worker=用户昵称；employer/visa_provider=公司名称"
           },
           "avatarUrl": {
             "type": "string",
-            "description": "头像URL"
+            "description": "展示头像：worker=用户头像；employer/visa_provider=公司 Logo"
           },
           "role": {
             "type": "string",

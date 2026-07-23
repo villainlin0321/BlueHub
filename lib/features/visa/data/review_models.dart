@@ -6,14 +6,14 @@ class CreateReviewBO {
     required this.providerId,
     required this.rating,
     required this.content,
-    required this.images,
+    required this.imageFileIds,
   });
 
   final int orderId;
   final int providerId;
   final int rating;
   final String content;
-  final List<String> images;
+  final List<int> imageFileIds;
 
   factory CreateReviewBO.fromJson(JsonMap json) {
     return CreateReviewBO(
@@ -21,7 +21,7 @@ class CreateReviewBO {
       providerId: readInt(json, 'providerId'),
       rating: readInt(json, 'rating'),
       content: readString(json, 'content'),
-      images: readStringList(json, 'images'),
+      imageFileIds: readIntList(json, 'imageFileIds'),
     );
   }
 
@@ -31,7 +31,7 @@ class CreateReviewBO {
       'providerId': providerId,
       'rating': rating,
       'content': content,
-      'images': images,
+      'imageFileIds': imageFileIds,
     };
   }
 }

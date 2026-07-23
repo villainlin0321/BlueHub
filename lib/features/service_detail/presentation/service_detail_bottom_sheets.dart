@@ -3,9 +3,13 @@ import '../../../shared/widgets/app_toast.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/route_paths.dart';
+import '../../../shared/payment/order_payment_config.dart';
 import '../../order/data/visa_order_models.dart';
 import '../../order/data/visa_order_providers.dart';
+import '../../order/presentation/order_detail_page.dart';
 import '../../order/presentation/order_payment_bottom_sheet.dart';
 import '../../../shared/network/api_error_feedback.dart';
 import 'service_detail_package_tab.dart';
@@ -111,6 +115,9 @@ class _ApplyBottomSheetContentState
     final bottomSafeArea = MediaQuery.paddingOf(context).bottom;
     final topSafeArea = MediaQuery.paddingOf(context).top;
     final maxSheetHeight = MediaQuery.sizeOf(context).height - topSafeArea - 12;
+    final submitButtonText = _isSubmitting
+        ? '服务详情.提交中'.tr()
+        : (OrderPaymentConfig.isSkipMode ? '服务详情.去申请'.tr() : '服务详情.去支付'.tr());
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -231,7 +238,7 @@ class _ApplyBottomSheetContentState
                               shadowColor: Colors.transparent,
                             ),
                             child: Text(
-                              _isSubmitting ? '服务详情.提交中'.tr() : '服务详情.去支付'.tr(),
+                              submitButtonText,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -307,20 +314,11 @@ class _ApplyBottomSheetContentState
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!widget.parentContext.mounted) {
-          return;
-        }
-        ServiceDetailConfirmPaymentBottomSheet.show(
-          context: widget.parentContext,
-          amount: widget.package.amount,
-          currency: widget.package.currency,
-          orderId: order.orderId,
-          packageName: widget.package.title,
-          parentContext: widget.parentContext,
-        );
-      });
+      if (OrderPaymentConfig.isSkipMode) {
+        await _handleSkipPaymentFlow(order);
+        return;
+      }
+      _openPaymentBottomSheet(order);
     } catch (error) {
       if (!mounted) {
         return;
@@ -330,6 +328,41 @@ class _ApplyBottomSheetContentState
         _resolveBottomSheetErrorMessage(error, fallback: '服务详情.创建订单失败'.tr()),
       );
     }
+  }
+
+  Future<void> _handleSkipPaymentFlow(VisaOrderVO order) async {
+    await ref.read(visaOrderServiceProvider).payOrder(orderId: order.orderId);
+    if (!mounted) {
+      return;
+    }
+    ref.read(orderRefreshTickProvider.notifier).bump();
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!widget.parentContext.mounted) {
+        return;
+      }
+      widget.parentContext.push(
+        RoutePaths.orderDetail,
+        extra: OrderDetailPageArgs(orderId: order.orderId),
+      );
+    });
+  }
+
+  void _openPaymentBottomSheet(VisaOrderVO order) {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!widget.parentContext.mounted) {
+        return;
+      }
+      ServiceDetailConfirmPaymentBottomSheet.show(
+        context: widget.parentContext,
+        amount: widget.package.amount,
+        currency: widget.package.currency,
+        orderId: order.orderId,
+        packageName: widget.package.title,
+        parentContext: widget.parentContext,
+      );
+    });
   }
 
   void _showMessage(String message) {
