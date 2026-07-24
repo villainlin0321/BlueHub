@@ -42,7 +42,7 @@ class BlacklistController extends Notifier<BlacklistState> {
     await _fetchPage(page: state.currentPage + 1, mode: _FetchMode.loadMore);
   }
 
-  Future<void> removeUser(UserVO user) async {
+  Future<void> removeUser(BlacklistItemVO user) async {
     if (state.removingUserIds.contains(user.userId)) {
       return;
     }
@@ -55,11 +55,15 @@ class BlacklistController extends Notifier<BlacklistState> {
       await ref
           .read(userServiceProvider)
           .manageBlacklist(
-            request: BlacklistBO(targetUserId: user.userId, action: 'remove'),
+            request: BlacklistBO(
+              targetUserId: user.userId,
+              action: 'remove',
+              targetRole: user.role,
+            ),
           );
 
-      final List<UserVO> nextItems = state.items
-          .where((UserVO item) => item.userId != user.userId)
+      final List<BlacklistItemVO> nextItems = state.items
+          .where((BlacklistItemVO item) => item.userId != user.userId)
           .toList(growable: false);
       final Set<int> nextRemovingIds = Set<int>.from(state.removingUserIds)
         ..remove(user.userId);
@@ -94,12 +98,12 @@ class BlacklistController extends Notifier<BlacklistState> {
     }
 
     try {
-      final PageResult<UserVO> result = await ref
+      final PageResult<BlacklistItemVO> result = await ref
           .read(userServiceProvider)
           .getBlacklist(page: page, pageSize: _pageSize);
 
-      final List<UserVO> nextItems = switch (mode) {
-        _FetchMode.loadMore => <UserVO>[...state.items, ...result.list],
+      final List<BlacklistItemVO> nextItems = switch (mode) {
+        _FetchMode.loadMore => <BlacklistItemVO>[...state.items, ...result.list],
         _ => result.list,
       };
 
@@ -119,7 +123,7 @@ class BlacklistController extends Notifier<BlacklistState> {
         state = state.copyWith(
           isLoading: false,
           errorMessage: message,
-          items: const <UserVO>[],
+          items: const <BlacklistItemVO>[],
           currentPage: 0,
           totalCount: 0,
           hasNext: false,

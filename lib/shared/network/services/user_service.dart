@@ -46,17 +46,20 @@ class UserService {
   }
 
   /// 分页获取当前用户的黑名单列表。
-  Future<PageResult<UserVO>> getBlacklist({int? page, int? pageSize}) async {
+  Future<PageResult<BlacklistItemVO>> getBlacklist({
+    int? page,
+    int? pageSize,
+  }) async {
     final queryParameters = <String, dynamic>{
       if (page != null) 'page': page,
       if (pageSize != null) 'page_size': pageSize,
     };
-    final response = await _apiClient.get<PageResult<UserVO>>(
+    final response = await _apiClient.get<PageResult<BlacklistItemVO>>(
       '/users/me/blacklist',
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
-      decode: (data) => PageResult<UserVO>.fromJson(
+      decode: (data) => PageResult<BlacklistItemVO>.fromJson(
         asJsonMap(data),
-        fromJson: UserVO.fromJson,
+        fromJson: BlacklistItemVO.fromJson,
       ),
     );
     return response;

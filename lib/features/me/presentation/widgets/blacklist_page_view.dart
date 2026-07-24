@@ -26,7 +26,7 @@ class BlacklistPageView extends StatelessWidget {
   final VoidCallback onBack;
   final Future<void> Function() onRefresh;
   final VoidCallback onRetry;
-  final ValueChanged<UserVO> onRemoveTap;
+  final ValueChanged<BlacklistItemVO> onRemoveTap;
 
   @override
   Widget build(BuildContext context) {
@@ -127,9 +127,9 @@ class _BlacklistListCard extends StatelessWidget {
     required this.onRemoveTap,
   });
 
-  final List<UserVO> items;
+  final List<BlacklistItemVO> items;
   final Set<int> removingUserIds;
-  final ValueChanged<UserVO> onRemoveTap;
+  final ValueChanged<BlacklistItemVO> onRemoveTap;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +142,7 @@ class _BlacklistListCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Column(
           children: List<Widget>.generate(items.length, (int index) {
-            final UserVO user = items[index];
+            final BlacklistItemVO user = items[index];
             return Column(
               children: <Widget>[
                 _BlacklistUserTile(
@@ -172,17 +172,17 @@ class _BlacklistUserTile extends StatelessWidget {
     required this.onRemoveTap,
   });
 
-  final UserVO user;
+  final BlacklistItemVO user;
   final bool isRemoving;
   final VoidCallback onRemoveTap;
 
   @override
   Widget build(BuildContext context) {
-    final String nickname = user.nickname.trim().isEmpty
+    final String displayName = user.name.trim().isEmpty
         ? '我的.用户占位昵称'.tr(
             namedArgs: <String, String>{'userId': user.userId.toString()},
           )
-        : user.nickname.trim();
+        : user.name.trim();
     return SizedBox(
       height: BlacklistPageStyles.tileHeight,
       child: Row(
@@ -191,7 +191,7 @@ class _BlacklistUserTile extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              nickname,
+              displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: BlacklistPageStyles.nickname,

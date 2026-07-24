@@ -1,20 +1,32 @@
 import 'package:europepass/shared/network/api_decoders.dart';
 
 class BlacklistBO {
-  const BlacklistBO({required this.targetUserId, required this.action});
+  const BlacklistBO({
+    required this.targetUserId,
+    required this.action,
+    this.targetRole,
+  });
 
   final int targetUserId;
   final String action;
+  final String? targetRole;
 
   factory BlacklistBO.fromJson(JsonMap json) {
     return BlacklistBO(
       targetUserId: readInt(json, 'targetUserId'),
       action: readString(json, 'action'),
+      targetRole: json.containsKey('targetRole')
+          ? readString(json, 'targetRole')
+          : null,
     );
   }
 
   JsonMap toJson() {
-    return <String, dynamic>{'targetUserId': targetUserId, 'action': action};
+    return <String, dynamic>{
+      'targetUserId': targetUserId,
+      'action': action,
+      if (targetRole != null) 'targetRole': targetRole,
+    };
   }
 }
 
@@ -294,6 +306,42 @@ class UserVO {
       'realName': realName,
       'blacklistCount': blacklistCount,
       'createdAt': createdAt,
+    };
+  }
+}
+
+class BlacklistItemVO {
+  const BlacklistItemVO({
+    required this.userId,
+    this.profileId,
+    required this.role,
+    required this.name,
+    required this.avatarUrl,
+  });
+
+  final int userId;
+  final int? profileId;
+  final String role;
+  final String name;
+  final String avatarUrl;
+
+  factory BlacklistItemVO.fromJson(JsonMap json) {
+    return BlacklistItemVO(
+      userId: readInt(json, 'userId'),
+      profileId: json.containsKey('profileId') ? readInt(json, 'profileId') : null,
+      role: readString(json, 'role'),
+      name: readString(json, 'name'),
+      avatarUrl: readString(json, 'avatarUrl'),
+    );
+  }
+
+  JsonMap toJson() {
+    return <String, dynamic>{
+      'userId': userId,
+      if (profileId != null) 'profileId': profileId,
+      'role': role,
+      'name': name,
+      'avatarUrl': avatarUrl,
     };
   }
 }

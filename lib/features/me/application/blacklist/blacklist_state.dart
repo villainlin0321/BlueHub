@@ -5,7 +5,7 @@ const Object _feedbackMessageSentinel = Object();
 
 class BlacklistState {
   const BlacklistState({
-    this.items = const <UserVO>[],
+    this.items = const <BlacklistItemVO>[],
     this.isLoading = false,
     this.isRefreshing = false,
     this.isLoadingMore = false,
@@ -19,7 +19,7 @@ class BlacklistState {
     this.removedUserVersion = 0,
   });
 
-  final List<UserVO> items;
+  final List<BlacklistItemVO> items;
   final bool isLoading;
   final bool isRefreshing;
   final bool isLoadingMore;
@@ -33,7 +33,7 @@ class BlacklistState {
   final int removedUserVersion;
 
   BlacklistState copyWith({
-    List<UserVO>? items,
+    List<BlacklistItemVO>? items,
     bool? isLoading,
     bool? isRefreshing,
     bool? isLoadingMore,

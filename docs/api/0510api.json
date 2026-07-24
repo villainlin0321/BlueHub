@@ -3567,7 +3567,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppResultPageResultUserVO"
+                  "$ref": "#/components/schemas/AppResultPageResultBlacklistItemVO"
                 }
               }
             }
@@ -12063,6 +12063,11 @@
             "description": "操作类型：add（加入） / remove（移出）",
             "minLength": 1,
             "pattern": "add|remove"
+          },
+          "targetRole": {
+            "type": "string",
+            "description": "被拉黑对象角色：worker / employer / visa_provider",
+            "pattern": "worker|employer|visa_provider"
           }
         },
         "required": [
@@ -14270,7 +14275,7 @@
           }
         }
       },
-      "AppResultPageResultUserVO": {
+      "AppResultPageResultBlacklistItemVO": {
         "type": "object",
         "description": "统一响应体",
         "properties": {
@@ -14286,7 +14291,7 @@
             "example": "success"
           },
           "data": {
-            "$ref": "#/components/schemas/PageResultUserVO",
+            "$ref": "#/components/schemas/PageResultBlacklistItemVO",
             "description": "响应数据"
           },
           "timestamp": {
@@ -14302,7 +14307,35 @@
           }
         }
       },
-      "PageResultUserVO": {
+      "BlacklistItemVO": {
+        "type": "object",
+        "description": "黑名单条目",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "被拉黑用户 ID"
+          },
+          "profileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务档案 ID（企业/服务商），worker 为 null"
+          },
+          "role": {
+            "type": "string",
+            "description": "角色：worker / employer / visa_provider"
+          },
+          "name": {
+            "type": "string",
+            "description": "名称（个人昵称或公司名）"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "头像 / Logo URL"
+          }
+        }
+      },
+      "PageResultBlacklistItemVO": {
         "type": "object",
         "description": "分页结果",
         "properties": {
@@ -14310,7 +14343,7 @@
             "type": "array",
             "description": "数据列表",
             "items": {
-              "$ref": "#/components/schemas/UserVO"
+              "$ref": "#/components/schemas/BlacklistItemVO"
             }
           },
           "pagination": {

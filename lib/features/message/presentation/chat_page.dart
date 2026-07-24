@@ -544,6 +544,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
             request: BlacklistBO(
               targetUserId: widget.args.targetUserId,
               action: 'add',
+              targetRole: widget.args.targetUserRole,
             ),
           );
 
