@@ -256,38 +256,14 @@ class _HeaderProfileRow extends ConsumerWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                greetingKey.tr(
-                  namedArgs: <String, String>{'name': userViewData.nickname},
-                ),
-                style: TestStyle.medium(
-                  fontSize: 15,
-                  color: const Color(0xFF262626),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: <Widget>[
-                  const AppSvgIcon(
-                    assetPath: 'assets/images/mon5bjog-7bcl82r.svg',
-                    fallback: Icons.location_on_outlined,
-                    size: 14,
-                    color: Color(0xFFBCBCBC),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '国家.德国'.tr(),
-                    style: TestStyle.pingFangRegular(
-                      fontSize: 12,
-                      color: const Color(0xFF595959),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          child: Text(
+            greetingKey.tr(
+              namedArgs: <String, String>{'name': userViewData.nickname},
+            ),
+            style: TestStyle.medium(
+              fontSize: 15,
+              color: const Color(0xFF262626),
+            ),
           ),
         ),
         MessageCenterIconButton(color: Colors.black),
@@ -965,13 +941,15 @@ extension on JobListVO {
         )
         .where((JobPositionCardTagData tag) => tag.label.isNotEmpty)
         .toList(growable: false);
-    final List<JobPositionCardTagData> requirementTags = <JobPositionCardTagData>[
-      ...apiTags.where(
-        (JobPositionCardTagData tag) => tag.type != TagCategory.highlight.value,
-      ),
-      if (hasVisaSupport)
-        JobPositionCardTagData(label: visaSupportLabel, type: null),
-    ].take(3).toList(growable: false);
+    final List<JobPositionCardTagData> requirementTags =
+        <JobPositionCardTagData>[
+          ...apiTags.where(
+            (JobPositionCardTagData tag) =>
+                tag.type != TagCategory.highlight.value,
+          ),
+          if (hasVisaSupport)
+            JobPositionCardTagData(label: visaSupportLabel, type: null),
+        ].take(3).toList(growable: false);
     final List<JobPositionCardTagData> highlightTags = <JobPositionCardTagData>[
       ...apiTags.where(
         (JobPositionCardTagData tag) => tag.type == TagCategory.highlight.value,
