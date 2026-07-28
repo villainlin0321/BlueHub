@@ -20,7 +20,8 @@ class CompanyApplicationCardData {
     required this.ageGender,
     required this.tags,
     required this.submittedText,
-    required this.secondaryActionLabel,
+    this.leftActionLabel,
+    required this.rightActionLabel,
   });
 
   final String positionTitle;
@@ -30,7 +31,8 @@ class CompanyApplicationCardData {
   final String ageGender;
   final List<String> tags;
   final String submittedText;
-  final String secondaryActionLabel;
+  final String? leftActionLabel;
+  final String rightActionLabel;
 }
 
 class CompanyApplicationTopBar extends StatelessWidget {
@@ -379,13 +381,15 @@ class CompanyApplicationCard extends StatelessWidget {
   const CompanyApplicationCard({
     super.key,
     required this.data,
-    required this.onViewResumeTap,
-    required this.onSecondaryActionTap,
+    required this.onCardTap,
+    this.onLeftActionTap,
+    required this.onRightActionTap,
   });
 
   final CompanyApplicationCardData data;
-  final VoidCallback onViewResumeTap;
-  final VoidCallback onSecondaryActionTap;
+  final VoidCallback onCardTap;
+  final VoidCallback? onLeftActionTap;
+  final VoidCallback onRightActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -426,21 +430,24 @@ class CompanyApplicationCard extends StatelessWidget {
             ),
             child: Material(
               color: Colors.transparent,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _CardTopRow(data: data),
-                    const SizedBox(height: 18),
-                    _CandidateInfoSection(data: data),
-                    const SizedBox(height: 20),
-                    _CardFooter(
-                      data: data,
-                      onViewResumeTap: onViewResumeTap,
-                      onSecondaryActionTap: onSecondaryActionTap,
-                    ),
-                  ],
+              child: InkWell(
+                onTap: onCardTap,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _CardTopRow(data: data),
+                      const SizedBox(height: 18),
+                      _CandidateInfoSection(data: data),
+                      const SizedBox(height: 20),
+                      _CardFooter(
+                        data: data,
+                        onLeftActionTap: onLeftActionTap,
+                        onRightActionTap: onRightActionTap,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -578,28 +585,31 @@ class _CandidateInfoSection extends StatelessWidget {
 class _CardFooter extends StatelessWidget {
   const _CardFooter({
     required this.data,
-    required this.onViewResumeTap,
-    required this.onSecondaryActionTap,
+    this.onLeftActionTap,
+    required this.onRightActionTap,
   });
 
   final CompanyApplicationCardData data;
-  final VoidCallback onViewResumeTap;
-  final VoidCallback onSecondaryActionTap;
+  final VoidCallback? onLeftActionTap;
+  final VoidCallback onRightActionTap;
 
   @override
   Widget build(BuildContext context) {
     final Widget actions = Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        if (data.leftActionLabel != null &&
+            onLeftActionTap != null) ...<Widget>[
+          CompanyApplicationActionButton(
+            label: data.leftActionLabel!,
+            onTap: onLeftActionTap!,
+          ),
+          const SizedBox(width: 8),
+        ],
         CompanyApplicationActionButton(
-          label: '招聘.查看简历'.tr(),
-          onTap: onViewResumeTap,
-        ),
-        const SizedBox(width: 8),
-        CompanyApplicationActionButton(
-          label: data.secondaryActionLabel,
+          label: data.rightActionLabel,
           primary: true,
-          onTap: onSecondaryActionTap,
+          onTap: onRightActionTap,
         ),
       ],
     );

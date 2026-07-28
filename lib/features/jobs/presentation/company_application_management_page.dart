@@ -216,36 +216,19 @@ class _CompanyApplicationManagementPageState
 }
 
 enum _CompanyApplicationTab {
-  pending(
-    label: '应聘管理.待处理',
-    status: 'pending',
-    emptyText: '应聘管理.暂无待处理应聘',
-    secondaryActionLabel: '招聘.邀约面试',
-  ),
-  invited(
-    label: '应聘管理.已邀约',
-    status: 'invited',
-    emptyText: '应聘管理.暂无已邀约应聘',
-    secondaryActionLabel: '应聘管理.电话联系',
-  ),
-  rejected(
-    label: '招聘.不合适',
-    status: 'rejected',
-    emptyText: '应聘管理.暂无不合适应聘',
-    secondaryActionLabel: '应聘管理.电话联系',
-  );
+  pending(label: '应聘管理.待处理', status: 'pending', emptyText: '应聘管理.暂无待处理应聘'),
+  invited(label: '应聘管理.已邀约', status: 'invited', emptyText: '应聘管理.暂无已邀约应聘'),
+  rejected(label: '招聘.不合适', status: 'rejected', emptyText: '应聘管理.暂无不合适应聘');
 
   const _CompanyApplicationTab({
     required this.label,
     required this.status,
     required this.emptyText,
-    required this.secondaryActionLabel,
   });
 
   final String label;
   final String status;
   final String emptyText;
-  final String secondaryActionLabel;
 }
 
 class _CompanyApplicationTabView extends ConsumerStatefulWidget {
@@ -270,8 +253,6 @@ class _CompanyApplicationTabViewState
     controlFinishRefresh: true,
     controlFinishLoad: true,
   );
-
-  bool get _useInviteInterviewSecondaryAction => false;
 
   @override
   bool get wantKeepAlive => true;
@@ -393,31 +374,40 @@ class _CompanyApplicationTabViewState
               itemBuilder: (BuildContext context, int index) {
                 final ApplicationVO item = listState.applications[index];
                 return CompanyApplicationCard(
-                  data: _buildCardData(item, index),
-                  onViewResumeTap: () =>
-                      _openResumePreview(item.applicant.userId),
-                  onSecondaryActionTap: () => _handleSecondaryAction(item),
+                  data: _buildCardData(item),
+                  onCardTap: () => _handleCardTap(item),
+                  onLeftActionTap: _hasLeftAction
+                      ? () => _handleLeftAction(item)
+                      : null,
+                  onRightActionTap: () => _handleRightAction(item),
                 );
               },
             ),
     );
   }
 
-  Future<void> _openResumePreview(int userId) async {
-    await context.push(RoutePaths.resumePreview, extra: userId);
+  bool get _hasLeftAction =>
+      widget.tab == _CompanyApplicationTab.pending ||
+      widget.tab == _CompanyApplicationTab.invited;
+
+  /// 整卡点击后直接进入聊天页，替代原先“查看简历”按钮的入口位置。
+  Future<void> _handleCardTap(ApplicationVO item) async {
+    await _handleSayHello(item);
   }
 
-  /// 根据当前 Tab 的动作定义，执行打招呼或电话联系等二级操作。
-  Future<void> _handleSecondaryAction(ApplicationVO item) async {
+  Future<void> _handleLeftAction(ApplicationVO item) async {
+    await _handleSayHello(item);
+  }
+
+  /// 根据当前 Tab 的动作定义，执行邀约、不合适或电话联系动作。
+  Future<void> _handleRightAction(ApplicationVO item) async {
     switch (widget.tab) {
       case _CompanyApplicationTab.pending:
-        if (_useInviteInterviewSecondaryAction) {
-          await _handleInviteInterview(item);
-        } else {
-          await _handleSayHello(item);
-        }
+        await _handleInviteInterview(item);
         return;
       case _CompanyApplicationTab.invited:
+        await _handleReject(item);
+        return;
       case _CompanyApplicationTab.rejected:
         await _handlePhoneCall(item);
         return;
@@ -507,7 +497,9 @@ class _CompanyApplicationTabViewState
     }
 
     try {
-      await ref.read(applicationServiceProvider).inviteInterview(
+      await ref
+          .read(applicationServiceProvider)
+          .inviteInterview(
             request: InviteInterviewBO(
               jobId: jobId,
               resumeId: resumeId,
@@ -535,6 +527,39 @@ class _CompanyApplicationTabViewState
         ApiErrorFeedback.resolveMessage(error, fallback: '招聘.邀约面试失败'.tr()),
       );
     }
+  }
+
+  Future<void> _handleReject(ApplicationVO item) async {
+    final int applicationId = item.applicationId;
+    if (applicationId <= 0) {
+      _showErrorToast('招聘.不合适'.tr());
+      return;
+    }
+
+    final String? remark = await _showRemarkDialog(
+      EmployerApplicationUpdateStatus.rejected.labelKey.tr(),
+    );
+    if (remark == null || !mounted) {
+      return;
+    }
+
+    final ApplicationStatusUpdateResult result = await ref
+        .read(companyApplicationListsControllerProvider.notifier)
+        .updateApplicationStatus(
+          sourceStatus: widget.tab.status,
+          jobId: widget.selectedJobId,
+          applicationId: applicationId,
+          nextStatus: EmployerApplicationUpdateStatus.rejected,
+          remark: remark,
+        );
+    if (!mounted) {
+      return;
+    }
+
+    if (result.success) {
+      ref.invalidate(homeDashboardStatsProvider);
+    }
+    AppToast.show(result.message);
   }
 
   /// 尝试读取求职者手机号并唤起系统拨号页。
@@ -619,7 +644,7 @@ class _CompanyApplicationTabViewState
     );
   }
 
-  CompanyApplicationCardData _buildCardData(ApplicationVO item, int index) {
+  CompanyApplicationCardData _buildCardData(ApplicationVO item) {
     return CompanyApplicationCardData(
       positionTitle: item.job.title.trim().isEmpty
           ? '招聘.待定岗位'.tr()
@@ -632,11 +657,16 @@ class _CompanyApplicationTabViewState
       ageGender: _formatAgeGender(item.applicant.age, item.applicant.gender),
       tags: _buildTags(item.applicant),
       submittedText: _formatSubmittedText(item.submittedAt),
-      secondaryActionLabel:
-          widget.tab == _CompanyApplicationTab.pending &&
-              !_useInviteInterviewSecondaryAction
-          ? '通用.打招呼'.tr()
-          : widget.tab.secondaryActionLabel.tr(),
+      leftActionLabel: switch (widget.tab) {
+        _CompanyApplicationTab.pending => '通用.打招呼'.tr(),
+        _CompanyApplicationTab.invited => '通用.打招呼'.tr(),
+        _CompanyApplicationTab.rejected => null,
+      },
+      rightActionLabel: switch (widget.tab) {
+        _CompanyApplicationTab.pending => '招聘.邀约面试'.tr(),
+        _CompanyApplicationTab.invited => '招聘.不合适'.tr(),
+        _CompanyApplicationTab.rejected => '应聘管理.电话联系'.tr(),
+      },
     );
   }
 
