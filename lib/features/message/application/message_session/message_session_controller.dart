@@ -14,6 +14,8 @@ import '../../../../shared/network/services/message_service.dart';
 import '../../../../shared/network/sse_models.dart';
 import '../../../auth/application/auth_session_provider.dart';
 import '../../../home/data/home_providers.dart';
+import '../../../jobs/application/company_applications/company_application_lists_controller.dart';
+import '../../../jobs/data/application_models.dart';
 import '../../../messages/data/message_models.dart';
 import '../../../messages/data/message_providers.dart';
 import '../../../shell/application/shell_role_provider.dart';
@@ -28,6 +30,8 @@ final messageSessionControllerProvider =
 class MessageSessionController extends Notifier<MessageSessionState> {
   static const int _pageSize = 50;
   static const int _notificationPageSize = 50;
+  static final String _companyPendingApplicationStatus =
+      EmployerApplicationFilterStatus.pending.value;
   static int _activeChatConversationId = 0;
 
   static void setActiveChatConversationId(int conversationId) {
@@ -462,9 +466,15 @@ class MessageSessionController extends Notifier<MessageSessionState> {
         return;
       }
       _replaceNotification(notification);
-      final String normalizedBizType = notification.bizType.trim().toLowerCase();
+      final String normalizedBizType = notification.bizType
+          .trim()
+          .toLowerCase();
       if (normalizedBizType == 'application' || normalizedBizType == 'order') {
         ref.invalidate(homeDashboardStatsProvider);
+        if (normalizedBizType == 'application' &&
+            ref.read(shellRoleProvider) == ShellRole.company) {
+          _refreshCompanyPendingApplications();
+        }
         if (normalizedBizType == 'order' &&
             ref.read(shellRoleProvider) == ShellRole.serviceProvider) {
           ref.invalidate(serviceProviderReviewingOrdersProvider);
@@ -550,6 +560,18 @@ class MessageSessionController extends Notifier<MessageSessionState> {
       }
       return current.copyWith(notifications: items);
     });
+  }
+
+  void _refreshCompanyPendingApplications() {
+    final CompanyApplicationListsController controller = ref.read(
+      companyApplicationListsControllerProvider.notifier,
+    );
+    final current = controller.getState(_companyPendingApplicationStatus);
+    if (current.hasLoadedOnce) {
+      unawaited(controller.refresh(status: _companyPendingApplicationStatus));
+      return;
+    }
+    unawaited(controller.loadInitial(status: _companyPendingApplicationStatus));
   }
 
   JsonMap _extractPayload(SseEvent event) {
