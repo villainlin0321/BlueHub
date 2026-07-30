@@ -14,12 +14,17 @@ class AgreementLinkDefinition {
 
 /// 协议链接集合与打开逻辑，供登录页和关于页复用。
 abstract final class AgreementLinks {
-  static final Uri userTermsUri = Uri.parse('https://yunhezp.vip/app/terms.html');
+  static final Uri userTermsUri = Uri.parse(
+    'https://www.yunhezp.vip/legal/user-agreement.html',
+  );
   static final Uri crossBorderTermsUri = Uri.parse(
-    'https://yunhezp.vip/app/cross-terms.html',
+    'https://www.yunhezp.vip/legal/cross-border-data-agreement.html',
   );
   static final Uri privacyPolicyUri = Uri.parse(
-    'https://yunhezp.vip/app/privacy-policy.html',
+    'https://www.yunhezp.vip/legal/privacy-policy.html',
+  );
+  static final Uri visaServiceRulesUri = Uri.parse(
+    'https://www.yunhezp.vip/legal/visa-service-rules.html',
   );
 
   static final AgreementLinkDefinition userTerms = AgreementLinkDefinition(
@@ -38,11 +43,18 @@ abstract final class AgreementLinks {
     uri: privacyPolicyUri,
   );
 
+  static final AgreementLinkDefinition visaServiceRules =
+      AgreementLinkDefinition(
+        labelKey: '认证.签证服务与交易规则',
+        uri: visaServiceRulesUri,
+      );
+
   static final List<AgreementLinkDefinition> aboutAppEntries =
       <AgreementLinkDefinition>[
         userTerms,
         crossBorderTerms,
         privacyPolicy,
+        visaServiceRules,
       ];
 
   /// 优先以内嵌 WebView 打开协议，失败时回退系统浏览器，并统一错误提示。

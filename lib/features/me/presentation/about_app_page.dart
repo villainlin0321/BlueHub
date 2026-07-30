@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../shared/legal/agreement_links.dart';
 import 'package:europepass/shared/ui/test_style.dart';
+
 /// 关于我们页：用于展示应用名称、版本信息以及公司主体信息，便于留存合规截图。
 class AboutAppPage extends StatefulWidget {
   const AboutAppPage({super.key});
@@ -88,9 +89,7 @@ class _AboutAppPageState extends State<AboutAppPage> {
           Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(18)),
             clipBehavior: Clip.antiAlias,
             child: Image.asset(
               _appIconAsset,
@@ -102,7 +101,10 @@ class _AboutAppPageState extends State<AboutAppPage> {
                   alignment: Alignment.center,
                   child: Text(
                     '应用.标题'.tr().characters.take(2).toString(),
-                    style: TestStyle.numberBold(fontSize: 24, color: Colors.white),
+                    style: TestStyle.numberBold(
+                      fontSize: 24,
+                      color: Colors.white,
+                    ),
                   ),
                 );
               },
@@ -116,13 +118,19 @@ class _AboutAppPageState extends State<AboutAppPage> {
           const SizedBox(height: 8),
           Text(
             '${'关于页.版本'.tr()} $_versionLabel',
-            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF8C8C8C)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: Color(0xFF8C8C8C),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             '关于页.说明'.tr(),
             textAlign: TextAlign.center,
-            style: TestStyle.pingFangRegular(fontSize: 14, color: Color(0xFF595959)),
+            style: TestStyle.pingFangRegular(
+              fontSize: 14,
+              color: Color(0xFF595959),
+            ),
           ),
         ],
       ),
@@ -142,7 +150,10 @@ class _AboutAppPageState extends State<AboutAppPage> {
         children: <Widget>[
           Text(
             '关于页.公司信息'.tr(),
-            style: TestStyle.pingFangSemibold(fontSize: 16, color: Color(0xFF262626)),
+            style: TestStyle.pingFangSemibold(
+              fontSize: 16,
+              color: Color(0xFF262626),
+            ),
           ),
           const SizedBox(height: 16),
           _AboutInfoRow(label: '关于页.开发公司'.tr(), value: _companyName),
@@ -163,7 +174,10 @@ class _AboutAppPageState extends State<AboutAppPage> {
         Text(
           '$year ${'关于页.版权'.tr()}',
           textAlign: TextAlign.center,
-          style: TestStyle.pingFangRegular(fontSize: 12, color: Color(0xFF8C8C8C)),
+          style: TestStyle.pingFangRegular(
+            fontSize: 12,
+            color: Color(0xFF8C8C8C),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -175,9 +189,10 @@ class _AboutAppPageState extends State<AboutAppPage> {
     );
   }
 
-  /// 构建协议入口卡片，统一承载关于页底部的 3 个合规协议跳转。
+  /// 构建协议入口卡片，统一承载关于页底部的 4 个合规协议跳转。
   Widget _buildAgreementCard(BuildContext context) {
-    final List<AgreementLinkDefinition> entries = AgreementLinks.aboutAppEntries;
+    final List<AgreementLinkDefinition> entries =
+        AgreementLinks.aboutAppEntries;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
