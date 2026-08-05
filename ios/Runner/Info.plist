@@ -90,6 +90,8 @@
 	<string>Allow speech recognition to convert your voice into text when chatting with the AI assistant.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+		<key>UIRequiresFullScreen</key>
+		<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -98,5 +100,9 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+				<string>UIInterfaceOrientationPortrait</string>
+		</array>
 </dict>
 </plist>
